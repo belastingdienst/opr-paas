@@ -1,0 +1,27 @@
+# permissions for end users to view paas.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: paas-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: opr-paas
+    app.kubernetes.io/part-of: opr-paas
+    app.kubernetes.io/managed-by: kustomize
+  name: paas-viewer-role
+rules:
+- apiGroups:
+  - my.domain
+  resources:
+  - paas
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - my.domain
+  resources:
+  - paas/status
+  verbs:
+  - get
