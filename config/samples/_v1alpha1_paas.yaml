@@ -1,4 +1,5 @@
-apiVersion: my.domain/v1alpha1
+---
+apiVersion: cpet.belastingdienst.nl/v1alpha1
 kind: Paas
 metadata:
   labels:
@@ -7,6 +8,51 @@ metadata:
     app.kubernetes.io/part-of: opr-paas
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: opr-paas
-  name: paas-sample
+  name: paa-paa
 spec:
-  # TODO(user): Add fields here
+  oplosGroep: acme
+  ldapGroups:
+    - CN=paashaas,OU=paas,OU=caas,OU=corp,DC=prod,DC=acme,DC=org
+  quota:
+    limits.cpu: "13"
+    limits.memory: 42Gi
+    requests.cpu: "10"
+    requests.memory: 32Gi
+    requests.storage: 1024Gi
+    thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+  capabilities:
+    argocd:
+      enabled: true
+      quota:
+        limits.cpu: "1"
+        limits.memory: 4Gi
+        requests.cpu: "800m"
+        requests.memory: 3Gi
+        requests.storage: 10Gi
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+      gitUrl: https://
+    ci:
+      quota:
+        limits.cpu: "1"
+        limits.memory: 4Gi
+        requests.cpu: "800m"
+        requests.memory: 3Gi
+        requests.storage: 10Gi
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+    sso:
+      quota:
+        limits.cpu: "1"
+        limits.memory: 4Gi
+        requests.cpu: "800m"
+        requests.memory: 3Gi
+        requests.storage: 10Gi
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+    grafana:
+      quota:
+        limits.cpu: "1"
+        limits.memory: 4Gi
+        requests.cpu: "800m"
+        requests.memory: 3Gi
+        requests.storage: 10Gi
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+

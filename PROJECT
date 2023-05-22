@@ -2,7 +2,7 @@
 # This file is used to track the info used to scaffold your project
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
-domain: my.domain
+domain: cpet.belastingdienst.nl
 layout:
 - go.kubebuilder.io/v3
 plugins:
@@ -15,7 +15,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: my.domain
+  domain: cpet.belastingdienst.nl
   kind: Paas
   path: github.com/belastingdienst/opr-paas/api/v1alpha1
   version: v1alpha1
