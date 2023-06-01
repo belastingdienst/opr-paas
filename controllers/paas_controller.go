@@ -51,6 +51,7 @@ type PaasReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("PaaS", req.NamespacedName)
+	log.Info("Reconciling the PAAS object " + req.NamespacedName.Name)
 
 	// TODO(user): your logic here
 	instance := &mydomainv1alpha1.Paas{}
@@ -61,23 +62,35 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			return reconcile.Result{}, nil
+			log.Info("PAAS object " + req.NamespacedName.Name + " is already gone")
+			return reconcile.Result{}, r.cleanClusterQuotas(ctx, req.NamespacedName.Name)
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	} else if instance.GetDeletionTimestamp() != nil {
+		log.Info("PAAS object " + instance.Name + " is being deleted")
+		return reconcile.Result{}, r.cleanClusterQuotas(ctx, req.NamespacedName.Name)
 	}
 
+	log.Info("Creating quotas for PAAS object " + req.NamespacedName.Name)
 	// Create quotas if needed
 	for _, q := range r.backendQuotas(instance) {
-		if result, err := r.ensureQuota(req, instance, q); result != nil {
+		if result, err := r.ensureQuota(req, instance, q); err != nil {
+			log.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
+			return *result, err
+		} else if result != nil {
 			log.Error(err, fmt.Sprintf("Quota %s Not ready", q.ObjectMeta.Name))
 			return *result, err
 		}
 	}
 
+	log.Info("Creating namespaces for PAAS object " + req.NamespacedName.Name)
 	// Create namespaces if needed
 	for _, ns := range r.backendNamespaces(instance) {
-		if result, err := r.ensureNamespace(req, instance, ns); result != nil {
+		if result, err := r.ensureNamespace(req, instance, ns); err != nil {
+			log.Error(err, fmt.Sprintf("Failure while creating namespace %s", ns.ObjectMeta.Name))
+			return *result, err
+		} else if result != nil {
 			log.Error(err, fmt.Sprintf("Namespace %s not ready", ns.ObjectMeta.Name))
 			return *result, err
 		}

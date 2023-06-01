@@ -75,9 +75,8 @@ func (r *PaasReconciler) backendQuota(
 			APIVersion: "quota.openshift.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      quotaName,
-			Namespace: paas.Namespace,
-			Labels:    paas.Labels,
+			Name:   quotaName,
+			Labels: paas.Labels,
 		},
 		Spec: quotav1.ClusterResourceQuotaSpec{
 			Selector: quotav1.ClusterResourceQuotaSelector{
@@ -110,4 +109,39 @@ func (r *PaasReconciler) backendQuotas(paas *mydomainv1alpha1.Paas) (quotas []*q
 		quotas = append(quotas, r.backendQuota(paas, "sso", paas.Spec.Capabilities.SSO.QuotaWithDefaults()))
 	}
 	return quotas
+}
+
+func (r *PaasReconciler) cleanClusterQuota(ctx context.Context, quotaName string) error {
+	obj := &quotav1.ClusterResourceQuota{}
+	if err := r.Get(context.TODO(), types.NamespacedName{
+		Name: quotaName,
+	}, obj); err != nil && errors.IsNotFound(err) {
+		fmt.Printf("%s does not exist", quotaName)
+		return nil
+	} else if err != nil {
+		fmt.Printf("%s not deleted, error", quotaName)
+		return err
+	} else {
+		fmt.Printf("%s trying to delete", quotaName)
+		return r.Delete(ctx, obj)
+	}
+}
+
+func (r *PaasReconciler) cleanClusterQuotas(ctx context.Context, paasName string) error {
+	suffixes := []string{
+		"",
+		"-argocd",
+		"-ci",
+		"-grafana",
+		"-sso",
+	}
+	var err error
+	for _, suffix := range suffixes {
+		fmt.Printf("suffix %s", suffix)
+		quotaName := fmt.Sprintf("%s%s", paasName, suffix)
+		if cleanErr := r.cleanClusterQuota(ctx, quotaName); cleanErr != nil {
+			err = cleanErr
+		}
+	}
+	return err
 }
