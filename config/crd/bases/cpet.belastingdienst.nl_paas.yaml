@@ -13,7 +13,7 @@ spec:
     listKind: PaasList
     plural: paas
     singular: paas
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha1
     schema:
