@@ -18,7 +18,7 @@ import (
 func (r *PaasReconciler) ensureNamespace(request reconcile.Request,
 	instance *mydomainv1alpha1.Paas,
 	ns *corev1.Namespace,
-) (*reconcile.Result, error) {
+) error {
 
 	// See if namespace exists and create if it doesn't
 	found := &corev1.Namespace{}
@@ -32,17 +32,17 @@ func (r *PaasReconciler) ensureNamespace(request reconcile.Request,
 
 		if err != nil {
 			// creating the namespace failed
-			return &reconcile.Result{}, err
+			return err
 		} else {
 			// creating the namespace was successful
-			return nil, nil
+			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
-		return &reconcile.Result{}, err
+		return err
 	}
 
-	return nil, nil
+	return nil
 }
 
 // backendNamespace is a code for Creating Namespace

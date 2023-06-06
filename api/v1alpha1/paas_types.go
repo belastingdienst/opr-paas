@@ -89,6 +89,8 @@ type PaasSpec struct {
 	//LdapGroups is a list of strings defining the ldap groups that should be brought synced from ldap and that should get permissions on all other projects
 	LdapGroups []string `json:"ldapGroups,omitempty"`
 
+	Groups map[string][]string `json:"groups,omitempty"`
+
 	// Quota defines the quotas which should be set on the cluster resource quota as used by this PaaS project
 	Quota PaasQuotas `json:"quota"`
 }
