@@ -25,7 +25,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 )
@@ -54,47 +53,55 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	log.Info("Reconciling the PAAS object " + req.NamespacedName.Name)
 
 	// TODO(user): your logic here
-	instance := &mydomainv1alpha1.Paas{}
+	paas := &mydomainv1alpha1.Paas{}
 
-	err := r.Get(context.TODO(), req.NamespacedName, instance)
+	err := r.Get(context.TODO(), req.NamespacedName, paas)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
 			log.Info("PAAS object " + req.NamespacedName.Name + " is already gone")
-			return reconcile.Result{}, r.cleanClusterQuotas(ctx, req.NamespacedName.Name)
+			return ctrl.Result{}, r.cleanClusterQuotas(ctx, req.NamespacedName.Name)
 		}
 		// Error reading the object - requeue the request.
-		return reconcile.Result{}, err
-	} else if instance.GetDeletionTimestamp() != nil {
-		log.Info("PAAS object " + instance.Name + " is being deleted")
-		return reconcile.Result{}, r.cleanClusterQuotas(ctx, req.NamespacedName.Name)
+		return ctrl.Result{}, err
+	} else if paas.GetDeletionTimestamp() != nil {
+		log.Info("PAAS object " + paas.Name + " is being deleted")
+		return ctrl.Result{}, r.cleanClusterQuotas(ctx, req.NamespacedName.Name)
 	}
 
 	log.Info("Creating quotas for PAAS object " + req.NamespacedName.Name)
 	// Create quotas if needed
-	for _, q := range r.backendQuotas(instance) {
-		if result, err := r.ensureQuota(req, instance, q); err != nil {
+	for _, q := range r.backendQuotas(paas) {
+		if err := r.ensureQuota(req, q); err != nil {
 			log.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
-			return *result, err
-		} else if result != nil {
-			log.Error(err, fmt.Sprintf("Quota %s Not ready", q.ObjectMeta.Name))
-			return *result, err
+			return ctrl.Result{}, err
 		}
 	}
 
 	log.Info("Creating namespaces for PAAS object " + req.NamespacedName.Name)
 	// Create namespaces if needed
-	for _, ns := range r.backendNamespaces(instance) {
-		if result, err := r.ensureNamespace(req, instance, ns); err != nil {
+	for _, ns := range r.backendNamespaces(paas) {
+		if err := r.ensureNamespace(req, paas, ns); err != nil {
 			log.Error(err, fmt.Sprintf("Failure while creating namespace %s", ns.ObjectMeta.Name))
-			return *result, err
-		} else if result != nil {
-			log.Error(err, fmt.Sprintf("Namespace %s not ready", ns.ObjectMeta.Name))
-			return *result, err
+			return ctrl.Result{}, err
 		}
 	}
+
+	log.Info("Creating groups for PAAS object " + req.NamespacedName.Name)
+	for _, group := range r.backendGroups(paas) {
+		if err := r.ensureGroup(group); err != nil {
+			log.Error(err, fmt.Sprintf("Failure while creating group %s", group.ObjectMeta.Name))
+			return ctrl.Result{}, err
+		}
+	}
+
+	log.Info("Creating ldap groups for PAAS object " + req.NamespacedName.Name)
+	if err = r.EnsureLdapGroups(paas); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	// Deployment and Service already exists - don't requeue
 	// log.Info("Skip reconcile: Deployment and service already exists",
 	// 	"Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
