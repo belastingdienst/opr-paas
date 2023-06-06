@@ -8,15 +8,15 @@ metadata:
     app.kubernetes.io/part-of: opr-paas
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: opr-paas
-  name: paa-paa
+  name: aap-aap
 spec:
   oplosGroep: acme
   groups:
-    paa:
+    aap:
       - aap
       - paa
   ldapGroups:
-    - CN=paashaas,OU=paas,OU=caas,OU=corp,DC=prod,DC=acme,DC=org
+    - CN=aap,OU=paas,OU=caas,OU=corp,DC=prod,DC=acme,DC=org
   quota:
     limits.cpu: "13"
     limits.memory: 42Gi

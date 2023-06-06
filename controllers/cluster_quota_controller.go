@@ -16,21 +16,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func labels(v *mydomainv1alpha1.Paas, tier string) map[string]string {
-	// Fetches and sets labels
-
-	return map[string]string{
-		"app":             "visitors",
-		"visitorssite_cr": v.Name,
-		"tier":            tier,
-	}
-}
-
 // ensureQuota ensures Quota presence
 func (r *PaasReconciler) ensureQuota(request reconcile.Request,
-	instance *mydomainv1alpha1.Paas,
 	quota *quotav1.ClusterResourceQuota,
-) (*reconcile.Result, error) {
+) error {
 
 	// See if quota already exists and create if it doesn't
 	found := &quotav1.ClusterResourceQuota{}
@@ -44,17 +33,17 @@ func (r *PaasReconciler) ensureQuota(request reconcile.Request,
 
 		if err != nil {
 			// creating the quota failed
-			return &reconcile.Result{}, err
+			return err
 		} else {
 			// creating the quota was successful
-			return nil, nil
+			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the quota not existing
-		return &reconcile.Result{}, err
+		return err
 	}
 
-	return nil, nil
+	return nil
 }
 
 // backendQuota is a code for Creating Quota
@@ -127,6 +116,8 @@ func (r *PaasReconciler) cleanClusterQuota(ctx context.Context, quotaName string
 	}
 }
 
+// This basically is a hack.
+// Clusterrsourcequotas should be removed just as all other objects, but for some weird reason they are not.
 func (r *PaasReconciler) cleanClusterQuotas(ctx context.Context, paasName string) error {
 	suffixes := []string{
 		"",
