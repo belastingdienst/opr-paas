@@ -1,5 +1,5 @@
 # Adds namespace to all resources.
-namespace: opr-paas-system
+namespace: cpet-paas
 
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named
@@ -11,6 +11,11 @@ namePrefix: opr-paas-
 # Labels to add to all resources and selectors.
 #commonLabels:
 #  someName: someValue
+
+images:
+- name: controller
+  newName: ghcr.io/belastingdienst/opr-paas
+  newTag: latest
 
 bases:
 - ../crd
@@ -28,7 +33,7 @@ patchesStrategicMerge:
 # Protect the /metrics endpoint by putting it behind auth.
 # If you want your controller-manager to expose the /metrics
 # endpoint w/o any authn/z, please comment the following line.
-- manager_auth_proxy_patch.yaml
+#- manager_auth_proxy_patch.yaml
 
 
 
