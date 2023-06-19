@@ -25,6 +25,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	appv1 "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -49,6 +50,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(quotav1.AddToScheme(scheme))
 	utilruntime.Must(userv1.AddToScheme(scheme))
+	utilruntime.Must(appv1.AddToScheme(scheme))
 
 	utilruntime.Must(mydomainv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
