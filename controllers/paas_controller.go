@@ -74,6 +74,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	log.Info("Creating quotas for PAAS object " + req.NamespacedName.Name)
 	// Create quotas if needed
 	for _, q := range r.backendQuotas(paas) {
+		log.Info("Creating quota " + q.Name + " for PAAS object " + req.NamespacedName.Name)
 		if err := r.ensureQuota(req, q); err != nil {
 			log.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
 			return ctrl.Result{}, err
@@ -100,6 +101,14 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	log.Info("Creating ldap groups for PAAS object " + req.NamespacedName.Name)
 	if err = r.EnsureLdapGroups(paas); err != nil {
 		return ctrl.Result{}, err
+	}
+
+	log.Info("Extending Applicationsets")
+	if paas.Spec.Capabilities.ArgoCD.Enabled {
+		log.Info("Extending ArgoCD Applicationset")
+		if err = r.ensureAppSetArgo(paas); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	// Deployment and Service already exists - don't requeue
