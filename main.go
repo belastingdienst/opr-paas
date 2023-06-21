@@ -75,6 +75,8 @@ func main() {
 	if get_version {
 		fmt.Printf("opr-paas version %s", controllers.CONTROLLERS_VERSION)
 		os.Exit(0)
+	} else {
+		setupLog.Info("opr-paas version", controllers.CONTROLLERS_VERSION)
 	}
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))

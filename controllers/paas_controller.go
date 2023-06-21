@@ -50,7 +50,7 @@ type PaasReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("PaaS", req.NamespacedName)
-	log.Info("Reconciling the PAAS object " + req.NamespacedName.Name)
+	log.Info("Reconciling the PAAS object " + req.NamespacedName.String())
 
 	// TODO(user): your logic here
 	paas := &mydomainv1alpha1.Paas{}
@@ -62,26 +62,26 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
 			log.Info("PAAS object " + req.NamespacedName.Name + " is already gone")
-			return ctrl.Result{}, r.cleanClusterQuotas(ctx, req.NamespacedName.Name)
+			return ctrl.Result{}, r.cleanClusterQuotas(ctx, req.NamespacedName.String())
 		}
 		// Error reading the object - requeue the request.
 		return ctrl.Result{}, err
 	} else if paas.GetDeletionTimestamp() != nil {
 		log.Info("PAAS object " + paas.Name + " is being deleted")
-		return ctrl.Result{}, r.cleanClusterQuotas(ctx, req.NamespacedName.Name)
+		return ctrl.Result{}, r.cleanClusterQuotas(ctx, req.NamespacedName.String())
 	}
 
-	log.Info("Creating quotas for PAAS object " + req.NamespacedName.Name)
+	log.Info("Creating quotas for PAAS object " + req.NamespacedName.String())
 	// Create quotas if needed
 	for _, q := range r.backendQuotas(paas) {
-		log.Info("Creating quota " + q.Name + " for PAAS object " + req.NamespacedName.Name)
+		log.Info("Creating quota " + q.Name + " for PAAS object " + req.NamespacedName.String())
 		if err := r.ensureQuota(req, q); err != nil {
 			log.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}
 	}
 
-	log.Info("Creating namespaces for PAAS object " + req.NamespacedName.Name)
+	log.Info("Creating namespaces for PAAS object " + req.NamespacedName.String())
 	// Create namespaces if needed
 	for _, ns := range r.backendNamespaces(paas) {
 		if err := r.ensureNamespace(req, paas, ns); err != nil {
@@ -90,7 +90,15 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
-	log.Info("Creating groups for PAAS object " + req.NamespacedName.Name)
+	log.Info("Extending Applicationsets for PAAS object" + req.NamespacedName.String())
+	if paas.Spec.Capabilities.ArgoCD.Enabled {
+		log.Info("Extending ArgoCD Applicationset")
+		if err = r.ensureAppSetArgo(paas); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
+	log.Info("Creating groups for PAAS object " + req.NamespacedName.String())
 	for _, group := range r.backendGroups(paas) {
 		if err := r.ensureGroup(group); err != nil {
 			log.Error(err, fmt.Sprintf("Failure while creating group %s", group.ObjectMeta.Name))
@@ -98,17 +106,9 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
-	log.Info("Creating ldap groups for PAAS object " + req.NamespacedName.Name)
+	log.Info("Creating ldap groups for PAAS object " + req.NamespacedName.String())
 	if err = r.EnsureLdapGroups(paas); err != nil {
 		return ctrl.Result{}, err
-	}
-
-	log.Info("Extending Applicationsets")
-	if paas.Spec.Capabilities.ArgoCD.Enabled {
-		log.Info("Extending ArgoCD Applicationset")
-		if err = r.ensureAppSetArgo(paas); err != nil {
-			return ctrl.Result{}, err
-		}
 	}
 
 	// Deployment and Service already exists - don't requeue
