@@ -11,6 +11,7 @@ import (
 	appv1 "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -23,10 +24,10 @@ const (
 // Defaults point to kube-system.caaswhitelist, but can be overruled with
 // the environment variables CAAS_WHITELIST_NAMESPACE and CAAS_WHITELIST_NAME
 func CapabilityArgoCD() (as types.NamespacedName) {
-	if as.Namespace = os.Getenv("CAP_NAMESPACE"); as.Name == "" {
+	if as.Namespace = os.Getenv("CAP_NAMESPACE"); as.Namespace == "" {
 		as.Namespace = DefaultNameSpace
 	}
-	if as.Name = os.Getenv("CAP_ARGOCD_AS_NAME"); as.Namespace == "" {
+	if as.Name = os.Getenv("CAP_ARGOCD_AS_NAME"); as.Name == "" {
 		as.Name = DefaultApplicationsetNameArgo
 	}
 	return as
@@ -37,11 +38,20 @@ type Elements map[string]string
 
 func ElementsFromJSON(raw []byte) (Elements, error) {
 	newElements := make(Elements)
-	if err := json.Unmarshal(raw, newElements); err != nil {
+	if err := json.Unmarshal(raw, &newElements); err != nil {
 		return nil, err
 	} else {
 		return newElements, nil
 	}
+}
+
+func (es Elements) AsString() string {
+	var l []string
+	for key, value := range es {
+		l = append(l, fmt.Sprintf("'%s': '%s'", key, strings.ReplaceAll(value, "'", "\\'")))
+	}
+	return fmt.Sprintf("{ %s }", strings.Join(l, ", "))
+
 }
 
 func (es Elements) AsJSON() ([]byte, error) {
@@ -58,6 +68,14 @@ func (es Elements) Key() string {
 // Entries represents all entries in the list of the listgenerator
 // This is a map so that values are unique, the key is the paas entry
 type Entries map[string]Elements
+
+func (en Entries) AsString() string {
+	var l []string
+	for key, value := range en {
+		l = append(l, fmt.Sprintf("'%s': %s", key, value.AsString()))
+	}
+	return fmt.Sprintf("{ %s }", strings.Join(l, ", "))
+}
 
 func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
 	list := []apiextensionsv1.JSON{}
@@ -123,7 +141,8 @@ func (r *PaasReconciler) ensureAppSetArgo(
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
 	asNamespacedName := CapabilityArgoCD()
-	fmt.Printf("Opensing Applicationset %s", asNamespacedName.String())
+	log := log.FromContext(context.TODO()).WithValues("PaaS", paas.Name, "AppSet", asNamespacedName)
+	log.Info("Reconciling ArgoCD Applicationset")
 	err := r.Get(context.TODO(), asNamespacedName, as)
 	//groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
@@ -131,9 +150,12 @@ func (r *PaasReconciler) ensureAppSetArgo(
 	if err != nil {
 		// Applicationset does not exixt
 		return err
-	} else if listGen := getListGen(as.Spec.Generators); listGen == nil {
+	} else if listGen = getListGen(as.Spec.Generators); listGen == nil {
 		// create the list
-		listGen = &appv1.ApplicationSetGenerator{}
+		log.Info("create the list")
+		listGen = &appv1.ApplicationSetGenerator{
+			List: &appv1.ListGenerator{},
+		}
 		as.Spec.Generators = append(as.Spec.Generators, *listGen)
 		entries = Entries{
 			paas.Name: entryFromPaas(paas),
@@ -144,9 +166,13 @@ func (r *PaasReconciler) ensureAppSetArgo(
 		entry := entryFromPaas(paas)
 		entries[entry.Key()] = entry
 	}
+	log.Info(fmt.Sprintf("entries: %s", entries.AsString()))
 	if json, err := entries.AsJSON(); err != nil {
 		return err
 	} else {
+		log.Info(fmt.Sprintf("json: %v", json))
+		log.Info(fmt.Sprintf("json: %v", listGen))
+		log.Info(fmt.Sprintf("json: %v", listGen.List))
 		listGen.List.Elements = json
 	}
 

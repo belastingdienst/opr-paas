@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: 'env'
+  namespace: cpet-paas
+data:
+  CAAS_WHITELIST_NAME: caaswhitelist
+  CAAS_WHITELIST_NAMESPACE: kube-system
+  CAP_NAMESPACE: cpet-argocd
+  CAP_ARGOCD_AS_NAME: cpet-paas-capability-kust
+
