@@ -9,4 +9,7 @@ data:
   CAAS_WHITELIST_NAMESPACE: kube-system
   CAP_NAMESPACE: cpet-argocd
   CAP_ARGOCD_AS_NAME: cpet-paas-capability-kust
+  CAP_CI_AS_NAME: cpet-paas-capability-ci
+  CAP_GRAFANA_AS_NAME: cpet-paas-capability-grafana
+  CAP_SSO_AS_NAME: cpet-paas-capability-sso
 
