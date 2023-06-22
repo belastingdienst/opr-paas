@@ -15,20 +15,20 @@ import (
 )
 
 const (
-	DefaultNameSpace              = "gitops"
-	DefaultApplicationsetNameArgo = "capability-argocd"
+	DefaultNameSpace          = "gitops"
+	DefaultApplicationsetName = "capability"
 )
 
 // CaasWhiteList returns a Namespaced object name which points to the
 // Caas Whitelist where the ldap groupds should be defined
 // Defaults point to kube-system.caaswhitelist, but can be overruled with
 // the environment variables CAAS_WHITELIST_NAMESPACE and CAAS_WHITELIST_NAME
-func CapabilityArgoCD() (as types.NamespacedName) {
+func CapabilityK8sName(capability string) (as types.NamespacedName) {
 	if as.Namespace = os.Getenv("CAP_NAMESPACE"); as.Namespace == "" {
 		as.Namespace = DefaultNameSpace
 	}
-	if as.Name = os.Getenv("CAP_ARGOCD_AS_NAME"); as.Name == "" {
-		as.Name = DefaultApplicationsetNameArgo
+	if as.Name = os.Getenv(fmt.Sprintf("CAP_%s_AS_NAME", strings.ToUpper(capability))); as.Name == "" {
+		as.Name = fmt.Sprintf("%s-capability", DefaultApplicationsetName)
 	}
 	return as
 }
@@ -134,15 +134,16 @@ func entryFromPaas(paas *mydomainv1alpha1.Paas) Elements {
 	}
 }
 
-// ensureAppSetArgo ensures a list entry in the AppSet voor the ArgoCD capability
-func (r *PaasReconciler) ensureAppSetArgo(
+// ensureAppSetCap ensures a list entry in the AppSet voor the capability
+func (r *PaasReconciler) ensureAppSetCap(
 	paas *mydomainv1alpha1.Paas,
+	capability string,
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := CapabilityArgoCD()
+	asNamespacedName := CapabilityK8sName(capability)
 	log := log.FromContext(context.TODO()).WithValues("PaaS", paas.Name, "AppSet", asNamespacedName)
-	log.Info("Reconciling ArgoCD Applicationset")
+	log.Info(fmt.Sprintf("Reconciling %s Applicationset", capability))
 	err := r.Get(context.TODO(), asNamespacedName, as)
 	//groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
@@ -177,4 +178,27 @@ func (r *PaasReconciler) ensureAppSetArgo(
 	}
 
 	return r.Update(context.TODO(), as)
+}
+
+// ensureAppSetCap ensures a list entry in the AppSet voor the capability
+func (r *PaasReconciler) ensureAppSetCaps(
+	paas *mydomainv1alpha1.Paas,
+) error {
+	type cap struct {
+		name    string
+		enabled bool
+	}
+	for _, c := range []cap{
+		{name: "argocd", enabled: paas.Spec.Capabilities.ArgoCD.Enabled},
+		{name: "ci", enabled: paas.Spec.Capabilities.CI.Enabled},
+		{name: "grafana", enabled: paas.Spec.Capabilities.Grafana.Enabled},
+		{name: "sso", enabled: paas.Spec.Capabilities.SSO.Enabled},
+	} {
+		if c.enabled {
+			if err := r.ensureAppSetCap(paas, c.name); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

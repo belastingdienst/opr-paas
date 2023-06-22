@@ -91,11 +91,8 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	log.Info("Extending Applicationsets for PAAS object" + req.NamespacedName.String())
-	if paas.Spec.Capabilities.ArgoCD.Enabled {
-		log.Info("Extending ArgoCD Applicationset")
-		if err = r.ensureAppSetArgo(paas); err != nil {
-			return ctrl.Result{}, err
-		}
+	if err = r.ensureAppSetCaps(paas); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	log.Info("Creating groups for PAAS object " + req.NamespacedName.String())
