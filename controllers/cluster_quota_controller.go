@@ -97,10 +97,11 @@ func (r *PaasReconciler) backendQuotas(paas *mydomainv1alpha1.Paas) (quotas []*q
 	if paas.Spec.Capabilities.SSO.Enabled {
 		quotas = append(quotas, r.backendQuota(paas, "sso", paas.Spec.Capabilities.SSO.QuotaWithDefaults()))
 	}
+
 	return quotas
 }
 
-func (r *PaasReconciler) cleanClusterQuota(ctx context.Context, quotaName string) error {
+func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, quotaName string) error {
 	obj := &quotav1.ClusterResourceQuota{}
 	if err := r.Get(context.TODO(), types.NamespacedName{
 		Name: quotaName,
@@ -116,9 +117,7 @@ func (r *PaasReconciler) cleanClusterQuota(ctx context.Context, quotaName string
 	}
 }
 
-// This basically is a hack.
-// Clusterrsourcequotas should be removed just as all other objects, but for some weird reason they are not.
-func (r *PaasReconciler) cleanClusterQuotas(ctx context.Context, paasName string) error {
+func (r *PaasReconciler) finalizeClusterQuotas(ctx context.Context, paasName string) error {
 	suffixes := []string{
 		"",
 		"-argocd",
@@ -128,9 +127,8 @@ func (r *PaasReconciler) cleanClusterQuotas(ctx context.Context, paasName string
 	}
 	var err error
 	for _, suffix := range suffixes {
-		fmt.Printf("suffix %s", suffix)
 		quotaName := fmt.Sprintf("%s%s", paasName, suffix)
-		if cleanErr := r.cleanClusterQuota(ctx, quotaName); cleanErr != nil {
+		if cleanErr := r.finalizeClusterQuota(ctx, quotaName); cleanErr != nil {
 			err = cleanErr
 		}
 	}
