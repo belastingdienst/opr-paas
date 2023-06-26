@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 
@@ -64,8 +65,42 @@ func (r *PaasReconciler) backendGroup(paas *mydomainv1alpha1.Paas, groupName str
 }
 
 func (r *PaasReconciler) backendGroups(paas *mydomainv1alpha1.Paas) (groups []*userv1.Group) {
-	for group, users := range paas.Spec.Groups {
-		groups = append(groups, r.backendGroup(paas, group, users))
+	for key, group := range paas.Spec.Groups {
+		groups = append(groups, r.backendGroup(paas, paas.Spec.Groups.NameFromQuery(key), group.Users))
 	}
 	return groups
+}
+
+// cleanGroup is a code for Creating Group
+func (r *PaasReconciler) finalizeGroup(paas *mydomainv1alpha1.Paas, groupName string) (cleaned bool, err error) {
+	obj := &userv1.Group{}
+	if err := r.Get(context.TODO(), types.NamespacedName{
+		Name: groupName,
+	}, obj); err != nil && errors.IsNotFound(err) {
+		fmt.Printf("%s does not exist", groupName)
+		return false, nil
+	} else if err != nil {
+		fmt.Printf("%s not deleted, error", groupName)
+		return false, err
+	} else if !paas.AmIOwner(obj.OwnerReferences) {
+		return false, nil
+	} else {
+		obj.OwnerReferences = paas.WithoutMe(obj.OwnerReferences)
+		if len(obj.OwnerReferences) == 0 {
+			fmt.Printf("%s trying to delete", groupName)
+			return true, r.Delete(context.TODO(), obj)
+		}
+	}
+	return false, nil
+}
+
+func (r *PaasReconciler) finalizeGroups(paas *mydomainv1alpha1.Paas) (cleaned []string, err error) {
+	for key, group := range paas.Spec.Groups {
+		if isCleaned, err := r.finalizeGroup(paas, paas.Spec.Groups.NameFromQuery(key)); err != nil {
+			return cleaned, err
+		} else if isCleaned && group.Query != "" {
+			cleaned = append(cleaned, group.Query)
+		}
+	}
+	return cleaned, nil
 }

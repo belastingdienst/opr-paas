@@ -153,7 +153,6 @@ func (r *PaasReconciler) ensureAppSetCap(
 		return err
 	} else if listGen = getListGen(as.Spec.Generators); listGen == nil {
 		// create the list
-		log.Info("create the list")
 		listGen = &appv1.ApplicationSetGenerator{
 			List: &appv1.ListGenerator{},
 		}
@@ -167,13 +166,13 @@ func (r *PaasReconciler) ensureAppSetCap(
 		entry := entryFromPaas(paas)
 		entries[entry.Key()] = entry
 	}
-	log.Info(fmt.Sprintf("entries: %s", entries.AsString()))
+	// log.Info(fmt.Sprintf("entries: %s", entries.AsString()))
 	if json, err := entries.AsJSON(); err != nil {
 		return err
 	} else {
-		log.Info(fmt.Sprintf("json: %v", json))
-		log.Info(fmt.Sprintf("json: %v", listGen))
-		log.Info(fmt.Sprintf("json: %v", listGen.List))
+		// log.Info(fmt.Sprintf("json: %v", json))
+		// log.Info(fmt.Sprintf("json: %v", listGen))
+		// log.Info(fmt.Sprintf("json: %v", listGen.List))
 		listGen.List.Elements = json
 	}
 
@@ -198,6 +197,57 @@ func (r *PaasReconciler) ensureAppSetCaps(
 			if err := r.ensureAppSetCap(paas, c.name); err != nil {
 				return err
 			}
+		}
+	}
+	return nil
+}
+
+func (r *PaasReconciler) finalizeAppSetCap(
+	paas *mydomainv1alpha1.Paas,
+	capability string,
+) error {
+	// See if AppSet exists raise error if it doesn't
+	as := &appv1.ApplicationSet{}
+	asNamespacedName := CapabilityK8sName(capability)
+	log := log.FromContext(context.TODO()).WithValues("PaaS", paas.Name, "AppSet", asNamespacedName)
+	log.Info(fmt.Sprintf("Reconciling %s Applicationset", capability))
+	err := r.Get(context.TODO(), asNamespacedName, as)
+	//groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
+	var entries Entries
+	var listGen *appv1.ApplicationSetGenerator
+	if err != nil {
+		// Applicationset does not exixt
+		return nil
+	} else if listGen = getListGen(as.Spec.Generators); listGen == nil {
+		// no need to create the list
+		return nil
+	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
+		return err
+	} else {
+		entry := entryFromPaas(paas)
+		delete(entries, entry.Key())
+	}
+	if json, err := entries.AsJSON(); err != nil {
+		return err
+	} else {
+		listGen.List.Elements = json
+	}
+
+	return r.Update(context.TODO(), as)
+}
+
+// ensureAppSetCap ensures a list entry in the AppSet voor the capability
+func (r *PaasReconciler) finalizeAppSetCaps(
+	paas *mydomainv1alpha1.Paas,
+) error {
+	for _, c := range []string{
+		"argocd",
+		"ci",
+		"grafana",
+		"sso",
+	} {
+		if err := r.finalizeAppSetCap(paas, c); err != nil {
+			return err
 		}
 	}
 	return nil

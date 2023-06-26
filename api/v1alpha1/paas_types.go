@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strings"
+
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -86,13 +88,43 @@ type PaasSpec struct {
 	//Oplosgroep is an informational field which decides on the oplosgroep that is responsible
 	Oplosgroep string `json:"oplosGroep"`
 
-	//LdapGroups is a list of strings defining the ldap groups that should be brought synced from ldap and that should get permissions on all other projects
-	LdapGroups []string `json:"ldapGroups,omitempty"`
-
-	Groups map[string][]string `json:"groups,omitempty"`
+	Groups PaasGroups `json:"groups,omitempty"`
 
 	// Quota defines the quotas which should be set on the cluster resource quota as used by this PaaS project
 	Quota PaasQuotas `json:"quota"`
+}
+
+type PaasGroup struct {
+	Query string   `json:"query,omitempty"`
+	Users []string `json:"users"`
+}
+
+// NameFromQuery finds a group by its key, and retrieves a name
+// - from query if possible
+// - from key is needed
+// - emptystring if not in map
+func (gs PaasGroups) NameFromQuery(key string) string {
+	if group, exists := gs[key]; !exists {
+		return ""
+	} else if name := strings.Split(group.Query, ",")[0]; len(name) == 0 {
+		return key
+	} else if !strings.Contains(name, "=") {
+		return strings.Split(name, "=")[1]
+	} else {
+		return name
+	}
+}
+
+type PaasGroups map[string]PaasGroup
+
+func (gs PaasGroups) LdapQueries() []string {
+	var queries []string
+	for _, group := range gs {
+		if group.Query != "" {
+			queries = append(queries, group.Query)
+		}
+	}
+	return queries
 }
 
 // see config/samples/_v1alpha1_paas.yaml for example of CR
@@ -172,6 +204,35 @@ type Paas struct {
 
 	Spec   PaasSpec   `json:"spec,omitempty"`
 	Status PaasStatus `json:"status,omitempty"`
+}
+
+func (p Paas) IsItMe(reference metav1.OwnerReference) bool {
+	if p.APIVersion != reference.APIVersion {
+		return false
+	} else if p.Kind != reference.Kind {
+		return false
+	} else if p.Name != reference.Name {
+		return false
+	}
+	return true
+}
+
+func (p Paas) AmIOwner(references []metav1.OwnerReference) bool {
+	for _, reference := range references {
+		if p.IsItMe(reference) {
+			return true
+		}
+	}
+	return false
+}
+
+func (p Paas) WithoutMe(references []metav1.OwnerReference) (withoutMe []metav1.OwnerReference) {
+	for _, reference := range references {
+		if !p.IsItMe(reference) {
+			withoutMe = append(withoutMe, reference)
+		}
+	}
+	return withoutMe
 }
 
 //+kubebuilder:object:root=true

@@ -67,6 +67,16 @@ func NewGroups() *Groups {
 	}
 }
 
+func (gs *Groups) DeleteByValue(byValue string) bool {
+	for key, value := range gs.by_key {
+		if value == byValue {
+			delete(gs.by_key, key)
+			return true
+		}
+	}
+	return false
+}
+
 func (gs Groups) Len() int {
 	return len(gs.by_key)
 }
@@ -112,7 +122,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	cm := &corev1.ConfigMap{}
 	wlConfigMap := CaasWhiteList()
 	err := r.Get(context.TODO(), wlConfigMap, cm)
-	groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
+	groups := NewGroups().AddFromStrings(paas.Spec.Groups.LdapQueries())
 	if err != nil && errors.IsNotFound(err) {
 		// Create the ConfigMap
 		return r.ensureLdapGroupsConfigMap(
@@ -134,6 +144,42 @@ func (r *PaasReconciler) EnsureLdapGroups(
 			return nil
 		}
 		cm.Data["whitelist.txt"] = combined_groups.AsString()
+	}
+	return r.Update(context.TODO(), cm)
+
+}
+
+// ensureLdapGroup ensures Group presence
+func (r *PaasReconciler) FinalizeLdapGroups(
+	paas *mydomainv1alpha1.Paas,
+	cleanedLdapQueries []string,
+) error {
+	// See if group already exists and create if it doesn't
+	cm := &corev1.ConfigMap{}
+	wlConfigMap := CaasWhiteList()
+	err := r.Get(context.TODO(), wlConfigMap, cm)
+	if err != nil && errors.IsNotFound(err) {
+		// ConfigMap does not exist, so nothing to clean
+		return nil
+	} else if err != nil {
+		// Error that isn't due to the group not existing
+		return err
+	} else if whitelist, exists := cm.Data["whitelist.txt"]; !exists {
+		// No whitelist.txt exists in the configmap, so nothing to clean
+		return nil
+	} else {
+		var isChanged bool
+		groups := NewGroups().AddFromString(whitelist)
+		for _, query := range cleanedLdapQueries {
+			if groups.DeleteByValue(query) {
+				isChanged = true
+			}
+		}
+		//fmt.Printf("configured: %d, combined: %d", l1, l2)
+		if !isChanged {
+			return nil
+		}
+		cm.Data["whitelist.txt"] = groups.AsString()
 	}
 	return r.Update(context.TODO(), cm)
 

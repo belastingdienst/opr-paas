@@ -118,17 +118,17 @@ spec:
                 type: object
               groups:
                 additionalProperties:
-                  items:
-                    type: string
-                  type: array
+                  properties:
+                    query:
+                      type: string
+                    users:
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - users
+                  type: object
                 type: object
-              ldapGroups:
-                description: LdapGroups is a list of strings defining the ldap groups
-                  that should be brought synced from ldap and that should get permissions
-                  on all other projects
-                items:
-                  type: string
-                type: array
               oplosGroep:
                 description: Oplosgroep is an informational field which decides on
                   the oplosgroep that is responsible
