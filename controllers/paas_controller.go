@@ -20,14 +20,17 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/api/errors"
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
+
+const paasFinalizer = "paas.cpet.belastingdienst.nl/finalizer"
 
 // PaasReconciler reconciles a Paas object
 type PaasReconciler struct {
@@ -55,20 +58,34 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	// TODO(user): your logic here
 	paas := &mydomainv1alpha1.Paas{}
 
-	err := r.Get(context.TODO(), req.NamespacedName, paas)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
-			log.Info("PAAS object " + req.NamespacedName.Name + " is already gone")
-			return ctrl.Result{}, r.cleanClusterQuotas(ctx, req.NamespacedName.String())
+	// Check if the PaaS instance is marked to be deleted, which is
+	// indicated by the deletion timestamp being set.
+	isPaaSMarkedToBeDeleted := paas.GetDeletionTimestamp() != nil
+	if isPaaSMarkedToBeDeleted {
+		if controllerutil.ContainsFinalizer(paas, paasFinalizer) {
+			// Run finalization logic for memcachedFinalizer. If the
+			// finalization logic fails, don't remove the finalizer so
+			// that we can retry during the next reconciliation.
+			if err := r.finalizePaaS(log, paas); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			// Remove memcachedFinalizer. Once all finalizers have been
+			// removed, the object will be deleted.
+			controllerutil.RemoveFinalizer(paas, paasFinalizer)
+			if err := r.Update(ctx, paas); err != nil {
+				return ctrl.Result{}, err
+			}
 		}
-		// Error reading the object - requeue the request.
-		return ctrl.Result{}, err
-	} else if paas.GetDeletionTimestamp() != nil {
-		log.Info("PAAS object " + paas.Name + " is being deleted")
-		return ctrl.Result{}, r.cleanClusterQuotas(ctx, req.NamespacedName.String())
+		return ctrl.Result{}, nil
+	}
+
+	// Add finalizer for this CR
+	if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
+		controllerutil.AddFinalizer(paas, paasFinalizer)
+		if err := r.Update(ctx, paas); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	log.Info("Creating quotas for PAAS object " + req.NamespacedName.String())
@@ -91,7 +108,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	log.Info("Extending Applicationsets for PAAS object" + req.NamespacedName.String())
-	if err = r.ensureAppSetCaps(paas); err != nil {
+	if err := r.ensureAppSetCaps(paas); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -104,13 +121,9 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	log.Info("Creating ldap groups for PAAS object " + req.NamespacedName.String())
-	if err = r.EnsureLdapGroups(paas); err != nil {
+	if err := r.EnsureLdapGroups(paas); err != nil {
 		return ctrl.Result{}, err
 	}
-
-	// Deployment and Service already exists - don't requeue
-	// log.Info("Skip reconcile: Deployment and service already exists",
-	// 	"Deployment.Namespace", found.Namespace, "Deployment.Name", found.Name)
 
 	return ctrl.Result{}, nil
 }
@@ -120,4 +133,27 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&mydomainv1alpha1.Paas{}).
 		Complete(r)
+}
+
+func (r *PaasReconciler) finalizePaaS(log logr.Logger, paas *mydomainv1alpha1.Paas) error {
+	log.Info("Finalizing PaaS")
+	if err := r.finalizeAppSetCaps(paas); err != nil {
+		return err
+	} else if err = r.finalizeClusterQuotas(context.TODO(), paas.Name); err != nil {
+		return err
+	} else if cleanedLdapQueries, err := r.finalizeGroups(paas); err != nil {
+		// The whole idea is that groups (which are resources)
+		// can also be ldapGroups (lines in a field in a configmap)
+		// ldapGroups are only cleaned if the corresponding group is also cleaned
+		log.Error(err, "cleanup of groups")
+		if ldapErr := r.FinalizeLdapGroups(paas, cleanedLdapQueries); err != nil {
+			log.Error(ldapErr, "cleanup of ldap groups")
+		}
+		return err
+	} else if err = r.FinalizeLdapGroups(paas, cleanedLdapQueries); err != nil {
+		log.Error(err, "cleanup of ldap groups")
+		return err
+	}
+	log.Info("Successfully finalized PaaS")
+	return nil
 }
