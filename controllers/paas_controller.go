@@ -25,7 +25,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -52,7 +52,7 @@ type PaasReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// TODO(user): your logic here
-	paas := &mydomainv1alpha1.Paas{}
+	paas := &v1alpha1.Paas{}
 	logger := getLogger(ctx, paas, "PaaS", req.NamespacedName.String())
 	logger.Info("Reconciling the PAAS object " + req.NamespacedName.String())
 
@@ -152,11 +152,11 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 // SetupWithManager sets up the controller with the Manager.
 func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&mydomainv1alpha1.Paas{}).
+		For(&v1alpha1.Paas{}).
 		Complete(r)
 }
 
-func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *mydomainv1alpha1.Paas) error {
+func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *v1alpha1.Paas) error {
 	logger := getLogger(ctx, paas, "PaaS", "finalizer code")
 	logger.Info("Inside PaaS finalizer")
 	if err := r.FinalizeAppSetCaps(ctx, paas); err != nil {
