@@ -110,7 +110,7 @@ func (gs PaasGroups) NameFromQuery(key string) string {
 		return ""
 	} else if name := strings.Split(group.Query, ",")[0]; len(name) == 0 {
 		return key
-	} else if !strings.Contains(name, "=") {
+	} else if strings.Contains(name, "=") {
 		return strings.Split(name, "=")[1]
 	} else {
 		return name

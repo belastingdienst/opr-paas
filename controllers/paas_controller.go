@@ -68,6 +68,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	} else if paas.GetDeletionTimestamp() != nil {
 		logger.Info("PAAS object marked for deletion" + req.NamespacedName.String())
 		if controllerutil.ContainsFinalizer(paas, paasFinalizer) {
+			logger.Info("Finalizing PaaS" + req.NamespacedName.String())
 			// Run finalization logic for memcachedFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
@@ -75,12 +76,14 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 				return ctrl.Result{}, err
 			}
 
+			logger.Info("Removing finalizer")
 			// Remove memcachedFinalizer. Once all finalizers have been
 			// removed, the object will be deleted.
 			controllerutil.RemoveFinalizer(paas, paasFinalizer)
 			if err := r.Update(ctx, paas); err != nil {
 				return ctrl.Result{}, err
 			}
+			logger.Info("Finalization finished")
 		}
 		return ctrl.Result{}, nil
 	}
@@ -136,6 +139,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, err
 	}
 
+	logger.Info("PAAS object succesfully reconciled")
 	return ctrl.Result{}, nil
 }
 
@@ -147,25 +151,27 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *mydomainv1alpha1.Paas) error {
-	logger := getLogger(ctx, paas, "PaaS", ".finalizer")
-	logger.Info("Finalizing PaaS")
+	logger := getLogger(ctx, paas, "PaaS", "finalizer code")
+	logger.Info("Inside PaaS finalizer")
 	if err := r.FinalizeAppSetCaps(ctx, paas); err != nil {
+		logger.Error(err, "AppSet finalizer error")
 		return err
 	} else if err = r.FinalizeClusterQuotas(ctx, paas); err != nil {
+		logger.Error(err, "Quota finalizer error")
 		return err
 	} else if cleanedLdapQueries, err := r.FinalizeGroups(ctx, paas); err != nil {
 		// The whole idea is that groups (which are resources)
 		// can also be ldapGroups (lines in a field in a configmap)
 		// ldapGroups are only cleaned if the corresponding group is also cleaned
-		logger.Error(err, "Cleanup of groups")
+		logger.Error(err, "Group finalizer error")
 		if ldapErr := r.FinalizeLdapGroups(ctx, paas, cleanedLdapQueries); err != nil {
-			logger.Error(ldapErr, "Cleanup of ldap groups")
+			logger.Error(ldapErr, "And ldapGroup finalizer error")
 		}
 		return err
 	} else if err = r.FinalizeLdapGroups(ctx, paas, cleanedLdapQueries); err != nil {
-		logger.Error(err, "Cleanup of ldap groups")
+		logger.Error(err, "LdapGroup finalizer error")
 		return err
 	}
-	logger.Info("Successfully finalized PaaS")
+	logger.Info("PaaS succesfully finalized")
 	return nil
 }

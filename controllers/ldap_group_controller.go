@@ -156,10 +156,10 @@ func (r *PaasReconciler) EnsureLdapGroups(
 		logger.Info("Adding whitelist.txt to whitelist configmap")
 		cm.Data["whitelist.txt"] = groups.AsString()
 	} else {
-		logger.Info("Reading group queries from whitelist")
+		logger.Info(fmt.Sprintf("Reading group queries from whitelist %v", cm))
 		configured_groups := NewGroups().AddFromString(whitelist)
 		l1 := configured_groups.Len()
-		logger.Info("Adding extra groups to whitelist")
+		logger.Info(fmt.Sprintf("Adding extra groups to whitelist: %v", groups))
 		combined_groups := configured_groups.Add(groups)
 		l2 := combined_groups.Len()
 		//fmt.Printf("configured: %d, combined: %d", l1, l2)
@@ -170,7 +170,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 		logger.Info("Adding to whitelist configmap")
 		cm.Data["whitelist.txt"] = combined_groups.AsString()
 	}
-	logger.Info("Updating whitelist configmap")
+	logger.Info(fmt.Sprintf("Updating whitelist configmap: %v", cm))
 	return r.Update(context.TODO(), cm)
 }
 
