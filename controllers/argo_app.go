@@ -4,34 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	appv1 "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
-
-const (
-	DefaultNameSpace          = "gitops"
-	DefaultApplicationsetName = "capability"
-)
-
-// CaasWhiteList returns a Namespaced object name which points to the
-// Caas Whitelist where the ldap groupds should be defined
-// Defaults point to kube-system.caaswhitelist, but can be overruled with
-// the environment variables CAAS_WHITELIST_NAMESPACE and CAAS_WHITELIST_NAME
-func CapabilityK8sName(capability string) (as types.NamespacedName) {
-	if as.Namespace = os.Getenv("CAP_NAMESPACE"); as.Namespace == "" {
-		as.Namespace = DefaultNameSpace
-	}
-	if as.Name = os.Getenv(fmt.Sprintf("CAP_%s_AS_NAME", strings.ToUpper(capability))); as.Name == "" {
-		as.Name = fmt.Sprintf("%s-capability", DefaultApplicationsetName)
-	}
-	return as
-}
 
 // Elements represents all key, value pars for one entry in the list of the listgenerator
 type Elements map[string]string
@@ -136,15 +114,16 @@ func entryFromPaas(paas *mydomainv1alpha1.Paas) Elements {
 
 // ensureAppSetCap ensures a list entry in the AppSet voor the capability
 func (r *PaasReconciler) ensureAppSetCap(
+	ctx context.Context,
 	paas *mydomainv1alpha1.Paas,
 	capability string,
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
 	asNamespacedName := CapabilityK8sName(capability)
-	log := log.FromContext(context.TODO()).WithValues("PaaS", paas.Name, "AppSet", asNamespacedName)
-	log.Info(fmt.Sprintf("Reconciling %s Applicationset", capability))
-	err := r.Get(context.TODO(), asNamespacedName, as)
+	logger := getLogger(ctx, paas, "AppSet", asNamespacedName.String())
+	logger.Info(fmt.Sprintf("Reconciling %s Applicationset", capability))
+	err := r.Get(ctx, asNamespacedName, as)
 	//groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
@@ -176,11 +155,12 @@ func (r *PaasReconciler) ensureAppSetCap(
 		listGen.List.Elements = json
 	}
 
-	return r.Update(context.TODO(), as)
+	return r.Update(ctx, as)
 }
 
 // ensureAppSetCap ensures a list entry in the AppSet voor the capability
-func (r *PaasReconciler) ensureAppSetCaps(
+func (r *PaasReconciler) EnsureAppSetCaps(
+	ctx context.Context,
 	paas *mydomainv1alpha1.Paas,
 ) error {
 	type cap struct {
@@ -194,7 +174,7 @@ func (r *PaasReconciler) ensureAppSetCaps(
 		{name: "sso", enabled: paas.Spec.Capabilities.SSO.Enabled},
 	} {
 		if c.enabled {
-			if err := r.ensureAppSetCap(paas, c.name); err != nil {
+			if err := r.ensureAppSetCap(ctx, paas, c.name); err != nil {
 				return err
 			}
 		}
@@ -203,15 +183,16 @@ func (r *PaasReconciler) ensureAppSetCaps(
 }
 
 func (r *PaasReconciler) finalizeAppSetCap(
+	ctx context.Context,
 	paas *mydomainv1alpha1.Paas,
 	capability string,
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
 	asNamespacedName := CapabilityK8sName(capability)
-	log := log.FromContext(context.TODO()).WithValues("PaaS", paas.Name, "AppSet", asNamespacedName)
-	log.Info(fmt.Sprintf("Reconciling %s Applicationset", capability))
-	err := r.Get(context.TODO(), asNamespacedName, as)
+	logger := getLogger(ctx, paas, "AppSet", asNamespacedName.String())
+	logger.Info(fmt.Sprintf("Reconciling %s Applicationset", capability))
+	err := r.Get(ctx, asNamespacedName, as)
 	//groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
@@ -233,11 +214,12 @@ func (r *PaasReconciler) finalizeAppSetCap(
 		listGen.List.Elements = json
 	}
 
-	return r.Update(context.TODO(), as)
+	return r.Update(ctx, as)
 }
 
 // ensureAppSetCap ensures a list entry in the AppSet voor the capability
-func (r *PaasReconciler) finalizeAppSetCaps(
+func (r *PaasReconciler) FinalizeAppSetCaps(
+	ctx context.Context,
 	paas *mydomainv1alpha1.Paas,
 ) error {
 	for _, c := range []string{
@@ -246,7 +228,7 @@ func (r *PaasReconciler) finalizeAppSetCaps(
 		"grafana",
 		"sso",
 	} {
-		if err := r.finalizeAppSetCap(paas, c); err != nil {
+		if err := r.finalizeAppSetCap(ctx, paas, c); err != nil {
 			return err
 		}
 	}

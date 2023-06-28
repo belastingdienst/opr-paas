@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -17,19 +17,20 @@ import (
 )
 
 // ensureQuota ensures Quota presence
-func (r *PaasReconciler) ensureQuota(request reconcile.Request,
+func (r *PaasReconciler) EnsureQuota(
+	ctx context.Context,
+	request reconcile.Request,
 	quota *quotav1.ClusterResourceQuota,
 ) error {
-
 	// See if quota already exists and create if it doesn't
 	found := &quotav1.ClusterResourceQuota{}
-	err := r.Get(context.TODO(), types.NamespacedName{
+	err := r.Get(ctx, types.NamespacedName{
 		Name: quota.Name,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
 
 		// Create the quota
-		err = r.Create(context.TODO(), quota)
+		err = r.Create(ctx, quota)
 
 		if err != nil {
 			// creating the quota failed
@@ -48,7 +49,8 @@ func (r *PaasReconciler) ensureQuota(request reconcile.Request,
 
 // backendQuota is a code for Creating Quota
 func (r *PaasReconciler) backendQuota(
-	paas *mydomainv1alpha1.Paas, suffix string,
+	ctx context.Context,
+	paas *v1alpha1.Paas, suffix string,
 	hardQuotas map[corev1.ResourceName]resourcev1.Quantity,
 ) *quotav1.ClusterResourceQuota {
 	var quotaName string
@@ -57,6 +59,8 @@ func (r *PaasReconciler) backendQuota(
 	} else {
 		quotaName = fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, suffix)
 	}
+	logger := getLogger(ctx, paas, "Quota", quotaName)
+	logger.Info("Defining quota")
 	//matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	quota := &quotav1.ClusterResourceQuota{
 		TypeMeta: metav1.TypeMeta{
@@ -79,45 +83,51 @@ func (r *PaasReconciler) backendQuota(
 		},
 	}
 
+	logger.Info("Setting owner")
 	controllerutil.SetControllerReference(paas, quota, r.Scheme)
 	return quota
 }
 
-func (r *PaasReconciler) backendQuotas(paas *mydomainv1alpha1.Paas) (quotas []*quotav1.ClusterResourceQuota) {
-	quotas = append(quotas, r.backendQuota(paas, "", paas.Spec.Quota))
+func (r *PaasReconciler) backendQuotas(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+) (quotas []*quotav1.ClusterResourceQuota) {
+	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
 	if paas.Spec.Capabilities.ArgoCD.Enabled {
-		quotas = append(quotas, r.backendQuota(paas, "argocd", paas.Spec.Capabilities.ArgoCD.QuotaWithDefaults()))
+		quotas = append(quotas, r.backendQuota(ctx, paas, "argocd", paas.Spec.Capabilities.ArgoCD.QuotaWithDefaults()))
 	}
 	if paas.Spec.Capabilities.CI.Enabled {
-		quotas = append(quotas, r.backendQuota(paas, "ci", paas.Spec.Capabilities.CI.QuotaWithDefaults()))
+		quotas = append(quotas, r.backendQuota(ctx, paas, "ci", paas.Spec.Capabilities.CI.QuotaWithDefaults()))
 	}
 	if paas.Spec.Capabilities.Grafana.Enabled {
-		quotas = append(quotas, r.backendQuota(paas, "grafana", paas.Spec.Capabilities.Grafana.QuotaWithDefaults()))
+		quotas = append(quotas, r.backendQuota(ctx, paas, "grafana", paas.Spec.Capabilities.Grafana.QuotaWithDefaults()))
 	}
 	if paas.Spec.Capabilities.SSO.Enabled {
-		quotas = append(quotas, r.backendQuota(paas, "sso", paas.Spec.Capabilities.SSO.QuotaWithDefaults()))
+		quotas = append(quotas, r.backendQuota(ctx, paas, "sso", paas.Spec.Capabilities.SSO.QuotaWithDefaults()))
 	}
 
 	return quotas
 }
 
-func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, quotaName string) error {
+func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, paas *v1alpha1.Paas, quotaName string) error {
+	logger := getLogger(ctx, paas, "Quota", quotaName)
+	logger.Info("Finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
-	if err := r.Get(context.TODO(), types.NamespacedName{
+	if err := r.Get(ctx, types.NamespacedName{
 		Name: quotaName,
 	}, obj); err != nil && errors.IsNotFound(err) {
-		fmt.Printf("%s does not exist", quotaName)
+		logger.Info("Does not exist")
 		return nil
 	} else if err != nil {
-		fmt.Printf("%s not deleted, error", quotaName)
+		logger.Info("Error retrieving info: " + err.Error())
 		return err
 	} else {
-		fmt.Printf("%s trying to delete", quotaName)
+		logger.Info("Deleting")
 		return r.Delete(ctx, obj)
 	}
 }
 
-func (r *PaasReconciler) finalizeClusterQuotas(ctx context.Context, paasName string) error {
+func (r *PaasReconciler) FinalizeClusterQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
 	suffixes := []string{
 		"",
 		"-argocd",
@@ -127,8 +137,8 @@ func (r *PaasReconciler) finalizeClusterQuotas(ctx context.Context, paasName str
 	}
 	var err error
 	for _, suffix := range suffixes {
-		quotaName := fmt.Sprintf("%s%s", paasName, suffix)
-		if cleanErr := r.finalizeClusterQuota(ctx, quotaName); cleanErr != nil {
+		quotaName := fmt.Sprintf("%s%s", paas.Name, suffix)
+		if cleanErr := r.finalizeClusterQuota(ctx, paas, quotaName); cleanErr != nil {
 			err = cleanErr
 		}
 	}

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 
@@ -14,7 +13,7 @@ import (
 )
 
 // ensureGroup ensures Group presence
-func (r *PaasReconciler) ensureGroup(
+func (r *PaasReconciler) EnsureGroup(
 	group *userv1.Group,
 ) error {
 
@@ -44,7 +43,15 @@ func (r *PaasReconciler) ensureGroup(
 }
 
 // backendGroup is a code for Creating Group
-func (r *PaasReconciler) backendGroup(paas *mydomainv1alpha1.Paas, groupName string, users []string) *userv1.Group {
+func (r *PaasReconciler) backendGroup(
+	ctx context.Context,
+	paas *mydomainv1alpha1.Paas,
+	groupName string,
+	users []string,
+) *userv1.Group {
+	logger := getLogger(ctx, paas, "Group", groupName)
+	logger.Info("Defining group")
+
 	//matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	group := &userv1.Group{
 		TypeMeta: metav1.TypeMeta{
@@ -64,39 +71,58 @@ func (r *PaasReconciler) backendGroup(paas *mydomainv1alpha1.Paas, groupName str
 	return group
 }
 
-func (r *PaasReconciler) backendGroups(paas *mydomainv1alpha1.Paas) (groups []*userv1.Group) {
+func (r *PaasReconciler) backendGroups(
+	ctx context.Context,
+	paas *mydomainv1alpha1.Paas,
+) (groups []*userv1.Group) {
+	logger := getLogger(ctx, paas, "Group", "")
 	for key, group := range paas.Spec.Groups {
-		groups = append(groups, r.backendGroup(paas, paas.Spec.Groups.NameFromQuery(key), group.Users))
+		groupName := paas.Spec.Groups.NameFromQuery(key)
+		logger.Info("Groupname is " + groupName)
+		groups = append(groups, r.backendGroup(ctx,
+			paas,
+			groupName,
+			group.Users))
 	}
 	return groups
 }
 
 // cleanGroup is a code for Creating Group
-func (r *PaasReconciler) finalizeGroup(paas *mydomainv1alpha1.Paas, groupName string) (cleaned bool, err error) {
+func (r *PaasReconciler) finalizeGroup(
+	ctx context.Context,
+	paas *mydomainv1alpha1.Paas,
+	groupName string,
+) (cleaned bool, err error) {
+	logger := getLogger(ctx, paas, "Group", groupName)
 	obj := &userv1.Group{}
 	if err := r.Get(context.TODO(), types.NamespacedName{
 		Name: groupName,
 	}, obj); err != nil && errors.IsNotFound(err) {
-		fmt.Printf("%s does not exist", groupName)
+		logger.Info("Group does not exist")
 		return false, nil
 	} else if err != nil {
-		fmt.Printf("%s not deleted, error", groupName)
+		logger.Info("Group not deleted. error: " + err.Error())
 		return false, err
 	} else if !paas.AmIOwner(obj.OwnerReferences) {
+		logger.Info("Paas is not an owner")
 		return false, nil
 	} else {
+		logger.Info(groupName + "Removing PaaS finalizer")
 		obj.OwnerReferences = paas.WithoutMe(obj.OwnerReferences)
 		if len(obj.OwnerReferences) == 0 {
-			fmt.Printf("%s trying to delete", groupName)
+			logger.Info(groupName + "Deleting")
 			return true, r.Delete(context.TODO(), obj)
 		}
 	}
 	return false, nil
 }
 
-func (r *PaasReconciler) finalizeGroups(paas *mydomainv1alpha1.Paas) (cleaned []string, err error) {
+func (r *PaasReconciler) FinalizeGroups(
+	ctx context.Context,
+	paas *mydomainv1alpha1.Paas,
+) (cleaned []string, err error) {
 	for key, group := range paas.Spec.Groups {
-		if isCleaned, err := r.finalizeGroup(paas, paas.Spec.Groups.NameFromQuery(key)); err != nil {
+		if isCleaned, err := r.finalizeGroup(ctx, paas, paas.Spec.Groups.NameFromQuery(key)); err != nil {
 			return cleaned, err
 		} else if isCleaned && group.Query != "" {
 			cleaned = append(cleaned, group.Query)

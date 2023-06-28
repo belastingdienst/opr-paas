@@ -20,11 +20,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -52,21 +51,27 @@ type PaasReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx).WithValues("PaaS", req.NamespacedName)
-	log.Info("Reconciling the PAAS object " + req.NamespacedName.String())
-
 	// TODO(user): your logic here
 	paas := &mydomainv1alpha1.Paas{}
+	logger := getLogger(ctx, paas, "PaaS", req.NamespacedName.String())
+	logger.Info("Reconciling the PAAS object " + req.NamespacedName.String())
 
-	// Check if the PaaS instance is marked to be deleted, which is
-	// indicated by the deletion timestamp being set.
-	isPaaSMarkedToBeDeleted := paas.GetDeletionTimestamp() != nil
-	if isPaaSMarkedToBeDeleted {
+	err := r.Get(context.TODO(), req.NamespacedName, paas)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Something fishy is going on
+			// Maybe someone cleaned the finalizers and then removed the PaaS project?
+			logger.Error(err, req.NamespacedName.Name+" is already gone")
+			return ctrl.Result{}, fmt.Errorf("PaaS object %s already gone", req.NamespacedName)
+		}
+		return ctrl.Result{}, nil
+	} else if paas.GetDeletionTimestamp() != nil {
+		logger.Info("PAAS object marked for deletion" + req.NamespacedName.String())
 		if controllerutil.ContainsFinalizer(paas, paasFinalizer) {
 			// Run finalization logic for memcachedFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
-			if err := r.finalizePaaS(log, paas); err != nil {
+			if err := r.finalizePaaS(ctx, paas); err != nil {
 				return ctrl.Result{}, err
 			}
 
@@ -81,47 +86,53 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// Add finalizer for this CR
+	logger.Info("Adding finalizer for PaaS object" + req.NamespacedName.String())
 	if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
+		logger.Info("PaaS object has no finalizer yet" + req.NamespacedName.String())
 		controllerutil.AddFinalizer(paas, paasFinalizer)
+		logger.Info("Added finalizer for PaaS object" + req.NamespacedName.String())
 		if err := r.Update(ctx, paas); err != nil {
+			logger.Info("Error updating PaaS object" + req.NamespacedName.String())
+			logger.Info(fmt.Sprintf("%v", paas))
 			return ctrl.Result{}, err
 		}
+		logger.Info("Updated PaaS object" + req.NamespacedName.String())
 	}
 
-	log.Info("Creating quotas for PAAS object " + req.NamespacedName.String())
+	logger.Info("Creating quotas for PAAS object " + req.NamespacedName.String())
 	// Create quotas if needed
-	for _, q := range r.backendQuotas(paas) {
-		log.Info("Creating quota " + q.Name + " for PAAS object " + req.NamespacedName.String())
-		if err := r.ensureQuota(req, q); err != nil {
-			log.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
+	for _, q := range r.backendQuotas(ctx, paas) {
+		logger.Info("Creating quota " + q.Name + " for PAAS object " + req.NamespacedName.String())
+		if err := r.EnsureQuota(ctx, req, q); err != nil {
+			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}
 	}
 
-	log.Info("Creating namespaces for PAAS object " + req.NamespacedName.String())
+	logger.Info("Creating namespaces for PAAS object " + req.NamespacedName.String())
 	// Create namespaces if needed
-	for _, ns := range r.backendNamespaces(paas) {
-		if err := r.ensureNamespace(req, paas, ns); err != nil {
-			log.Error(err, fmt.Sprintf("Failure while creating namespace %s", ns.ObjectMeta.Name))
+	for _, ns := range r.backendNamespaces(ctx, paas) {
+		if err := r.EnsureNamespace(req, ns); err != nil {
+			logger.Error(err, fmt.Sprintf("Failure while creating namespace %s", ns.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}
 	}
 
-	log.Info("Extending Applicationsets for PAAS object" + req.NamespacedName.String())
-	if err := r.ensureAppSetCaps(paas); err != nil {
+	logger.Info("Extending Applicationsets for PAAS object" + req.NamespacedName.String())
+	if err := r.EnsureAppSetCaps(ctx, paas); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	log.Info("Creating groups for PAAS object " + req.NamespacedName.String())
-	for _, group := range r.backendGroups(paas) {
-		if err := r.ensureGroup(group); err != nil {
-			log.Error(err, fmt.Sprintf("Failure while creating group %s", group.ObjectMeta.Name))
+	logger.Info("Creating groups for PAAS object " + req.NamespacedName.String())
+	for _, group := range r.backendGroups(ctx, paas) {
+		if err := r.EnsureGroup(group); err != nil {
+			logger.Error(err, fmt.Sprintf("Failure while creating group %s", group.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}
 	}
 
-	log.Info("Creating ldap groups for PAAS object " + req.NamespacedName.String())
-	if err := r.EnsureLdapGroups(paas); err != nil {
+	logger.Info("Creating ldap groups for PAAS object " + req.NamespacedName.String())
+	if err := r.EnsureLdapGroups(ctx, paas); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -135,25 +146,26 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *PaasReconciler) finalizePaaS(log logr.Logger, paas *mydomainv1alpha1.Paas) error {
-	log.Info("Finalizing PaaS")
-	if err := r.finalizeAppSetCaps(paas); err != nil {
+func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *mydomainv1alpha1.Paas) error {
+	logger := getLogger(ctx, paas, "PaaS", ".finalizer")
+	logger.Info("Finalizing PaaS")
+	if err := r.FinalizeAppSetCaps(ctx, paas); err != nil {
 		return err
-	} else if err = r.finalizeClusterQuotas(context.TODO(), paas.Name); err != nil {
+	} else if err = r.FinalizeClusterQuotas(ctx, paas); err != nil {
 		return err
-	} else if cleanedLdapQueries, err := r.finalizeGroups(paas); err != nil {
+	} else if cleanedLdapQueries, err := r.FinalizeGroups(ctx, paas); err != nil {
 		// The whole idea is that groups (which are resources)
 		// can also be ldapGroups (lines in a field in a configmap)
 		// ldapGroups are only cleaned if the corresponding group is also cleaned
-		log.Error(err, "cleanup of groups")
-		if ldapErr := r.FinalizeLdapGroups(paas, cleanedLdapQueries); err != nil {
-			log.Error(ldapErr, "cleanup of ldap groups")
+		logger.Error(err, "Cleanup of groups")
+		if ldapErr := r.FinalizeLdapGroups(ctx, paas, cleanedLdapQueries); err != nil {
+			logger.Error(ldapErr, "Cleanup of ldap groups")
 		}
 		return err
-	} else if err = r.FinalizeLdapGroups(paas, cleanedLdapQueries); err != nil {
-		log.Error(err, "cleanup of ldap groups")
+	} else if err = r.FinalizeLdapGroups(ctx, paas, cleanedLdapQueries); err != nil {
+		logger.Error(err, "Cleanup of ldap groups")
 		return err
 	}
-	log.Info("Successfully finalized PaaS")
+	logger.Info("Successfully finalized PaaS")
 	return nil
 }

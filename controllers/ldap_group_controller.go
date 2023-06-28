@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sort"
 
@@ -67,9 +68,17 @@ func NewGroups() *Groups {
 	}
 }
 
-func (gs *Groups) DeleteByValue(byValue string) bool {
+func (gs *Groups) DeleteByKey(key string) bool {
+	if _, exists := gs.by_key[key]; exists {
+		delete(gs.by_key, key)
+		return true
+	}
+	return false
+}
+
+func (gs *Groups) DeleteByQuery(query string) bool {
 	for key, value := range gs.by_key {
-		if value == byValue {
+		if value == query {
 			delete(gs.by_key, key)
 			return true
 		}
@@ -88,14 +97,21 @@ func (gs Groups) Add(other Groups) Groups {
 	return gs
 }
 
+func QueryToKey(query string) string {
+	//CN=gkey,OU=org_unit,DC=example,DC=org
+	if cn := strings.Split(query, ",")[0]; !strings.ContainsAny(cn, "=") {
+		return ""
+	} else {
+		return strings.SplitN(cn, "=", 2)[1]
+	}
+
+}
 func (gs Groups) AddFromStrings(l []string) Groups {
-	for _, group := range l {
-		//CN=gkey,OU=org_unit,DC=example,DC=org
-		if cn := strings.Split(group, ",")[0]; !strings.ContainsAny(cn, "=") {
+	for _, query := range l {
+		if key := QueryToKey(query); key == "" {
 			continue
 		} else {
-			key := strings.SplitN(cn, "=", 2)[1]
-			gs.by_key[key] = group
+			gs.by_key[key] = query
 		}
 	}
 	return gs
@@ -116,62 +132,79 @@ func (gs Groups) AsString() string {
 
 // ensureLdapGroup ensures Group presence
 func (r *PaasReconciler) EnsureLdapGroups(
+	ctx context.Context,
 	paas *mydomainv1alpha1.Paas,
 ) error {
+	logger := getLogger(ctx, paas, "LdapGroup", "")
 	// See if group already exists and create if it doesn't
 	cm := &corev1.ConfigMap{}
 	wlConfigMap := CaasWhiteList()
 	err := r.Get(context.TODO(), wlConfigMap, cm)
 	groups := NewGroups().AddFromStrings(paas.Spec.Groups.LdapQueries())
 	if err != nil && errors.IsNotFound(err) {
+		logger.Info("Creating whitelist configmap")
 		// Create the ConfigMap
 		return r.ensureLdapGroupsConfigMap(
 			wlConfigMap,
 			groups,
 		)
 	} else if err != nil {
+		logger.Error(err, "Could not retrieve whitelist configmap")
 		// Error that isn't due to the group not existing
 		return err
 	} else if whitelist, exists := cm.Data["whitelist.txt"]; !exists {
+		logger.Info("Adding whitelist.txt to whitelist configmap")
 		cm.Data["whitelist.txt"] = groups.AsString()
 	} else {
+		logger.Info("Reading group queries from whitelist")
 		configured_groups := NewGroups().AddFromString(whitelist)
 		l1 := configured_groups.Len()
+		logger.Info("Adding extra groups to whitelist")
 		combined_groups := configured_groups.Add(groups)
 		l2 := combined_groups.Len()
 		//fmt.Printf("configured: %d, combined: %d", l1, l2)
 		if l1 == l2 {
+			logger.Info("No new info in whitelist")
 			return nil
 		}
+		logger.Info("Adding to whitelist configmap")
 		cm.Data["whitelist.txt"] = combined_groups.AsString()
 	}
+	logger.Info("Updating whitelist configmap")
 	return r.Update(context.TODO(), cm)
-
 }
 
 // ensureLdapGroup ensures Group presence
 func (r *PaasReconciler) FinalizeLdapGroups(
+	ctx context.Context,
 	paas *mydomainv1alpha1.Paas,
 	cleanedLdapQueries []string,
 ) error {
+	logger := getLogger(ctx, paas, "LdapGroup", "")
 	// See if group already exists and create if it doesn't
 	cm := &corev1.ConfigMap{}
 	wlConfigMap := CaasWhiteList()
 	err := r.Get(context.TODO(), wlConfigMap, cm)
 	if err != nil && errors.IsNotFound(err) {
+		logger.Error(err, "whitelist configmap does not exist")
 		// ConfigMap does not exist, so nothing to clean
 		return nil
 	} else if err != nil {
+		logger.Error(err, "error retrieving whitelist configmap")
 		// Error that isn't due to the group not existing
 		return err
 	} else if whitelist, exists := cm.Data["whitelist.txt"]; !exists {
 		// No whitelist.txt exists in the configmap, so nothing to clean
+		logger.Error(fmt.Errorf("no whitelist"), "whitelist.txt does not exists in whitelist configmap")
 		return nil
 	} else {
 		var isChanged bool
 		groups := NewGroups().AddFromString(whitelist)
 		for _, query := range cleanedLdapQueries {
-			if groups.DeleteByValue(query) {
+			if key := QueryToKey(query); key == "" {
+				logger.Error(fmt.Errorf("invalid query"), "Could not get key from", query)
+			} else if groups.DeleteByKey(key) {
+				logger.Info(fmt.Sprintf("LdapGroup %s removed", key))
 				isChanged = true
 			}
 		}
