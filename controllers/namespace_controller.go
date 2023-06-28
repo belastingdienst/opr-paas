@@ -15,8 +15,8 @@ import (
 )
 
 // ensureNamespace ensures Namespace presence in given namespace.
-func (r *PaasReconciler) ensureNamespace(request reconcile.Request,
-	instance *mydomainv1alpha1.Paas,
+func (r *PaasReconciler) EnsureNamespace(
+	request reconcile.Request,
 	ns *corev1.Namespace,
 ) error {
 
@@ -46,9 +46,14 @@ func (r *PaasReconciler) ensureNamespace(request reconcile.Request,
 }
 
 // backendNamespace is a code for Creating Namespace
-func (r *PaasReconciler) backendNamespace(paas *mydomainv1alpha1.Paas, suffix string,
+func (r *PaasReconciler) backendNamespace(
+	ctx context.Context,
+	paas *mydomainv1alpha1.Paas,
+	suffix string,
 ) *corev1.Namespace {
 	name := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, suffix)
+	logger := getLogger(ctx, paas, "Namespace", name)
+	logger.Info(fmt.Sprintf("Defining %s Namepsace", name))
 	//matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	ns := &corev1.Namespace{
 		TypeMeta: metav1.TypeMeta{
@@ -61,24 +66,29 @@ func (r *PaasReconciler) backendNamespace(paas *mydomainv1alpha1.Paas, suffix st
 		},
 		Spec: corev1.NamespaceSpec{},
 	}
+	logger.Info(fmt.Sprintf("Setting Quotagroup %s", name))
 	ns.ObjectMeta.Labels["clusterquotagroup"] = name
 
+	logger.Info("Setting Owner")
 	controllerutil.SetControllerReference(paas, ns, r.Scheme)
 	return ns
 }
 
-func (r *PaasReconciler) backendNamespaces(paas *mydomainv1alpha1.Paas) (ns []*corev1.Namespace) {
+func (r *PaasReconciler) backendNamespaces(
+	ctx context.Context,
+	paas *mydomainv1alpha1.Paas,
+) (ns []*corev1.Namespace) {
 	if paas.Spec.Capabilities.ArgoCD.Enabled {
-		ns = append(ns, r.backendNamespace(paas, "argocd"))
+		ns = append(ns, r.backendNamespace(ctx, paas, "argocd"))
 	}
 	if paas.Spec.Capabilities.CI.Enabled {
-		ns = append(ns, r.backendNamespace(paas, "ci"))
+		ns = append(ns, r.backendNamespace(ctx, paas, "ci"))
 	}
 	if paas.Spec.Capabilities.Grafana.Enabled {
-		ns = append(ns, r.backendNamespace(paas, "grafana"))
+		ns = append(ns, r.backendNamespace(ctx, paas, "grafana"))
 	}
 	if paas.Spec.Capabilities.SSO.Enabled {
-		ns = append(ns, r.backendNamespace(paas, "sso"))
+		ns = append(ns, r.backendNamespace(ctx, paas, "sso"))
 	}
 	return ns
 }
