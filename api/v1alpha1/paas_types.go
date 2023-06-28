@@ -99,6 +99,8 @@ type PaasGroup struct {
 	Users []string `json:"users"`
 }
 
+type PaasGroups map[string]PaasGroup
+
 // NameFromQuery finds a group by its key, and retrieves a name
 // - from query if possible
 // - from key is needed
@@ -114,8 +116,6 @@ func (gs PaasGroups) NameFromQuery(key string) string {
 		return name
 	}
 }
-
-type PaasGroups map[string]PaasGroup
 
 func (gs PaasGroups) LdapQueries() []string {
 	var queries []string

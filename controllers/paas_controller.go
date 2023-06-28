@@ -101,7 +101,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	logger.Info("Creating quotas for PAAS object " + req.NamespacedName.String())
 	// Create quotas if needed
-	for _, q := range r.backendQuotas(ctx, paas) {
+	for _, q := range r.BackendQuotas(ctx, paas) {
 		logger.Info("Creating quota " + q.Name + " for PAAS object " + req.NamespacedName.String())
 		if err := r.EnsureQuota(ctx, req, q); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
@@ -111,7 +111,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	logger.Info("Creating namespaces for PAAS object " + req.NamespacedName.String())
 	// Create namespaces if needed
-	for _, ns := range r.backendNamespaces(ctx, paas) {
+	for _, ns := range r.BackendNamespaces(ctx, paas) {
 		if err := r.EnsureNamespace(req, ns); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating namespace %s", ns.ObjectMeta.Name))
 			return ctrl.Result{}, err
@@ -124,7 +124,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	logger.Info("Creating groups for PAAS object " + req.NamespacedName.String())
-	for _, group := range r.backendGroups(ctx, paas) {
+	for _, group := range r.BackendGroups(ctx, paas) {
 		if err := r.EnsureGroup(group); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating group %s", group.ObjectMeta.Name))
 			return ctrl.Result{}, err
