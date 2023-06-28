@@ -99,21 +99,27 @@ type PaasGroup struct {
 	Users []string `json:"users"`
 }
 
+func (g PaasGroup) Name(defName string) string {
+	if name := strings.Split(g.Query, ",")[0]; len(name) == 0 {
+		return defName
+	} else if strings.Contains(name, "=") {
+		return strings.Split(name, "=")[1]
+	} else {
+		return name
+	}
+}
+
 type PaasGroups map[string]PaasGroup
 
 // NameFromQuery finds a group by its key, and retrieves a name
 // - from query if possible
 // - from key is needed
 // - emptystring if not in map
-func (gs PaasGroups) NameFromQuery(key string) string {
-	if group, exists := gs[key]; !exists {
+func (g PaasGroups) Key2Name(key string) string {
+	if group, exists := g[key]; !exists {
 		return ""
-	} else if name := strings.Split(group.Query, ",")[0]; len(name) == 0 {
-		return key
-	} else if strings.Contains(name, "=") {
-		return strings.Split(name, "=")[1]
 	} else {
-		return name
+		return group.Name(key)
 	}
 }
 
