@@ -14,18 +14,19 @@ import (
 
 // ensureGroup ensures Group presence
 func (r *PaasReconciler) EnsureGroup(
+	ctx context.Context,
 	group *userv1.Group,
 ) error {
 
 	// See if group already exists and create if it doesn't
 	found := &userv1.Group{}
-	err := r.Get(context.TODO(), types.NamespacedName{
+	err := r.Get(ctx, types.NamespacedName{
 		Name: group.Name,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
 
 		// Create the group
-		err = r.Create(context.TODO(), group)
+		err = r.Create(ctx, group)
 
 		if err != nil {
 			// creating the group failed
@@ -95,7 +96,7 @@ func (r *PaasReconciler) finalizeGroup(
 ) (cleaned bool, err error) {
 	logger := getLogger(ctx, paas, "Group", groupName)
 	obj := &userv1.Group{}
-	if err := r.Get(context.TODO(), types.NamespacedName{
+	if err := r.Get(ctx, types.NamespacedName{
 		Name: groupName,
 	}, obj); err != nil && errors.IsNotFound(err) {
 		logger.Info("Group does not exist")
@@ -111,7 +112,7 @@ func (r *PaasReconciler) finalizeGroup(
 		obj.OwnerReferences = paas.WithoutMe(obj.OwnerReferences)
 		if len(obj.OwnerReferences) == 0 {
 			logger.Info(groupName + "Deleting")
-			return true, r.Delete(context.TODO(), obj)
+			return true, r.Delete(ctx, obj)
 		}
 	}
 	return false, nil

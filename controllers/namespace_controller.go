@@ -16,19 +16,20 @@ import (
 
 // ensureNamespace ensures Namespace presence in given namespace.
 func (r *PaasReconciler) EnsureNamespace(
+	ctx context.Context,
 	request reconcile.Request,
 	ns *corev1.Namespace,
 ) error {
 
 	// See if namespace exists and create if it doesn't
 	found := &corev1.Namespace{}
-	err := r.Get(context.TODO(), types.NamespacedName{
+	err := r.Get(ctx, types.NamespacedName{
 		Name: ns.Name,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
 
 		// Create the namespace
-		err = r.Create(context.TODO(), ns)
+		err = r.Create(ctx, ns)
 
 		if err != nil {
 			// creating the namespace failed
