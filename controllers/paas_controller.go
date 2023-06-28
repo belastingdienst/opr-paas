@@ -56,7 +56,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger := getLogger(ctx, paas, "PaaS", req.NamespacedName.String())
 	logger.Info("Reconciling the PAAS object " + req.NamespacedName.String())
 
-	err := r.Get(context.TODO(), req.NamespacedName, paas)
+	err := r.Get(ctx, req.NamespacedName, paas)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Something fishy is going on
@@ -115,7 +115,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger.Info("Creating namespaces for PAAS object " + req.NamespacedName.String())
 	// Create namespaces if needed
 	for _, ns := range r.BackendNamespaces(ctx, paas) {
-		if err := r.EnsureNamespace(req, ns); err != nil {
+		if err := r.EnsureNamespace(ctx, req, ns); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating namespace %s", ns.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}
@@ -128,7 +128,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	logger.Info("Creating groups for PAAS object " + req.NamespacedName.String())
 	for _, group := range r.BackendGroups(ctx, paas) {
-		if err := r.EnsureGroup(group); err != nil {
+		if err := r.EnsureGroup(ctx, group); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating group %s", group.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}
