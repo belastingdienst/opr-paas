@@ -151,8 +151,21 @@ type PaasArgoCD struct {
 	Enabled bool `json:"enabled,omitempty"`
 	// The URL that contains the Applications / Application Sets to be used by this ArgoCD
 	GitUrl string `json:"gitUrl,omitempty"`
+	// The revision of the git repo that contains the Applications / Application Sets to be used by this ArgoCD
+	GitRevision string `json:"gitRevision,omitempty"`
+	// the path in the git repo that contains the Applications / Application Sets to be used by this ArgoCD
+	GitPath string `json:"gitPath,omitempty"`
 	// This project has it's own ClusterResourceQuota seetings
 	Quota PaasQuotas `json:"quota,omitempty"`
+}
+
+func (pa *PaasArgoCD) SetDefaults() {
+	if pa.GitPath == "" {
+		pa.GitPath = "."
+	}
+	if pa.GitRevision == "" {
+		pa.GitRevision = "master"
+	}
 }
 
 func (pa PaasArgoCD) QuotaWithDefaults() (pq PaasQuotas) {
