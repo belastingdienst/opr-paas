@@ -36,12 +36,13 @@ func CaasWhiteList() (wl types.NamespacedName) {
 }
 
 func (r *PaasReconciler) ensureLdapGroupsConfigMap(
+	ctx context.Context,
 	whiteListConfigMap types.NamespacedName,
 	groups Groups,
 ) error {
 	// Create the ConfigMap
 	wlConfigMap := CaasWhiteList()
-	return r.Create(context.TODO(), &corev1.ConfigMap{
+	return r.Create(ctx, &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
 			APIVersion: "v1",
@@ -139,15 +140,12 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	// See if group already exists and create if it doesn't
 	cm := &corev1.ConfigMap{}
 	wlConfigMap := CaasWhiteList()
-	err := r.Get(context.TODO(), wlConfigMap, cm)
+	err := r.Get(ctx, wlConfigMap, cm)
 	groups := NewGroups().AddFromStrings(paas.Spec.Groups.LdapQueries())
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("Creating whitelist configmap")
 		// Create the ConfigMap
-		return r.ensureLdapGroupsConfigMap(
-			wlConfigMap,
-			groups,
-		)
+		return r.ensureLdapGroupsConfigMap(ctx, wlConfigMap, groups)
 	} else if err != nil {
 		logger.Error(err, "Could not retrieve whitelist configmap")
 		// Error that isn't due to the group not existing
@@ -171,7 +169,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 		cm.Data["whitelist.txt"] = combined_groups.AsString()
 	}
 	logger.Info(fmt.Sprintf("Updating whitelist configmap: %v", cm))
-	return r.Update(context.TODO(), cm)
+	return r.Update(ctx, cm)
 }
 
 // ensureLdapGroup ensures Group presence
@@ -184,7 +182,7 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 	// See if group already exists and create if it doesn't
 	cm := &corev1.ConfigMap{}
 	wlConfigMap := CaasWhiteList()
-	err := r.Get(context.TODO(), wlConfigMap, cm)
+	err := r.Get(ctx, wlConfigMap, cm)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Error(err, "whitelist configmap does not exist")
 		// ConfigMap does not exist, so nothing to clean
@@ -214,6 +212,6 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		}
 		cm.Data["whitelist.txt"] = groups.AsString()
 	}
-	return r.Update(context.TODO(), cm)
+	return r.Update(ctx, cm)
 
 }
