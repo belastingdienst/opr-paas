@@ -46,6 +46,14 @@ spec:
                       enabled:
                         description: Do we want an ArgoCD namespace, default false
                         type: boolean
+                      gitPath:
+                        description: the path in the git repo that contains the Applications
+                          / Application Sets to be used by this ArgoCD
+                        type: string
+                      gitRevision:
+                        description: The revision of the git repo that contains the
+                          Applications / Application Sets to be used by this ArgoCD
+                        type: string
                       gitUrl:
                         description: The URL that contains the Applications / Application
                           Sets to be used by this ArgoCD

@@ -59,7 +59,10 @@ rules:
   - argoproj.io
   resources:
   - applicationsets
+  - applications
   verbs:
+  - create
+  - delete
   - get
   - list
   - patch

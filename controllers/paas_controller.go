@@ -121,6 +121,12 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
+	logger.Info("Creating Argo App for client bootstrapping")
+	// Create bootstrap Argo App
+	if err := r.EnsureArgoApp(ctx, paas); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	logger.Info("Extending Applicationsets for PAAS object" + req.NamespacedName.String())
 	if err := r.EnsureAppSetCaps(ctx, paas); err != nil {
 		return ctrl.Result{}, err
@@ -170,6 +176,9 @@ func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *mydomainv1alpha
 		return err
 	} else if err = r.FinalizeLdapGroups(ctx, paas, cleanedLdapQueries); err != nil {
 		logger.Error(err, "LdapGroup finalizer error")
+		return err
+	} else if err = r.FinalizeArgoApp(ctx, paas); err != nil {
+		logger.Error(err, "ArgoApp finalizer error")
 		return err
 	}
 	logger.Info("PaaS succesfully finalized")
