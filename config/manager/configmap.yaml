@@ -12,4 +12,5 @@ data:
   CAP_CI_AS_NAME: cpet-paas-capability-ci
   CAP_GRAFANA_AS_NAME: cpet-paas-capability-grafana
   CAP_SSO_AS_NAME: cpet-paas-capability-sso
-
+  LDAP_HOST: my-ldap.mydomain.org
+  LDAP_PORT: '636'
