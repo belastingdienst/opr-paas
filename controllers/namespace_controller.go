@@ -74,7 +74,7 @@ func (r *PaasReconciler) backendNamespace(
 	return ns
 }
 
-func (r *PaasReconciler) backendNamespaces(
+func (r *PaasReconciler) BackendNamespaces(
 	ctx context.Context,
 	paas *mydomainv1alpha1.Paas,
 ) (ns []*corev1.Namespace) {

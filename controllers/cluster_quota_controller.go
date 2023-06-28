@@ -88,7 +88,7 @@ func (r *PaasReconciler) backendQuota(
 	return quota
 }
 
-func (r *PaasReconciler) backendQuotas(
+func (r *PaasReconciler) BackendQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (quotas []*quotav1.ClusterResourceQuota) {

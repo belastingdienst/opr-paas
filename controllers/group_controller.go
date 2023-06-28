@@ -71,7 +71,7 @@ func (r *PaasReconciler) backendGroup(
 	return group
 }
 
-func (r *PaasReconciler) backendGroups(
+func (r *PaasReconciler) BackendGroups(
 	ctx context.Context,
 	paas *mydomainv1alpha1.Paas,
 ) (groups []*userv1.Group) {
