@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -49,12 +49,12 @@ func (r *PaasReconciler) EnsureNamespace(
 // backendNamespace is a code for Creating Namespace
 func (r *PaasReconciler) backendNamespace(
 	ctx context.Context,
-	paas *mydomainv1alpha1.Paas,
+	paas *v1alpha1.Paas,
 	suffix string,
 ) *corev1.Namespace {
 	name := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, suffix)
 	logger := getLogger(ctx, paas, "Namespace", name)
-	logger.Info(fmt.Sprintf("Defining %s Namepsace", name))
+	logger.Info(fmt.Sprintf("Defining %s Namespace", name))
 	//matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	ns := &corev1.Namespace{
 		TypeMeta: metav1.TypeMeta{
@@ -77,7 +77,7 @@ func (r *PaasReconciler) backendNamespace(
 
 func (r *PaasReconciler) BackendNamespaces(
 	ctx context.Context,
-	paas *mydomainv1alpha1.Paas,
+	paas *v1alpha1.Paas,
 ) (ns []*corev1.Namespace) {
 	if paas.Spec.Capabilities.ArgoCD.Enabled {
 		ns = append(ns, r.backendNamespace(ctx, paas, "argocd"))

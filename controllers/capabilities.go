@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	appv1 "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
@@ -102,7 +102,7 @@ func splitToService(paasName string) (string, string) {
 	return parts[0], parts[1]
 }
 
-func entryFromPaas(paas *mydomainv1alpha1.Paas) Elements {
+func entryFromPaas(paas *v1alpha1.Paas) Elements {
 	service, subService := splitToService(paas.Name)
 	return Elements{
 		"oplosgroep": paas.Spec.Oplosgroep,
@@ -115,7 +115,7 @@ func entryFromPaas(paas *mydomainv1alpha1.Paas) Elements {
 // ensureAppSetCap ensures a list entry in the AppSet voor the capability
 func (r *PaasReconciler) ensureAppSetCap(
 	ctx context.Context,
-	paas *mydomainv1alpha1.Paas,
+	paas *v1alpha1.Paas,
 	capability string,
 ) error {
 	// See if AppSet exists raise error if it doesn't
@@ -161,7 +161,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 // ensureAppSetCap ensures a list entry in the AppSet voor the capability
 func (r *PaasReconciler) EnsureAppSetCaps(
 	ctx context.Context,
-	paas *mydomainv1alpha1.Paas,
+	paas *v1alpha1.Paas,
 ) error {
 	type cap struct {
 		name    string
@@ -184,7 +184,7 @@ func (r *PaasReconciler) EnsureAppSetCaps(
 
 func (r *PaasReconciler) finalizeAppSetCap(
 	ctx context.Context,
-	paas *mydomainv1alpha1.Paas,
+	paas *v1alpha1.Paas,
 	capability string,
 ) error {
 	// See if AppSet exists raise error if it doesn't
@@ -220,7 +220,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 // ensureAppSetCap ensures a list entry in the AppSet voor the capability
 func (r *PaasReconciler) FinalizeAppSetCaps(
 	ctx context.Context,
-	paas *mydomainv1alpha1.Paas,
+	paas *v1alpha1.Paas,
 ) error {
 	for _, c := range []string{
 		"argocd",

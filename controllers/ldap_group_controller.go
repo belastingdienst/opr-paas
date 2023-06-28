@@ -6,7 +6,7 @@ import (
 	"os"
 	"sort"
 
-	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 
 	"strings"
@@ -134,7 +134,7 @@ func (gs Groups) AsString() string {
 // ensureLdapGroup ensures Group presence
 func (r *PaasReconciler) EnsureLdapGroups(
 	ctx context.Context,
-	paas *mydomainv1alpha1.Paas,
+	paas *v1alpha1.Paas,
 ) error {
 	logger := getLogger(ctx, paas, "LdapGroup", "")
 	// See if group already exists and create if it doesn't
@@ -175,7 +175,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 // ensureLdapGroup ensures Group presence
 func (r *PaasReconciler) FinalizeLdapGroups(
 	ctx context.Context,
-	paas *mydomainv1alpha1.Paas,
+	paas *v1alpha1.Paas,
 	cleanedLdapQueries []string,
 ) error {
 	logger := getLogger(ctx, paas, "LdapGroup", "")
