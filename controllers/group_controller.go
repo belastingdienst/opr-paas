@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"os"
 
-	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	userv1 "github.com/openshift/api/user/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -46,44 +48,58 @@ func (r *PaasReconciler) EnsureGroup(
 // backendGroup is a code for Creating Group
 func (r *PaasReconciler) backendGroup(
 	ctx context.Context,
-	paas *mydomainv1alpha1.Paas,
-	groupName string,
-	users []string,
+	paas *v1alpha1.Paas,
+	name string,
+	group v1alpha1.PaasGroup,
 ) *userv1.Group {
-	logger := getLogger(ctx, paas, "Group", groupName)
+	logger := getLogger(ctx, paas, "Group", name)
 	logger.Info("Defining group")
 
+	labels := make(map[string]string)
+	for key, value := range paas.Labels {
+		labels[key] = value
+	}
+	labels["openshift.io/ldap.host"] = os.Getenv("LDAP_HOST")
+
+	annotations := make(map[string]string)
+	annotations["openshift.io/ldap.uid"] = group.Query
+	annotations["openshift.io/ldap.url"] = fmt.Sprintf("%s:%s",
+		os.Getenv("LDAP_HOST"),
+		os.Getenv("LDAP_PORT"),
+	)
+
 	//matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
-	group := &userv1.Group{
+	g := &userv1.Group{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Group",
 			APIVersion: "user.openshift.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   groupName,
-			Labels: paas.Labels,
+			Name:        name,
+			Labels:      labels,
+			Annotations: annotations,
 		},
-		Users: users,
+		Users: group.Users,
 	}
 
 	//If we would have multiple PaaS projects defining this group, and all are cleaned,
 	//the garbage collector would also clean this group...
-	controllerutil.SetControllerReference(paas, group, r.Scheme)
-	return group
+	controllerutil.SetControllerReference(paas, g, r.Scheme)
+	return g
 }
 
 func (r *PaasReconciler) BackendGroups(
 	ctx context.Context,
-	paas *mydomainv1alpha1.Paas,
+	paas *v1alpha1.Paas,
 ) (groups []*userv1.Group) {
 	logger := getLogger(ctx, paas, "Group", "")
 	for key, group := range paas.Spec.Groups {
-		groupName := paas.Spec.Groups.NameFromQuery(key)
+		groupName := paas.Spec.Groups.Key2Name(key)
 		logger.Info("Groupname is " + groupName)
 		groups = append(groups, r.backendGroup(ctx,
 			paas,
 			groupName,
-			group.Users))
+			group))
 	}
 	return groups
 }
@@ -91,7 +107,7 @@ func (r *PaasReconciler) BackendGroups(
 // cleanGroup is a code for Creating Group
 func (r *PaasReconciler) finalizeGroup(
 	ctx context.Context,
-	paas *mydomainv1alpha1.Paas,
+	paas *v1alpha1.Paas,
 	groupName string,
 ) (cleaned bool, err error) {
 	logger := getLogger(ctx, paas, "Group", groupName)
@@ -120,10 +136,10 @@ func (r *PaasReconciler) finalizeGroup(
 
 func (r *PaasReconciler) FinalizeGroups(
 	ctx context.Context,
-	paas *mydomainv1alpha1.Paas,
+	paas *v1alpha1.Paas,
 ) (cleaned []string, err error) {
 	for key, group := range paas.Spec.Groups {
-		if isCleaned, err := r.finalizeGroup(ctx, paas, paas.Spec.Groups.NameFromQuery(key)); err != nil {
+		if isCleaned, err := r.finalizeGroup(ctx, paas, paas.Spec.Groups.Key2Name(key)); err != nil {
 			return cleaned, err
 		} else if isCleaned && group.Query != "" {
 			cleaned = append(cleaned, group.Query)
