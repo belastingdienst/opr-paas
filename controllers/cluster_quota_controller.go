@@ -30,9 +30,7 @@ func (r *PaasReconciler) EnsureQuota(
 	if err != nil && errors.IsNotFound(err) {
 
 		// Create the quota
-		err = r.Create(ctx, quota)
-
-		if err != nil {
+		if err = r.Create(ctx, quota); err != nil {
 			// creating the quota failed
 			return err
 		} else {
@@ -42,9 +40,16 @@ func (r *PaasReconciler) EnsureQuota(
 	} else if err != nil {
 		// Error that isn't due to the quota not existing
 		return err
+	} else {
+		// Update the quota
+		if err = r.Update(ctx, quota); err != nil {
+			// creating the quota failed
+			return err
+		} else {
+			// creating the quota was successful
+			return nil
+		}
 	}
-
-	return nil
 }
 
 // backendQuota is a code for Creating Quota
@@ -88,28 +93,32 @@ func (r *PaasReconciler) backendQuota(
 	return quota
 }
 
-func (r *PaasReconciler) BackendQuotas(
+func (r *PaasReconciler) BackendEnabledQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (quotas []*quotav1.ClusterResourceQuota) {
 	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
-	if paas.Spec.Capabilities.ArgoCD.Enabled {
-		quotas = append(quotas, r.backendQuota(ctx, paas, "argocd", paas.Spec.Capabilities.ArgoCD.QuotaWithDefaults()))
+	for name, cap := range paas.Spec.Capabilities.AsMap() {
+		if cap.IsEnabled() {
+			quotas = append(quotas, r.backendQuota(ctx, paas, name, cap.QuotaWithDefaults()))
+		}
 	}
-	if paas.Spec.Capabilities.CI.Enabled {
-		quotas = append(quotas, r.backendQuota(ctx, paas, "ci", paas.Spec.Capabilities.CI.QuotaWithDefaults()))
-	}
-	if paas.Spec.Capabilities.Grafana.Enabled {
-		quotas = append(quotas, r.backendQuota(ctx, paas, "grafana", paas.Spec.Capabilities.Grafana.QuotaWithDefaults()))
-	}
-	if paas.Spec.Capabilities.SSO.Enabled {
-		quotas = append(quotas, r.backendQuota(ctx, paas, "sso", paas.Spec.Capabilities.SSO.QuotaWithDefaults()))
-	}
-
 	return quotas
 }
 
-func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, paas *v1alpha1.Paas, quotaName string) error {
+func (r *PaasReconciler) BackendDisabledQuotas(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+) (quotas []string) {
+	for name, cap := range paas.Spec.Capabilities.AsMap() {
+		if !cap.IsEnabled() {
+			quotas = append(quotas, fmt.Sprintf("%s-%s", paas.Name, name))
+		}
+	}
+	return quotas
+}
+
+func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha1.Paas, quotaName string) error {
 	logger := getLogger(ctx, paas, "Quota", quotaName)
 	logger.Info("Finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
@@ -138,7 +147,7 @@ func (r *PaasReconciler) FinalizeClusterQuotas(ctx context.Context, paas *v1alph
 	var err error
 	for _, suffix := range suffixes {
 		quotaName := fmt.Sprintf("%s%s", paas.Name, suffix)
-		if cleanErr := r.finalizeClusterQuota(ctx, paas, quotaName); cleanErr != nil {
+		if cleanErr := r.FinalizeClusterQuota(ctx, paas, quotaName); cleanErr != nil {
 			err = cleanErr
 		}
 	}

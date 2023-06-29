@@ -38,7 +38,7 @@ func CaasWhiteList() (wl types.NamespacedName) {
 func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 	ctx context.Context,
 	whiteListConfigMap types.NamespacedName,
-	groups Groups,
+	groups *Groups,
 ) error {
 	// Create the ConfigMap
 	wlConfigMap := CaasWhiteList()
@@ -91,11 +91,17 @@ func (gs Groups) Len() int {
 	return len(gs.by_key)
 }
 
-func (gs Groups) Add(other Groups) Groups {
+func (gs *Groups) Add(other *Groups) bool {
+	var changed bool
 	for key, value := range other.by_key {
+		if newVal, exists := gs.by_key[key]; !exists {
+			changed = true
+		} else if newVal != value {
+			changed = true
+		}
 		gs.by_key[key] = value
 	}
-	return gs
+	return changed
 }
 
 func QueryToKey(query string) string {
@@ -107,7 +113,7 @@ func QueryToKey(query string) string {
 	}
 
 }
-func (gs Groups) AddFromStrings(l []string) Groups {
+func (gs *Groups) AddFromStrings(l []string) {
 	for _, query := range l {
 		if key := QueryToKey(query); key == "" {
 			continue
@@ -115,11 +121,10 @@ func (gs Groups) AddFromStrings(l []string) Groups {
 			gs.by_key[key] = query
 		}
 	}
-	return gs
 }
 
-func (gs Groups) AddFromString(s string) Groups {
-	return gs.AddFromStrings(strings.Split(s, "\n"))
+func (gs *Groups) AddFromString(s string) {
+	gs.AddFromStrings(strings.Split(s, "\n"))
 }
 
 func (gs Groups) AsString() string {
@@ -141,7 +146,8 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	cm := &corev1.ConfigMap{}
 	wlConfigMap := CaasWhiteList()
 	err := r.Get(ctx, wlConfigMap, cm)
-	groups := NewGroups().AddFromStrings(paas.Spec.Groups.LdapQueries())
+	groups := NewGroups()
+	groups.AddFromStrings(paas.Spec.Groups.LdapQueries())
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("Creating whitelist configmap")
 		// Create the ConfigMap
@@ -155,18 +161,16 @@ func (r *PaasReconciler) EnsureLdapGroups(
 		cm.Data["whitelist.txt"] = groups.AsString()
 	} else {
 		logger.Info(fmt.Sprintf("Reading group queries from whitelist %v", cm))
-		configured_groups := NewGroups().AddFromString(whitelist)
-		l1 := configured_groups.Len()
+		whitelist_groups := NewGroups()
+		whitelist_groups.AddFromString(whitelist)
 		logger.Info(fmt.Sprintf("Adding extra groups to whitelist: %v", groups))
-		combined_groups := configured_groups.Add(groups)
-		l2 := combined_groups.Len()
-		//fmt.Printf("configured: %d, combined: %d", l1, l2)
-		if l1 == l2 {
+		if changed := whitelist_groups.Add(groups); changed {
+			//fmt.Printf("configured: %d, combined: %d", l1, l2)
 			logger.Info("No new info in whitelist")
 			return nil
 		}
 		logger.Info("Adding to whitelist configmap")
-		cm.Data["whitelist.txt"] = combined_groups.AsString()
+		cm.Data["whitelist.txt"] = whitelist_groups.AsString()
 	}
 	logger.Info(fmt.Sprintf("Updating whitelist configmap: %v", cm))
 	return r.Update(ctx, cm)
@@ -197,7 +201,8 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		return nil
 	} else {
 		var isChanged bool
-		groups := NewGroups().AddFromString(whitelist)
+		groups := NewGroups()
+		groups.AddFromString(whitelist)
 		for _, query := range cleanedLdapQueries {
 			if key := QueryToKey(query); key == "" {
 				logger.Error(fmt.Errorf("invalid query"), "Could not get key from", query)

@@ -104,27 +104,49 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	logger.Info("Creating quotas for PAAS object " + req.NamespacedName.String())
 	// Create quotas if needed
-	for _, q := range r.BackendQuotas(ctx, paas) {
+	for _, q := range r.BackendEnabledQuotas(ctx, paas) {
 		logger.Info("Creating quota " + q.Name + " for PAAS object " + req.NamespacedName.String())
 		if err := r.EnsureQuota(ctx, req, q); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}
 	}
+	for _, name := range r.BackendDisabledQuotas(ctx, paas) {
+		logger.Info("Creating quota " + name + " for PAAS object " + req.NamespacedName.String())
+		if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {
+			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", name))
+			return ctrl.Result{}, err
+		}
+	}
 
 	logger.Info("Creating namespaces for PAAS object " + req.NamespacedName.String())
 	// Create namespaces if needed
-	for _, ns := range r.BackendNamespaces(ctx, paas) {
+	for _, ns := range r.BackendEnabledNamespaces(ctx, paas) {
 		if err := r.EnsureNamespace(ctx, req, ns); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating namespace %s", ns.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}
 	}
 
+	for _, name := range r.BackendDisabledNamespaces(ctx, paas) {
+		logger.Info("Creating namespace " + name + " for PAAS object " + req.NamespacedName.String())
+		if err := r.FinalizeNamespace(ctx, paas, name); err != nil {
+			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", name))
+			return ctrl.Result{}, err
+		}
+	}
+
 	logger.Info("Creating Argo App for client bootstrapping")
 	// Create bootstrap Argo App
-	if err := r.EnsureArgoApp(ctx, paas); err != nil {
-		return ctrl.Result{}, err
+	if paas.Spec.Capabilities.ArgoCD.Enabled {
+		if err := r.EnsureArgoApp(ctx, paas); err != nil {
+			return ctrl.Result{}, err
+		}
+	} else {
+		if err := r.FinalizeArgoApp(ctx, paas); err != nil {
+			return ctrl.Result{}, err
+		}
+
 	}
 
 	logger.Info("Extending Applicationsets for PAAS object" + req.NamespacedName.String())
@@ -134,7 +156,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	logger.Info("Creating groups for PAAS object " + req.NamespacedName.String())
 	for _, group := range r.BackendGroups(ctx, paas) {
-		if err := r.EnsureGroup(ctx, group); err != nil {
+		if err := r.EnsureGroup(ctx, paas, group); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating group %s", group.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}

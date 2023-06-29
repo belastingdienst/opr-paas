@@ -146,6 +146,25 @@ type PaasCapabilities struct {
 	Grafana PaasGrafana `json:"grafana,omitempty"`
 }
 
+type PaasCapability interface {
+	IsEnabled() bool
+	QuotaWithDefaults() PaasQuotas
+	CapabilityName() string
+}
+
+func (pc PaasCapabilities) AsMap() map[string]PaasCapability {
+	caps := make(map[string]PaasCapability)
+	for _, cap := range []PaasCapability{
+		&pc.ArgoCD,
+		&pc.CI,
+		&pc.SSO,
+		&pc.Grafana,
+	} {
+		caps[cap.CapabilityName()] = cap
+	}
+	return caps
+}
+
 type PaasArgoCD struct {
 	// Do we want an ArgoCD namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
@@ -157,6 +176,14 @@ type PaasArgoCD struct {
 	GitPath string `json:"gitPath,omitempty"`
 	// This project has it's own ClusterResourceQuota seetings
 	Quota PaasQuotas `json:"quota,omitempty"`
+}
+
+func (pa *PaasArgoCD) IsEnabled() bool {
+	return pa.Enabled
+}
+
+func (pa *PaasArgoCD) CapabilityName() string {
+	return "argocd"
 }
 
 func (pa *PaasArgoCD) SetDefaults() {
@@ -183,6 +210,14 @@ func (pc PaasCI) QuotaWithDefaults() (pq PaasQuotas) {
 	return pc.Quota.QuotaWithDefaults("ci")
 }
 
+func (pc *PaasCI) IsEnabled() bool {
+	return pc.Enabled
+}
+
+func (pc *PaasCI) CapabilityName() string {
+	return "ci"
+}
+
 type PaasSSO struct {
 	// Do we want an SSO namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
@@ -194,6 +229,14 @@ func (ps PaasSSO) QuotaWithDefaults() (pq PaasQuotas) {
 	return ps.Quota.QuotaWithDefaults("sso")
 }
 
+func (ps *PaasSSO) IsEnabled() bool {
+	return ps.Enabled
+}
+
+func (ps *PaasSSO) CapabilityName() string {
+	return "sso"
+}
+
 type PaasGrafana struct {
 	// Do we want a Grafana namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
@@ -203,6 +246,14 @@ type PaasGrafana struct {
 
 func (pg PaasGrafana) QuotaWithDefaults() (pq PaasQuotas) {
 	return pg.Quota.QuotaWithDefaults("grafana")
+}
+
+func (pg *PaasGrafana) IsEnabled() bool {
+	return pg.Enabled
+}
+
+func (pg *PaasGrafana) CapabilityName() string {
+	return "grafana"
 }
 
 // PaasStatus defines the observed state of Paas
