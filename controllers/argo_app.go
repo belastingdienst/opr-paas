@@ -32,7 +32,8 @@ func (r *PaasReconciler) EnsureArgoApp(
 	found := &argo.Application{}
 	if err := r.Get(ctx, namespacedName, found); err == nil {
 		logger.Info("Argo Application already exists, updating")
-		return r.Update(ctx, r.backendArgoApp(ctx, paas))
+		found.Spec = r.backendArgoApp(ctx, paas).Spec
+		return r.Update(ctx, found)
 	} else if !errors.IsNotFound(err) {
 		logger.Error(err, "Could not retrieve info of Argo Application")
 		return err
