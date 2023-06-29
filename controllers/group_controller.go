@@ -43,6 +43,7 @@ func (r *PaasReconciler) EnsureGroup(
 		logger.Error(err, "Could not retrieve info on the group")
 		return err
 	} else {
+		logger.Info("Updating the group")
 		// All of this is to make the list of users a unique
 		// combined list of users that where and now should be added
 		users := make(map[string]bool)
@@ -52,12 +53,20 @@ func (r *PaasReconciler) EnsureGroup(
 		for _, user := range group.Users {
 			users[user] = true
 		}
-		group.Users.Reset()
+		found.Users.Reset()
 		for user := range users {
-			group.Users = append(group.Users, user)
+			found.Users = append(found.Users, user)
 		}
-		logger.Info("Updating the group")
-		if err = r.Update(ctx, group); err != nil {
+		for key, value := range group.Annotations {
+			found.ObjectMeta.Annotations[key] = value
+		}
+		if !paas.AmIOwner(found.OwnerReferences) {
+			logger.Info("Setting owner reference")
+			controllerutil.SetOwnerReference(paas, found, r.Scheme)
+		} else {
+			logger.Info("Already owner")
+		}
+		if err = r.Update(ctx, found); err != nil {
 			// Updating the group failed
 			logger.Error(err, "Updating the group failed")
 			return err
@@ -108,7 +117,7 @@ func (r *PaasReconciler) backendGroup(
 
 	//If we would have multiple PaaS projects defining this group, and all are cleaned,
 	//the garbage collector would also clean this group...
-	controllerutil.SetControllerReference(paas, g, r.Scheme)
+	controllerutil.SetOwnerReference(paas, g, r.Scheme)
 	return g
 }
 
@@ -148,14 +157,16 @@ func (r *PaasReconciler) finalizeGroup(
 		logger.Info("Paas is not an owner")
 		return false, nil
 	} else {
-		logger.Info(groupName + "Removing PaaS finalizer")
+		logger.Info("Removing PaaS finalizer " + groupName)
 		obj.OwnerReferences = paas.WithoutMe(obj.OwnerReferences)
 		if len(obj.OwnerReferences) == 0 {
-			logger.Info(groupName + "Deleting")
+			logger.Info("Deleting " + groupName)
 			return true, r.Delete(ctx, obj)
+		} else {
+			logger.Info("Not last reference, skipping deletion for " + groupName)
+			return false, r.Update(ctx, obj)
 		}
 	}
-	return false, nil
 }
 
 func (r *PaasReconciler) FinalizeGroups(
