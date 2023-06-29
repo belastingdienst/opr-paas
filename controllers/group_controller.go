@@ -17,8 +17,11 @@ import (
 // ensureGroup ensures Group presence
 func (r *PaasReconciler) EnsureGroup(
 	ctx context.Context,
+	paas *v1alpha1.Paas,
 	group *userv1.Group,
 ) error {
+
+	logger := getLogger(ctx, paas, "Group", group.Name)
 
 	// See if group already exists and create if it doesn't
 	found := &userv1.Group{}
@@ -26,11 +29,9 @@ func (r *PaasReconciler) EnsureGroup(
 		Name: group.Name,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
-
+		logger.Info("Creating the group")
 		// Create the group
-		err = r.Create(ctx, group)
-
-		if err != nil {
+		if err = r.Create(ctx, group); err != nil {
 			// creating the group failed
 			return err
 		} else {
@@ -39,10 +40,33 @@ func (r *PaasReconciler) EnsureGroup(
 		}
 	} else if err != nil {
 		// Error that isn't due to the group not existing
+		logger.Error(err, "Could not retrieve info on the group")
 		return err
+	} else {
+		// All of this is to make the list of users a unique
+		// combined list of users that where and now should be added
+		users := make(map[string]bool)
+		for _, user := range found.Users {
+			users[user] = true
+		}
+		for _, user := range group.Users {
+			users[user] = true
+		}
+		group.Users.Reset()
+		for user := range users {
+			group.Users = append(group.Users, user)
+		}
+		logger.Info("Updating the group")
+		if err = r.Update(ctx, group); err != nil {
+			// Updating the group failed
+			logger.Error(err, "Updating the group failed")
+			return err
+		} else {
+			logger.Info("Group updated")
+			// Updating the group was successful
+			return nil
+		}
 	}
-
-	return nil
 }
 
 // backendGroup is a code for Creating Group

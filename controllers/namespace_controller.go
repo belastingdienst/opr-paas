@@ -75,21 +75,45 @@ func (r *PaasReconciler) backendNamespace(
 	return ns
 }
 
-func (r *PaasReconciler) BackendNamespaces(
+func (r *PaasReconciler) BackendEnabledNamespaces(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (ns []*corev1.Namespace) {
-	if paas.Spec.Capabilities.ArgoCD.Enabled {
-		ns = append(ns, r.backendNamespace(ctx, paas, "argocd"))
-	}
-	if paas.Spec.Capabilities.CI.Enabled {
-		ns = append(ns, r.backendNamespace(ctx, paas, "ci"))
-	}
-	if paas.Spec.Capabilities.Grafana.Enabled {
-		ns = append(ns, r.backendNamespace(ctx, paas, "grafana"))
-	}
-	if paas.Spec.Capabilities.SSO.Enabled {
-		ns = append(ns, r.backendNamespace(ctx, paas, "sso"))
+
+	for name, cap := range paas.Spec.Capabilities.AsMap() {
+		if cap.IsEnabled() {
+			ns = append(ns, r.backendNamespace(ctx, paas, name))
+		}
 	}
 	return ns
+}
+
+func (r *PaasReconciler) BackendDisabledNamespaces(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+) (ns []string) {
+	for name, cap := range paas.Spec.Capabilities.AsMap() {
+		if !cap.IsEnabled() {
+			ns = append(ns, fmt.Sprintf("%s-%s", paas.Name, name))
+		}
+	}
+	return ns
+}
+
+func (r *PaasReconciler) FinalizeNamespace(ctx context.Context, paas *v1alpha1.Paas, namespaceName string) error {
+	logger := getLogger(ctx, paas, "Namespace", namespaceName)
+	logger.Info("Finalizing")
+	obj := &corev1.Namespace{}
+	if err := r.Get(ctx, types.NamespacedName{
+		Name: namespaceName,
+	}, obj); err != nil && errors.IsNotFound(err) {
+		logger.Info("Does not exist")
+		return nil
+	} else if err != nil {
+		logger.Info("Error retrieving info: " + err.Error())
+		return err
+	} else {
+		logger.Info("Deleting")
+		return r.Delete(ctx, obj)
+	}
 }
