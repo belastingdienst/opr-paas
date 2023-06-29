@@ -28,35 +28,34 @@ spec:
     argocd:
       enabled: true
       quota:
-        limits.cpu: "1"
-        limits.memory: 4Gi
-        requests.cpu: "800m"
-        requests.memory: 3Gi
-        requests.storage: 10Gi
+        limits.cpu: "2"
+        limits.memory: 5Gi
+        requests.cpu: "1Gi"
+        requests.memory: 4Gi
+        requests.storage: 20Gi
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
       gitUrl: https://
     ci:
       quota:
-        limits.cpu: "1"
-        limits.memory: 4Gi
-        requests.cpu: "800m"
-        requests.memory: 3Gi
-        requests.storage: 10Gi
+        limits.cpu: "2"
+        limits.memory: 5Gi
+        requests.cpu: "1Gi"
+        requests.memory: 4Gi
+        requests.storage: 20Gi
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
     sso:
       quota:
-        limits.cpu: "1"
-        limits.memory: 4Gi
-        requests.cpu: "800m"
-        requests.memory: 3Gi
-        requests.storage: 10Gi
+        limits.cpu: "2"
+        limits.memory: 5Gi
+        requests.cpu: "1Gi"
+        requests.memory: 4Gi
+        requests.storage: 20Gi
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
     grafana:
       quota:
-        limits.cpu: "1"
-        limits.memory: 4Gi
-        requests.cpu: "800m"
-        requests.memory: 3Gi
-        requests.storage: 10Gi
+        limits.cpu: "2"
+        limits.memory: 5Gi
+        requests.cpu: "1Gi"
+        requests.memory: 4Gi
+        requests.storage: 20Gi
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
-
