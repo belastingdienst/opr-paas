@@ -87,10 +87,6 @@ func (gs *Groups) DeleteByQuery(query string) bool {
 	return false
 }
 
-func (gs Groups) Len() int {
-	return len(gs.by_key)
-}
-
 func (gs *Groups) Add(other *Groups) bool {
 	var changed bool
 	for key, value := range other.by_key {
@@ -164,7 +160,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 		whitelist_groups := NewGroups()
 		whitelist_groups.AddFromString(whitelist)
 		logger.Info(fmt.Sprintf("Adding extra groups to whitelist: %v", groups))
-		if changed := whitelist_groups.Add(groups); changed {
+		if changed := whitelist_groups.Add(groups); !changed {
 			//fmt.Printf("configured: %d, combined: %d", l1, l2)
 			logger.Info("No new info in whitelist")
 			return nil

@@ -42,7 +42,8 @@ func (r *PaasReconciler) EnsureQuota(
 		return err
 	} else {
 		// Update the quota
-		if err = r.Update(ctx, quota); err != nil {
+		found.Spec = quota.Spec
+		if err = r.Update(ctx, found); err != nil {
 			// creating the quota failed
 			return err
 		} else {
