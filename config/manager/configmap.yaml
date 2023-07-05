@@ -8,9 +8,9 @@ data:
   CAAS_WHITELIST_NAME: caaswhitelist
   CAAS_WHITELIST_NAMESPACE: kube-system
   CAP_NAMESPACE: cpet-argocd
-  CAP_ARGOCD_AS_NAME: cpet-paas-capability-kust
-  CAP_CI_AS_NAME: cpet-paas-capability-ci
-  CAP_GRAFANA_AS_NAME: cpet-paas-capability-grafana
-  CAP_SSO_AS_NAME: cpet-paas-capability-sso
+  CAP_ARGOCD_AS_NAME: cpet-paas-argocd
+  CAP_CI_AS_NAME: cpet-paas-ci
+  CAP_GRAFANA_AS_NAME: cpet-paas-grafana
+  CAP_SSO_AS_NAME: cpet-paas-sso
   LDAP_HOST: my-ldap.mydomain.org
   LDAP_PORT: '636'
