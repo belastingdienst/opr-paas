@@ -32,7 +32,7 @@ func CapabilityK8sName(capability string) (as types.NamespacedName) {
 	return as
 }
 func CapabilityClusterQuotaGroupName() string {
-	if name = os.Getenv("CAP_CLUSTER_RESOURCE_QUOTA_NAME"); name != "" {
+	if name := os.Getenv("CAP_CLUSTER_RESOURCE_QUOTA_NAME"); name != "" {
 		return name
 	}
 	return DefaultClusterQuotaGroupName
