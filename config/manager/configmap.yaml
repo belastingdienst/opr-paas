@@ -8,6 +8,7 @@ data:
   CAAS_WHITELIST_NAME: caaswhitelist
   CAAS_WHITELIST_NAMESPACE: kube-system
   CAP_NAMESPACE: cpet-argocd
+  CAP_CLUSTER_RESOURCE_QUOTA_NAME: dcs.itsmoplosgroep
   CAP_ARGOCD_AS_NAME: cpet-paas-argocd
   CAP_CI_AS_NAME: cpet-paas-ci
   CAP_GRAFANA_AS_NAME: cpet-paas-grafana

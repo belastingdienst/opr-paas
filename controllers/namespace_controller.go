@@ -68,7 +68,7 @@ func (r *PaasReconciler) backendNamespace(
 		Spec: corev1.NamespaceSpec{},
 	}
 	logger.Info(fmt.Sprintf("Setting Quotagroup %s", name))
-	ns.ObjectMeta.Labels["clusterquotagroup"] = name
+	ns.ObjectMeta.Labels[CapabilityClusterQuotaGroupName()] = name
 
 	logger.Info("Setting Owner")
 	controllerutil.SetControllerReference(paas, ns, r.Scheme)
