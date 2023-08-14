@@ -80,7 +80,7 @@ func (r *PaasReconciler) backendQuota(
 		Spec: quotav1.ClusterResourceQuotaSpec{
 			Selector: quotav1.ClusterResourceQuotaSelector{
 				LabelSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{"clusterquotagroup": quotaName},
+					MatchLabels: map[string]string{CapabilityClusterQuotaGroupName(): quotaName},
 				},
 			},
 			Quota: corev1.ResourceQuotaSpec{
