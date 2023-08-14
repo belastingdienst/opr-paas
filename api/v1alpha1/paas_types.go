@@ -74,7 +74,7 @@ func (pq PaasQuotas) QuotaWithDefaults(defaults string) (q PaasQuotas) {
 	for key, value := range pq {
 		q[key] = value
 	}
-	return pq
+	return q
 }
 
 // PaasSpec defines the desired state of Paas
