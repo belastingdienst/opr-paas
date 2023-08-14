@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	DefaultNameSpace          = "gitops"
-	DefaultApplicationsetName = "???"
+    DefaultClusterQuotaGroupName = "clusterquotagroup"
+	DefaultNameSpace             = "gitops"
+	DefaultApplicationsetName    = "???"
 )
 
 // CaasWhiteList returns a Namespaced object name which points to the
@@ -29,6 +30,12 @@ func CapabilityK8sName(capability string) (as types.NamespacedName) {
 		as.Name = fmt.Sprintf("%s-capability", DefaultApplicationsetName)
 	}
 	return as
+}
+func CapabilityClusterQuotaGroupName() string {
+	if name = os.Getenv("CAP_CLUSTER_RESOURCE_QUOTA_NAME"); name != "" {
+		return name
+	}
+	return DefaultClusterQuotaGroupName
 }
 func getLogger(
 	ctx context.Context,
