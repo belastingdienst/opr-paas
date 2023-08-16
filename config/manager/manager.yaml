@@ -68,9 +68,6 @@ spec:
       containers:
       - command:
         - /manager
-        envFrom:
-        - configMapRef:
-            name: env
         args:
         - --leader-elect
         image: controller:latest
@@ -101,5 +98,13 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
+        volumeMounts:
+          - name: paas-config
+            mountPath: /etc/paas
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+      volumes:
+        - name: paas-config
+          configMap:
+            name: config
+            defaultMode: 420

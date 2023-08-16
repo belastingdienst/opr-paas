@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
@@ -99,15 +98,15 @@ func (r *PaasReconciler) backendGroup(
 			Labels: paas.ClonedLabels(),
 			Annotations: map[string]string{
 				"openshift.io/ldap.uid": group.Query,
-				"openshift.io/ldap.url": fmt.Sprintf("%s:%s",
-					os.Getenv("LDAP_HOST"),
-					os.Getenv("LDAP_PORT"),
+				"openshift.io/ldap.url": fmt.Sprintf("%s:%d",
+					getConfig().LDAP.Host,
+					getConfig().LDAP.Port,
 				),
 			},
 		},
 		Users: group.Users,
 	}
-	g.ObjectMeta.Labels["openshift.io/ldap.host"] = os.Getenv("LDAP_HOST")
+	g.ObjectMeta.Labels["openshift.io/ldap.host"] = getConfig().LDAP.Host
 
 	//If we would have multiple PaaS projects defining this group, and all are cleaned,
 	//the garbage collector would also clean this group...

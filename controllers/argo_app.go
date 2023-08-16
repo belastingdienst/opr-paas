@@ -41,7 +41,6 @@ func (r *PaasReconciler) EnsureArgoApp(
 		logger.Error(err, "Creating Argo Application")
 		return r.Create(ctx, r.backendArgoApp(ctx, paas))
 	}
-
 }
 
 // backendArgoApp is code for creating a ArgoApp
