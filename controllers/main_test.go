@@ -16,10 +16,7 @@ func TestMain_getLogger(t *testing.T) {
 	logger.Info("testing logging")
 }
 
-func TestMain_CapName(t *testing.T) {
-	os.Setenv("CAP_NAMESPACE", "some-ns")
-	os.Setenv("CAP_TEST_AS_NAME", "TST_CAP")
-	capName := CapabilityK8sName("test")
-	assert.Equal(t, "some-ns", capName.Namespace)
-	assert.Equal(t, "TST_CAP", capName.Name)
+func TestMain_getConfig(t *testing.T) {
+	os.Setenv("PAAS_CONFIG", "../config/test/paas_config.yml")
+	assert.NotNil(t, getConfig(), "some-ns")
 }
