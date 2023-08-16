@@ -276,6 +276,22 @@ type Paas struct {
 	Status PaasStatus `json:"status,omitempty"`
 }
 
+func (p Paas) ClonedAnnotations() map[string]string {
+	annotations := make(map[string]string)
+	for key, value := range p.Annotations {
+		annotations[key] = value
+	}
+	return annotations
+}
+
+func (p Paas) ClonedLabels() map[string]string {
+	labels := make(map[string]string)
+	for key, value := range p.Labels {
+		labels[key] = value
+	}
+	return labels
+}
+
 func (p Paas) IsItMe(reference metav1.OwnerReference) bool {
 	if p.APIVersion != reference.APIVersion {
 		return false

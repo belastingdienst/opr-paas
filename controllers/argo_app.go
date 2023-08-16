@@ -62,7 +62,7 @@ func (r *PaasReconciler) backendArgoApp(
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      appName,
 			Namespace: namespace,
-			Labels:    paas.Labels,
+			Labels:    paas.ClonedLabels(),
 		},
 		Spec: argo.ApplicationSpec{
 			Destination: argo.ApplicationDestination{
