@@ -88,19 +88,6 @@ func (r *PaasReconciler) backendGroup(
 	logger := getLogger(ctx, paas, "Group", name)
 	logger.Info("Defining group")
 
-	labels := make(map[string]string)
-	for key, value := range paas.Labels {
-		labels[key] = value
-	}
-	labels["openshift.io/ldap.host"] = os.Getenv("LDAP_HOST")
-
-	annotations := make(map[string]string)
-	annotations["openshift.io/ldap.uid"] = group.Query
-	annotations["openshift.io/ldap.url"] = fmt.Sprintf("%s:%s",
-		os.Getenv("LDAP_HOST"),
-		os.Getenv("LDAP_PORT"),
-	)
-
 	//matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	g := &userv1.Group{
 		TypeMeta: metav1.TypeMeta{
@@ -108,12 +95,19 @@ func (r *PaasReconciler) backendGroup(
 			APIVersion: "user.openshift.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        name,
-			Labels:      labels,
-			Annotations: annotations,
+			Name:   name,
+			Labels: paas.ClonedLabels(),
+			Annotations: map[string]string{
+				"openshift.io/ldap.uid": group.Query,
+				"openshift.io/ldap.url": fmt.Sprintf("%s:%s",
+					os.Getenv("LDAP_HOST"),
+					os.Getenv("LDAP_PORT"),
+				),
+			},
 		},
 		Users: group.Users,
 	}
+	g.ObjectMeta.Labels["openshift.io/ldap.host"] = os.Getenv("LDAP_HOST")
 
 	//If we would have multiple PaaS projects defining this group, and all are cleaned,
 	//the garbage collector would also clean this group...

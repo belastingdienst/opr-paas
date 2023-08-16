@@ -75,7 +75,7 @@ func (r *PaasReconciler) backendQuota(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   quotaName,
-			Labels: paas.Labels,
+			Labels: paas.ClonedLabels(),
 		},
 		Spec: quotav1.ClusterResourceQuotaSpec{
 			Selector: quotav1.ClusterResourceQuotaSelector{

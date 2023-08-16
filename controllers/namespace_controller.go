@@ -63,7 +63,7 @@ func (r *PaasReconciler) backendNamespace(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
-			Labels: paas.Labels,
+			Labels: paas.ClonedLabels(),
 		},
 		Spec: corev1.NamespaceSpec{},
 	}
