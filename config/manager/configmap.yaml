@@ -1,17 +1,53 @@
----
-apiVersion: v1
 kind: ConfigMap
+apiVersion: v1
 metadata:
-  name: 'env'
+  name: config
   namespace: cpet-paas
-data:
-  CAAS_WHITELIST_NAME: caaswhitelist
-  CAAS_WHITELIST_NAMESPACE: kube-system
-  CAP_NAMESPACE: cpet-argocd
-  CAP_CLUSTER_RESOURCE_QUOTA_NAME: dcs.itsmoplosgroep
-  CAP_ARGOCD_AS_NAME: cpet-paas-argocd
-  CAP_CI_AS_NAME: cpet-paas-ci
-  CAP_GRAFANA_AS_NAME: cpet-paas-grafana
-  CAP_SSO_AS_NAME: cpet-paas-sso
-  LDAP_HOST: my-ldap.mydomain.org
-  LDAP_PORT: '636'
+data: |
+  ---
+  debug: false
+  whitelist:
+    namespace: kube-system
+    name: caaswhitelist
+  ldap:
+    host: my-ldap.mydomain.org
+    port: 636
+  applicationset_namespace: cpet-argocd
+  quota_label: dcs.itsmoplosgroep
+  capabilities:
+    argocd:
+      applicationset: cpet-paas-argocd
+      defaultquotas:
+        limits.cpu: "5"
+        limits.memory: 4Gi
+        requests.cpu: "1"
+        requests.memory: 1Gi
+        requests.storage: "0"
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+    ci:
+      applicationset: cpet-paas-ci
+      defaultquotas:
+        limits.cpu: "5"
+        limits.memory: 8Gi
+        requests.cpu: "1"
+        requests.memory: 2Gi
+        requests.storage: "100Gi"
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+    sso:
+      applicationset: cpet-paas-sso
+      defaultquotas:
+        limits.cpu: "1"
+        limits.memory: 512Mi
+        requests.cpu: "100m"
+        requests.memory: 128Mi
+        requests.storage: "0"
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+    grafana:
+      applicationset: cpet-paas-grafana
+      defaultquotas:
+        limits.cpu: "2"
+        limits.memory: 2Gi
+        requests.cpu: "500m"
+        requests.memory: 512Mi
+        requests.storage: "2Gi"
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"

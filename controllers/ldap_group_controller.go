@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"os"
 	"sort"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -16,32 +15,13 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-const (
-	DefaultCaasWhitelistNameSpace = "kube-system"
-	DefaultCaasWhitelistName      = "caaswhitelist"
-)
-
-// CaasWhiteList returns a Namespaced object name which points to the
-// Caas Whitelist where the ldap groupds should be defined
-// Defaults point to kube-system.caaswhitelist, but can be overruled with
-// the environment variables CAAS_WHITELIST_NAMESPACE and CAAS_WHITELIST_NAME
-func CaasWhiteList() (wl types.NamespacedName) {
-	if wl.Name = os.Getenv("CAAS_WHITELIST_NAME"); wl.Name == "" {
-		wl.Name = DefaultCaasWhitelistName
-	}
-	if wl.Namespace = os.Getenv("CAAS_WHITELIST_NAMESPACE"); wl.Namespace == "" {
-		wl.Namespace = DefaultCaasWhitelistNameSpace
-	}
-	return wl
-}
-
 func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 	ctx context.Context,
 	whiteListConfigMap types.NamespacedName,
 	groups *Groups,
 ) error {
 	// Create the ConfigMap
-	wlConfigMap := CaasWhiteList()
+	wlConfigMap := getConfig().Whitelist
 	return r.Create(ctx, &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -140,7 +120,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	logger := getLogger(ctx, paas, "LdapGroup", "")
 	// See if group already exists and create if it doesn't
 	cm := &corev1.ConfigMap{}
-	wlConfigMap := CaasWhiteList()
+	wlConfigMap := getConfig().Whitelist
 	err := r.Get(ctx, wlConfigMap, cm)
 	groups := NewGroups()
 	groups.AddFromStrings(paas.Spec.Groups.LdapQueries())
@@ -181,7 +161,7 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 	logger := getLogger(ctx, paas, "LdapGroup", "")
 	// See if group already exists and create if it doesn't
 	cm := &corev1.ConfigMap{}
-	wlConfigMap := CaasWhiteList()
+	wlConfigMap := getConfig().Whitelist
 	err := r.Get(ctx, wlConfigMap, cm)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Error(err, "whitelist configmap does not exist")

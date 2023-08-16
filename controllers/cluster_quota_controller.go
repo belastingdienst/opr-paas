@@ -80,7 +80,8 @@ func (r *PaasReconciler) backendQuota(
 		Spec: quotav1.ClusterResourceQuotaSpec{
 			Selector: quotav1.ClusterResourceQuotaSelector{
 				LabelSelector: &metav1.LabelSelector{
-					MatchLabels: map[string]string{CapabilityClusterQuotaGroupName(): quotaName},
+					MatchLabels: map[string]string{
+						getConfig().QuotaLabel: quotaName},
 				},
 			},
 			Quota: corev1.ResourceQuotaSpec{
@@ -101,7 +102,12 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
 	for name, cap := range paas.Spec.Capabilities.AsMap() {
 		if cap.IsEnabled() {
-			quotas = append(quotas, r.backendQuota(ctx, paas, name, cap.QuotaWithDefaults()))
+			defaults := getConfig().DefaultQuota(
+				cap.CapabilityName())
+			quota := cap.Quotas().QuotaWithDefaults(
+				defaults)
+			quotas = append(quotas,
+				r.backendQuota(ctx, paas, name, quota))
 		}
 	}
 	return quotas

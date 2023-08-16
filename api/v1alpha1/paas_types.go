@@ -26,49 +26,11 @@ import (
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// Dit zu eigenlijk in een Configmap voor de operator erbij moeten...
-var (
-	DEFAULT_QUOTAS = map[string]map[string]string{
-		"argocd": {
-			"limits.cpu":       "1",
-			"limits.memory":    "4Gi",
-			"requests.cpu":     "800m",
-			"requests.memory":  "3Gi",
-			"requests.storage": "10Gi",
-			"thin.storageclass.storage.k8s.io/persistentvolumeclaims": "0",
-		},
-		"ci": {
-			"limits.cpu":       "1",
-			"limits.memory":    "4Gi",
-			"requests.cpu":     "800m",
-			"requests.memory":  "3Gi",
-			"requests.storage": "10Gi",
-			"thin.storageclass.storage.k8s.io/persistentvolumeclaims": "0",
-		},
-		"sso": {
-			"limits.cpu":       "1",
-			"limits.memory":    "4Gi",
-			"requests.cpu":     "800m",
-			"requests.memory":  "3Gi",
-			"requests.storage": "10Gi",
-			"thin.storageclass.storage.k8s.io/persistentvolumeclaims": "0",
-		},
-		"grafana": {
-			"limits.cpu":       "1",
-			"limits.memory":    "4Gi",
-			"requests.cpu":     "800m",
-			"requests.memory":  "3Gi",
-			"requests.storage": "10Gi",
-			"thin.storageclass.storage.k8s.io/persistentvolumeclaims": "0",
-		},
-	}
-)
-
 type PaasQuotas map[corev1.ResourceName]resourcev1.Quantity
 
-func (pq PaasQuotas) QuotaWithDefaults(defaults string) (q PaasQuotas) {
+func (pq PaasQuotas) QuotaWithDefaults(defaults map[string]string) (q PaasQuotas) {
 	q = make(PaasQuotas)
-	for key, value := range DEFAULT_QUOTAS[defaults] {
+	for key, value := range defaults {
 		q[corev1.ResourceName(key)] = resourcev1.MustParse(value)
 	}
 	for key, value := range pq {
@@ -148,7 +110,7 @@ type PaasCapabilities struct {
 
 type PaasCapability interface {
 	IsEnabled() bool
-	QuotaWithDefaults() PaasQuotas
+	Quotas() PaasQuotas
 	CapabilityName() string
 }
 
@@ -195,8 +157,8 @@ func (pa *PaasArgoCD) SetDefaults() {
 	}
 }
 
-func (pa PaasArgoCD) QuotaWithDefaults() (pq PaasQuotas) {
-	return pa.Quota.QuotaWithDefaults("argocd")
+func (pa PaasArgoCD) Quotas() (pq PaasQuotas) {
+	return pa.Quota
 }
 
 type PaasCI struct {
@@ -206,8 +168,8 @@ type PaasCI struct {
 	Quota PaasQuotas `json:"quota,omitempty"`
 }
 
-func (pc PaasCI) QuotaWithDefaults() (pq PaasQuotas) {
-	return pc.Quota.QuotaWithDefaults("ci")
+func (pc PaasCI) Quotas() (pq PaasQuotas) {
+	return pc.Quota
 }
 
 func (pc *PaasCI) IsEnabled() bool {
@@ -225,8 +187,8 @@ type PaasSSO struct {
 	Quota PaasQuotas `json:"quota,omitempty"`
 }
 
-func (ps PaasSSO) QuotaWithDefaults() (pq PaasQuotas) {
-	return ps.Quota.QuotaWithDefaults("sso")
+func (ps PaasSSO) Quotas() (pq PaasQuotas) {
+	return ps.Quota
 }
 
 func (ps *PaasSSO) IsEnabled() bool {
@@ -244,8 +206,8 @@ type PaasGrafana struct {
 	Quota PaasQuotas `json:"quota,omitempty"`
 }
 
-func (pg PaasGrafana) QuotaWithDefaults() (pq PaasQuotas) {
-	return pg.Quota.QuotaWithDefaults("grafana")
+func (pg PaasGrafana) Quotas() (pq PaasQuotas) {
+	return pg.Quota
 }
 
 func (pg *PaasGrafana) IsEnabled() bool {
