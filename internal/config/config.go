@@ -1,4 +1,4 @@
-package internal
+package config
 
 import (
 	"fmt"
@@ -11,12 +11,47 @@ import (
 
 type Config struct {
 	filename        string
-	Debug           bool                 `yaml:"debug"`
-	Capabilities    ConfigCapabilities   `yaml:"capabilities"`
-	Whitelist       types.NamespacedName `yaml:"whitelist"`
-	LDAP            ConfigLdap           `yaml:"ldap"`
-	AppSetNamespace string               `yaml:"applicationset_namespace"`
-	QuotaLabel      string               `yaml:"quota_label"`
+	Debug           bool                  `yaml:"debug"`
+	Capabilities    ConfigCapabilities    `yaml:"capabilities"`
+	Whitelist       types.NamespacedName  `yaml:"whitelist"`
+	LDAP            ConfigLdap            `yaml:"ldap"`
+	ArgoPermissions ConfigArgoPermissions `yaml:"argopermissions"`
+	AppSetNamespace string                `yaml:"applicationset_namespace"`
+	QuotaLabel      string                `yaml:"quota_label"`
+}
+
+type ConfigArgoPermissions struct {
+	ResourceName string `yaml:"resource_name"`
+	Role         string `yaml:"role"`
+	Header       string `yaml:"header"`
+	Retries      uint   `yaml:"retries"`
+}
+
+func (ap ConfigArgoPermissions) Verify() []string {
+	var multierror []string
+	if ap.ResourceName == "" {
+		multierror = append(multierror, "missing argopermissions.resource_name")
+	}
+	if ap.Role == "" {
+		multierror = append(multierror, "missing argopermissions.role")
+	}
+	if ap.Header == "" {
+		multierror = append(multierror, "missing argopermissions.header")
+	}
+	if ap.Retries < 2 {
+		multierror = append(multierror, "argopermissions.retries too low")
+	}
+	return multierror
+}
+
+func (ap ConfigArgoPermissions) FromGroups(groups []string) string {
+	permissions := []string{
+		ap.Header,
+	}
+	for _, group := range groups {
+		permissions = append(permissions, fmt.Sprintf("g, %s, role:%s", group, ap.Role))
+	}
+	return strings.Join(permissions, "\n")
 }
 
 type ConfigLdap struct {
@@ -96,6 +131,7 @@ func (config Config) Verify() error {
 	}
 	multierror = append(multierror, config.Capabilities.Verify()...)
 	multierror = append(multierror, config.LDAP.Verify()...)
+	multierror = append(multierror, config.ArgoPermissions.Verify()...)
 	multierror = append(multierror, config.Capabilities.Verify()...)
 	if len(multierror) > 0 {
 		return fmt.Errorf("invalid config:\n%s",
