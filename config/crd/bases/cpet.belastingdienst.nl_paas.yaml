@@ -137,6 +137,12 @@ spec:
                   - users
                   type: object
                 type: object
+              namespaces:
+                description: Namespaces can be used to define extra namespaces to
+                  be created as part of this PaaS project
+                items:
+                  type: string
+                type: array
               oplosGroep:
                 description: Oplosgroep is an informational field which decides on
                   the oplosgroep that is responsible

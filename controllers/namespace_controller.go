@@ -50,9 +50,9 @@ func (r *PaasReconciler) EnsureNamespace(
 func (r *PaasReconciler) backendNamespace(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	suffix string,
+	name string,
+	quota string,
 ) *corev1.Namespace {
-	name := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, suffix)
 	logger := getLogger(ctx, paas, "Namespace", name)
 	logger.Info(fmt.Sprintf("Defining %s Namespace", name))
 	//matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
@@ -67,8 +67,8 @@ func (r *PaasReconciler) backendNamespace(
 		},
 		Spec: corev1.NamespaceSpec{},
 	}
-	logger.Info(fmt.Sprintf("Setting Quotagroup %s", name))
-	ns.ObjectMeta.Labels[getConfig().QuotaLabel] = name
+	logger.Info(fmt.Sprintf("Setting Quotagroup %s", quota))
+	ns.ObjectMeta.Labels[getConfig().QuotaLabel] = quota
 
 	logger.Info("Setting Owner")
 	controllerutil.SetControllerReference(paas, ns, r.Scheme)
@@ -80,10 +80,15 @@ func (r *PaasReconciler) BackendEnabledNamespaces(
 	paas *v1alpha1.Paas,
 ) (ns []*corev1.Namespace) {
 
-	for name, cap := range paas.Spec.Capabilities.AsMap() {
+	for cap_name, cap := range paas.Spec.Capabilities.AsMap() {
 		if cap.IsEnabled() {
-			ns = append(ns, r.backendNamespace(ctx, paas, name))
+			name := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap_name)
+			ns = append(ns, r.backendNamespace(ctx, paas, name, name))
 		}
+	}
+	for _, ns_suffix := range paas.Spec.Namespaces {
+		name := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, ns_suffix)
+		ns = append(ns, r.backendNamespace(ctx, paas, name, paas.ObjectMeta.Name))
 	}
 	return ns
 }

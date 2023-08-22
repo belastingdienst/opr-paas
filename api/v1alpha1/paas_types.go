@@ -54,6 +54,9 @@ type PaasSpec struct {
 
 	// Quota defines the quotas which should be set on the cluster resource quota as used by this PaaS project
 	Quota PaasQuotas `json:"quota"`
+
+	// Namespaces can be used to define extra namespaces to be created as part of this PaaS project
+	Namespaces []string `json:"namespaces,omitempty"`
 }
 
 type PaasGroup struct {
