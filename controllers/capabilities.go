@@ -189,7 +189,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := config.CapabilityK8sName(capability)
+	asNamespacedName := getConfig().CapabilityK8sName(capability)
 	logger := getLogger(ctx, paas, "AppSet", asNamespacedName.String())
 	logger.Info(fmt.Sprintf("Reconciling %s Applicationset", capability))
 	err := r.Get(ctx, asNamespacedName, as)

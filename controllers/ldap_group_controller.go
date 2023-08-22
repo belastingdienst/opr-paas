@@ -3,12 +3,10 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/groups"
 	corev1 "k8s.io/api/core/v1"
-
-	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,7 +16,7 @@ import (
 func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 	ctx context.Context,
 	whiteListConfigMap types.NamespacedName,
-	groups *Groups,
+	groups string,
 ) error {
 	// Create the ConfigMap
 	wlConfigMap := getConfig().Whitelist
@@ -32,84 +30,9 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 			Namespace: wlConfigMap.Namespace,
 		},
 		Data: map[string]string{
-			"whitelist.txt": groups.AsString(),
+			"whitelist.txt": groups,
 		},
 	})
-}
-
-// Simple struct to parse a string into a map of groups with key is cn so it will be unique
-// struct can add and struct can be changed back into a string.
-type Groups struct {
-	by_key map[string]string
-}
-
-func NewGroups() *Groups {
-	return &Groups{
-		by_key: make(map[string]string),
-	}
-}
-
-func (gs *Groups) DeleteByKey(key string) bool {
-	if _, exists := gs.by_key[key]; exists {
-		delete(gs.by_key, key)
-		return true
-	}
-	return false
-}
-
-func (gs *Groups) DeleteByQuery(query string) bool {
-	for key, value := range gs.by_key {
-		if value == query {
-			delete(gs.by_key, key)
-			return true
-		}
-	}
-	return false
-}
-
-func (gs *Groups) Add(other *Groups) bool {
-	var changed bool
-	for key, value := range other.by_key {
-		if newVal, exists := gs.by_key[key]; !exists {
-			changed = true
-		} else if newVal != value {
-			changed = true
-		}
-		gs.by_key[key] = value
-	}
-	return changed
-}
-
-func QueryToKey(query string) string {
-	//CN=gkey,OU=org_unit,DC=example,DC=org
-	if cn := strings.Split(query, ",")[0]; !strings.ContainsAny(cn, "=") {
-		return ""
-	} else {
-		return strings.SplitN(cn, "=", 2)[1]
-	}
-
-}
-func (gs *Groups) AddFromStrings(l []string) {
-	for _, query := range l {
-		if key := QueryToKey(query); key == "" {
-			continue
-		} else {
-			gs.by_key[key] = query
-		}
-	}
-}
-
-func (gs *Groups) AddFromString(s string) {
-	gs.AddFromStrings(strings.Split(s, "\n"))
-}
-
-func (gs Groups) AsString() string {
-	values := make([]string, 0, len(gs.by_key))
-	for _, v := range gs.by_key {
-		values = append(values, v)
-	}
-	sort.Strings(values)
-	return strings.Join(values, "\n")
 }
 
 // ensureLdapGroup ensures Group presence
@@ -122,25 +45,24 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	cm := &corev1.ConfigMap{}
 	wlConfigMap := getConfig().Whitelist
 	err := r.Get(ctx, wlConfigMap, cm)
-	groups := NewGroups()
-	groups.AddFromStrings(paas.Spec.Groups.LdapQueries())
+	gs := paas.Spec.Groups.AsGroups()
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("Creating whitelist configmap")
 		// Create the ConfigMap
-		return r.ensureLdapGroupsConfigMap(ctx, wlConfigMap, groups)
+		return r.ensureLdapGroupsConfigMap(ctx, wlConfigMap, gs.AsString())
 	} else if err != nil {
 		logger.Error(err, "Could not retrieve whitelist configmap")
 		// Error that isn't due to the group not existing
 		return err
 	} else if whitelist, exists := cm.Data["whitelist.txt"]; !exists {
 		logger.Info("Adding whitelist.txt to whitelist configmap")
-		cm.Data["whitelist.txt"] = groups.AsString()
+		cm.Data["whitelist.txt"] = gs.AsString()
 	} else {
 		logger.Info(fmt.Sprintf("Reading group queries from whitelist %v", cm))
-		whitelist_groups := NewGroups()
+		whitelist_groups := groups.NewGroups()
 		whitelist_groups.AddFromString(whitelist)
-		logger.Info(fmt.Sprintf("Adding extra groups to whitelist: %v", groups))
-		if changed := whitelist_groups.Add(groups); !changed {
+		logger.Info(fmt.Sprintf("Adding extra groups to whitelist: %v", gs))
+		if changed := whitelist_groups.Add(&gs); !changed {
 			//fmt.Printf("configured: %d, combined: %d", l1, l2)
 			logger.Info("No new info in whitelist")
 			return nil
@@ -177,13 +99,14 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		return nil
 	} else {
 		var isChanged bool
-		groups := NewGroups()
-		groups.AddFromString(whitelist)
+		gs := groups.NewGroups()
+		gs.AddFromString(whitelist)
 		for _, query := range cleanedLdapQueries {
-			if key := QueryToKey(query); key == "" {
+			g := groups.NewGroup(query)
+			if g.Key == "" {
 				logger.Error(fmt.Errorf("invalid query"), "Could not get key from", query)
-			} else if groups.DeleteByKey(key) {
-				logger.Info(fmt.Sprintf("LdapGroup %s removed", key))
+			} else if gs.DeleteByKey(g.Key) {
+				logger.Info(fmt.Sprintf("LdapGroup %s removed", g.Key))
 				isChanged = true
 			}
 		}
@@ -191,7 +114,7 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		if !isChanged {
 			return nil
 		}
-		cm.Data["whitelist.txt"] = groups.AsString()
+		cm.Data["whitelist.txt"] = gs.AsString()
 	}
 	return r.Update(ctx, cm)
 

@@ -1,5 +1,11 @@
 package controllers
 
+// broken with adding ArgoPermissions capability
+// Seems we need to downgrade to v.0.26.4
+// (see https://github.com/operator-framework/operator-sdk/issues/6396)
+// but that adds other incompatibilities.
+// Maybe fix later.
+
 import (
 	"context"
 	"os"
