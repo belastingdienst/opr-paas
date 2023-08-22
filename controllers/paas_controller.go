@@ -53,8 +53,8 @@ type PaasReconciler struct {
 func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	// TODO(user): your logic here
 	paas := &v1alpha1.Paas{}
-	logger := getLogger(ctx, paas, "PaaS", req.NamespacedName.String())
-	logger.Info("Reconciling the PAAS object " + req.NamespacedName.String())
+	logger := getLogger(ctx, paas, "PaaS", req.Name)
+	logger.Info("Reconciling the PAAS object")
 
 	err := r.Get(ctx, req.NamespacedName, paas)
 	if err != nil {
@@ -66,9 +66,9 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 		return ctrl.Result{}, nil
 	} else if paas.GetDeletionTimestamp() != nil {
-		logger.Info("PAAS object marked for deletion" + req.NamespacedName.String())
+		logger.Info("PAAS object marked for deletion")
 		if controllerutil.ContainsFinalizer(paas, paasFinalizer) {
-			logger.Info("Finalizing PaaS" + req.NamespacedName.String())
+			logger.Info("Finalizing PaaS")
 			// Run finalization logic for memcachedFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
@@ -89,37 +89,37 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// Add finalizer for this CR
-	logger.Info("Adding finalizer for PaaS object" + req.NamespacedName.String())
+	logger.Info("Adding finalizer for PaaS object")
 	if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
-		logger.Info("PaaS object has no finalizer yet" + req.NamespacedName.String())
+		logger.Info("PaaS object has no finalizer yet")
 		controllerutil.AddFinalizer(paas, paasFinalizer)
-		logger.Info("Added finalizer for PaaS object" + req.NamespacedName.String())
+		logger.Info("Added finalizer for PaaS object")
 		if err := r.Update(ctx, paas); err != nil {
-			logger.Info("Error updating PaaS object" + req.NamespacedName.String())
+			logger.Info("Error updating PaaS object")
 			logger.Info(fmt.Sprintf("%v", paas))
 			return ctrl.Result{}, err
 		}
-		logger.Info("Updated PaaS object" + req.NamespacedName.String())
+		logger.Info("Updated PaaS object")
 	}
 
-	logger.Info("Creating quotas for PAAS object " + req.NamespacedName.String())
+	logger.Info("Creating quotas for PAAS object ")
 	// Create quotas if needed
 	for _, q := range r.BackendEnabledQuotas(ctx, paas) {
-		logger.Info("Creating quota " + q.Name + " for PAAS object " + req.NamespacedName.String())
+		logger.Info("Creating quota " + q.Name + " for PAAS object ")
 		if err := r.EnsureQuota(ctx, req, q); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}
 	}
 	for _, name := range r.BackendDisabledQuotas(ctx, paas) {
-		logger.Info("Creating quota " + name + " for PAAS object " + req.NamespacedName.String())
+		logger.Info("Creating quota " + name + " for PAAS object ")
 		if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", name))
 			return ctrl.Result{}, err
 		}
 	}
 
-	logger.Info("Creating namespaces for PAAS object " + req.NamespacedName.String())
+	logger.Info("Creating namespaces for PAAS object ")
 	// Create namespaces if needed
 	for _, ns := range r.BackendEnabledNamespaces(ctx, paas) {
 		if err := r.EnsureNamespace(ctx, req, ns); err != nil {
@@ -129,7 +129,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	for _, name := range r.BackendDisabledNamespaces(ctx, paas) {
-		logger.Info("Creating namespace " + name + " for PAAS object " + req.NamespacedName.String())
+		logger.Info("Creating namespace " + name + " for PAAS object ")
 		if err := r.FinalizeNamespace(ctx, paas, name); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", name))
 			return ctrl.Result{}, err
@@ -149,12 +149,12 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	}
 
-	logger.Info("Extending Applicationsets for PAAS object" + req.NamespacedName.String())
+	logger.Info("Extending Applicationsets for PAAS object")
 	if err := r.EnsureAppSetCaps(ctx, paas); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Creating groups for PAAS object " + req.NamespacedName.String())
+	logger.Info("Creating groups for PAAS object ")
 	for _, group := range r.BackendGroups(ctx, paas) {
 		if err := r.EnsureGroup(ctx, paas, group); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating group %s", group.ObjectMeta.Name))
@@ -162,9 +162,22 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
-	logger.Info("Creating ldap groups for PAAS object " + req.NamespacedName.String())
+	logger.Info("Creating ldap groups for PAAS object ")
 	if err := r.EnsureLdapGroups(ctx, paas); err != nil {
 		return ctrl.Result{}, err
+	}
+
+	retries := int(getConfig().ArgoPermissions.Retries)
+	for i := 1; i <= retries; i++ {
+		logger.Info(fmt.Sprintf("Updating ArgoCD Permissions (try %d/%d)", i, retries))
+		if err := r.EnsureArgoPermissions(ctx, paas); err != nil {
+			logger.Error(err, "Updating ArgoCD Permissions failed")
+		} else {
+			break
+		}
+		if i == retries {
+			return ctrl.Result{}, fmt.Errorf("Updating ArgoCD Permissions failed %d times", retries)
+		}
 	}
 
 	logger.Info("PAAS object succesfully reconciled")

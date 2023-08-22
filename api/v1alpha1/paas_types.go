@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"strings"
 
+	"github.com/belastingdienst/opr-paas/internal/groups"
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,6 +97,12 @@ func (gs PaasGroups) LdapQueries() []string {
 		}
 	}
 	return queries
+}
+
+func (pgs PaasGroups) AsGroups() groups.Groups {
+	gs := groups.NewGroups()
+	gs.AddFromStrings(pgs.LdapQueries())
+	return *gs
 }
 
 // see config/samples/_v1alpha1_paas.yaml for example of CR

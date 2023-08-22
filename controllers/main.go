@@ -5,23 +5,23 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal"
+	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var config *internal.Config
+var cnf *config.Config
 
-func getConfig() *internal.Config {
+func getConfig() config.Config {
 	var err error
-	if config == nil {
-		if config, err = internal.NewConfig(); err != nil {
+	if cnf == nil {
+		if cnf, err = config.NewConfig(); err != nil {
 			panic(fmt.Sprintf(
 				"Could not read config: %s",
 				err.Error()))
 		}
 	}
-	return config
+	return *cnf
 }
 
 func getLogger(
