@@ -16,7 +16,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.13.1
 )
 
-require github.com/argoproj-labs/argocd-operator v0.6.0 // indirect
+require github.com/argoproj-labs/argocd-operator v0.6.0
 
 require (
 	cloud.google.com/go/compute v1.14.0 // indirect
