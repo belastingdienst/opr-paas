@@ -12,6 +12,11 @@ data: |
   ldap:
     host: my-ldap.mydomain.org
     port: 636
+  argopermissions:
+    resource_name: argo-service
+    role: admin
+    header: g, system:cluster-admins, role:admin
+    retries: 10
   applicationset_namespace: cpet-argocd
   quota_label: dcs.itsmoplosgroep
   capabilities:
