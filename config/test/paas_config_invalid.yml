@@ -22,7 +22,7 @@ default_quotas:
     requests.memory: 1Gi
     requests.storage: "0"
     thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
-  ci:
+  tekton:
     limits.cpu: "5"
     limits.memory: 8Gi
     requests.cpu: "1"

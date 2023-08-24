@@ -24,7 +24,7 @@ capabilities:
       requests.memory: 1Gi
       requests.storage: "0"
       thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
-  ci:
+  tekton:
     applicationset: cpet-paas-argocd
     defaultquotas:
       limits.cpu: "5"

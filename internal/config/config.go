@@ -82,7 +82,7 @@ func (caps ConfigCapabilities) Verify() []string {
 			multierror = append(multierror, fmt.Sprintf("missing capabilities.%s.defaultquotas elements", key))
 		}
 	}
-	for _, cap := range []string{"argocd", "ci", "grafana", "sso"} {
+	for _, cap := range []string{"argocd", "tekton", "grafana", "sso"} {
 		if _, exists := caps[cap]; !exists {
 			multierror = append(multierror, fmt.Sprintf("missing capabilities.%s", cap))
 		}
