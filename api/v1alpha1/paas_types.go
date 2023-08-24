@@ -111,7 +111,7 @@ type PaasCapabilities struct {
 	// ArgoCD defines the ArgoCD deployment that should be available.
 	ArgoCD PaasArgoCD `json:"argocd,omitempty"`
 	// CI defines the settings for a CI namespace (tekton) for this PAAS
-	CI PaasCI `json:"ci,omitempty"`
+	CI PaasCI `json:"tekton,omitempty"`
 	// SSO defines the settings for a SSO (KeyCloak) namwespace for this PAAS
 	SSO PaasSSO `json:"sso,omitempty"`
 	// Grafana defines the settings for a Grafana monitoring namespace for this PAAS
@@ -187,7 +187,7 @@ func (pc *PaasCI) IsEnabled() bool {
 }
 
 func (pc *PaasCI) CapabilityName() string {
-	return "ci"
+	return "tekton"
 }
 
 type PaasSSO struct {

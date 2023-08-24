@@ -29,7 +29,16 @@ data: |
         requests.memory: 1Gi
         requests.storage: "0"
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
-    ci:
+    grafana:
+      applicationset: cpet-paas-grafana
+      defaultquotas:
+        limits.cpu: "2"
+        limits.memory: 2Gi
+        requests.cpu: "500m"
+        requests.memory: 512Mi
+        requests.storage: "2Gi"
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+    tekton:
       applicationset: cpet-paas-ci
       defaultquotas:
         limits.cpu: "5"

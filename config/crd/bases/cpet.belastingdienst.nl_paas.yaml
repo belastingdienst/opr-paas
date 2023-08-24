@@ -69,24 +69,6 @@ spec:
                           seetings
                         type: object
                     type: object
-                  ci:
-                    description: CI defines the settings for a CI namespace (tekton)
-                      for this PAAS
-                    properties:
-                      enabled:
-                        description: Do we want a CI (Tekton) namespace, default false
-                        type: boolean
-                      quota:
-                        additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                          x-kubernetes-int-or-string: true
-                        description: This project has it's own ClusterResourceQuota
-                          seetings
-                        type: object
-                    type: object
                   grafana:
                     description: Grafana defines the settings for a Grafana monitoring
                       namespace for this PAAS
@@ -111,6 +93,24 @@ spec:
                     properties:
                       enabled:
                         description: Do we want an SSO namespace, default false
+                        type: boolean
+                      quota:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: This project has it's own ClusterResourceQuota
+                          seetings
+                        type: object
+                    type: object
+                  tekton:
+                    description: CI defines the settings for a CI namespace (tekton)
+                      for this PAAS
+                    properties:
+                      enabled:
+                        description: Do we want a CI (Tekton) namespace, default false
                         type: boolean
                       quota:
                         additionalProperties:
