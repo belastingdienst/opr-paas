@@ -39,7 +39,7 @@ data: |
         requests.storage: "2Gi"
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
     tekton:
-      applicationset: cpet-paas-ci
+      applicationset: cpet-paas-tekton
       defaultquotas:
         limits.cpu: "5"
         limits.memory: 8Gi
