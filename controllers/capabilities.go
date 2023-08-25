@@ -169,7 +169,7 @@ func (r *PaasReconciler) EnsureAppSetCaps(
 	}
 	for _, c := range []cap{
 		{name: "argocd", enabled: paas.Spec.Capabilities.ArgoCD.Enabled},
-		{name: "ci", enabled: paas.Spec.Capabilities.CI.Enabled},
+		{name: "tekton", enabled: paas.Spec.Capabilities.CI.Enabled},
 		{name: "grafana", enabled: paas.Spec.Capabilities.Grafana.Enabled},
 		{name: "sso", enabled: paas.Spec.Capabilities.SSO.Enabled},
 	} {
