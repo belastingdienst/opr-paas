@@ -148,6 +148,9 @@ type PaasArgoCD struct {
 	GitPath string `json:"gitPath,omitempty"`
 	// This project has it's own ClusterResourceQuota seetings
 	Quota PaasQuotas `json:"quota,omitempty"`
+	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
+	SshSecrets map[string]string `json:"sshSecrets"`
 }
 
 func (pa *PaasArgoCD) IsEnabled() bool {
