@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	filename        string
+	DecryptKeyPath  string                `yaml:"decryptKeyPath"`
 	Debug           bool                  `yaml:"debug"`
 	Capabilities    ConfigCapabilities    `yaml:"capabilities"`
 	Whitelist       types.NamespacedName  `yaml:"whitelist"`
@@ -128,6 +129,10 @@ func (config Config) Verify() error {
 	if config.Whitelist.Name == "" || config.Whitelist.Namespace == "" {
 		multierror = append(multierror,
 			"missing whitelist.name and/or whitelist.namespace")
+	}
+	if config.DecryptKeyPath == "" {
+		multierror = append(multierror,
+			"missing decryptKeyPath")
 	}
 	multierror = append(multierror, config.Capabilities.Verify()...)
 	multierror = append(multierror, config.LDAP.Verify()...)

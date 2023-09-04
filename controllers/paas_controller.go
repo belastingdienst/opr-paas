@@ -157,7 +157,14 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if err := r.FinalizeArgoApp(ctx, paas); err != nil {
 			return ctrl.Result{}, err
 		}
+	}
 
+	logger.Info("Creating Ssh secrets for ArgoCD")
+	// Create argo ssh secrets
+	if paas.Spec.Capabilities.ArgoCD.Enabled {
+		for _, secret := range r.BackendSecrets(ctx, paas) {
+			r.EnsureSecret(ctx, secret)
+		}
 	}
 
 	logger.Info("Extending Applicationsets for PAAS object")
