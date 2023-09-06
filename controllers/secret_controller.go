@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/aes"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -37,7 +36,7 @@ func (r *PaasReconciler) EnsureSecret(
 	}
 }
 
-func b64_encrypt(original string) []byte {
+func b64Encrypt(original string) []byte {
 	b64 := make([]byte, base64.StdEncoding.EncodedLen(len(original)))
 	base64.StdEncoding.Encode(b64, []byte(original))
 	return b64
@@ -65,7 +64,7 @@ func (r *PaasReconciler) backendSecret(
 	url string,
 	sshData string,
 ) *corev1.Secret {
-	b64_url := b64_encrypt(url)
+	b64_url := b64Encrypt(url)
 	name := fmt.Sprintf("argocd-ssh-%s", string(b64_url[:8]))
 	logger := getLogger(ctx, paas, "Secret", name)
 	logger.Info(fmt.Sprintf("Defining %s Secret", name))
@@ -80,9 +79,9 @@ func (r *PaasReconciler) backendSecret(
 			Labels: paas.ClonedLabels(),
 		},
 		Data: map[string][]byte{
-			"type":          b64_encrypt("git"),
+			"type":          b64Encrypt("git"),
 			"url":           b64_url,
-			"sshPrivateKey": b64_encrypt(sshData),
+			"sshPrivateKey": b64Encrypt(sshData),
 		},
 	}
 
@@ -98,12 +97,10 @@ func (r *PaasReconciler) BackendSecrets(
 	logger := getLogger(ctx, paas, "Secrets", "")
 	logger.Info("Defining Secrets")
 	for url, encryptedSshData := range paas.Spec.Capabilities.ArgoCD.SshSecrets {
-		if decryptedSshData, err := getRsa().Decrypt([]byte(encryptedSshData)); err != nil {
-			logger.Error(err, "rsa decryption failed for sshSecret %s", url)
-		} else if sshData, err := aes.Decrypt(decryptedSshData, []byte(paas.Name)); err != nil {
-			logger.Error(err, "aes decryption failed for sshSecret %s", url)
+		if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
+			logger.Error(err, "decryption failed for sshSecret %s", url)
 		} else {
-			secrets = append(secrets, r.backendSecret(ctx, paas, url, string(sshData)))
+			secrets = append(secrets, r.backendSecret(ctx, paas, url, decrypted))
 		}
 	}
 	return secrets
