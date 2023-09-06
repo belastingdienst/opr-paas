@@ -68,6 +68,14 @@ spec:
                         description: This project has it's own ClusterResourceQuota
                           seetings
                         type: object
+                      sshSecrets:
+                        additionalProperties:
+                          type: string
+                        description: You can add ssh keys (which is a type of secret)
+                          for ArgoCD to use for access to bitBucket They must be encrypted
+                          with the public key corresponding to the private key deployed
+                          together with the PaaS operator
+                        type: object
                     type: object
                   grafana:
                     description: Grafana defines the settings for a Grafana monitoring
@@ -85,6 +93,14 @@ spec:
                           x-kubernetes-int-or-string: true
                         description: This project has it's own ClusterResourceQuota
                           seetings
+                        type: object
+                      sshSecrets:
+                        additionalProperties:
+                          type: string
+                        description: You can add ssh keys (which is a type of secret)
+                          for ArgoCD to use for access to bitBucket They must be encrypted
+                          with the public key corresponding to the private key deployed
+                          together with the PaaS operator
                         type: object
                     type: object
                   sso:
@@ -104,6 +120,14 @@ spec:
                         description: This project has it's own ClusterResourceQuota
                           seetings
                         type: object
+                      sshSecrets:
+                        additionalProperties:
+                          type: string
+                        description: You can add ssh keys (which is a type of secret)
+                          for ArgoCD to use for access to bitBucket They must be encrypted
+                          with the public key corresponding to the private key deployed
+                          together with the PaaS operator
+                        type: object
                     type: object
                   tekton:
                     description: CI defines the settings for a CI namespace (tekton)
@@ -121,6 +145,14 @@ spec:
                           x-kubernetes-int-or-string: true
                         description: This project has it's own ClusterResourceQuota
                           seetings
+                        type: object
+                      sshSecrets:
+                        additionalProperties:
+                          type: string
+                        description: You can add ssh keys (which is a type of secret)
+                          for ArgoCD to use for access to bitBucket They must be encrypted
+                          with the public key corresponding to the private key deployed
+                          together with the PaaS operator
                         type: object
                     type: object
                 type: object
@@ -156,6 +188,14 @@ spec:
                   x-kubernetes-int-or-string: true
                 description: Quota defines the quotas which should be set on the cluster
                   resource quota as used by this PaaS project
+                type: object
+              sshSecrets:
+                additionalProperties:
+                  type: string
+                description: You can add ssh keys (which is a type of secret) for
+                  ArgoCD to use for access to bitBucket They must be encrypted with
+                  the public key corresponding to the private key deployed together
+                  with the PaaS operator
                 type: object
             required:
             - oplosGroep
