@@ -30,7 +30,7 @@ func NewCrypt(privateKeyPath string, publicKeyPath string, symmetricKey string) 
 }
 
 func (c Crypt) Generate() (*Crypt, error) {
-	if privateKey, err := rsa.GenerateKey(rand.Reader, 2048); err != nil {
+	if privateKey, err := rsa.GenerateKey(rand.Reader, 4096); err != nil {
 		return nil, fmt.Errorf("unable to generate private key: %e", err)
 	} else {
 		c.privateKey = privateKey
@@ -57,6 +57,7 @@ func (c *Crypt) writePrivateKey() error {
 	if err := os.WriteFile(c.privateKeyPath, privateKeyPEM, 0644); err != nil {
 		return fmt.Errorf("unable to write private key: %e", err)
 	}
+	fmt.Printf("Private key written to %s\n", c.privateKeyPath)
 	return nil
 }
 
@@ -74,8 +75,9 @@ func (c *Crypt) writePublicKey() error {
 		if err = os.WriteFile(c.publicKeyPath, publicKeyPEM, 0644); err != nil {
 			return fmt.Errorf("unable to write public key: %e", err)
 		}
-		return nil
 	}
+	fmt.Printf("Public key written to %s\n", c.publicKeyPath)
+	return nil
 }
 
 func (c Crypt) EncryptAes(decrypted []byte) ([]byte, error) {
@@ -138,8 +140,8 @@ func (c *Crypt) EncryptRsa(secret []byte) (encrypted []byte, err error) {
 	}
 }
 
-func (c *Crypt) Encrypt(secret string) (encrypted string, err error) {
-	if symEncrypted, err := c.EncryptAes([]byte(secret)); err != nil {
+func (c *Crypt) Encrypt(secret []byte) (encrypted string, err error) {
+	if symEncrypted, err := c.EncryptAes(secret); err != nil {
 		return "", err
 	} else if asymEncrypted, err := c.EncryptRsa(symEncrypted); err != nil {
 		return "", err
@@ -195,14 +197,14 @@ func (c Crypt) DecryptAes(encrypted []byte) ([]byte, error) {
 	}
 }
 
-func (c Crypt) Decrypt(b64 string) (string, error) {
+func (c Crypt) Decrypt(b64 string) ([]byte, error) {
 	if asymEncrypted, err := base64.StdEncoding.DecodeString(b64); err != nil {
-		return "", err
+		return nil, err
 	} else if symEncrypted, err := c.DecryptRsa(asymEncrypted); err != nil {
-		return "", err
+		return nil, err
 	} else if decrypted, err := c.DecryptAes(symEncrypted); err != nil {
-		return "", err
+		return nil, err
 	} else {
-		return string(decrypted), nil
+		return decrypted, nil
 	}
 }
