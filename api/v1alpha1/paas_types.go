@@ -58,6 +58,9 @@ type PaasSpec struct {
 
 	// Namespaces can be used to define extra namespaces to be created as part of this PaaS project
 	Namespaces []string `json:"namespaces,omitempty"`
+	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
+	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
 }
 
 type PaasGroup struct {
@@ -122,6 +125,7 @@ type PaasCapability interface {
 	IsEnabled() bool
 	Quotas() PaasQuotas
 	CapabilityName() string
+	GetSshSecrets() map[string]string
 }
 
 func (pc PaasCapabilities) AsMap() map[string]PaasCapability {
@@ -150,7 +154,7 @@ type PaasArgoCD struct {
 	Quota PaasQuotas `json:"quota,omitempty"`
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
-	SshSecrets map[string]string `json:"sshSecrets"`
+	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
 }
 
 func (pa *PaasArgoCD) IsEnabled() bool {
@@ -174,11 +178,18 @@ func (pa PaasArgoCD) Quotas() (pq PaasQuotas) {
 	return pa.Quota
 }
 
+func (pa PaasArgoCD) GetSshSecrets() map[string]string {
+	return pa.SshSecrets
+}
+
 type PaasCI struct {
 	// Do we want a CI (Tekton) namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
 	// This project has it's own ClusterResourceQuota seetings
 	Quota PaasQuotas `json:"quota,omitempty"`
+	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
+	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
 }
 
 func (pc PaasCI) Quotas() (pq PaasQuotas) {
@@ -193,11 +204,18 @@ func (pc *PaasCI) CapabilityName() string {
 	return "tekton"
 }
 
+func (pc PaasCI) GetSshSecrets() map[string]string {
+	return pc.SshSecrets
+}
+
 type PaasSSO struct {
 	// Do we want an SSO namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
 	// This project has it's own ClusterResourceQuota seetings
 	Quota PaasQuotas `json:"quota,omitempty"`
+	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
+	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
 }
 
 func (ps PaasSSO) Quotas() (pq PaasQuotas) {
@@ -212,11 +230,18 @@ func (ps *PaasSSO) CapabilityName() string {
 	return "sso"
 }
 
+func (ps PaasSSO) GetSshSecrets() map[string]string {
+	return ps.SshSecrets
+}
+
 type PaasGrafana struct {
 	// Do we want a Grafana namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
 	// This project has it's own ClusterResourceQuota seetings
 	Quota PaasQuotas `json:"quota,omitempty"`
+	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
+	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
 }
 
 func (pg PaasGrafana) Quotas() (pq PaasQuotas) {
@@ -229,6 +254,10 @@ func (pg *PaasGrafana) IsEnabled() bool {
 
 func (pg *PaasGrafana) CapabilityName() string {
 	return "grafana"
+}
+
+func (pg PaasGrafana) GetSshSecrets() map[string]string {
+	return pg.SshSecrets
 }
 
 // PaasStatus defines the observed state of Paas
