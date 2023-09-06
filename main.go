@@ -39,7 +39,7 @@ import (
 
 	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/controllers"
-	"github.com/belastingdienst/opr-paas/internal/crypt"
+	"github.com/belastingdienst/opr-paas/internal/version"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -64,23 +64,9 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var get_version bool
-	var encrypt_from_stdin bool
-	var decrypt_from_stdin bool
-	var paas_name string
-	var encrypt_from_file string
-	var public_key string
-	var private_key string
-	var generate bool
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&get_version, "version", false, "Print version and quit")
-	flag.StringVar(&paas_name, "paas-name", "", "The name of the PaaS object to encrypt data for")
-	flag.StringVar(&encrypt_from_file, "encrypt-from-file", "", "The path to the file to be encrypted")
-	flag.BoolVar(&encrypt_from_stdin, "encrypt-from-stdin", false, "Encrypt data from stdin")
-	flag.BoolVar(&decrypt_from_stdin, "decrypt-from-stdin", false, "Decrypt data read from stdin")
-	flag.StringVar(&public_key, "public-key", "", "The path to the public key used for encryption")
-	flag.StringVar(&private_key, "private-key", "", "The path to the private key used for decryption (for decrypt-from-stdin)")
-	flag.BoolVar(&generate, "generate", false, "Generate new encryption keys")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -89,27 +75,11 @@ func main() {
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
-	if decrypt_from_stdin {
-		crypt.DecryptFromStdin(private_key, paas_name)
-		os.Exit(0)
-	}
-	if encrypt_from_stdin {
-		crypt.EncryptFromStdin(public_key, paas_name)
-		os.Exit(0)
-	}
-	if encrypt_from_file != "" {
-		crypt.EncryptFile(public_key, paas_name, encrypt_from_file)
-		os.Exit(0)
-	}
-	if generate {
-		crypt.GenerateKeyPair()
-		os.Exit(0)
-	}
 	if get_version {
-		fmt.Printf("opr-paas version %s", controllers.CONTROLLERS_VERSION)
+		fmt.Printf("opr-paas version %s", version.PAAS_VERSION)
 		os.Exit(0)
 	} else {
-		setupLog.Info("opr-paas version", controllers.CONTROLLERS_VERSION)
+		setupLog.Info("opr-paas version", version.PAAS_VERSION)
 	}
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
@@ -156,7 +126,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupLog.Info(fmt.Sprintf("starting manager version %s", controllers.CONTROLLERS_VERSION))
+	setupLog.Info(fmt.Sprintf("starting manager version %s", version.PAAS_VERSION))
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
