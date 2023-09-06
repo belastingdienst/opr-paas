@@ -64,11 +64,11 @@ func Test_Crypt(t *testing.T) {
 		"../../testdata/public.rsa.key",
 		"Dit is de key",
 	)
-	encrypted, err := c.Encrypt(original)
+	encrypted, err := c.Encrypt([]byte(original))
 	assert.NoError(t, err, "Encrypting")
 	assert.Greater(t, len(encrypted), 100)
 
 	decrypted, err := c.Decrypt(encrypted)
 	assert.NoError(t, err, "Decrypting")
-	assert.Equal(t, original, decrypted)
+	assert.Equal(t, original, string(decrypted))
 }
