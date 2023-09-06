@@ -1,8 +1,6 @@
 package crypt
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha512"
@@ -10,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
-	"io"
 	"os"
 )
 
@@ -81,6 +78,7 @@ func (c *Crypt) writePublicKey() error {
 	return nil
 }
 
+/*
 func (c Crypt) EncryptAes(decrypted []byte) ([]byte, error) {
 	if ci, err := aes.NewCipher(hashedKey(c.aesKey)); err != nil {
 		return nil, fmt.Errorf("could not create new AES cypher: %e", err)
@@ -108,6 +106,7 @@ func (c Crypt) EncryptAes(decrypted []byte) ([]byte, error) {
 		return gcm.Seal(nonce, nonce, decrypted, nil), nil
 	}
 }
+*/
 
 func (c *Crypt) getPublicKey() (*rsa.PublicKey, error) {
 	if c.publicKey != nil {
@@ -156,9 +155,7 @@ func (c *Crypt) EncryptRsa(secret []byte) (encryptedBytes []byte, err error) {
 }
 
 func (c *Crypt) Encrypt(secret []byte) (encrypted string, err error) {
-	if symEncrypted, err := c.EncryptAes(secret); err != nil {
-		return "", err
-	} else if asymEncrypted, err := c.EncryptRsa(symEncrypted); err != nil {
+	if asymEncrypted, err := c.EncryptRsa(secret); err != nil {
 		return "", err
 	} else {
 		return base64.StdEncoding.EncodeToString(asymEncrypted), nil
@@ -209,6 +206,7 @@ func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
 	}
 }
 
+/*
 func (c Crypt) DecryptAes(encrypted []byte) ([]byte, error) {
 
 	if ci, err := aes.NewCipher(hashedKey(c.aesKey)); err != nil {
@@ -226,13 +224,12 @@ func (c Crypt) DecryptAes(encrypted []byte) ([]byte, error) {
 		}
 	}
 }
+*/
 
 func (c Crypt) Decrypt(b64 string) ([]byte, error) {
 	if asymEncrypted, err := base64.StdEncoding.DecodeString(b64); err != nil {
 		return nil, err
-	} else if symEncrypted, err := c.DecryptRsa(asymEncrypted); err != nil {
-		return nil, err
-	} else if decrypted, err := c.DecryptAes(symEncrypted); err != nil {
+	} else if decrypted, err := c.DecryptRsa(asymEncrypted); err != nil {
 		return nil, err
 	} else {
 		return decrypted, nil

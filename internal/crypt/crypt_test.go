@@ -38,6 +38,7 @@ func Test_Rsa(t *testing.T) {
 	assert.Equal(t, string(decrypted), string(original))
 }
 
+/*
 func Test_Aes(t *testing.T) {
 	original := []byte("Dit is een test")
 	key := "Dit is de key"
@@ -56,6 +57,7 @@ func Test_Aes(t *testing.T) {
 	assert.Error(t, err, "Decrypting with wrong key")
 	assert.Nil(t, wrong_key_decryption, "Encrypting with wrong key gives no data")
 }
+*/
 
 func Test_Crypt(t *testing.T) {
 	original := "Dit is een test"
