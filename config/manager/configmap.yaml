@@ -23,18 +23,18 @@ data: |
     argocd:
       applicationset: cpet-paas-argocd
       defaultquotas:
-        limits.cpu: "5"
-        limits.memory: 4Gi
-        requests.cpu: "1"
-        requests.memory: 1Gi
-        requests.storage: "0"
+        limits.cpu: "6"
+        limits.memory: 8Gi
+        requests.cpu: "4"
+        requests.memory: 4Gi
+        requests.storage: "20Gi"
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
     grafana:
       applicationset: cpet-paas-grafana
       defaultquotas:
         limits.cpu: "2"
         limits.memory: 2Gi
-        requests.cpu: "500m"
+        requests.cpu: "1"
         requests.memory: 512Mi
         requests.storage: "2Gi"
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
