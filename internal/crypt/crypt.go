@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha512"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
@@ -129,14 +130,28 @@ func (c *Crypt) getPublicKey() (*rsa.PublicKey, error) {
 	return c.publicKey, nil
 }
 
-func (c *Crypt) EncryptRsa(secret []byte) (encrypted []byte, err error) {
-	plaintext := secret
+func (c *Crypt) EncryptRsa(secret []byte) (encryptedBytes []byte, err error) {
 	if publicKey, err := c.getPublicKey(); err != nil {
 		return nil, err
-	} else if encrypted, err = rsa.EncryptPKCS1v15(rand.Reader, publicKey, plaintext); err != nil {
-		return nil, fmt.Errorf("unable to encrypt secret data with rsa: %e", err)
 	} else {
-		return encrypted, nil
+		random := rand.Reader
+		hash := sha512.New()
+		msgLen := len(secret)
+		step := publicKey.Size() - 2*hash.Size() - 2
+		for start := 0; start < msgLen; start += step {
+			finish := start + step
+			if finish > msgLen {
+				finish = msgLen
+			}
+
+			encryptedBlockBytes, err := rsa.EncryptOAEP(hash, random, publicKey, secret[start:finish], c.aesKey)
+			if err != nil {
+				return nil, err
+			}
+
+			encryptedBytes = append(encryptedBytes, encryptedBlockBytes...)
+		}
+		return encryptedBytes, nil
 	}
 }
 
@@ -169,13 +184,28 @@ func (c *Crypt) getPrivateKey() (*rsa.PrivateKey, error) {
 	return c.privateKey, nil
 }
 
-func (c *Crypt) DecryptRsa(data []byte) ([]byte, error) {
+func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
 	if privateKey, err := c.getPrivateKey(); err != nil {
 		return nil, err
-	} else if plaintext, err := rsa.DecryptPKCS1v15(rand.Reader, privateKey, data); err != nil {
-		return nil, fmt.Errorf("unable to decrypt secret data with rsa: %e", err)
 	} else {
-		return plaintext, nil
+		hash := sha512.New()
+		msgLen := len(data)
+		step := privateKey.Size()
+		random := rand.Reader
+
+		for start := 0; start < msgLen; start += step {
+			finish := start + step
+			if finish > msgLen {
+				finish = msgLen
+			}
+
+			decryptedBlockBytes, err := rsa.DecryptOAEP(hash, random, privateKey, data[start:finish], c.aesKey)
+			if err != nil {
+				return nil, err
+			}
+			decryptedBytes = append(decryptedBytes, decryptedBlockBytes...)
+		}
+		return decryptedBytes, nil
 	}
 }
 
