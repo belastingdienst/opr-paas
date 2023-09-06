@@ -44,7 +44,7 @@ RUN sed -i "s|CONTROLLERS_VERSION = .*|PAAS_VERSION = \"$VERSION\"|" internal/ve
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
-COPY --from=builder /workspace/manager .
+COPY --from=builder /workspace/manager /workspace/crypttool .
 #USER 65532:65532
 
 ENTRYPOINT ["/manager"]
