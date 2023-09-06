@@ -100,7 +100,7 @@ func (r *PaasReconciler) BackendSecrets(
 		if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
 			logger.Error(err, "decryption failed for sshSecret %s", url)
 		} else {
-			secrets = append(secrets, r.backendSecret(ctx, paas, url, decrypted))
+			secrets = append(secrets, r.backendSecret(ctx, paas, url, string(decrypted)))
 		}
 	}
 	return secrets
