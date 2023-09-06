@@ -61,6 +61,7 @@ type: Opaque
 func (r *PaasReconciler) backendSecret(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
+	namespace string,
 	url string,
 	sshData string,
 ) *corev1.Secret {
@@ -75,8 +76,9 @@ func (r *PaasReconciler) backendSecret(
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: paas.ClonedLabels(),
+			Name:      name,
+			Namespace: namespace,
+			Labels:    paas.ClonedLabels(),
 		},
 		Data: map[string][]byte{
 			"type":          b64Encrypt("git"),
@@ -96,11 +98,24 @@ func (r *PaasReconciler) BackendSecrets(
 ) (secrets []*corev1.Secret) {
 	logger := getLogger(ctx, paas, "Secrets", "")
 	logger.Info("Defining Secrets")
-	for url, encryptedSshData := range paas.Spec.Capabilities.ArgoCD.SshSecrets {
-		if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
-			logger.Error(err, "decryption failed for sshSecret %s", url)
-		} else {
-			secrets = append(secrets, r.backendSecret(ctx, paas, url, string(decrypted)))
+	for _, cap := range paas.Spec.Capabilities.AsMap() {
+		if cap.IsEnabled() {
+			for url, encryptedSshData := range cap.GetSshSecrets() {
+				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
+					logger.Error(err, "decryption failed for sshSecret %s", url)
+				} else {
+					namespace := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName())
+					secrets = append(secrets, r.backendSecret(ctx, paas, namespace, url, string(decrypted)))
+				}
+			}
+			for url, encryptedSshData := range paas.Spec.SshSecrets {
+				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
+					logger.Error(err, "decryption failed for sshSecret %s", url)
+				} else {
+					namespace := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName())
+					secrets = append(secrets, r.backendSecret(ctx, paas, namespace, url, string(decrypted)))
+				}
+			}
 		}
 	}
 	return secrets
