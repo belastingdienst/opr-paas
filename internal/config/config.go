@@ -149,8 +149,10 @@ func (config Config) CapabilityK8sName(capability string) (as types.NamespacedNa
 	as.Namespace = config.AppSetNamespace
 	if cap, exists := config.Capabilities[capability]; exists {
 		as.Name = cap.AppSet
+		as.Namespace = config.AppSetNamespace
 	} else {
 		as.Name = fmt.Sprintf("paas-%s", capability)
+		as.Namespace = config.AppSetNamespace
 	}
 	return as
 }
