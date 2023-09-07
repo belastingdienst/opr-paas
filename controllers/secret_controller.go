@@ -102,7 +102,7 @@ func (r *PaasReconciler) BackendSecrets(
 		if cap.IsEnabled() {
 			for url, encryptedSshData := range cap.GetSshSecrets() {
 				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
-					logger.Error(err, "decryption failed for sshSecret %s", url)
+					logger.Error(err, fmt.Sprintf("decryption failed for sshSecret %s", url))
 				} else {
 					namespace := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName())
 					secrets = append(secrets, r.backendSecret(ctx, paas, namespace, url, string(decrypted)))
@@ -110,7 +110,7 @@ func (r *PaasReconciler) BackendSecrets(
 			}
 			for url, encryptedSshData := range paas.Spec.SshSecrets {
 				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
-					logger.Error(err, "decryption failed for sshSecret %s", url)
+					logger.Error(err, fmt.Sprintf("decryption failed for sshSecret %s", url))
 				} else {
 					namespace := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName())
 					secrets = append(secrets, r.backendSecret(ctx, paas, namespace, url, string(decrypted)))
