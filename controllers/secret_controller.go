@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/go-logr/logr"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -66,7 +67,7 @@ func (r *PaasReconciler) backendSecret(
 	sshData string,
 ) *corev1.Secret {
 	b64_url := b64Encrypt(url)
-	name := fmt.Sprintf("argocd-ssh-%s", string(b64_url[:8]))
+	name := fmt.Sprintf("paas-ssh-%s", string(b64_url[:8]))
 	logger := getLogger(ctx, paas, "Secret", name)
 	logger.Info(fmt.Sprintf("Defining %s Secret", name))
 
@@ -96,21 +97,22 @@ func (r *PaasReconciler) BackendSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (secrets []*corev1.Secret) {
-	logger := getLogger(ctx, paas, "Secrets", "")
-	logger.Info("Defining Secrets")
+	var logger logr.Logger
 	for _, cap := range paas.Spec.Capabilities.AsMap() {
 		if cap.IsEnabled() {
 			for url, encryptedSshData := range cap.GetSshSecrets() {
+				logger = getLogger(ctx, paas, "Secrets", url)
 				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
-					logger.Error(err, fmt.Sprintf("decryption failed for sshSecret %s", url))
+					logger.Error(err, "decryption failed")
 				} else {
 					namespace := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName())
 					secrets = append(secrets, r.backendSecret(ctx, paas, namespace, url, string(decrypted)))
 				}
 			}
 			for url, encryptedSshData := range paas.Spec.SshSecrets {
+				logger = getLogger(ctx, paas, "Secrets", url)
 				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
-					logger.Error(err, fmt.Sprintf("decryption failed for sshSecret %s", url))
+					logger.Error(err, "decryption failed")
 				} else {
 					namespace := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName())
 					secrets = append(secrets, r.backendSecret(ctx, paas, namespace, url, string(decrypted)))
