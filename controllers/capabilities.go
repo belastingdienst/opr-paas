@@ -122,7 +122,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	as := &appv1.ApplicationSet{}
 	asNamespacedName := getConfig().CapabilityK8sName(capability)
 	logger := getLogger(ctx, paas, "AppSet", asNamespacedName.String())
-	logger.Info(fmt.Sprintf("Reconciling %s Applicationset", capability))
+	logger.Info(fmt.Sprintf("Reconciling %s Applicationset %s", capability, asNamespacedName.String()))
 	err := r.Get(ctx, asNamespacedName, as)
 	//groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
@@ -163,18 +163,9 @@ func (r *PaasReconciler) EnsureAppSetCaps(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	type cap struct {
-		name    string
-		enabled bool
-	}
-	for _, c := range []cap{
-		{name: "argocd", enabled: paas.Spec.Capabilities.ArgoCD.Enabled},
-		{name: "tekton", enabled: paas.Spec.Capabilities.CI.Enabled},
-		{name: "grafana", enabled: paas.Spec.Capabilities.Grafana.Enabled},
-		{name: "sso", enabled: paas.Spec.Capabilities.SSO.Enabled},
-	} {
-		if c.enabled {
-			if err := r.ensureAppSetCap(ctx, paas, c.name); err != nil {
+	for cap_name, c := range paas.Spec.Capabilities.AsMap() {
+		if c.IsEnabled() {
+			if err := r.ensureAppSetCap(ctx, paas, cap_name); err != nil {
 				return err
 			}
 		}
@@ -222,13 +213,8 @@ func (r *PaasReconciler) FinalizeAppSetCaps(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	for _, c := range []string{
-		"argocd",
-		"ci",
-		"grafana",
-		"sso",
-	} {
-		if err := r.finalizeAppSetCap(ctx, paas, c); err != nil {
+	for capName := range paas.Spec.Capabilities.AsMap() {
+		if err := r.finalizeAppSetCap(ctx, paas, capName); err != nil {
 			return err
 		}
 	}

@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/go-logr/logr"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -15,25 +15,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-// ensureSecret ensures Secret presence in given namespace.
+// ensureSecret ensures Secret presence in given secret.
 func (r *PaasReconciler) EnsureSecret(
 	ctx context.Context,
-	s *corev1.Secret,
+	secret *corev1.Secret,
 ) error {
-	// See if namespace exists and create if it doesn't
+	// See if secret exists and create if it doesn't
 	found := &corev1.Secret{}
 	err := r.Get(ctx, types.NamespacedName{
-		Name:      s.Name,
-		Namespace: s.Namespace,
+		Name:      secret.Name,
+		Namespace: secret.Namespace,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
-		// Create the namespace
-		return r.Create(ctx, s)
+		// Create the secret
+		return r.Create(ctx, secret)
 	} else if err != nil {
-		// Error that isn't due to the namespace not existing
+		// Error that isn't due to the secret not existing
 		return err
 	} else {
-		return r.Update(ctx, s)
+		return r.Update(ctx, secret)
 	}
 }
 
@@ -67,7 +67,7 @@ func (r *PaasReconciler) backendSecret(
 	sshData string,
 ) *corev1.Secret {
 	b64_url := b64Encrypt(url)
-	name := fmt.Sprintf("paas-ssh-%s", string(b64_url[:8]))
+	name := fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(b64_url[:8])))
 	logger := getLogger(ctx, paas, "Secret", name)
 	logger.Info(fmt.Sprintf("Defining %s Secret", name))
 
@@ -82,11 +82,13 @@ func (r *PaasReconciler) backendSecret(
 			Labels:    paas.ClonedLabels(),
 		},
 		Data: map[string][]byte{
-			"type":          b64Encrypt("git"),
-			"url":           b64_url,
-			"sshPrivateKey": b64Encrypt(sshData),
+			"type":          []byte("git"),
+			"url":           []byte(url),
+			"sshPrivateKey": []byte(sshData),
 		},
 	}
+
+	s.Labels["argocd.argoproj.io/secret-type"] = "repo-creds"
 
 	logger.Info("Setting Owner")
 	controllerutil.SetControllerReference(paas, s, r.Scheme)
@@ -97,25 +99,27 @@ func (r *PaasReconciler) BackendSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (secrets []*corev1.Secret) {
-	var logger logr.Logger
 	for _, cap := range paas.Spec.Capabilities.AsMap() {
+		logger := getLogger(ctx, paas, "Secrets", cap.CapabilityName())
 		if cap.IsEnabled() {
 			for url, encryptedSshData := range cap.GetSshSecrets() {
-				logger = getLogger(ctx, paas, "Secrets", url)
 				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
 					logger.Error(err, "decryption failed")
 				} else {
 					namespace := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName())
-					secrets = append(secrets, r.backendSecret(ctx, paas, namespace, url, string(decrypted)))
+					secret := r.backendSecret(ctx, paas, namespace, url, string(decrypted))
+					logger.Info("Defining secret", "url", url)
+					secrets = append(secrets, secret)
 				}
 			}
 			for url, encryptedSshData := range paas.Spec.SshSecrets {
-				logger = getLogger(ctx, paas, "Secrets", url)
 				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
 					logger.Error(err, "decryption failed")
 				} else {
 					namespace := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName())
-					secrets = append(secrets, r.backendSecret(ctx, paas, namespace, url, string(decrypted)))
+					secret := r.backendSecret(ctx, paas, namespace, url, string(decrypted))
+					logger.Info("Defining generic secret", "url", url)
+					secrets = append(secrets, secret)
 				}
 			}
 		}

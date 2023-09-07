@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	_cnf *config.Config
-	_c   map[string]*crypt.Crypt
+	_cnf   *config.Config
+	_crypt map[string]*crypt.Crypt
 )
 
 func getConfig() config.Config {
@@ -29,12 +29,12 @@ func getConfig() config.Config {
 }
 
 func getRsa(paas string) *crypt.Crypt {
-	if _c == nil {
-		_c = make(map[string]*crypt.Crypt)
+	if _crypt == nil {
+		_crypt = make(map[string]*crypt.Crypt)
 	}
-	if c, exists := _c[paas]; !exists {
+	if c, exists := _crypt[paas]; !exists {
 		c = crypt.NewCrypt(getConfig().DecryptKeyPath, "", paas)
-		_c[paas] = c
+		_crypt[paas] = c
 		return c
 	} else {
 		return c
