@@ -210,9 +210,31 @@ spec:
                 type: string
               grafanaUrl:
                 type: string
+              messages:
+                items:
+                  properties:
+                    action:
+                      type: string
+                    level:
+                      type: string
+                    message:
+                      type: string
+                    resource:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                  - action
+                  - level
+                  - message
+                  - resource
+                  - type
+                  type: object
+                type: array
             required:
             - argocdUrl
             - grafanaUrl
+            - messages
             type: object
         type: object
     served: true

@@ -260,11 +260,34 @@ func (pg PaasGrafana) GetSshSecrets() map[string]string {
 	return pg.SshSecrets
 }
 
+type PaasStatusMessage struct {
+	Level        string `json:"level"`
+	Action       string `json:"action"`
+	ResourceType string `json:"type"`
+	Resource     string `json:"resource"`
+	Message      string `json:"message"`
+}
+
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
-	ArgoCDUrl  string `json:"argocdUrl"`
-	GrafanaUrl string `json:"grafanaUrl"`
+	ArgoCDUrl  string              `json:"argocdUrl"`
+	GrafanaUrl string              `json:"grafanaUrl"`
+	Messages   []PaasStatusMessage `json:"messages"`
+}
+
+func (ps *PaasStatus) Truncate() {
+	ps.Messages = []PaasStatusMessage{}
+}
+
+func (ps *PaasStatus) AddMessage(level string, action string, resourceType string, resource string, message string) {
+	ps.Messages = append(ps.Messages, PaasStatusMessage{
+		Level:        level,
+		Action:       action,
+		ResourceType: resourceType,
+		Resource:     resource,
+		Message:      message,
+	})
 }
 
 //+kubebuilder:object:root=true

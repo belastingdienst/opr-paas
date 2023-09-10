@@ -120,15 +120,16 @@ func (r *PaasReconciler) ensureAppSetCap(
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := getConfig().CapabilityK8sName(capability)
-	logger := getLogger(ctx, paas, "AppSet", asNamespacedName.String())
-	logger.Info(fmt.Sprintf("Reconciling %s Applicationset %s", capability, asNamespacedName.String()))
-	err := r.Get(ctx, asNamespacedName, as)
+	namespacedName := getConfig().CapabilityK8sName(capability)
+	logger := getLogger(ctx, paas, "AppSet", namespacedName.String())
+	logger.Info(fmt.Sprintf("Reconciling %s Applicationset %s", capability, namespacedName.String()))
+	err := r.Get(ctx, namespacedName, as)
 	//groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
 	if err != nil {
 		// Applicationset does not exixt
+		paas.Status.AddMessage("ERROR", "find", "Kind:Applicationset,APIVersion:argoproj.io/v1alpha1", namespacedName.String(), err.Error())
 		return err
 	} else if listGen = getListGen(as.Spec.Generators); listGen == nil {
 		// create the list
@@ -140,6 +141,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 			paas.Name: entryFromPaas(paas),
 		}
 	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
+		paas.Status.AddMessage("ERROR", "read", as.TypeMeta.String(), namespacedName.String(), err.Error())
 		return err
 	} else {
 		entry := entryFromPaas(paas)
@@ -147,6 +149,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	}
 	// log.Info(fmt.Sprintf("entries: %s", entries.AsString()))
 	if json, err := entries.AsJSON(); err != nil {
+		paas.Status.AddMessage("ERROR", "update", as.TypeMeta.String(), namespacedName.String(), err.Error())
 		return err
 	} else {
 		// log.Info(fmt.Sprintf("json: %v", json))
@@ -155,6 +158,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 		listGen.List.Elements = json
 	}
 
+	paas.Status.AddMessage("INFO", "update", as.TypeMeta.String(), namespacedName.String(), "succeeded")
 	return r.Update(ctx, as)
 }
 
