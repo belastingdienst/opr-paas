@@ -49,9 +49,15 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("Creating whitelist configmap")
 		// Create the ConfigMap
-		return r.ensureLdapGroupsConfigMap(ctx, wlConfigMap, gs.AsString())
+		if err = r.ensureLdapGroupsConfigMap(ctx, wlConfigMap, gs.AsString()); err != nil {
+			paas.Status.AddMessage("ERROR", "create", "Kind:Configmap,APIVersion:v1", wlConfigMap.String(), err.Error())
+		} else {
+			paas.Status.AddMessage("INFO", "create", "Kind:Configmap,APIVersion:v1", wlConfigMap.String(), "succeeded")
+		}
+		return err
 	} else if err != nil {
 		logger.Error(err, "Could not retrieve whitelist configmap")
+		paas.Status.AddMessage("ERROR", "find", "Kind:Configmap,APIVersion:v1", wlConfigMap.String(), err.Error())
 		// Error that isn't due to the group not existing
 		return err
 	} else if whitelist, exists := cm.Data["whitelist.txt"]; !exists {
@@ -65,13 +71,19 @@ func (r *PaasReconciler) EnsureLdapGroups(
 		if changed := whitelist_groups.Add(&gs); !changed {
 			//fmt.Printf("configured: %d, combined: %d", l1, l2)
 			logger.Info("No new info in whitelist")
+			paas.Status.AddMessage("INFO", "update", cm.TypeMeta.String(), wlConfigMap.String(), "no changes")
 			return nil
 		}
 		logger.Info("Adding to whitelist configmap")
 		cm.Data["whitelist.txt"] = whitelist_groups.AsString()
 	}
 	logger.Info(fmt.Sprintf("Updating whitelist configmap: %v", cm))
-	return r.Update(ctx, cm)
+	if err = r.Update(ctx, cm); err != nil {
+		paas.Status.AddMessage("ERROR", "update", cm.TypeMeta.String(), wlConfigMap.String(), err.Error())
+	} else {
+		paas.Status.AddMessage("INFO", "update", cm.TypeMeta.String(), wlConfigMap.String(), "succeeded")
+	}
+	return err
 }
 
 // ensureLdapGroup ensures Group presence
@@ -86,7 +98,7 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 	wlConfigMap := getConfig().Whitelist
 	err := r.Get(ctx, wlConfigMap, cm)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Error(err, "whitelist configmap does not exist")
+		logger.Info("whitelist configmap does not exist")
 		// ConfigMap does not exist, so nothing to clean
 		return nil
 	} else if err != nil {
@@ -95,7 +107,7 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		return err
 	} else if whitelist, exists := cm.Data["whitelist.txt"]; !exists {
 		// No whitelist.txt exists in the configmap, so nothing to clean
-		logger.Error(fmt.Errorf("no whitelist"), "whitelist.txt does not exists in whitelist configmap")
+		logger.Info("whitelist.txt does not exists in whitelist configmap")
 		return nil
 	} else {
 		var isChanged bool
@@ -104,7 +116,7 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		for _, query := range cleanedLdapQueries {
 			g := groups.NewGroup(query)
 			if g.Key == "" {
-				logger.Error(fmt.Errorf("invalid query"), "Could not get key from", query)
+				logger.Info("Could not get key", "query", query)
 			} else if gs.DeleteByKey(g.Key) {
 				logger.Info(fmt.Sprintf("LdapGroup %s removed", g.Key))
 				isChanged = true

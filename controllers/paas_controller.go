@@ -88,6 +88,9 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, nil
 	}
 
+	paas.Status.Truncate()
+	defer r.Update(ctx, paas)
+
 	// Add finalizer for this CR
 	logger.Info("Adding finalizer for PaaS object")
 	if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
@@ -106,7 +109,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	// Create quotas if needed
 	for _, q := range r.BackendEnabledQuotas(ctx, paas) {
 		logger.Info("Creating quota " + q.Name + " for PAAS object ")
-		if err := r.EnsureQuota(ctx, req, q); err != nil {
+		if err := r.EnsureQuota(ctx, paas, req, q); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}
@@ -122,7 +125,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger.Info("Creating namespaces for PAAS object ")
 	// Create namespaces if needed
 	for _, ns := range r.BackendEnabledNamespaces(ctx, paas) {
-		if err := r.EnsureNamespace(ctx, req, ns); err != nil {
+		if err := r.EnsureNamespace(ctx, paas, req, ns); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating namespace %s", ns.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}
@@ -131,7 +134,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger.Info("Creating RoleBindings for PAAS object ")
 	// Create namespaces if needed
 	for _, rb := range r.BackendEnabledRoleBindings(ctx, paas) {
-		if err := r.EnsureAdminRoleBinding(ctx, rb); err != nil {
+		if err := r.EnsureAdminRoleBinding(ctx, paas, rb); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating rolebinding %s/%s",
 				rb.ObjectMeta.Namespace,
 				rb.ObjectMeta.Name))
@@ -163,7 +166,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	// Create argo ssh secrets
 	secrets := r.BackendSecrets(ctx, paas)
 	for _, secret := range secrets {
-		if err = r.EnsureSecret(ctx, secret); err != nil {
+		if err = r.EnsureSecret(ctx, paas, secret); err != nil {
 			logger.Error(err, "Failure while creating secret", "secret", secret)
 			return ctrl.Result{}, err
 		}
@@ -197,15 +200,21 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	for i := 1; i <= retries; i++ {
 		logger.Info(fmt.Sprintf("Updating ArgoCD Permissions (try %d/%d)", i, retries))
 		if err := r.EnsureArgoPermissions(ctx, paas); err != nil {
-			logger.Error(err, "updating ArgoCD Permissions failed")
+			if i == retries {
+				logger.Error(err, "updating ArgoCD Permissions failed", "retries", retries)
+				return ctrl.Result{}, fmt.Errorf("updating ArgoCD Permissions failed %d times", retries)
+			}
 		} else {
 			break
 		}
-		if i == retries {
-			return ctrl.Result{}, fmt.Errorf("updating ArgoCD Permissions failed %d times", retries)
-		}
 	}
 
+	logger.Info("Updating PaaS object status")
+	paas.Status.AddMessage("INFO", "reconcile", paas.TypeMeta.String(), paas.Name, "succeeded")
+	// This is done with defer, and don't want to do it twice
+	if err := r.Status().Update(ctx, paas); err != nil {
+		return ctrl.Result{}, err
+	}
 	logger.Info("PAAS object succesfully reconciled")
 	return ctrl.Result{}, nil
 }

@@ -15,15 +15,16 @@ import (
 // ensureRoleBinding ensures RoleBinding presence in given rolebinding.
 func (r *PaasReconciler) EnsureAdminRoleBinding(
 	ctx context.Context,
+	paas *v1alpha1.Paas,
 	rb *rbac.RoleBinding,
 ) error {
-
-	// See if rolebinding exists and create if it doesn't
-	found := &rbac.RoleBinding{}
-	err := r.Get(ctx, types.NamespacedName{
+	namespacedName := types.NamespacedName{
 		Name:      rb.Name,
 		Namespace: rb.Namespace,
-	}, found)
+	}
+	// See if rolebinding exists and create if it doesn't
+	found := &rbac.RoleBinding{}
+	err := r.Get(ctx, namespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
 
 		// Create the rolebinding
@@ -31,16 +32,20 @@ func (r *PaasReconciler) EnsureAdminRoleBinding(
 
 		if err != nil {
 			// creating the rolebinding failed
+			paas.Status.AddMessage("ERROR", "create", rb.TypeMeta.String(), namespacedName.String(), err.Error())
 			return err
 		} else {
 			// creating the rolebinding was successful
+			paas.Status.AddMessage("INFO", "create", rb.TypeMeta.String(), namespacedName.String(), "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
+		paas.Status.AddMessage("ERROR", "find", rb.TypeMeta.String(), namespacedName.String(), err.Error())
 		return err
 	}
 
+	paas.Status.AddMessage("INFO", "create", rb.TypeMeta.String(), namespacedName.String(), "already existed")
 	return nil
 }
 

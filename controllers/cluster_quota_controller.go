@@ -19,6 +19,7 @@ import (
 // ensureQuota ensures Quota presence
 func (r *PaasReconciler) EnsureQuota(
 	ctx context.Context,
+	paas *v1alpha1.Paas,
 	request reconcile.Request,
 	quota *quotav1.ClusterResourceQuota,
 ) error {
@@ -32,22 +33,27 @@ func (r *PaasReconciler) EnsureQuota(
 		// Create the quota
 		if err = r.Create(ctx, quota); err != nil {
 			// creating the quota failed
+			paas.Status.AddMessage("ERROR", "create", quota.TypeMeta.String(), quota.Name, err.Error())
 			return err
 		} else {
 			// creating the quota was successful
+			paas.Status.AddMessage("INFO", "create", quota.TypeMeta.String(), quota.Name, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the quota not existing
+		paas.Status.AddMessage("ERROR", "find", quota.TypeMeta.String(), quota.Name, err.Error())
 		return err
 	} else {
 		// Update the quota
 		found.Spec = quota.Spec
 		if err = r.Update(ctx, found); err != nil {
-			// creating the quota failed
+			// updating the quota failed
+			paas.Status.AddMessage("ERROR", "update", quota.TypeMeta.String(), quota.Name, err.Error())
 			return err
 		} else {
-			// creating the quota was successful
+			// updating the quota was successful
+			paas.Status.AddMessage("INFO", "update", quota.TypeMeta.String(), quota.Name, "")
 			return nil
 		}
 	}

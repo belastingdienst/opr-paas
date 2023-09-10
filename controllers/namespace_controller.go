@@ -17,6 +17,7 @@ import (
 // ensureNamespace ensures Namespace presence in given namespace.
 func (r *PaasReconciler) EnsureNamespace(
 	ctx context.Context,
+	paas *v1alpha1.Paas,
 	request reconcile.Request,
 	ns *corev1.Namespace,
 ) error {
@@ -33,15 +34,19 @@ func (r *PaasReconciler) EnsureNamespace(
 
 		if err != nil {
 			// creating the namespace failed
+			paas.Status.AddMessage("ERROR", "create", ns.TypeMeta.String(), ns.Name, err.Error())
 			return err
 		} else {
 			// creating the namespace was successful
+			paas.Status.AddMessage("INFO", "create", ns.TypeMeta.String(), ns.Name, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
+		paas.Status.AddMessage("ERROR", "find", ns.TypeMeta.String(), ns.Name, err.Error())
 		return err
 	}
+	paas.Status.AddMessage("INFO", "find", ns.TypeMeta.String(), ns.Name, "already existed")
 
 	return nil
 }

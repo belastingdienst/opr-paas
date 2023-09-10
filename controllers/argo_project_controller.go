@@ -13,33 +13,36 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-// ensureAppProject ensures AppProject presence in given project.
+// ensureAppProject ensures AppProject presence in given namespace.
 func (r *PaasReconciler) EnsureAppProject(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
 	project := r.BackendAppProject(ctx, paas)
-
-	// See if project exists and create if it doesn't
-	found := &argo.AppProject{}
-	err := r.Get(ctx, types.NamespacedName{
+	namespacedName := types.NamespacedName{
 		Name:      project.Name,
 		Namespace: project.Namespace,
-	}, found)
+	}
+
+	// See if namespace exists and create if it doesn't
+	found := &argo.AppProject{}
+	err := r.Get(ctx, namespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
 
-		// Create the project
+		// Create the namespace
 		err = r.Create(ctx, project)
 
 		if err != nil {
-			// creating the project failed
+			// creating the namespace failed
+			paas.Status.AddMessage("ERROR", "create", found.TypeMeta.String(), namespacedName.String(), err.Error())
 			return err
 		} else {
-			// creating the project was successful
+			// creating the namespace was successful
+			paas.Status.AddMessage("INFO", "create", found.TypeMeta.String(), namespacedName.String(), "succeeded")
 			return nil
 		}
 	} else if err != nil {
-		// Error that isn't due to the project not existing
+		// Error that isn't due to the namespace not existing
 		return err
 	}
 
