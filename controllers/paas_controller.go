@@ -170,6 +170,11 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		logger.Info("Ssh secret succesfully created", "secret", secret)
 	}
 
+	logger.Info("Creating Argo Project")
+	if err := r.EnsureAppProject(ctx, paas); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	logger.Info("Extending Applicationsets for PAAS object")
 	if err := r.EnsureAppSetCaps(ctx, paas); err != nil {
 		return ctrl.Result{}, err
