@@ -61,6 +61,7 @@ rules:
   - argocds
   - applicationsets
   - applications
+  - appprojects
   verbs:
   - create
   - delete
