@@ -18,22 +18,37 @@ import (
 // ensureSecret ensures Secret presence in given secret.
 func (r *PaasReconciler) EnsureSecret(
 	ctx context.Context,
+	paas *v1alpha1.Paas,
 	secret *corev1.Secret,
 ) error {
 	// See if secret exists and create if it doesn't
-	found := &corev1.Secret{}
-	err := r.Get(ctx, types.NamespacedName{
+	namespacedName := types.NamespacedName{
 		Name:      secret.Name,
 		Namespace: secret.Namespace,
-	}, found)
+	}
+	found := &corev1.Secret{}
+	err := r.Get(ctx, namespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Create the secret
-		return r.Create(ctx, secret)
+		if err = r.Create(ctx, secret); err != nil {
+			paas.Status.AddMessage("ERROR", "create", secret.TypeMeta.String(), namespacedName.String(), err.Error())
+		} else {
+			paas.Status.AddMessage("INFO", "create", secret.TypeMeta.String(), namespacedName.String(), "succeeded")
+		}
+		return err
 	} else if err != nil {
 		// Error that isn't due to the secret not existing
+		paas.Status.AddMessage("ERROR", "find", secret.TypeMeta.String(), namespacedName.String(), err.Error())
 		return err
 	} else {
-		return r.Update(ctx, secret)
+		if err = r.Update(ctx, secret); err != nil {
+
+			paas.Status.AddMessage("ERROR", "update", secret.TypeMeta.String(), namespacedName.String(), err.Error())
+		} else {
+			paas.Status.AddMessage("INFO", "update", secret.TypeMeta.String(), namespacedName.String(), "succeeded")
+
+		}
+		return err
 	}
 }
 
@@ -62,14 +77,12 @@ type: Opaque
 func (r *PaasReconciler) backendSecret(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	namespace string,
+	namespacedName types.NamespacedName,
 	url string,
 	sshData string,
 ) *corev1.Secret {
-	b64_url := b64Encrypt(url)
-	name := fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(b64_url[:8])))
-	logger := getLogger(ctx, paas, "Secret", name)
-	logger.Info(fmt.Sprintf("Defining %s Secret", name))
+	logger := getLogger(ctx, paas, "Secret", namespacedName.String())
+	logger.Info("Defining Secret")
 
 	s := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -77,8 +90,8 @@ func (r *PaasReconciler) backendSecret(
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
+			Name:      namespacedName.Name,
+			Namespace: namespacedName.Namespace,
 			Labels:    paas.ClonedLabels(),
 		},
 		Data: map[string][]byte{
@@ -103,21 +116,29 @@ func (r *PaasReconciler) BackendSecrets(
 		logger := getLogger(ctx, paas, "Secrets", cap.CapabilityName())
 		if cap.IsEnabled() {
 			for url, encryptedSshData := range cap.GetSshSecrets() {
+				namespacedName := types.NamespacedName{
+					Namespace: fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName()),
+					Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(b64Encrypt(url)[:8]))),
+				}
 				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
-					logger.Error(err, "decryption failed")
+					logger.Info(fmt.Sprintf("decryption failed: %e", err))
+					paas.Status.AddMessage("ERROR", "update", "kind: Secret,apiVersion: v1", namespacedName.String(), err.Error())
 				} else {
-					namespace := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName())
-					secret := r.backendSecret(ctx, paas, namespace, url, string(decrypted))
+					secret := r.backendSecret(ctx, paas, namespacedName, url, string(decrypted))
 					logger.Info("Defining secret", "url", url)
 					secrets = append(secrets, secret)
 				}
 			}
 			for url, encryptedSshData := range paas.Spec.SshSecrets {
+				namespacedName := types.NamespacedName{
+					Namespace: fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName()),
+					Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(b64Encrypt(url)[:8]))),
+				}
 				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
-					logger.Error(err, "decryption failed")
+					logger.Info(fmt.Sprintf("decryption failed: %e", err))
+					paas.Status.AddMessage("ERROR", "update", "kind: Secret,apiVersion: v1", namespacedName.String(), err.Error())
 				} else {
-					namespace := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName())
-					secret := r.backendSecret(ctx, paas, namespace, url, string(decrypted))
+					secret := r.backendSecret(ctx, paas, namespacedName, url, string(decrypted))
 					logger.Info("Defining generic secret", "url", url)
 					secrets = append(secrets, secret)
 				}

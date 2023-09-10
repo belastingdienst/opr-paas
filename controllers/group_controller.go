@@ -32,14 +32,17 @@ func (r *PaasReconciler) EnsureGroup(
 		// Create the group
 		if err = r.Create(ctx, group); err != nil {
 			// creating the group failed
+			paas.Status.AddMessage("ERROR", "create", group.TypeMeta.String(), group.Name, err.Error())
 			return err
 		} else {
 			// creating the group was successful
+			paas.Status.AddMessage("INFO", "create", group.TypeMeta.String(), group.Name, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the group not existing
 		logger.Error(err, "Could not retrieve info on the group")
+		paas.Status.AddMessage("ERROR", "find", group.TypeMeta.String(), group.Name, err.Error())
 		return err
 	} else {
 		logger.Info("Updating the group")
@@ -68,10 +71,12 @@ func (r *PaasReconciler) EnsureGroup(
 		if err = r.Update(ctx, found); err != nil {
 			// Updating the group failed
 			logger.Error(err, "Updating the group failed")
+			paas.Status.AddMessage("ERROR", "update", group.TypeMeta.String(), group.Name, err.Error())
 			return err
 		} else {
 			logger.Info("Group updated")
 			// Updating the group was successful
+			paas.Status.AddMessage("INFO", "update", group.TypeMeta.String(), group.Name, "succeeded")
 			return nil
 		}
 	}

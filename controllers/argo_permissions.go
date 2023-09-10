@@ -27,9 +27,11 @@ func (r *PaasReconciler) EnsureArgoPermissions(
 	err := r.Get(ctx, argoName, argo)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("ArgoObject not found yet")
+		paas.Status.AddMessage("ERROR", "find", "Kind:Application,APIVersion:argoproj.io/v1alpha1", argoName.String(), err.Error())
 		return fmt.Errorf("ArgoObject not found yet")
 	} else if err != nil {
 		logger.Error(err, "Could not retrieve ArgoCD")
+		paas.Status.AddMessage("ERROR", "find", "Kind:Application,APIVersion:argoproj.io/v1alpha1", argoName.String(), err.Error())
 		return err
 	}
 	var oldPolicy string
@@ -42,10 +44,12 @@ func (r *PaasReconciler) EnsureArgoPermissions(
 	logger.Info(fmt.Sprintf("Setting ArgoCD permissions to %s", policy))
 	if oldPolicy == policy {
 		logger.Info("No policy changes")
+		paas.Status.AddMessage("INFO", "update", "Application/argoproj.io/v1alpha1", argoName.String(), "no policy changes")
 		return nil
 	}
 	argo.Spec.RBAC.Policy = &policy
 	argo.Spec.RBAC.Scopes = &scopes
 	logger.Info("Updating ArgoCD object")
+	paas.Status.AddMessage("INFO", "update", "Application/argoproj.io/v1alpha1", argoName.String(), "succeeded")
 	return r.Update(ctx, argo)
 }
