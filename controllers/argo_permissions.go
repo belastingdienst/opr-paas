@@ -61,5 +61,6 @@ func (r *PaasReconciler) EnsureArgoPermissions(
 	argo.Spec.RBAC.Scopes = &scopes
 	logger.Info("Updating ArgoCD object")
 	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, argo, "succeeded")
+	paas.Status.ArgoCDUrl = argo.Status.Host
 	return r.Update(ctx, argo)
 }
