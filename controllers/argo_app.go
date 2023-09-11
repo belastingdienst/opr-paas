@@ -35,15 +35,15 @@ func (r *PaasReconciler) EnsureArgoApp(
 	if err := r.Get(ctx, namespacedName, found); err == nil {
 		logger.Info("Argo Application already exists, updating")
 		found.Spec = argoApp.Spec
-		paas.Status.AddMessage("INFO", "create", found.TypeMeta.String(), namespacedName.String(), "succeeded")
+		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, found, "succeeded")
 		return r.Update(ctx, found)
 	} else if !errors.IsNotFound(err) {
 		logger.Error(err, "Could not retrieve info of Argo Application")
-		paas.Status.AddMessage("ERROR", "find", argoApp.TypeMeta.String(), namespacedName.String(), err.Error())
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusAction(v1alpha1.PaasStatusInfo), argoApp, err.Error())
 		return err
 	} else {
 		logger.Info("Creating Argo Application")
-		paas.Status.AddMessage("INFO", "create", argoApp.TypeMeta.String(), namespacedName.String(), "succeeded")
+		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, argoApp, "succeeded")
 		return r.Create(ctx, r.backendArgoApp(ctx, paas))
 	}
 }

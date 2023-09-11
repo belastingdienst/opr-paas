@@ -17,12 +17,15 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/internal/groups"
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -260,34 +263,39 @@ func (pg PaasGrafana) GetSshSecrets() map[string]string {
 	return pg.SshSecrets
 }
 
-type PaasStatusMessage struct {
-	Level        string `json:"level"`
-	Action       string `json:"action"`
-	ResourceType string `json:"type"`
-	Resource     string `json:"resource"`
-	Message      string `json:"message"`
-}
-
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
-	ArgoCDUrl  string              `json:"argocdUrl"`
-	GrafanaUrl string              `json:"grafanaUrl"`
-	Messages   []PaasStatusMessage `json:"messages"`
+	ArgoCDUrl  string   `json:"argocdUrl"`
+	GrafanaUrl string   `json:"grafanaUrl"`
+	Messages   []string `json:"messages"`
 }
 
 func (ps *PaasStatus) Truncate() {
-	ps.Messages = []PaasStatusMessage{}
+	ps.Messages = []string{}
 }
 
-func (ps *PaasStatus) AddMessage(level string, action string, resourceType string, resource string, message string) {
-	ps.Messages = append(ps.Messages, PaasStatusMessage{
-		Level:        level,
-		Action:       action,
-		ResourceType: resourceType,
-		Resource:     resource,
-		Message:      message,
-	})
+type PaasStatusLevel string
+type PaasStatusAction string
+
+const (
+	PaasStatusInfo      PaasStatusLevel  = "INFO"
+	PaasStatusError     PaasStatusLevel  = "ERROR"
+	PaasStatusParse     PaasStatusAction = "parse"
+	PaasStatusCreate    PaasStatusAction = "create"
+	PaasStatusFind      PaasStatusAction = "find"
+	PaasStatusUpdate    PaasStatusAction = "update"
+	PaasStatusReconcile PaasStatusAction = "reconcile"
+)
+
+func (ps *PaasStatus) AddMessage(level PaasStatusLevel, action PaasStatusAction, obj client.Object, message string) {
+	namespacedName := types.NamespacedName{
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
+	}
+	ps.Messages = append(ps.Messages,
+		fmt.Sprintf("%s: %s for %s (%s) %s", level, action, namespacedName.String(), obj.GetObjectKind().GroupVersionKind().String(), message),
+	)
 }
 
 //+kubebuilder:object:root=true

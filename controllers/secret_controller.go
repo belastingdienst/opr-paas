@@ -31,21 +31,21 @@ func (r *PaasReconciler) EnsureSecret(
 	if err != nil && errors.IsNotFound(err) {
 		// Create the secret
 		if err = r.Create(ctx, secret); err != nil {
-			paas.Status.AddMessage("ERROR", "create", secret.TypeMeta.String(), namespacedName.String(), err.Error())
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, secret, err.Error())
 		} else {
-			paas.Status.AddMessage("INFO", "create", secret.TypeMeta.String(), namespacedName.String(), "succeeded")
+			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, secret, "succeeded")
 		}
 		return err
 	} else if err != nil {
 		// Error that isn't due to the secret not existing
-		paas.Status.AddMessage("ERROR", "find", secret.TypeMeta.String(), namespacedName.String(), err.Error())
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, secret, err.Error())
 		return err
 	} else {
 		if err = r.Update(ctx, secret); err != nil {
 
-			paas.Status.AddMessage("ERROR", "update", secret.TypeMeta.String(), namespacedName.String(), err.Error())
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, secret, err.Error())
 		} else {
-			paas.Status.AddMessage("INFO", "update", secret.TypeMeta.String(), namespacedName.String(), "succeeded")
+			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, secret, "succeeded")
 
 		}
 		return err
@@ -79,7 +79,6 @@ func (r *PaasReconciler) backendSecret(
 	paas *v1alpha1.Paas,
 	namespacedName types.NamespacedName,
 	url string,
-	sshData string,
 ) *corev1.Secret {
 	logger := getLogger(ctx, paas, "Secret", namespacedName.String())
 	logger.Info("Defining Secret")
@@ -95,9 +94,8 @@ func (r *PaasReconciler) backendSecret(
 			Labels:    paas.ClonedLabels(),
 		},
 		Data: map[string][]byte{
-			"type":          []byte("git"),
-			"url":           []byte(url),
-			"sshPrivateKey": []byte(sshData),
+			"type": []byte("git"),
+			"url":  []byte(url),
 		},
 	}
 
@@ -120,12 +118,13 @@ func (r *PaasReconciler) BackendSecrets(
 					Namespace: fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName()),
 					Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(b64Encrypt(url)[:8]))),
 				}
+				secret := r.backendSecret(ctx, paas, namespacedName, url)
 				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
 					logger.Info(fmt.Sprintf("decryption failed: %e", err))
-					paas.Status.AddMessage("ERROR", "update", "kind: Secret,apiVersion: v1", namespacedName.String(), err.Error())
+					paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
 				} else {
-					secret := r.backendSecret(ctx, paas, namespacedName, url, string(decrypted))
 					logger.Info("Defining secret", "url", url)
+					secret.Data["sshPrivateKey"] = decrypted
 					secrets = append(secrets, secret)
 				}
 			}
@@ -134,12 +133,13 @@ func (r *PaasReconciler) BackendSecrets(
 					Namespace: fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName()),
 					Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(b64Encrypt(url)[:8]))),
 				}
+				secret := r.backendSecret(ctx, paas, namespacedName, url)
 				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
 					logger.Info(fmt.Sprintf("decryption failed: %e", err))
-					paas.Status.AddMessage("ERROR", "update", "kind: Secret,apiVersion: v1", namespacedName.String(), err.Error())
+					paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
 				} else {
-					secret := r.backendSecret(ctx, paas, namespacedName, url, string(decrypted))
 					logger.Info("Defining generic secret", "url", url)
+					secret.Data["sshPrivateKey"] = decrypted
 					secrets = append(secrets, secret)
 				}
 			}
