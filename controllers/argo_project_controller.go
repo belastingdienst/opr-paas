@@ -34,11 +34,11 @@ func (r *PaasReconciler) EnsureAppProject(
 
 		if err != nil {
 			// creating the namespace failed
-			paas.Status.AddMessage("ERROR", "create", found.TypeMeta.String(), namespacedName.String(), err.Error())
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, found, err.Error())
 			return err
 		} else {
 			// creating the namespace was successful
-			paas.Status.AddMessage("INFO", "create", found.TypeMeta.String(), namespacedName.String(), "succeeded")
+			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, found, "succeeded")
 			return nil
 		}
 	} else if err != nil {

@@ -34,19 +34,19 @@ func (r *PaasReconciler) EnsureNamespace(
 
 		if err != nil {
 			// creating the namespace failed
-			paas.Status.AddMessage("ERROR", "create", ns.TypeMeta.String(), ns.Name, err.Error())
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, ns, err.Error())
 			return err
 		} else {
 			// creating the namespace was successful
-			paas.Status.AddMessage("INFO", "create", ns.TypeMeta.String(), ns.Name, "succeeded")
+			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, ns, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
-		paas.Status.AddMessage("ERROR", "find", ns.TypeMeta.String(), ns.Name, err.Error())
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, ns, err.Error())
 		return err
 	}
-	paas.Status.AddMessage("INFO", "find", ns.TypeMeta.String(), ns.Name, "already existed")
+	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusFind, ns, "already existed")
 
 	return nil
 }

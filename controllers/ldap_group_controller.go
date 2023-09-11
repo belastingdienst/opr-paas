@@ -42,22 +42,31 @@ func (r *PaasReconciler) EnsureLdapGroups(
 ) error {
 	logger := getLogger(ctx, paas, "LdapGroup", "")
 	// See if group already exists and create if it doesn't
-	cm := &corev1.ConfigMap{}
-	wlConfigMap := getConfig().Whitelist
-	err := r.Get(ctx, wlConfigMap, cm)
+	namespacedName := getConfig().Whitelist
+	cm := &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Configmap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      namespacedName.Name,
+			Namespace: namespacedName.Namespace,
+		},
+	}
+	err := r.Get(ctx, namespacedName, cm)
 	gs := paas.Spec.Groups.AsGroups()
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("Creating whitelist configmap")
 		// Create the ConfigMap
-		if err = r.ensureLdapGroupsConfigMap(ctx, wlConfigMap, gs.AsString()); err != nil {
-			paas.Status.AddMessage("ERROR", "create", "Kind:Configmap,APIVersion:v1", wlConfigMap.String(), err.Error())
+		if err = r.ensureLdapGroupsConfigMap(ctx, namespacedName, gs.AsString()); err != nil {
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, cm, err.Error())
 		} else {
-			paas.Status.AddMessage("INFO", "create", "Kind:Configmap,APIVersion:v1", wlConfigMap.String(), "succeeded")
+			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, cm, "succeeded")
 		}
 		return err
 	} else if err != nil {
 		logger.Error(err, "Could not retrieve whitelist configmap")
-		paas.Status.AddMessage("ERROR", "find", "Kind:Configmap,APIVersion:v1", wlConfigMap.String(), err.Error())
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, cm, err.Error())
 		// Error that isn't due to the group not existing
 		return err
 	} else if whitelist, exists := cm.Data["whitelist.txt"]; !exists {
@@ -71,7 +80,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 		if changed := whitelist_groups.Add(&gs); !changed {
 			//fmt.Printf("configured: %d, combined: %d", l1, l2)
 			logger.Info("No new info in whitelist")
-			paas.Status.AddMessage("INFO", "update", cm.TypeMeta.String(), wlConfigMap.String(), "no changes")
+			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, cm, "no changes")
 			return nil
 		}
 		logger.Info("Adding to whitelist configmap")
@@ -79,9 +88,9 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	}
 	logger.Info(fmt.Sprintf("Updating whitelist configmap: %v", cm))
 	if err = r.Update(ctx, cm); err != nil {
-		paas.Status.AddMessage("ERROR", "update", cm.TypeMeta.String(), wlConfigMap.String(), err.Error())
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, cm, err.Error())
 	} else {
-		paas.Status.AddMessage("INFO", "update", cm.TypeMeta.String(), wlConfigMap.String(), "succeeded")
+		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, cm, "succeeded")
 	}
 	return err
 }
