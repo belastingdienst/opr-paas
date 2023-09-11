@@ -32,20 +32,20 @@ func (r *PaasReconciler) EnsureAdminRoleBinding(
 
 		if err != nil {
 			// creating the rolebinding failed
-			paas.Status.AddMessage("ERROR", "create", rb.TypeMeta.String(), namespacedName.String(), err.Error())
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
 			return err
 		} else {
 			// creating the rolebinding was successful
-			paas.Status.AddMessage("INFO", "create", rb.TypeMeta.String(), namespacedName.String(), "succeeded")
+			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
-		paas.Status.AddMessage("ERROR", "find", rb.TypeMeta.String(), namespacedName.String(), err.Error())
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 		return err
 	}
 
-	paas.Status.AddMessage("INFO", "create", rb.TypeMeta.String(), namespacedName.String(), "already existed")
+	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "already existed")
 	return nil
 }
 

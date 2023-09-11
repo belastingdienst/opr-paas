@@ -33,27 +33,27 @@ func (r *PaasReconciler) EnsureQuota(
 		// Create the quota
 		if err = r.Create(ctx, quota); err != nil {
 			// creating the quota failed
-			paas.Status.AddMessage("ERROR", "create", quota.TypeMeta.String(), quota.Name, err.Error())
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, quota, err.Error())
 			return err
 		} else {
 			// creating the quota was successful
-			paas.Status.AddMessage("INFO", "create", quota.TypeMeta.String(), quota.Name, "succeeded")
+			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, quota, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the quota not existing
-		paas.Status.AddMessage("ERROR", "find", quota.TypeMeta.String(), quota.Name, err.Error())
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, err.Error())
 		return err
 	} else {
 		// Update the quota
 		found.Spec = quota.Spec
 		if err = r.Update(ctx, found); err != nil {
 			// updating the quota failed
-			paas.Status.AddMessage("ERROR", "update", quota.TypeMeta.String(), quota.Name, err.Error())
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
 			return err
 		} else {
 			// updating the quota was successful
-			paas.Status.AddMessage("INFO", "update", quota.TypeMeta.String(), quota.Name, "")
+			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, quota, "succeeded")
 			return nil
 		}
 	}

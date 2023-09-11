@@ -89,7 +89,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	paas.Status.Truncate()
-	defer r.Update(ctx, paas)
+	defer r.Status().Update(ctx, paas)
 
 	// Add finalizer for this CR
 	logger.Info("Adding finalizer for PaaS object")
@@ -210,7 +210,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	logger.Info("Updating PaaS object status")
-	paas.Status.AddMessage("INFO", "reconcile", paas.TypeMeta.String(), paas.Name, "succeeded")
+	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paas, "succeeded")
 	// This is done with defer, and don't want to do it twice
 	if err := r.Status().Update(ctx, paas); err != nil {
 		return ctrl.Result{}, err
