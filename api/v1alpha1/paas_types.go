@@ -337,6 +337,7 @@ const (
 	PaasStatusError     PaasStatusLevel  = "ERROR"
 	PaasStatusParse     PaasStatusAction = "parse"
 	PaasStatusCreate    PaasStatusAction = "create"
+	PaasStatusDelete    PaasStatusAction = "delete"
 	PaasStatusFind      PaasStatusAction = "find"
 	PaasStatusUpdate    PaasStatusAction = "update"
 	PaasStatusReconcile PaasStatusAction = "reconcile"

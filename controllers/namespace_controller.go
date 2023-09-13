@@ -136,15 +136,17 @@ func (r *PaasReconciler) FinalizeNamespaces(ctx context.Context, paas *v1alpha1.
 
 	for _, ns := range nsList.Items {
 		if !strings.HasPrefix(ns.Name, paas.Name+"-") {
-			logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "wrong prefix")
+			// logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "wrong prefix")
 		} else if !paas.AmIOwner(ns.OwnerReferences) {
-			logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "I am not owner")
+			// logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "I am not owner")
 		} else if _, isEnabled := enabledNs[ns.Name]; isEnabled {
-			logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "Should be there")
+			// logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "Should be there")
 		} else if err := r.Delete(ctx, &ns); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, &ns, err.Error())
-			logger.Error(err, "Could not delete ns", "Namespace", ns.Name)
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, &ns, err.Error())
+			// logger.Error(err, "Could not delete ns", "Namespace", ns.Name)
 			return err
+		} else {
+			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusDelete, &ns, "succeeded")
 		}
 	}
 	return nil
