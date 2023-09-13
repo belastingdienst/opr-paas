@@ -131,6 +131,11 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
+	logger.Info("Cleaning obsolete namespaces ")
+	if err := r.FinalizeNamespaces(ctx, paas); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	logger.Info("Creating RoleBindings for PAAS object ")
 	// Create namespaces if needed
 	for _, rb := range r.BackendEnabledRoleBindings(ctx, paas) {
@@ -138,14 +143,6 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			logger.Error(err, fmt.Sprintf("Failure while creating rolebinding %s/%s",
 				rb.ObjectMeta.Namespace,
 				rb.ObjectMeta.Name))
-			return ctrl.Result{}, err
-		}
-	}
-
-	for _, name := range r.BackendDisabledNamespaces(ctx, paas) {
-		logger.Info("Creating namespace " + name + " for PAAS object ")
-		if err := r.FinalizeNamespace(ctx, paas, name); err != nil {
-			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", name))
 			return ctrl.Result{}, err
 		}
 	}

@@ -66,6 +66,59 @@ type PaasSpec struct {
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
 }
 
+func (p Paas) EnabledCapNamespaces() (ns map[string]bool) {
+	ns = make(map[string]bool)
+	for name, cap := range p.Spec.Capabilities.AsMap() {
+		if cap.IsEnabled() {
+			name = fmt.Sprintf("%s-%s", p.Name, name)
+			ns[name] = true
+		}
+	}
+	return
+}
+func (p Paas) AllCapNamespaces() (ns map[string]bool) {
+	ns = make(map[string]bool)
+	for name := range p.Spec.Capabilities.AsMap() {
+		name = fmt.Sprintf("%s-%s", p.Name, name)
+		ns[name] = true
+	}
+	return
+}
+
+func (p Paas) AllEnabledNamespaces() (ns map[string]bool) {
+	ns = p.EnabledCapNamespaces()
+	for name := range p.ExtraNamespaces() {
+		ns[name] = true
+	}
+	return
+
+}
+
+func (p Paas) ExtraNamespaces() (ns map[string]bool) {
+	capNs := p.AllCapNamespaces()
+	ns = make(map[string]bool)
+	for _, name := range p.Spec.Namespaces {
+		name = fmt.Sprintf("%s-%s", p.Name, name)
+		if _, isCap := capNs[name]; !isCap {
+			ns[name] = true
+		}
+	}
+	return
+
+}
+
+func (p Paas) InvalidExtraNamespaces() (ns map[string]bool) {
+	ns = make(map[string]bool)
+	capNs := p.AllCapNamespaces()
+	for _, name := range p.Spec.Namespaces {
+		name = fmt.Sprintf("%s-%s", p.Name, name)
+		if _, isCap := capNs[name]; isCap {
+			ns[name] = true
+		}
+	}
+	return
+}
+
 type PaasGroup struct {
 	Query string   `json:"query,omitempty"`
 	Users []string `json:"users"`
@@ -280,6 +333,7 @@ type PaasStatusAction string
 
 const (
 	PaasStatusInfo      PaasStatusLevel  = "INFO"
+	PaasStatusWarning   PaasStatusLevel  = "WARNING"
 	PaasStatusError     PaasStatusLevel  = "ERROR"
 	PaasStatusParse     PaasStatusAction = "parse"
 	PaasStatusCreate    PaasStatusAction = "create"

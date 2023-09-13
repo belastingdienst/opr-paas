@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
@@ -91,9 +92,16 @@ func (r *PaasReconciler) BackendEnabledNamespaces(
 			ns = append(ns, r.backendNamespace(ctx, paas, name, name))
 		}
 	}
+	capNs := paas.AllCapNamespaces()
 	for _, ns_suffix := range paas.Spec.Namespaces {
 		name := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, ns_suffix)
-		ns = append(ns, r.backendNamespace(ctx, paas, name, paas.ObjectMeta.Name))
+		n := r.backendNamespace(ctx, paas, name, paas.ObjectMeta.Name)
+		if _, isCapNs := capNs[name]; isCapNs {
+			paas.Status.AddMessage(v1alpha1.PaasStatusWarning, v1alpha1.PaasStatusCreate, n,
+				"Skipping extra namespace, as it is also a capability namespace")
+		} else {
+			ns = append(ns, n)
+		}
 	}
 	return ns
 }
@@ -110,20 +118,34 @@ func (r *PaasReconciler) BackendDisabledNamespaces(
 	return ns
 }
 
-func (r *PaasReconciler) FinalizeNamespace(ctx context.Context, paas *v1alpha1.Paas, namespaceName string) error {
-	logger := getLogger(ctx, paas, "Namespace", namespaceName)
+func (r *PaasReconciler) FinalizeNamespaces(ctx context.Context, paas *v1alpha1.Paas) error {
+	logger := getLogger(ctx, paas, "Namespace", "")
 	logger.Info("Finalizing")
-	obj := &corev1.Namespace{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Name: namespaceName,
-	}, obj); err != nil && errors.IsNotFound(err) {
-		logger.Info("Does not exist")
-		return nil
-	} else if err != nil {
-		logger.Info("Error retrieving info: " + err.Error())
+
+	enabledNs := paas.AllEnabledNamespaces()
+	logger.Info("Enabled namespaces", "Namespaces", enabledNs)
+	logger.Info("Enabled cap namespaces", "Namespaces", paas.EnabledCapNamespaces())
+	logger.Info("Extra namespaces", "Namespaces", paas.ExtraNamespaces())
+	logger.Info("Invalid namespaces", "Namespaces", paas.InvalidExtraNamespaces())
+
+	// Loop through all namespaces and remove when not should be
+	nsList := &corev1.NamespaceList{}
+	if err := r.List(ctx, nsList); err != nil {
 		return err
-	} else {
-		logger.Info("Deleting")
-		return r.Delete(ctx, obj)
 	}
+
+	for _, ns := range nsList.Items {
+		if !strings.HasPrefix(ns.Name, paas.Name+"-") {
+			logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "wrong prefix")
+		} else if !paas.AmIOwner(ns.OwnerReferences) {
+			logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "I am not owner")
+		} else if _, isEnabled := enabledNs[ns.Name]; isEnabled {
+			logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "Should be there")
+		} else if err := r.Delete(ctx, &ns); err != nil {
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, &ns, err.Error())
+			logger.Error(err, "Could not delete ns", "Namespace", ns.Name)
+			return err
+		}
+	}
+	return nil
 }
