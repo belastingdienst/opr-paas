@@ -148,6 +148,13 @@ func (g PaasGroups) Key2Name(key string) string {
 	}
 }
 
+func (gs PaasGroups) Names() (groups []string) {
+	for name, group := range gs {
+		groups = append(groups, group.Name(name))
+	}
+	return groups
+}
+
 func (gs PaasGroups) LdapQueries() []string {
 	var queries []string
 	for _, group := range gs {

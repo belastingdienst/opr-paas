@@ -94,7 +94,7 @@ func (r *PaasReconciler) BackendEnabledRoleBindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (rb []*rbac.RoleBinding) {
-	groupKeys := paas.Spec.Groups.AsGroups().Keys()
+	groupKeys := paas.Spec.Groups.Names()
 	for ns_name := range paas.AllEnabledNamespaces() {
 		name := types.NamespacedName{
 			Name:      "paas-admin",
