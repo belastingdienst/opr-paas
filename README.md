@@ -1,6 +1,12 @@
 # opr-paas
 Deze operator is bedoeld om PaaS resources te kunnen reconcilen naar namespaces, cluster quota,s ldap groepen, etc.
 
+## IMPORTANT
+The config folder is in this repo as an example only.
+The actual argocd config is maintained in the opr-paas-config repo.
+When changing the crd, first run `make manifests` in the root of this repo.
+Then copy config/crd/bases/cpet.belastingdienst.nl_paas.yaml to the opr-paas-config repo and dsitribute with ArgoCD from there
+
 ## Description
 Het idee is dat onze klanten een PaaS resource kunnen aanmaken en dat ze hiermee een applicatieomgeving kunnen (laten) creeren.
 de applicatie omgeving omvat:
