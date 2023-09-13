@@ -115,7 +115,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 	for _, name := range r.BackendDisabledQuotas(ctx, paas) {
-		logger.Info("Creating quota " + name + " for PAAS object ")
+		logger.Info("Cleaning quota " + name + " for PAAS object ")
 		if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", name))
 			return ctrl.Result{}, err
