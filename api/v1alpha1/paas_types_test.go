@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -63,4 +64,44 @@ func TestPaasGroups_QuotaWithDefaults(t *testing.T) {
 		resourcev1.MustParse("4Gi"))
 	assert.NotEqual(t, defaultedQuotas["requests.cpu"],
 		resourcev1.MustParse("700m"))
+}
+
+func TestPaasGroups_Namespaces(t *testing.T) {
+	paas := v1alpha1.Paas{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "paas-test",
+		},
+		Spec: v1alpha1.PaasSpec{
+			Namespaces: []string{
+				"argocd",
+				"sso",
+				"extra",
+			},
+			Capabilities: v1alpha1.PaasCapabilities{
+				ArgoCD: v1alpha1.PaasArgoCD{
+					Enabled: true,
+				},
+				Grafana: v1alpha1.PaasGrafana{
+					Enabled: true,
+				},
+			},
+		},
+	}
+	enCapNs := paas.EnabledCapNamespaces()
+	assert.Contains(t, enCapNs, "paas-test-argocd")
+	assert.Contains(t, enCapNs, "paas-test-grafana")
+	assert.NotContains(t, enCapNs, "paas-test-sso")
+	assert.NotContains(t, enCapNs, "paas-test-extra")
+
+	enExNs := paas.ExtraNamespaces()
+	assert.NotContains(t, enExNs, "paas-test-argocd")
+	assert.NotContains(t, enExNs, "paas-test-grafana")
+	assert.NotContains(t, enExNs, "paas-test-sso")
+	assert.Contains(t, enExNs, "paas-test-extra")
+
+	enEnNs := paas.AllEnabledNamespaces()
+	assert.Contains(t, enEnNs, "paas-test-argocd")
+	assert.Contains(t, enEnNs, "paas-test-grafana")
+	assert.NotContains(t, enEnNs, "paas-test-sso")
+	assert.Contains(t, enEnNs, "paas-test-extra")
 }
