@@ -95,19 +95,10 @@ func (r *PaasReconciler) BackendEnabledRoleBindings(
 	paas *v1alpha1.Paas,
 ) (rb []*rbac.RoleBinding) {
 	groupKeys := paas.Spec.Groups.AsGroups().Keys()
-	for cap_name, cap := range paas.Spec.Capabilities.AsMap() {
-		if cap.IsEnabled() {
-			name := types.NamespacedName{
-				Name:      "paas-admin",
-				Namespace: fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap_name),
-			}
-			rb = append(rb, r.backendRoleBinding(ctx, paas, name, groupKeys))
-		}
-	}
-	for _, ns_suffix := range paas.Spec.Namespaces {
+	for ns_name := range paas.AllEnabledNamespaces() {
 		name := types.NamespacedName{
 			Name:      "paas-admin",
-			Namespace: fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, ns_suffix),
+			Namespace: ns_name,
 		}
 		rb = append(rb, r.backendRoleBinding(ctx, paas, name, groupKeys))
 	}
