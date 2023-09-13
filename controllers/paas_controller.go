@@ -25,6 +25,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"time"
+
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -201,6 +203,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 				logger.Error(err, "updating ArgoCD Permissions failed", "retries", retries)
 				return ctrl.Result{}, fmt.Errorf("updating ArgoCD Permissions failed %d times", retries)
 			}
+			time.Sleep(time.Second)
 		} else {
 			break
 		}
@@ -208,10 +211,6 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	logger.Info("Updating PaaS object status")
 	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paas, "succeeded")
-	// This is done with defer, and don't want to do it twice
-	if err := r.Status().Update(ctx, paas); err != nil {
-		return ctrl.Result{}, err
-	}
 	logger.Info("PAAS object succesfully reconciled")
 	return ctrl.Result{}, nil
 }
