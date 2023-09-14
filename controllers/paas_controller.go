@@ -195,17 +195,19 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, err
 	}
 
-	retries := int(getConfig().ArgoPermissions.Retries)
-	for i := 1; i <= retries; i++ {
-		logger.Info(fmt.Sprintf("Updating ArgoCD Permissions (try %d/%d)", i, retries))
-		if err := r.EnsureArgoPermissions(ctx, paas); err != nil {
-			if i == retries {
-				logger.Error(err, "updating ArgoCD Permissions failed", "retries", retries)
-				return ctrl.Result{}, fmt.Errorf("updating ArgoCD Permissions failed %d times", retries)
+	if paas.Spec.Capabilities.ArgoCD.Enabled {
+		retries := int(getConfig().ArgoPermissions.Retries)
+		for i := 1; i <= retries; i++ {
+			logger.Info(fmt.Sprintf("Updating ArgoCD Permissions (try %d/%d)", i, retries))
+			if err := r.EnsureArgoPermissions(ctx, paas); err != nil {
+				if i == retries {
+					logger.Error(err, "updating ArgoCD Permissions failed", "retries", retries)
+					return ctrl.Result{}, fmt.Errorf("updating ArgoCD Permissions failed %d times", retries)
+				}
+				time.Sleep(time.Second)
+			} else {
+				break
 			}
-			time.Sleep(time.Second)
-		} else {
-			break
 		}
 	}
 
