@@ -123,10 +123,6 @@ func (r *PaasReconciler) FinalizeNamespaces(ctx context.Context, paas *v1alpha1.
 	logger.Info("Finalizing")
 
 	enabledNs := paas.AllEnabledNamespaces()
-	logger.Info("Enabled namespaces", "Namespaces", enabledNs)
-	logger.Info("Enabled cap namespaces", "Namespaces", paas.EnabledCapNamespaces())
-	logger.Info("Extra namespaces", "Namespaces", paas.ExtraNamespaces())
-	logger.Info("Invalid namespaces", "Namespaces", paas.InvalidExtraNamespaces())
 
 	// Loop through all namespaces and remove when not should be
 	nsList := &corev1.NamespaceList{}
@@ -144,7 +140,6 @@ func (r *PaasReconciler) FinalizeNamespaces(ctx context.Context, paas *v1alpha1.
 		} else if err := r.Delete(ctx, &ns); err != nil {
 			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, &ns, err.Error())
 			// logger.Error(err, "Could not delete ns", "Namespace", ns.Name)
-			return err
 		} else {
 			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusDelete, &ns, "succeeded")
 		}
