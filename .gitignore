@@ -25,4 +25,4 @@ Dockerfile.cross
 *.swo
 *~
 /manager
-/crypttool
+/crypttool*
