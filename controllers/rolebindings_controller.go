@@ -46,8 +46,8 @@ func (r *PaasReconciler) EnsureAdminRoleBinding(
 		return err
 	}
 
-	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "already existed")
-	return nil
+	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, rb, "updated")
+	return r.Update(ctx, rb)
 }
 
 // backendRoleBinding is a code for Creating RoleBinding
