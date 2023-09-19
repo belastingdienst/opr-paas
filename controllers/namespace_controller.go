@@ -47,9 +47,9 @@ func (r *PaasReconciler) EnsureNamespace(
 		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, ns, err.Error())
 		return err
 	}
-	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusFind, ns, "already existed")
 
-	return nil
+	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, ns, "updated")
+	return r.Update(ctx, ns)
 }
 
 // backendNamespace is a code for Creating Namespace

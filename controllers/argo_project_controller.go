@@ -46,7 +46,8 @@ func (r *PaasReconciler) EnsureAppProject(
 		return err
 	}
 
-	return nil
+	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, project, "updated")
+	return r.Update(ctx, project)
 }
 
 // backendAppProject is a code for Creating AppProject
@@ -85,46 +86,4 @@ func (r *PaasReconciler) BackendAppProject(
 	return p
 }
 
-// func (r *PaasReconciler) BackendEnabledAppProjects(
-// 	ctx context.Context,
-// 	paas *v1alpha1.Paas,
-// ) (p []*argo.AppProject) {
 
-// 	for cap_name, cap := range paas.Spec.Capabilities.AsMap() {
-// 		if cap.IsEnabled() {
-// 			name := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap_name)
-// 			p = append(p, r.BackendAppProject(ctx, paas, name))
-// 		}
-// 	}
-// 	return p
-// }
-
-// func (r *PaasReconciler) BackendDisabledAppProjects(
-// 	ctx context.Context,
-// 	paas *v1alpha1.Paas,
-// ) (p []string) {
-// 	for name, cap := range paas.Spec.Capabilities.AsMap() {
-// 		if !cap.IsEnabled() {
-// 			p = append(p, fmt.Sprintf("%s-%s", paas.Name, name))
-// 		}
-// 	}
-// 	return p
-// }
-
-// func (r *PaasReconciler) FinalizeAppProject(ctx context.Context, paas *v1alpha1.Paas, namespaceName string) error {
-// 	logger := getLogger(ctx, paas, "AppProject", namespaceName)
-// 	logger.Info("Finalizing")
-// 	obj := &argo.AppProject{}
-// 	if err := r.Get(ctx, types.NamespacedName{
-// 		Name: namespaceName,
-// 	}, obj); err != nil && errors.IsNotFound(err) {
-// 		logger.Info("Does not exist")
-// 		return nil
-// 	} else if err != nil {
-// 		logger.Info("Error retrieving info: " + err.Error())
-// 		return err
-// 	} else {
-// 		logger.Info("Deleting")
-// 		return r.Delete(ctx, obj)
-// 	}
-// }
