@@ -46,10 +46,13 @@ func (r *PaasReconciler) EnsureNamespace(
 		// Error that isn't due to the namespace not existing
 		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, ns, err.Error())
 		return err
+	} else if !paas.AmIOwner(found.OwnerReferences) {
+		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
+		controllerutil.SetControllerReference(paas, found, r.Scheme)
+		return r.Update(ctx, found)
 	}
+	return nil
 
-	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, ns, "updated")
-	return r.Update(ctx, ns)
 }
 
 // backendNamespace is a code for Creating Namespace

@@ -44,10 +44,12 @@ func (r *PaasReconciler) EnsureAppProject(
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
 		return err
+	} else if !paas.AmIOwner(found.OwnerReferences) {
+		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
+		controllerutil.SetControllerReference(paas, found, r.Scheme)
+		return r.Update(ctx, found)
 	}
-
-	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, project, "updated")
-	return r.Update(ctx, project)
+	return nil
 }
 
 // backendAppProject is a code for Creating AppProject
@@ -85,5 +87,3 @@ func (r *PaasReconciler) BackendAppProject(
 	controllerutil.SetControllerReference(paas, p, r.Scheme)
 	return p
 }
-
-
