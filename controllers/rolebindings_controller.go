@@ -44,10 +44,13 @@ func (r *PaasReconciler) EnsureAdminRoleBinding(
 		// Error that isn't due to the rolebinding not existing
 		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 		return err
+	} else if !paas.AmIOwner(found.OwnerReferences) {
+		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
+		controllerutil.SetControllerReference(paas, found, r.Scheme)
+		return r.Update(ctx, found)
 	}
+	return nil
 
-	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, rb, "updated")
-	return r.Update(ctx, rb)
 }
 
 // backendRoleBinding is a code for Creating RoleBinding
