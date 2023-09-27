@@ -121,7 +121,7 @@ func (p Paas) InvalidExtraNamespaces() (ns map[string]bool) {
 
 type PaasGroup struct {
 	Query string   `json:"query,omitempty"`
-	Users []string `json:"users"`
+	Users []string `json:"users,omitempty"`
 }
 
 func (g PaasGroup) Name(defName string) string {
@@ -326,9 +326,9 @@ func (pg PaasGrafana) GetSshSecrets() map[string]string {
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
-	ArgoCDUrl  string   `json:"argocdUrl"`
-	GrafanaUrl string   `json:"grafanaUrl"`
-	Messages   []string `json:"messages"`
+	ArgoCDUrl  string   `json:"argocdUrl,omitempty"`
+	GrafanaUrl string   `json:"grafanaUrl,omitempty"`
+	Messages   []string `json:"messages,omitempty"`
 }
 
 func (ps *PaasStatus) Truncate() {
@@ -424,7 +424,7 @@ func (p Paas) WithoutMe(references []metav1.OwnerReference) (withoutMe []metav1.
 type PaasList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Paas `json:"items"`
+	Items           []Paas `json:"items,omitempty"`
 }
 
 func init() {
