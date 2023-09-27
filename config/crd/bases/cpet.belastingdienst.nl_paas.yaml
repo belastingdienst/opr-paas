@@ -165,8 +165,6 @@ spec:
                       items:
                         type: string
                       type: array
-                  required:
-                  - users
                   type: object
                 type: object
               namespaces:
@@ -214,10 +212,6 @@ spec:
                 items:
                   type: string
                 type: array
-            required:
-            - argocdUrl
-            - grafanaUrl
-            - messages
             type: object
         type: object
     served: true
