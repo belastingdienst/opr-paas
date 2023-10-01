@@ -19,6 +19,7 @@ data: |
     retries: 10
   applicationset_namespace: cpet-argocd
   quota_label: dcs.itsmoplosgroep
+  managed_by_label: argocd.argoproj.io/managed-by
   capabilities:
     argocd:
       applicationset: cpet-paas-argocd
