@@ -19,6 +19,7 @@ type Config struct {
 	ArgoPermissions ConfigArgoPermissions `yaml:"argopermissions"`
 	AppSetNamespace string                `yaml:"applicationset_namespace"`
 	QuotaLabel      string                `yaml:"quota_label"`
+	ManagedByLabel  string                `yaml:"managed_by_label"`
 }
 
 type ConfigArgoPermissions struct {
@@ -133,6 +134,10 @@ func (config Config) Verify() error {
 	if config.DecryptKeyPath == "" {
 		multierror = append(multierror,
 			"missing decryptKeyPath")
+	}
+	if config.ManagedByLabel == "" {
+		multierror = append(multierror,
+			"missing managed_by_label")
 	}
 	multierror = append(multierror, config.Capabilities.Verify()...)
 	multierror = append(multierror, config.LDAP.Verify()...)

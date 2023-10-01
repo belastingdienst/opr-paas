@@ -79,6 +79,13 @@ func (r *PaasReconciler) backendNamespace(
 	logger.Info(fmt.Sprintf("Setting Quotagroup %s", quota))
 	ns.ObjectMeta.Labels[getConfig().QuotaLabel] = quota
 
+	argoNameSpace := fmt.Sprintf("%s-argocd", paas.Name)
+	if paas.Spec.Capabilities.ArgoCD.Enabled && name != argoNameSpace {
+		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate,
+			ns, "Setting managed_by_label")
+		ns.ObjectMeta.Labels[getConfig().ManagedByLabel] = argoNameSpace
+	}
+
 	logger.Info("Setting Owner")
 	controllerutil.SetControllerReference(paas, ns, r.Scheme)
 	return ns
