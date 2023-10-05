@@ -2,7 +2,9 @@ package controllers
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"strings"
 
@@ -56,6 +58,11 @@ func b64Encrypt(original string) []byte {
 	b64 := make([]byte, base64.StdEncoding.EncodedLen(len(original)))
 	base64.StdEncoding.Encode(b64, []byte(original))
 	return b64
+}
+
+func hashString(original string) []byte {
+	sum := sha256.Sum256([]byte(original))
+	return []byte(hex.EncodeToString(sum[:]))
 }
 
 /*
@@ -116,7 +123,7 @@ func (r *PaasReconciler) BackendSecrets(
 			for url, encryptedSshData := range cap.GetSshSecrets() {
 				namespacedName := types.NamespacedName{
 					Namespace: fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName()),
-					Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(b64Encrypt(url)[:8]))),
+					Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(hashString(url)[:8]))),
 				}
 				secret := r.backendSecret(ctx, paas, namespacedName, url)
 				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
