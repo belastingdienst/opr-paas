@@ -64,7 +64,6 @@ func (r *PaasReconciler) backendNamespace(
 ) *corev1.Namespace {
 	logger := getLogger(ctx, paas, "Namespace", name)
 	logger.Info(fmt.Sprintf("Defining %s Namespace", name))
-	//matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	ns := &corev1.Namespace{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Namespace",
@@ -85,6 +84,9 @@ func (r *PaasReconciler) backendNamespace(
 			ns, "Setting managed_by_label")
 		ns.ObjectMeta.Labels[getConfig().ManagedByLabel] = argoNameSpace
 	}
+	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate,
+		ns, "Setting oplosgroep_label")
+	ns.ObjectMeta.Labels[getConfig().OplosgroepLabel] = paas.Spec.Oplosgroep
 
 	logger.Info("Setting Owner")
 	controllerutil.SetControllerReference(paas, ns, r.Scheme)
