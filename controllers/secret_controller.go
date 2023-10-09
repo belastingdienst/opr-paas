@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -52,12 +51,6 @@ func (r *PaasReconciler) EnsureSecret(
 		}
 		return err
 	}
-}
-
-func b64Encrypt(original string) []byte {
-	b64 := make([]byte, base64.StdEncoding.EncodedLen(len(original)))
-	base64.StdEncoding.Encode(b64, []byte(original))
-	return b64
 }
 
 func hashString(original string) []byte {
@@ -113,44 +106,43 @@ func (r *PaasReconciler) backendSecret(
 	return s
 }
 
+func getSecrets(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	nsName string,
+	encryptedSecrets map[string]string,
+	r *PaasReconciler,
+) (secrets []*corev1.Secret) {
+	for url, encryptedSecretData := range encryptedSecrets {
+		namespacedName := types.NamespacedName{
+			Namespace: nsName,
+			Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(hashString(url)[:8]))),
+		}
+		secret := r.backendSecret(ctx, paas, namespacedName, url)
+		if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSecretData); err != nil {
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
+		} else {
+			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusParse, secret, "Defining generic secret")
+			secret.Data["sshPrivateKey"] = decrypted
+			secrets = append(secrets, secret)
+		}
+	}
+	return secrets
+}
+
 func (r *PaasReconciler) BackendSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (secrets []*corev1.Secret) {
+
 	for _, cap := range paas.Spec.Capabilities.AsMap() {
-		logger := getLogger(ctx, paas, "Secrets", cap.CapabilityName())
 		if cap.IsEnabled() {
-			for url, encryptedSshData := range cap.GetSshSecrets() {
-				namespacedName := types.NamespacedName{
-					Namespace: fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName()),
-					Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(hashString(url)[:8]))),
-				}
-				secret := r.backendSecret(ctx, paas, namespacedName, url)
-				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
-					logger.Info(fmt.Sprintf("decryption failed: %e", err))
-					paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
-				} else {
-					logger.Info("Defining secret", "url", url)
-					secret.Data["sshPrivateKey"] = decrypted
-					secrets = append(secrets, secret)
-				}
-			}
-			for url, encryptedSshData := range paas.Spec.SshSecrets {
-				namespacedName := types.NamespacedName{
-					Namespace: fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName()),
-					Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(b64Encrypt(url)[:8]))),
-				}
-				secret := r.backendSecret(ctx, paas, namespacedName, url)
-				if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSshData); err != nil {
-					logger.Info(fmt.Sprintf("decryption failed: %e", err))
-					paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
-				} else {
-					logger.Info("Defining generic secret", "url", url)
-					secret.Data["sshPrivateKey"] = decrypted
-					secrets = append(secrets, secret)
-				}
-			}
+			nsName := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName())
+			secrets = append(secrets, getSecrets(ctx, paas, nsName, cap.GetSshSecrets(), r)...)
 		}
+	}
+	for nsName := range paas.AllEnabledNamespaces() {
+		secrets = append(secrets, getSecrets(ctx, paas, nsName, paas.Spec.SshSecrets, r)...)
 	}
 	return secrets
 }
