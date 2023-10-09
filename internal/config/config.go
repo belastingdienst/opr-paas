@@ -139,10 +139,17 @@ func (config Config) Verify() error {
 		multierror = append(multierror,
 			"missing managed_by_label")
 	}
+	if config.AppSetNamespace == "" {
+		multierror = append(multierror,
+			"missing applicationset_namespace")
+	}
+	if config.QuotaLabel == "" {
+		multierror = append(multierror,
+			"missing quota_label")
+	}
 	multierror = append(multierror, config.Capabilities.Verify()...)
 	multierror = append(multierror, config.LDAP.Verify()...)
 	multierror = append(multierror, config.ArgoPermissions.Verify()...)
-	multierror = append(multierror, config.Capabilities.Verify()...)
 	if len(multierror) > 0 {
 		return fmt.Errorf("invalid config:\n%s",
 			strings.Join(multierror, "\n"))
