@@ -19,6 +19,7 @@ type Config struct {
 	ArgoPermissions ConfigArgoPermissions `yaml:"argopermissions"`
 	AppSetNamespace string                `yaml:"applicationset_namespace"`
 	QuotaLabel      string                `yaml:"quota_label"`
+	OplosgroepLabel string                `yaml:"oplosgroep_label"`
 	ManagedByLabel  string                `yaml:"managed_by_label"`
 }
 
@@ -146,6 +147,10 @@ func (config Config) Verify() error {
 	if config.QuotaLabel == "" {
 		multierror = append(multierror,
 			"missing quota_label")
+	}
+	if config.OplosgroepLabel == "" {
+		multierror = append(multierror,
+			"missing oplosgroep_label")
 	}
 	multierror = append(multierror, config.Capabilities.Verify()...)
 	multierror = append(multierror, config.LDAP.Verify()...)

@@ -20,6 +20,7 @@ data: |
   applicationset_namespace: cpet-argocd
   quota_label: dcs.itsmoplosgroep
   managed_by_label: argocd.argoproj.io/managed-by
+  oplosgroep_label: itsmoplosgroep
   capabilities:
     argocd:
       applicationset: cpet-paas-argocd
