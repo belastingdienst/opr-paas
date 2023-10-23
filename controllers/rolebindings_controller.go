@@ -54,7 +54,7 @@ func (r *PaasReconciler) EnsureAdminRoleBinding(
 }
 
 // backendRoleBinding is a code for Creating RoleBinding
-func (r *PaasReconciler) backendRoleBinding(
+func (r *PaasReconciler) backendAdminRoleBinding(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	name types.NamespacedName,
@@ -106,7 +106,7 @@ func (r *PaasReconciler) BackendEnabledRoleBindings(
 			Name:      "paas-admin",
 			Namespace: ns_name,
 		}
-		rb = append(rb, r.backendRoleBinding(ctx, paas, name, groupKeys))
+		rb = append(rb, r.backendAdminRoleBinding(ctx, paas, name, groupKeys))
 	}
 	return rb
 }
