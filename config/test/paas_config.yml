@@ -16,6 +16,12 @@ capabilities:
       requests.memory: 1Gi
       requests.storage: "0"
       thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+    extra_permissions:
+      roles:
+        - monitoring-edit
+      serviceaccounts:
+        - argo-service-applicationset-controller
+        - argo-service-argocd-application-controller
   tekton:
     applicationset: cpet-paas-argocd
     defaultquotas:
@@ -25,6 +31,12 @@ capabilities:
       requests.memory: 2Gi
       requests.storage: "100Gi"
       thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+    extra_permissions:
+      roles:
+        - monitoring-edit
+        - self-provisioner
+      serviceaccounts:
+        - pipeline
   sso:
     applicationset: cpet-paas-argocd
     defaultquotas:

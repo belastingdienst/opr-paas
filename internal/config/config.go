@@ -94,11 +94,17 @@ func (caps ConfigCapabilities) Verify() []string {
 }
 
 type ConfigCapability struct {
-	AppSet   string                `yaml:"applicationset"`
-	DefQuota ConfigDefaultQuotaDef `yaml:"defaultquotas"`
+	AppSet           string                `yaml:"applicationset"`
+	DefQuota         ConfigDefaultQuotaDef `yaml:"defaultquotas"`
+	ExtraPermissions ConfigCapExtraPerm    `yaml:"extra_permissions"`
 }
 
 type ConfigDefaultQuotaDef map[string]string
+
+type ConfigCapExtraPerm struct {
+	ServiceAccounts []string `yaml:"serviceaccounts"`
+	Roles           []string `yaml:"roles"`
+}
 
 const (
 	envConfName     = "PAAS_CONFIG"

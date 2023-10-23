@@ -189,6 +189,7 @@ type PaasCapability interface {
 	Quotas() PaasQuotas
 	CapabilityName() string
 	GetSshSecrets() map[string]string
+	WithExtraPermissions() bool
 }
 
 func (pc PaasCapabilities) AsMap() map[string]PaasCapability {
@@ -218,6 +219,14 @@ type PaasArgoCD struct {
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
+	// You can enable extra permissions for the service accounts beloning to this capability
+	// Exact definitions is configured in Paas Configmap
+	// Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
+	ExtraPermissions bool `json:"extra_permissions,omitempty"`
+}
+
+func (pa *PaasArgoCD) WithExtraPermissions() bool {
+	return (pa.Enabled && pa.ExtraPermissions)
 }
 
 func (pa *PaasArgoCD) IsEnabled() bool {
@@ -253,6 +262,14 @@ type PaasCI struct {
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
+	// You can enable extra permissions for the service accounts beloning to this capability
+	// Exact definitions is configured in Paas Configmap
+	// Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
+	ExtraPermissions bool `json:"extra_permissions,omitempty"`
+}
+
+func (pc *PaasCI) WithExtraPermissions() bool {
+	return (pc.Enabled && pc.ExtraPermissions)
 }
 
 func (pc PaasCI) Quotas() (pq PaasQuotas) {
@@ -279,6 +296,14 @@ type PaasSSO struct {
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
+	// You can enable extra permissions for the service accounts beloning to this capability
+	// Exact definitions is configured in Paas Configmap
+	// Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
+	ExtraPermissions bool `json:"extra_permissions,omitempty"`
+}
+
+func (ps *PaasSSO) WithExtraPermissions() bool {
+	return (ps.Enabled && ps.ExtraPermissions)
 }
 
 func (ps PaasSSO) Quotas() (pq PaasQuotas) {
@@ -305,6 +330,14 @@ type PaasGrafana struct {
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
+	// You can enable extra permissions for the service accounts beloning to this capability
+	// Exact definitions is configured in Paas Configmap
+	// Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
+	ExtraPermissions bool `json:"extra_permissions,omitempty"`
+}
+
+func (pg *PaasGrafana) WithExtraPermissions() bool {
+	return (pg.Enabled && pg.ExtraPermissions)
 }
 
 func (pg PaasGrafana) Quotas() (pq PaasQuotas) {

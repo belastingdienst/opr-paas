@@ -46,6 +46,12 @@ spec:
                       enabled:
                         description: Do we want an ArgoCD namespace, default false
                         type: boolean
+                      extra_permissions:
+                        description: You can enable extra permissions for the service
+                          accounts beloning to this capability Exact definitions is
+                          configured in Paas Configmap Note that we want to remove
+                          (some of) these permissions in future releases (like self-provisioner)
+                        type: boolean
                       gitPath:
                         description: the path in the git repo that contains the Applications
                           / Application Sets to be used by this ArgoCD
@@ -84,6 +90,12 @@ spec:
                       enabled:
                         description: Do we want a Grafana namespace, default false
                         type: boolean
+                      extra_permissions:
+                        description: You can enable extra permissions for the service
+                          accounts beloning to this capability Exact definitions is
+                          configured in Paas Configmap Note that we want to remove
+                          (some of) these permissions in future releases (like self-provisioner)
+                        type: boolean
                       quota:
                         additionalProperties:
                           anyOf:
@@ -110,6 +122,12 @@ spec:
                       enabled:
                         description: Do we want an SSO namespace, default false
                         type: boolean
+                      extra_permissions:
+                        description: You can enable extra permissions for the service
+                          accounts beloning to this capability Exact definitions is
+                          configured in Paas Configmap Note that we want to remove
+                          (some of) these permissions in future releases (like self-provisioner)
+                        type: boolean
                       quota:
                         additionalProperties:
                           anyOf:
@@ -135,6 +153,12 @@ spec:
                     properties:
                       enabled:
                         description: Do we want a CI (Tekton) namespace, default false
+                        type: boolean
+                      extra_permissions:
+                        description: You can enable extra permissions for the service
+                          accounts beloning to this capability Exact definitions is
+                          configured in Paas Configmap Note that we want to remove
+                          (some of) these permissions in future releases (like self-provisioner)
                         type: boolean
                       quota:
                         additionalProperties:
