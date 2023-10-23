@@ -211,6 +211,11 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
+	if err = r.ReconcileExtraClusterRoleBindings(ctx, paas); err != nil {
+		logger.Error(err, "Reconciling Extra ClusterRoleBindings failed")
+		return ctrl.Result{}, fmt.Errorf("reconciling Extra ClusterRoleBindings failed")
+	}
+
 	logger.Info("Updating PaaS object status")
 	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paas, "succeeded")
 	logger.Info("PAAS object succesfully reconciled")
@@ -247,6 +252,9 @@ func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *v1alpha1.Paas) 
 		return err
 	} else if err = r.FinalizeArgoApp(ctx, paas); err != nil {
 		logger.Error(err, "ArgoApp finalizer error")
+		return err
+	} else if r.FinalizeExtraClusterRoleBindings(ctx, paas); err != nil {
+		logger.Error(err, "Extra ClusterRoleBindings finalizer error")
 		return err
 	}
 	logger.Info("PaaS succesfully finalized")
