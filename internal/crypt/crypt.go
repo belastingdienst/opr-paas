@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"regexp"
 )
 
 type Crypt struct {
@@ -227,6 +228,9 @@ func (c Crypt) DecryptAes(encrypted []byte) ([]byte, error) {
 */
 
 func (c Crypt) Decrypt(b64 string) ([]byte, error) {
+	// Removing all characters that do not comply to base64 encoding (mainly \n and ' ')
+	re := regexp.MustCompile("[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=]")
+	b64 = re.ReplaceAllLiteralString(b64, "")
 	if asymEncrypted, err := base64.StdEncoding.DecodeString(b64); err != nil {
 		return nil, err
 	} else if decrypted, err := c.DecryptRsa(asymEncrypted); err != nil {
