@@ -47,8 +47,23 @@ func (r *PaasReconciler) EnsureNamespace(
 		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
 		controllerutil.SetControllerReference(paas, found, r.Scheme)
 	}
-	found.ObjectMeta.Labels = ns.ObjectMeta.Labels
-	return r.Update(ctx, found)
+	var changed bool
+	for key, value := range ns.ObjectMeta.Labels {
+		if orgValue, exists := found.ObjectMeta.Labels[key]; !exists {
+			// Not set yet
+		} else if orgValue != value {
+			// different
+		} else {
+			// No action required
+			continue
+		}
+		changed = true
+		found.ObjectMeta.Labels[key] = value
+	}
+	if changed {
+		return r.Update(ctx, found)
+	}
+	return nil
 }
 
 // backendNamespace is a code for Creating Namespace
