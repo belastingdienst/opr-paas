@@ -85,8 +85,11 @@ func (r *PaasReconciler) newClusterRoleBinding(
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: paas.ClonedLabels(),
+			Name: name,
+			Labels: map[string]string{
+				"app.kubernetes.io/created-by": "opr-paas",
+				"app.kubernetes.io/part-of":    "opr-paas",
+			},
 		},
 		RoleRef: rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
