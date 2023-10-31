@@ -7,6 +7,16 @@ metadata:
     app.kubernetes.io/part-of: opr-paas
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: opr-paas
-  name: paasns-sample
+  # Results in sam-ple-featuire-test1
+  name: feature-test1
+  namespace: sam-ple-argocd
 spec:
-  # TODO(user): Add fields here
+  #paas should be discoverable from namespace and existing paas objects
+  #paas: sam-ple
+  groups:
+    - group1
+    - group2
+  sshSecrets:
+    'ssh://git@vcs/proj/repo/': >-
+      2wkeKe==
+  separateQuota: false
