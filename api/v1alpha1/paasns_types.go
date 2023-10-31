@@ -29,7 +29,9 @@ type PaasNSSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of PaasNS. Edit paasns_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Groups        []string          `json:"groups,omitempty"`
+	SshSecrets    map[string]string `json:"sshSecrets,omitempty"`
+	SeparateQuota bool              `json:"separateQuota,omitempty"`
 }
 
 // PaasNSStatus defines the observed state of PaasNS
