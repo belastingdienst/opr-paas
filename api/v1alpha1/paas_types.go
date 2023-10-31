@@ -191,7 +191,7 @@ type PaasCapabilities struct {
 	Grafana PaasGrafana `json:"grafana,omitempty"`
 }
 
-type PaasCapability interface {
+type paasCapability interface {
 	IsEnabled() bool
 	Quotas() PaasQuotas
 	CapabilityName() string
@@ -199,9 +199,9 @@ type PaasCapability interface {
 	WithExtraPermissions() bool
 }
 
-func (pc PaasCapabilities) AsMap() map[string]PaasCapability {
-	caps := make(map[string]PaasCapability)
-	for _, cap := range []PaasCapability{
+func (pc PaasCapabilities) AsMap() map[string]paasCapability {
+	caps := make(map[string]paasCapability)
+	for _, cap := range []paasCapability{
 		&pc.ArgoCD,
 		&pc.CI,
 		&pc.SSO,
