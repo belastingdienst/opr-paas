@@ -115,7 +115,7 @@ func (r *PaasReconciler) BackendEnabledNamespaces(
 			ns = append(ns, r.backendNamespace(ctx, paas, name, name))
 		}
 	}
-	capNs := paas.AllCapNamespaces()
+	capNs := paas.PrefixedAllCapNamespaces()
 	for _, ns_suffix := range paas.Spec.Namespaces {
 		name := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, ns_suffix)
 		n := r.backendNamespace(ctx, paas, name, paas.ObjectMeta.Name)
@@ -145,7 +145,7 @@ func (r *PaasReconciler) FinalizeNamespaces(ctx context.Context, paas *v1alpha1.
 	logger := getLogger(ctx, paas, "Namespace", "")
 	logger.Info("Finalizing")
 
-	enabledNs := paas.AllEnabledNamespaces()
+	enabledNs := paas.PrefixedAllEnabledNamespaces()
 
 	// Loop through all namespaces and remove when not should be
 	nsList := &corev1.NamespaceList{}

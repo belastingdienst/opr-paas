@@ -131,27 +131,13 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
-	logger.Info("Creating namespaces for PAAS object ")
-	// Create namespaces if needed
-	for _, ns := range r.BackendEnabledNamespaces(ctx, paas) {
-		if err := r.EnsureNamespace(ctx, paas, req, ns); err != nil {
-			logger.Error(err, fmt.Sprintf("Failure while creating namespace %s", ns.ObjectMeta.Name))
-			return ctrl.Result{}, err
-		}
-	}
-
-	logger.Info("Cleaning obsolete namespaces ")
-	if err := r.FinalizeNamespaces(ctx, paas); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	logger.Info("Creating RoleBindings for PAAS object ")
-	// Create namespaces if needed
-	for _, rb := range r.BackendEnabledRoleBindings(ctx, paas) {
-		if err := r.EnsureAdminRoleBinding(ctx, paas, rb); err != nil {
-			logger.Error(err, fmt.Sprintf("Failure while creating rolebinding %s/%s",
-				rb.ObjectMeta.Namespace,
-				rb.ObjectMeta.Name))
+	logger.Info("Creating paas namespaces")
+	for name := range paas.PrefixedAllEnabledNamespaces() {
+		groups := paas.Spec.Groups.Names()
+		secrets := paas.GetNsSshSecrets(name)
+		pns := r.GetPaasNs(name, groups, secrets)
+		if err := r.EnsurePaasNs(ctx, paas, req, pns); err != nil {
+			logger.Error(err, fmt.Sprintf("Failure while creating PaasNS %s", pns.ObjectMeta.Name))
 			return ctrl.Result{}, err
 		}
 	}

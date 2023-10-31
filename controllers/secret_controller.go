@@ -141,7 +141,7 @@ func (r *PaasReconciler) BackendSecrets(
 			secrets = append(secrets, getSecrets(ctx, paas, nsName, cap.GetSshSecrets(), r)...)
 		}
 	}
-	for nsName := range paas.AllEnabledNamespaces() {
+	for nsName := range paas.PrefixedAllEnabledNamespaces() {
 		secrets = append(secrets, getSecrets(ctx, paas, nsName, paas.Spec.SshSecrets, r)...)
 	}
 	return secrets

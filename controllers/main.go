@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/go-logr/logr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -43,11 +43,11 @@ func getRsa(paas string) *crypt.Crypt {
 
 func getLogger(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	obj client.Object,
 	kind string,
 	name string,
 ) logr.Logger {
-	fields := append(make([]interface{}, 0), "Paas", paas.Name, "Kind", kind)
+	fields := append(make([]interface{}, 0), "Paas", obj.GetName(), "Kind", kind)
 	if name != "" {
 		fields = append(fields, "Name", name)
 	}
