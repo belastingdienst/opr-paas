@@ -1,0 +1,12 @@
+apiVersion: cpet.belastingdienst.nl/v1alpha1
+kind: PaasNS
+metadata:
+  labels:
+    app.kubernetes.io/name: paasns
+    app.kubernetes.io/instance: paasns-sample
+    app.kubernetes.io/part-of: opr-paas
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: opr-paas
+  name: paasns-sample
+spec:
+  # TODO(user): Add fields here
