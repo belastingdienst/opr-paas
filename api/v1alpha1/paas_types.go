@@ -244,6 +244,16 @@ func (pc PaasCapabilities) AsPrefixedMap(prefix string) map[string]paasCapabilit
 	return caps
 }
 
+func (pc PaasCapabilities) IsCap(name string) bool {
+	caps := pc.AsMap()
+	if cap, exists := caps[name]; !exists {
+		return false
+	} else if !cap.IsEnabled() {
+		return false
+	}
+	return true
+}
+
 func (pc PaasCapabilities) AsMap() map[string]paasCapability {
 	caps := make(map[string]paasCapability)
 	for _, cap := range []paasCapability{

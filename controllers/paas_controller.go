@@ -132,10 +132,11 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	logger.Info("Creating paas namespaces")
-	for name := range paas.PrefixedAllEnabledNamespaces() {
+	for name := range paas.AllEnabledNamespaces() {
 		groups := paas.Spec.Groups.Names()
 		secrets := paas.GetNsSshSecrets(name)
-		pns := r.GetPaasNs(name, groups, secrets)
+		seperateQuota := paas.Spec.Capabilities.IsCap(name)
+		pns := r.GetPaasNs(ctx, paas, name, groups, secrets, seperateQuota)
 		if err := r.EnsurePaasNs(ctx, paas, req, pns); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while creating PaasNS %s", pns.ObjectMeta.Name))
 			return ctrl.Result{}, err
