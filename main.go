@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	cpetbelastingdienstnlv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/controllers"
 	"github.com/belastingdienst/opr-paas/internal/version"
@@ -56,6 +57,7 @@ func init() {
 	utilruntime.Must(argocd.AddToScheme(scheme))
 
 	utilruntime.Must(mydomainv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(cpetbelastingdienstnlv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -113,6 +115,13 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Paas")
+		os.Exit(1)
+	}
+	if err = (&controllers.PaasNSReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PaasNS")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
