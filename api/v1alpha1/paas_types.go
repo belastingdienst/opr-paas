@@ -66,7 +66,28 @@ type PaasSpec struct {
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
 }
 
-func (p Paas) EnabledCapNamespaces() (ns map[string]bool) {
+func (p Paas) PrefixedBoolMap(m map[string]bool) map[string]bool {
+	newMap := make(map[string]bool)
+	for name, value := range m {
+		newMap[fmt.Sprintf("%s-%s", p.Name, name)] = value
+	}
+	return newMap
+}
+
+func (p Paas) GetNsSshSecrets(ns string) (secrets map[string]string) {
+	secrets = make(map[string]string)
+	for key, value := range p.Spec.SshSecrets {
+		secrets[key] = value
+	}
+	if cap, exists := p.Spec.Capabilities.AsPrefixedMap(p.Name)[ns]; exists {
+		for key, value := range cap.GetSshSecrets() {
+			secrets[key] = value
+		}
+	}
+	return secrets
+}
+
+func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 	ns = make(map[string]bool)
 	for name, cap := range p.Spec.Capabilities.AsMap() {
 		if cap.IsEnabled() {
@@ -76,6 +97,7 @@ func (p Paas) EnabledCapNamespaces() (ns map[string]bool) {
 	}
 	return
 }
+
 func (p Paas) AllCapNamespaces() (ns map[string]bool) {
 	ns = make(map[string]bool)
 	for name := range p.Spec.Capabilities.AsMap() {
@@ -85,16 +107,24 @@ func (p Paas) AllCapNamespaces() (ns map[string]bool) {
 	return
 }
 
+func (p Paas) PrefixedAllCapNamespaces() (ns map[string]bool) {
+	return p.PrefixedBoolMap(p.AllCapNamespaces())
+}
+
 func (p Paas) AllEnabledNamespaces() (ns map[string]bool) {
-	ns = p.EnabledCapNamespaces()
-	for name := range p.ExtraNamespaces() {
+	ns = p.enabledCapNamespaces()
+	for name := range p.extraNamespaces() {
 		ns[name] = true
 	}
 	return
 
 }
 
-func (p Paas) ExtraNamespaces() (ns map[string]bool) {
+func (p Paas) PrefixedAllEnabledNamespaces() (ns map[string]bool) {
+	return p.PrefixedBoolMap(p.AllEnabledNamespaces())
+}
+
+func (p Paas) extraNamespaces() (ns map[string]bool) {
 	capNs := p.AllCapNamespaces()
 	ns = make(map[string]bool)
 	for _, name := range p.Spec.Namespaces {
@@ -107,17 +137,17 @@ func (p Paas) ExtraNamespaces() (ns map[string]bool) {
 
 }
 
-func (p Paas) InvalidExtraNamespaces() (ns map[string]bool) {
-	ns = make(map[string]bool)
-	capNs := p.AllCapNamespaces()
-	for _, name := range p.Spec.Namespaces {
-		name = fmt.Sprintf("%s-%s", p.Name, name)
-		if _, isCap := capNs[name]; isCap {
-			ns[name] = true
-		}
-	}
-	return
-}
+// func (p Paas) invalidExtraNamespaces() (ns map[string]bool) {
+// 	ns = make(map[string]bool)
+// 	capNs := p.AllCapNamespaces()
+// 	for _, name := range p.Spec.Namespaces {
+// 		name = fmt.Sprintf("%s-%s", p.Name, name)
+// 		if _, isCap := capNs[name]; isCap {
+// 			ns[name] = true
+// 		}
+// 	}
+// 	return
+// }
 
 type PaasGroup struct {
 	Query string   `json:"query,omitempty"`
@@ -197,6 +227,21 @@ type paasCapability interface {
 	CapabilityName() string
 	GetSshSecrets() map[string]string
 	WithExtraPermissions() bool
+}
+
+/*
+AsMap geeft de namen van de capabilties, terwijl bijvoorbeeld de namespace namen en quota namen geprefixt zijn met de paas naam.
+Daarom een AsPrefixedMap, zodat we ook makkelijk kunnen zoeken als je de namespace naam hebt.
+*/
+func (pc PaasCapabilities) AsPrefixedMap(prefix string) map[string]paasCapability {
+	if prefix == "" {
+		return pc.AsMap()
+	}
+	caps := make(map[string]paasCapability)
+	for name, cap := range pc.AsMap() {
+		caps[fmt.Sprintf("%s-%s", prefix, name)] = cap
+	}
+	return caps
 }
 
 func (pc PaasCapabilities) AsMap() map[string]paasCapability {

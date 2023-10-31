@@ -1,4 +1,4 @@
-package v1alpha1_test
+package v1alpha1
 
 import (
 	"sort"
@@ -87,7 +87,7 @@ func TestPaasGroups_Namespaces(t *testing.T) {
 			},
 		},
 	}
-	enCapNs := paas.EnabledCapNamespaces()
+	enCapNs := paas.enabledCapNamespaces()
 	assert.Contains(t, enCapNs, "paas-test-argocd")
 	assert.Contains(t, enCapNs, "paas-test-grafana")
 	assert.NotContains(t, enCapNs, "paas-test-sso")
