@@ -79,7 +79,7 @@ func (p Paas) GetNsSshSecrets(ns string) (secrets map[string]string) {
 	for key, value := range p.Spec.SshSecrets {
 		secrets[key] = value
 	}
-	if cap, exists := p.Spec.Capabilities.AsPrefixedMap(p.Name)[ns]; exists {
+	if cap, exists := p.Spec.Capabilities.AsMap()[ns]; exists {
 		for key, value := range cap.GetSshSecrets() {
 			secrets[key] = value
 		}
@@ -91,7 +91,6 @@ func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 	ns = make(map[string]bool)
 	for name, cap := range p.Spec.Capabilities.AsMap() {
 		if cap.IsEnabled() {
-			name = fmt.Sprintf("%s-%s", p.Name, name)
 			ns[name] = true
 		}
 	}
@@ -101,7 +100,6 @@ func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 func (p Paas) AllCapNamespaces() (ns map[string]bool) {
 	ns = make(map[string]bool)
 	for name := range p.Spec.Capabilities.AsMap() {
-		name = fmt.Sprintf("%s-%s", p.Name, name)
 		ns[name] = true
 	}
 	return
@@ -128,7 +126,6 @@ func (p Paas) extraNamespaces() (ns map[string]bool) {
 	capNs := p.AllCapNamespaces()
 	ns = make(map[string]bool)
 	for _, name := range p.Spec.Namespaces {
-		name = fmt.Sprintf("%s-%s", p.Name, name)
 		if _, isCap := capNs[name]; !isCap {
 			ns[name] = true
 		}

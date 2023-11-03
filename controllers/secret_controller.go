@@ -17,7 +17,7 @@ import (
 )
 
 // ensureSecret ensures Secret presence in given secret.
-func (r *PaasReconciler) EnsureSecret(
+func (r *PaasNSReconciler) EnsureSecret(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	secret *corev1.Secret,
@@ -74,7 +74,7 @@ type: Opaque
 */
 
 // backendSecret is a code for Creating Secret
-func (r *PaasReconciler) backendSecret(
+func (r *PaasNSReconciler) backendSecret(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	namespacedName types.NamespacedName,
@@ -106,12 +106,11 @@ func (r *PaasReconciler) backendSecret(
 	return s
 }
 
-func getSecrets(
+func (r *PaasNSReconciler) getSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	nsName string,
 	encryptedSecrets map[string]string,
-	r *PaasReconciler,
 ) (secrets []*corev1.Secret) {
 	for url, encryptedSecretData := range encryptedSecrets {
 		namespacedName := types.NamespacedName{
@@ -130,19 +129,19 @@ func getSecrets(
 	return secrets
 }
 
-func (r *PaasReconciler) BackendSecrets(
+func (r *PaasNSReconciler) BackendSecrets(
 	ctx context.Context,
+	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) (secrets []*corev1.Secret) {
-
-	for _, cap := range paas.Spec.Capabilities.AsMap() {
-		if cap.IsEnabled() {
-			nsName := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap.CapabilityName())
-			secrets = append(secrets, getSecrets(ctx, paas, nsName, cap.GetSshSecrets(), r)...)
-		}
+	nsName := paasns.NamespaceName()
+	// From the PaasNS resource
+	secrets = append(secrets, r.getSecrets(ctx, paas, nsName, paasns.Spec.SshSecrets)...)
+	//From the Paas Resource capability chapter (if applicable)
+	if cap, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists && cap.IsEnabled() {
+		secrets = append(secrets, r.getSecrets(ctx, paas, nsName, cap.GetSshSecrets())...)
 	}
-	for nsName := range paas.PrefixedAllEnabledNamespaces() {
-		secrets = append(secrets, getSecrets(ctx, paas, nsName, paas.Spec.SshSecrets, r)...)
-	}
+	// From the Paas resource
+	secrets = append(secrets, r.getSecrets(ctx, paas, nsName, paas.Spec.SshSecrets)...)
 	return secrets
 }
