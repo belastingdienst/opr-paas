@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -131,16 +132,27 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
-	logger.Info("Creating paas namespaces")
-	for name := range paas.AllEnabledNamespaces() {
-		groups := paas.Spec.Groups.Names()
-		secrets := paas.GetNsSshSecrets(name)
-		seperateQuota := paas.Spec.Capabilities.IsCap(name)
-		pns := r.GetPaasNs(ctx, paas, name, groups, secrets, seperateQuota)
-		if err := r.EnsurePaasNs(ctx, paas, req, pns); err != nil {
-			logger.Error(err, fmt.Sprintf("Failure while creating PaasNS %s", pns.ObjectMeta.Name))
-			return ctrl.Result{}, err
+	logger.Info("Creating default namespace to hold PaasNs resources for PAAS object")
+	if ns, err := BackendNamespace(ctx, paas, paas.Name, paas.Name, r.Scheme); err != nil {
+		logger.Error(err, "Failure while defining namespace")
+		return ctrl.Result{}, err
+	} else {
+		EnsureNamespace(r.Client, ctx, paas, req, ns, r.Scheme)
+
+		logger.Info("Creating PaasNs resources for PAAS object")
+		for nsName := range paas.AllEnabledNamespaces() {
+			pns := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Names(), paas.GetNsSshSecrets(nsName))
+			if err = r.EnsurePaasNs(ctx, paas, req, pns); err != nil {
+				logger.Error(err, fmt.Sprintf("Failure while creating PaasNs %s",
+					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace}))
+				return ctrl.Result{}, err
+			}
 		}
+	}
+
+	logger.Info("Cleaning obsolete namespaces ")
+	if err := r.FinalizePaasNss(ctx, paas); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	logger.Info("Creating Argo App for client bootstrapping")
@@ -153,17 +165,6 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if err := r.FinalizeArgoApp(ctx, paas); err != nil {
 			return ctrl.Result{}, err
 		}
-	}
-
-	logger.Info("Creating Ssh secrets")
-	// Create argo ssh secrets
-	secrets := r.BackendSecrets(ctx, paas)
-	for _, secret := range secrets {
-		if err = r.EnsureSecret(ctx, paas, secret); err != nil {
-			logger.Error(err, "Failure while creating secret", "secret", secret)
-			return ctrl.Result{}, err
-		}
-		logger.Info("Ssh secret succesfully created", "secret", secret)
 	}
 
 	logger.Info("Creating Argo Project")

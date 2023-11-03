@@ -36,20 +36,30 @@ spec:
             description: PaasNSSpec defines the desired state of PaasNS
             properties:
               groups:
-                description: Foo is an example field of PaasNS. Edit paasns_types.go
-                  to remove/update
                 items:
                   type: string
                 type: array
-              separateQuota:
-                type: boolean
+              paas:
+                description: Foo is an example field of PaasNS. Edit paasns_types.go
+                  to remove/update
+                type: string
               sshSecrets:
                 additionalProperties:
                   type: string
                 type: object
+            required:
+            - paas
             type: object
           status:
             description: PaasNSStatus defines the observed state of PaasNS
+            properties:
+              messages:
+                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                  of cluster Important: Run "make" to regenerate code after modifying
+                  this file'
+                items:
+                  type: string
+                type: array
             type: object
         type: object
     served: true

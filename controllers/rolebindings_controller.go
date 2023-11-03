@@ -14,7 +14,7 @@ import (
 )
 
 // ensureRoleBinding ensures RoleBinding presence in given rolebinding.
-func (r *PaasReconciler) EnsureAdminRoleBinding(
+func (r *PaasNSReconciler) EnsureAdminRoleBinding(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	rb *rbac.RoleBinding,
@@ -54,7 +54,7 @@ func (r *PaasReconciler) EnsureAdminRoleBinding(
 }
 
 // backendRoleBinding is a code for Creating RoleBinding
-func (r *PaasReconciler) backendAdminRoleBinding(
+func (r *PaasNSReconciler) backendAdminRoleBinding(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	name types.NamespacedName,
@@ -96,12 +96,12 @@ func (r *PaasReconciler) backendAdminRoleBinding(
 	return rb
 }
 
-func (r *PaasReconciler) BackendEnabledRoleBindings(
+func (r *PaasNSReconciler) BackendEnabledRoleBindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (rb []*rbac.RoleBinding) {
 	groupKeys := paas.Spec.Groups.Names()
-	for ns_name := range paas.AllEnabledNamespaces() {
+	for ns_name := range paas.PrefixedAllEnabledNamespaces() {
 		name := types.NamespacedName{
 			Name:      "paas-admin",
 			Namespace: ns_name,

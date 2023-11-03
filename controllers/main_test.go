@@ -26,3 +26,12 @@ func TestMain_getConfig(t *testing.T) {
 	os.Setenv("PAAS_CONFIG", "../config/test/paas_config.yml")
 	assert.NotNil(t, getConfig(), "some-ns")
 }
+
+func TestMain_intersection(t *testing.T) {
+	l1 := []string{"v1", "v2", "v2", "v3", "v4"}
+	l2 := []string{"v2", "v2", "v3", "v5"}
+	li := intersect(l1, l2)
+	// Expected to have only all values that exist in list 1 and 2, only once (unique)
+	lExpected := []string{"v2", "v3"}
+	assert.ElementsMatch(t, li, lExpected, "result of intersection not as expected")
+}

@@ -7,12 +7,11 @@ metadata:
     app.kubernetes.io/part-of: opr-paas
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: opr-paas
-  # Results in sam-ple-featuire-test1
-  name: feature-test1
-  namespace: sam-ple-argocd
+  # creert een namespace sam-ple-ns1
+  name: ns1
+  namespace: sam-ple
 spec:
-  #paas should be discoverable from namespace and existing paas objects
-  #paas: sam-ple
+  paas: sam-ple
   groups:
     - group1
     - group2
