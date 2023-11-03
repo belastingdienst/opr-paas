@@ -49,7 +49,7 @@ func (ap ConfigArgoPermissions) Verify() []string {
 
 func (ap ConfigArgoPermissions) FromGroups(groups []string) string {
 	permissions := []string{
-		ap.Header,
+		strings.TrimSpace(ap.Header),
 	}
 	for _, group := range groups {
 		permissions = append(permissions, fmt.Sprintf("g, %s, role:%s", group, ap.Role))

@@ -165,6 +165,13 @@ func (gs PaasGroups) LdapQueries() []string {
 	return queries
 }
 
+func (pgs PaasGroups) Keys() (groups []string) {
+	for key, group := range pgs {
+		groups = append(groups, group.Name(key))
+	}
+	return groups
+}
+
 func (pgs PaasGroups) AsGroups() groups.Groups {
 	gs := groups.NewGroups()
 	gs.AddFromStrings(pgs.LdapQueries())
