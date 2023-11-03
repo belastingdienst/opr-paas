@@ -4,7 +4,6 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
@@ -12,12 +11,12 @@ import (
 )
 
 var (
-	groups = v1alpha1.PaasGroups{
-		"cn=test1": v1alpha1.PaasGroup{
+	testGroups = PaasGroups{
+		"cn=test1": PaasGroup{
 			Query: "CN=test2,OU=org_unit,DC=example,DC=org",
 			Users: []string{"usr1", "usr2"},
 		},
-		"cn=test3": v1alpha1.PaasGroup{
+		"cn=test3": PaasGroup{
 			Query: "CN=test4",
 			Users: []string{"usr3", "usr2"},
 		},
@@ -25,13 +24,13 @@ var (
 )
 
 func TestPaasGroups_NameFromQuery(t *testing.T) {
-	assert.Equal(t, "test2", groups.Key2Name("cn=test1"))
-	assert.Equal(t, "", groups.Key2Name("cn=test123"))
-	assert.Equal(t, "test4", groups.Key2Name("cn=test3"))
+	assert.Equal(t, "test2", testGroups.Key2Name("cn=test1"))
+	assert.Equal(t, "", testGroups.Key2Name("cn=test123"))
+	assert.Equal(t, "test4", testGroups.Key2Name("cn=test3"))
 }
 
 func TestPaasGroups_LdapQueries(t *testing.T) {
-	ldapGroups := groups.LdapQueries()
+	ldapGroups := testGroups.LdapQueries()
 	sort.Strings(ldapGroups)
 	assert.Equal(t, 2, len(ldapGroups))
 	assert.Equal(t, "CN=test2,OU=org_unit,DC=example,DC=org", ldapGroups[0])
@@ -50,7 +49,7 @@ func TestPaasGroups_QuotaWithDefaults(t *testing.T) {
 		"limits.memory": "5Gi",
 		"requests.cpu":  "700m",
 	}
-	quotas := make(v1alpha1.PaasQuotas)
+	quotas := make(PaasQuotas)
 	for key, value := range testQuotas {
 		quotas[corev1.ResourceName(key)] = resourcev1.MustParse(value)
 	}
@@ -67,41 +66,41 @@ func TestPaasGroups_QuotaWithDefaults(t *testing.T) {
 }
 
 func TestPaasGroups_Namespaces(t *testing.T) {
-	paas := v1alpha1.Paas{
+	paas := Paas{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "paas-test",
 		},
-		Spec: v1alpha1.PaasSpec{
+		Spec: PaasSpec{
 			Namespaces: []string{
 				"argocd",
 				"sso",
 				"extra",
 			},
-			Capabilities: v1alpha1.PaasCapabilities{
-				ArgoCD: v1alpha1.PaasArgoCD{
+			Capabilities: PaasCapabilities{
+				ArgoCD: PaasArgoCD{
 					Enabled: true,
 				},
-				Grafana: v1alpha1.PaasGrafana{
+				Grafana: PaasGrafana{
 					Enabled: true,
 				},
 			},
 		},
 	}
 	enCapNs := paas.enabledCapNamespaces()
-	assert.Contains(t, enCapNs, "paas-test-argocd")
-	assert.Contains(t, enCapNs, "paas-test-grafana")
-	assert.NotContains(t, enCapNs, "paas-test-sso")
-	assert.NotContains(t, enCapNs, "paas-test-extra")
+	assert.Contains(t, enCapNs, "argocd")
+	assert.Contains(t, enCapNs, "grafana")
+	assert.NotContains(t, enCapNs, "sso")
+	assert.NotContains(t, enCapNs, "extra")
 
-	enExNs := paas.ExtraNamespaces()
-	assert.NotContains(t, enExNs, "paas-test-argocd")
-	assert.NotContains(t, enExNs, "paas-test-grafana")
-	assert.NotContains(t, enExNs, "paas-test-sso")
-	assert.Contains(t, enExNs, "paas-test-extra")
+	enExNs := paas.extraNamespaces()
+	assert.NotContains(t, enExNs, "argocd")
+	assert.NotContains(t, enExNs, "grafana")
+	assert.NotContains(t, enExNs, "sso")
+	assert.Contains(t, enExNs, "extra")
 
 	enEnNs := paas.AllEnabledNamespaces()
-	assert.Contains(t, enEnNs, "paas-test-argocd")
-	assert.Contains(t, enEnNs, "paas-test-grafana")
-	assert.NotContains(t, enEnNs, "paas-test-sso")
-	assert.Contains(t, enEnNs, "paas-test-extra")
+	assert.Contains(t, enEnNs, "argocd")
+	assert.Contains(t, enEnNs, "grafana")
+	assert.NotContains(t, enEnNs, "sso")
+	assert.Contains(t, enEnNs, "extra")
 }

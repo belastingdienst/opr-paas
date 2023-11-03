@@ -17,7 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -29,15 +33,30 @@ type PaasNSSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of PaasNS. Edit paasns_types.go to remove/update
-	Groups        []string          `json:"groups,omitempty"`
-	SshSecrets    map[string]string `json:"sshSecrets,omitempty"`
-	SeparateQuota bool              `json:"separateQuota,omitempty"`
+	Paas       string            `json:"paas"`
+	Groups     []string          `json:"groups,omitempty"`
+	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
 }
 
 // PaasNSStatus defines the observed state of PaasNS
 type PaasNSStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Messages []string `json:"messages,omitempty"`
+}
+
+func (pns *PaasNSStatus) Truncate() {
+	pns.Messages = []string{}
+}
+
+func (pns *PaasNSStatus) AddMessage(level PaasStatusLevel, action PaasStatusAction, obj client.Object, message string) {
+	namespacedName := types.NamespacedName{
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
+	}
+	pns.Messages = append(pns.Messages,
+		fmt.Sprintf("%s: %s for %s (%s) %s", level, action, namespacedName.String(), obj.GetObjectKind().GroupVersionKind().String(), message),
+	)
 }
 
 //+kubebuilder:object:root=true
@@ -50,6 +69,10 @@ type PaasNS struct {
 
 	Spec   PaasNSSpec   `json:"spec,omitempty"`
 	Status PaasNSStatus `json:"status,omitempty"`
+}
+
+func (pns PaasNS) NamespaceName() string {
+	return fmt.Sprintf("%s-%s", pns.Spec.Paas, pns.Name)
 }
 
 //+kubebuilder:object:root=true

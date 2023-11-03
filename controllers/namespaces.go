@@ -3,24 +3,27 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // ensureNamespace ensures Namespace presence in given namespace.
-func (r *PaasReconciler) EnsureNamespace(
+func EnsureNamespace(
+	r client.Client,
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	request reconcile.Request,
 	ns *corev1.Namespace,
+	scheme *runtime.Scheme,
 ) error {
 
 	// See if namespace exists and create if it doesn't
@@ -29,7 +32,6 @@ func (r *PaasReconciler) EnsureNamespace(
 		Name: ns.Name,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
-
 		if err = r.Create(ctx, ns); err != nil {
 			// creating the namespace failed
 			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, ns, err.Error())
@@ -45,7 +47,7 @@ func (r *PaasReconciler) EnsureNamespace(
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
 		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
-		controllerutil.SetControllerReference(paas, found, r.Scheme)
+		controllerutil.SetControllerReference(paas, found, scheme)
 	}
 	var changed bool
 	for key, value := range ns.ObjectMeta.Labels {
@@ -67,12 +69,13 @@ func (r *PaasReconciler) EnsureNamespace(
 }
 
 // backendNamespace is a code for Creating Namespace
-func (r *PaasReconciler) backendNamespace(
+func BackendNamespace(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	name string,
 	quota string,
-) *corev1.Namespace {
+	scheme *runtime.Scheme,
+) (*corev1.Namespace, error) {
 	logger := getLogger(ctx, paas, "Namespace", name)
 	logger.Info(fmt.Sprintf("Defining %s Namespace", name))
 	ns := &corev1.Namespace{
@@ -91,81 +94,52 @@ func (r *PaasReconciler) backendNamespace(
 
 	argoNameSpace := fmt.Sprintf("%s-argocd", paas.Name)
 	if paas.Spec.Capabilities.ArgoCD.Enabled && name != argoNameSpace {
-		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate,
-			ns, "Setting managed_by_label")
+		logger.Info("Setting managed_by_label")
 		ns.ObjectMeta.Labels[getConfig().ManagedByLabel] = argoNameSpace
 	}
-	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate,
-		ns, "Setting oplosgroep_label")
+	logger.Info("Setting oplosgroep_label")
 	ns.ObjectMeta.Labels[getConfig().OplosgroepLabel] = paas.Spec.Oplosgroep
 
-	logger.Info("Setting Owner")
-	controllerutil.SetControllerReference(paas, ns, r.Scheme)
-	return ns
+	logger.Info("Setting Owner", "PaaS", paas, "namespace", ns)
+	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {
+		logger.Error(err, "SetControllerReference failure")
+		return nil, err
+	}
+	for _, ref := range ns.OwnerReferences {
+		logger.Info("ownerReferences", "namespace", ns.Name, "reference", ref)
+	}
+	return ns, nil
 }
 
-func (r *PaasReconciler) BackendEnabledNamespaces(
+func (r *PaasNSReconciler) FinalizeNamespace(
 	ctx context.Context,
+	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
-) (ns []*corev1.Namespace) {
+) error {
 
-	for cap_name, cap := range paas.Spec.Capabilities.AsMap() {
-		if cap.IsEnabled() {
-			name := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, cap_name)
-			ns = append(ns, r.backendNamespace(ctx, paas, name, name))
-		}
-	}
-	capNs := paas.PrefixedAllCapNamespaces()
-	for _, ns_suffix := range paas.Spec.Namespaces {
-		name := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, ns_suffix)
-		n := r.backendNamespace(ctx, paas, name, paas.ObjectMeta.Name)
-		if _, isCapNs := capNs[name]; isCapNs {
-			paas.Status.AddMessage(v1alpha1.PaasStatusWarning, v1alpha1.PaasStatusCreate, n,
-				"Skipping extra namespace, as it is also a capability namespace")
-		} else {
-			ns = append(ns, n)
-		}
-	}
-	return ns
-}
+	/*
+	   Hoe voorkomen wij dat eimand een paasns maakt voor een verkeerde paas en als hij wordt weggegooid, dat hij dan de verkeerde namespace weggooit???
+	*/
 
-func (r *PaasReconciler) BackendDisabledNamespaces(
-	ctx context.Context,
-	paas *v1alpha1.Paas,
-) (ns []string) {
-	for name, cap := range paas.Spec.Capabilities.AsMap() {
-		if !cap.IsEnabled() {
-			ns = append(ns, fmt.Sprintf("%s-%s", paas.Name, name))
-		}
-	}
-	return ns
-}
-
-func (r *PaasReconciler) FinalizeNamespaces(ctx context.Context, paas *v1alpha1.Paas) error {
-	logger := getLogger(ctx, paas, "Namespace", "")
-	logger.Info("Finalizing")
-
-	enabledNs := paas.PrefixedAllEnabledNamespaces()
-
-	// Loop through all namespaces and remove when not should be
-	nsList := &corev1.NamespaceList{}
-	if err := r.List(ctx, nsList); err != nil {
+	found := &corev1.Namespace{}
+	err := r.Get(ctx, types.NamespacedName{
+		Name: paasns.NamespaceName(),
+	}, found)
+	if err != nil && errors.IsNotFound(err) {
+		return nil
+	} else if err != nil {
+		// Error that isn't due to the namespace not existing
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		return err
+	} else if !paas.AmIOwner(found.OwnerReferences) {
+		err = fmt.Errorf("cannot remove Namespace %s because PaaS %s is not the owner", found.Name, paas.Name)
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
+		return err
+	} else if err = r.Delete(ctx, found); err != nil {
+		// deleting the namespace failed
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, found, err.Error())
+		return err
+	} else {
+		return nil
 	}
-
-	for _, ns := range nsList.Items {
-		if !strings.HasPrefix(ns.Name, paas.Name+"-") {
-			// logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "wrong prefix")
-		} else if !paas.AmIOwner(ns.OwnerReferences) {
-			// logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "I am not owner")
-		} else if _, isEnabled := enabledNs[ns.Name]; isEnabled {
-			// logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "Should be there")
-		} else if err := r.Delete(ctx, &ns); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, &ns, err.Error())
-			// logger.Error(err, "Could not delete ns", "Namespace", ns.Name)
-		} else {
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusDelete, &ns, "succeeded")
-		}
-	}
-	return nil
 }

@@ -47,10 +47,29 @@ func getLogger(
 	kind string,
 	name string,
 ) logr.Logger {
-	fields := append(make([]interface{}, 0), "Paas", obj.GetName(), "Kind", kind)
+	fields := append(make([]interface{}, 0), obj.GetObjectKind().GroupVersionKind().Kind, obj.GetName(), "Kind", kind)
 	if name != "" {
 		fields = append(fields, "Name", name)
 	}
 
 	return log.FromContext(ctx).WithValues(fields...)
+}
+
+// intersect finds the intersection of 2 lists of strings
+func intersect(l1 []string, l2 []string) (li []string) {
+	s := make(map[string]bool)
+	for _, key := range l1 {
+		s[key] = false
+	}
+	for _, key := range l2 {
+		if _, exists := s[key]; exists {
+			s[key] = true
+		}
+	}
+	for key, value := range s {
+		if value {
+			li = append(li, key)
+		}
+	}
+	return li
 }
