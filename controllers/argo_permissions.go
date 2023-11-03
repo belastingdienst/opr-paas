@@ -49,7 +49,7 @@ func (r *PaasReconciler) EnsureArgoPermissions(
 		oldPolicy = *argo.Spec.RBAC.Policy
 	}
 	policy := getConfig().ArgoPermissions.FromGroups(
-		paas.Spec.Groups.AsGroups().Keys())
+		paas.Spec.Groups.Keys())
 	scopes := "[groups]"
 	logger.Info(fmt.Sprintf("Setting ArgoCD permissions to %s", policy))
 	if oldPolicy == policy {
