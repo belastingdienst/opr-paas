@@ -26,3 +26,4 @@ Dockerfile.cross
 *~
 /manager
 /crypttool*
+/webservice

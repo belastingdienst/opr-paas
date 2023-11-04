@@ -66,7 +66,7 @@ func GenerateKeyPair() {
 	priv := newFile("PAAS_PRIVATE_KEY_PATH")
 	pub := newFile("PAAS_PUBLIC_KEY_PATH")
 
-	if _, err := NewCrypt(priv, pub, "").Generate(); err != nil {
+	if _, err := NewCrypt(priv, pub, "").GenerateCrypt(); err != nil {
 		panic(fmt.Sprintf("Failed to generate new key pair: %e", err))
 	}
 }
