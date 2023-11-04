@@ -16,7 +16,7 @@ func Test_RsaGenerate(t *testing.T) {
 	assert.NoError(t, err, "Creating tempfile for public key")
 	defer os.Remove(pub.Name()) // clean up
 
-	c, err := NewCrypt(priv.Name(), pub.Name(), "").Generate()
+	c, err := NewCrypt(priv.Name(), pub.Name(), "").GenerateCrypt()
 	assert.NoError(t, err, "Crypt object created")
 	assert.NotNil(t, c, "Crypt object is not nil")
 }

@@ -18,6 +18,7 @@ type Crypt struct {
 	publicKeyPath  string
 	publicKey      *rsa.PublicKey
 	aesKey         []byte
+	fresh          bool
 }
 
 func NewCrypt(privateKeyPath string, publicKeyPath string, symmetricKey string) *Crypt {
@@ -28,7 +29,7 @@ func NewCrypt(privateKeyPath string, publicKeyPath string, symmetricKey string) 
 	}
 }
 
-func (c Crypt) Generate() (*Crypt, error) {
+func (c Crypt) GenerateCrypt() (*Crypt, error) {
 	if privateKey, err := rsa.GenerateKey(rand.Reader, 4096); err != nil {
 		return nil, fmt.Errorf("unable to generate private key: %e", err)
 	} else {
@@ -42,6 +43,29 @@ func (c Crypt) Generate() (*Crypt, error) {
 		return nil, err
 	}
 	return &c, nil
+}
+
+func (c Crypt) GenerateStrings() (private string, public string, err error) {
+	if privateKey, err := rsa.GenerateKey(rand.Reader, 4096); err != nil {
+		return "", "", fmt.Errorf("unable to generate private key: %e", err)
+	} else {
+		c.privateKey = privateKey
+		c.publicKey = &privateKey.PublicKey
+	}
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(c.privateKey)
+	privateKeyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privateKeyBytes,
+	})
+	if publicKeyBytes, err := x509.MarshalPKIXPublicKey(c.publicKey); err != nil {
+		return "", "", fmt.Errorf("unable to marshal public key: %e", err)
+	} else {
+		publicKeyPEM := pem.EncodeToMemory(&pem.Block{
+			Type:  "RSA PUBLIC KEY",
+			Bytes: publicKeyBytes,
+		})
+		return string(privateKeyPEM), string(publicKeyPEM), nil
+	}
 }
 
 func (c *Crypt) writePrivateKey() error {
