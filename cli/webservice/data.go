@@ -1,17 +1,17 @@
 package main
 
-type RestInput struct {
+type RestEncryptInput struct {
 	PaasName string `json:"paas"`
 	Secret   string `json:"secret"`
-}
-
-type RestVersionResult struct {
-	Version string `json:"version"`
 }
 
 type RestEncryptResult struct {
 	PaasName  string `json:"paas"`
 	Encrypted string `json:"encrypted"`
+}
+
+type RestGenerateInput struct {
+	ApiKey string `json:"apiKey"`
 }
 
 type RestGenerateResult struct {
