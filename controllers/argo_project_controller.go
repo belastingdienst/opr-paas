@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // ensureAppProject ensures AppProject presence in given namespace.
@@ -44,10 +43,11 @@ func (r *PaasReconciler) EnsureAppProject(
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
 		return err
-	} else if !paas.AmIOwner(found.OwnerReferences) {
-		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
-		controllerutil.SetControllerReference(paas, found, r.Scheme)
-		return r.Update(ctx, found)
+		// Ownerreference creeert een issue waarbij de appsetcontroller niet de app wegggooid omdat het app project niet meer bestaat
+		//	} else if !paas.AmIOwner(found.OwnerReferences) {
+		//		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
+		//		controllerutil.SetControllerReference(paas, found, r.Scheme)
+		//		return r.Update(ctx, found)
 	}
 	return nil
 }
@@ -83,7 +83,7 @@ func (r *PaasReconciler) BackendAppProject(
 		},
 	}
 
-	logger.Info("Setting Owner")
-	controllerutil.SetControllerReference(paas, p, r.Scheme)
+	// logger.Info("Setting Owner")
+	// controllerutil.SetControllerReference(paas, p, r.Scheme)
 	return p
 }
