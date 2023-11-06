@@ -18,10 +18,11 @@ limitations under the License.
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
-	"github.com/belastingdienst/opr-paas/internal/version"
+	_version "github.com/belastingdienst/opr-paas/internal/version"
 	"github.com/gin-gonic/gin"
 )
 
@@ -52,17 +53,9 @@ func getRsa(paas string) *crypt.Crypt {
 	}
 }
 
-// getVersion returns the operator version this webservice is built for
-func getVersion(c *gin.Context) {
-	output := RestVersionResult{
-		Version: version.PAAS_VERSION,
-	}
-	c.IndentedJSON(http.StatusOK, output)
-}
-
 // getEncrypt encrypts a secret and returns the encrypted value
-func getEncrypt(c *gin.Context) {
-	var input RestInput
+func v1Encrypt(c *gin.Context) {
+	var input RestEncryptInput
 	if err := c.BindJSON(&input); err != nil {
 		return
 	}
@@ -78,8 +71,16 @@ func getEncrypt(c *gin.Context) {
 	}
 }
 
-// getAlbums responds with the list of all albums as JSON.
-func getGenerate(c *gin.Context) {
+// v1Generate generates a new keypair to be used by the the PaaS operator
+// Only to be used by PaaS administrators
+func v1Generate(c *gin.Context) {
+	var input RestGenerateInput
+	if err := c.BindJSON(&input); err != nil {
+		return
+	}
+	if input.ApiKey != getConfig().AdminApiKey {
+		return
+	}
 	var output RestGenerateResult
 	config := getConfig()
 	if private, public, err := crypt.NewCrypt(config.PrivateKeyPath, config.PublicKeyPath, "").GenerateStrings(); err != nil {
@@ -92,10 +93,44 @@ func getGenerate(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, output)
 }
 
+// version returns the operator version this webservice is built for
+func version(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"version": _version.PAAS_VERSION,
+	})
+}
+
+// healthz is a liveness probe.
+func healthz(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "healthy",
+	})
+}
+
+// readyz is a readiness probe.
+func readyz(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "ready",
+	})
+}
+
 func main() {
-	router := gin.Default()
-	router.GET("/version", getVersion)
-	router.GET("/encrypt", getEncrypt)
-	router.GET("/generate", getGenerate)
-	router.Run()
+	log.Println("Starting API endpoint")
+	log.Printf("Version: %s", _version.PAAS_VERSION)
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+	router.Use(
+		gin.LoggerWithWriter(gin.DefaultWriter, "/healthz", "/readyz"),
+		gin.Recovery(),
+	)
+
+	router.SetTrustedProxies(nil)
+	router.GET("/version", version)
+	router.GET("/v1/encrypt", v1Encrypt)
+	router.GET("/v1/generate", v1Generate)
+	router.GET("/healthz", healthz)
+	router.GET("/readyz", readyz)
+	ep := getConfig().Endpoint
+	log.Printf("Listening on: %s", ep)
+	router.Run(ep)
 }
