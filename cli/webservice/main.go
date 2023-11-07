@@ -45,7 +45,7 @@ func getRsa(paas string) *crypt.Crypt {
 	}
 	config := getConfig()
 	if c, exists := _crypt[paas]; !exists {
-		c = crypt.NewCrypt(config.PrivateKeyPath, config.PublicKeyPath, paas)
+		c = crypt.NewCrypt("", config.PublicKeyPath, paas)
 		_crypt[paas] = c
 		return c
 	} else {
@@ -82,8 +82,7 @@ func v1Generate(c *gin.Context) {
 		return
 	}
 	var output RestGenerateResult
-	config := getConfig()
-	if private, public, err := crypt.NewCrypt(config.PrivateKeyPath, config.PublicKeyPath, "").GenerateStrings(); err != nil {
+	if private, public, err := crypt.NewCrypt("", "", "").GenerateStrings(); err != nil {
 		c.AbortWithError(http.StatusFailedDependency, fmt.Errorf("could not create a new crypt to generate new keys: %e", err))
 		return
 	} else {
