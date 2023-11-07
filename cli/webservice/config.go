@@ -11,20 +11,17 @@ import (
 )
 
 const (
-	privateEnv         = "PAAS_PRIVATE_KEY_PATH"
-	defaultPrivatePath = "/secrets/paas/privatekey"
-	publicEnv          = "PAAS_PUBLIC_KEY_PATH"
-	defaultPublicPath  = "/secrets/paas/publickey"
-	endpointEnv        = "PAAS_ENDPOINT"
-	defaultEndpoint    = ":8080"
-	adminApiKey        = "PAAS_ADMIN_API_KEY"
+	publicEnv         = "PAAS_PUBLIC_KEY_PATH"
+	defaultPublicPath = "/secrets/paas/publicKey"
+	endpointEnv       = "PAAS_ENDPOINT"
+	defaultEndpoint   = ":8080"
+	adminApiKey       = "PAAS_ADMIN_API_KEY"
 )
 
 type WSConfig struct {
-	PrivateKeyPath string
-	PublicKeyPath  string
-	Endpoint       string
-	AdminApiKey    string
+	PublicKeyPath string
+	Endpoint      string
+	AdminApiKey   string
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -39,10 +36,6 @@ func randStringBytes(n int) string {
 
 func NewWSConfig() WSConfig {
 	var config WSConfig
-	config.PrivateKeyPath = os.Getenv(privateEnv)
-	if config.PrivateKeyPath == "" {
-		config.PrivateKeyPath = defaultPrivatePath
-	}
 	config.PublicKeyPath = os.Getenv(publicEnv)
 	if config.PublicKeyPath == "" {
 		config.PublicKeyPath = defaultPublicPath
