@@ -424,7 +424,9 @@ func (p Paas) ClonedAnnotations() map[string]string {
 func (p Paas) ClonedLabels() map[string]string {
 	labels := make(map[string]string)
 	for key, value := range p.Labels {
-		labels[key] = value
+		if key != "app.kubernetes.io/instance" {
+			labels[key] = value
+		}
 	}
 	return labels
 }
