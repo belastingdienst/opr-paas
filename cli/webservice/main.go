@@ -125,7 +125,7 @@ func main() {
 
 	router.SetTrustedProxies(nil)
 	router.GET("/version", version)
-	router.GET("/v1/encrypt", v1Encrypt)
+	router.POST("/v1/encrypt", v1Encrypt)
 	router.GET("/v1/generate", v1Generate)
 	router.GET("/healthz", healthz)
 	router.GET("/readyz", readyz)
