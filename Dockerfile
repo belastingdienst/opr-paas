@@ -32,6 +32,8 @@ COPY api/ api/
 COPY cli/ cli/
 COPY controllers/ controllers/
 COPY internal/ internal/
+COPY config/ config/
+COPY testdata/ testdata/
 
 # Build
 # the GOARCH has not a default value to allow the binary be built according to the host where the command
@@ -40,6 +42,7 @@ COPY internal/ internal/
 # by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
 RUN sed -i "s|PAAS_VERSION = .*|PAAS_VERSION = \"$VERSION\"|" internal/version/main.go && \
     cat internal/version/main.go && \
+    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go test ./... && \
     CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o manager main.go && \
     CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o crypttool ./cli/crypttool && \
     CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o webservice ./cli/webservice

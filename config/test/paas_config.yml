@@ -66,3 +66,4 @@ quota_label: q.lbl
 whitelist:
   namespace: wlns
   name: wlname
+exclude_appset_name: whatever
