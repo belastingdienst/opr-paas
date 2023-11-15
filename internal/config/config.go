@@ -21,7 +21,7 @@ type Config struct {
 	QuotaLabel        string                `yaml:"quota_label"`
 	OplosgroepLabel   string                `yaml:"oplosgroep_label"`
 	ManagedByLabel    string                `yaml:"managed_by_label"`
-	ExcludeAppSetName string                `yaml:"paas-bb-gen"`
+	ExcludeAppSetName string                `yaml:"exclude_appset_name"`
 }
 
 type ConfigArgoPermissions struct {
@@ -138,6 +138,10 @@ func (config Config) Verify() error {
 	if config.Whitelist.Name == "" || config.Whitelist.Namespace == "" {
 		multierror = append(multierror,
 			"missing whitelist.name and/or whitelist.namespace")
+	}
+	if config.ExcludeAppSetName == "" {
+		multierror = append(multierror,
+			"missing exclude_appset_name")
 	}
 	if config.DecryptKeyPath == "" {
 		multierror = append(multierror,
