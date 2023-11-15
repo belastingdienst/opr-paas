@@ -15,6 +15,7 @@ import (
 
 const (
 	appName = "paas-bootstrap"
+	excludeAppSetName = "paas-bb-gen"
 )
 
 // ensureArgoApp ensures ArgoApp presence in given argo application.
@@ -72,6 +73,14 @@ func (r *PaasReconciler) backendArgoApp(
 			Destination: argo.ApplicationDestination{
 				Server:    "https://kubernetes.default.svc",
 				Namespace: namespace,
+			},
+			IgnoreDifferences: []argo.ResourceIgnoreDifferences {
+					Group: "argoproj.io",
+					JSONPointers:
+						[]string{"/spec/generators"},
+					Kind: "ApplicationSet",
+					Name: excludeAppSetName,
+				},
 			},
 			Project: "default",
 			Source: &argo.ApplicationSource{
