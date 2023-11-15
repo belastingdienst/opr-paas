@@ -5,6 +5,28 @@ metadata:
   creationTimestamp: null
   name: manager-role
 rules:
+- resources:
+  - configmaps
+  - namespaces
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - applications
+  - applicationsets
+  - appprojects
+  - argocds
+  verbs:
+  - create
+  - delete
 - apiGroups:
   - cpet.belastingdienst.nl
   resources:
@@ -32,12 +54,59 @@ rules:
   - patch
   - update
 - apiGroups:
+  - cpet.belastingdienst.nl
+  resources:
+  - paasns
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cpet.belastingdienst.nl
+  resources:
+  - paasns/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - cpet.belastingdienst.nl
+  resources:
+  - paasns/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - quota.openshift.io
   resources:
   - clusterresourcequotas
   verbs:
   - create
   - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resourceNames:
+  - admin
+  resources:
+  - clusterroles
+  verbs:
+  - bind
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  verbs:
+  - create
+  - delete
+  - escallate
   - get
   - list
   - patch
@@ -55,53 +124,3 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - argoproj.io
-  resources:
-  - argocds
-  - applicationsets
-  - applications
-  - appprojects
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ''
-  resources:
-  - secrets
-  - configmaps
-  - namespaces
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - 'rbac.authorization.k8s.io'
-  resources:
-  - rolebindings
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-  - escallate
-- apiGroups:
-  - "rbac.authorization.k8s.io"
-  resources:
-  - "clusterroles"
-  verbs:
-  - "bind"
-  resourceNames:
-  - "admin"
