@@ -10,17 +10,18 @@ import (
 )
 
 type Config struct {
-	filename        string
-	DecryptKeyPath  string                `yaml:"decryptKeyPath"`
-	Debug           bool                  `yaml:"debug"`
-	Capabilities    ConfigCapabilities    `yaml:"capabilities"`
-	Whitelist       types.NamespacedName  `yaml:"whitelist"`
-	LDAP            ConfigLdap            `yaml:"ldap"`
-	ArgoPermissions ConfigArgoPermissions `yaml:"argopermissions"`
-	AppSetNamespace string                `yaml:"applicationset_namespace"`
-	QuotaLabel      string                `yaml:"quota_label"`
-	OplosgroepLabel string                `yaml:"oplosgroep_label"`
-	ManagedByLabel  string                `yaml:"managed_by_label"`
+	filename          string
+	DecryptKeyPath    string                `yaml:"decryptKeyPath"`
+	Debug             bool                  `yaml:"debug"`
+	Capabilities      ConfigCapabilities    `yaml:"capabilities"`
+	Whitelist         types.NamespacedName  `yaml:"whitelist"`
+	LDAP              ConfigLdap            `yaml:"ldap"`
+	ArgoPermissions   ConfigArgoPermissions `yaml:"argopermissions"`
+	AppSetNamespace   string                `yaml:"applicationset_namespace"`
+	QuotaLabel        string                `yaml:"quota_label"`
+	OplosgroepLabel   string                `yaml:"oplosgroep_label"`
+	ManagedByLabel    string                `yaml:"managed_by_label"`
+	ExcludeAppSetName string                `yaml:"paas-bb-gen"`
 }
 
 type ConfigArgoPermissions struct {
