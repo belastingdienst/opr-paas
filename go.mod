@@ -1,6 +1,6 @@
 module github.com/belastingdienst/opr-paas
 
-go 1.19
+go 1.21
 
 require (
 	github.com/argoproj/argo-cd/v2 v2.8.6

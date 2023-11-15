@@ -1,7 +1,8 @@
 # Build the manager binary
-FROM golang:1.19 as builder
-ARG TARGETOS
-ARG TARGETARCH
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
+FROM golang:1.21 as builder
 
 ARG GOINSECURE="proxy.golang.org/*,github.com,github.com/*"
 ARG GONOSUMDB="proxy.golang.org/*,github.com,github.com/*"
