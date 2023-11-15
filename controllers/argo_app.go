@@ -73,12 +73,12 @@ func (r *PaasReconciler) backendArgoApp(
 				Server:    "https://kubernetes.default.svc",
 				Namespace: namespace,
 			},
-			IgnoreDifferences: []argo.ResourceIgnoreDifferences {
-					Group: "argoproj.io",
-					JSONPointers:
-						[]string{"/spec/generators"},
-					Kind: "ApplicationSet",
-					Name: getConfig().ExcludeAppSetName,
+			IgnoreDifferences: []argo.ResourceIgnoreDifferences{
+				argo.ResourceIgnoreDifferences{
+					Group:        "argoproj.io",
+					JSONPointers: []string{"/spec/generators"},
+					Kind:         "ApplicationSet",
+					Name:         getConfig().ExcludeAppSetName,
 				},
 			},
 			Project: "default",
