@@ -74,7 +74,7 @@ func (r *PaasReconciler) backendArgoApp(
 				Namespace: namespace,
 			},
 			IgnoreDifferences: []argo.ResourceIgnoreDifferences{
-				argo.ResourceIgnoreDifferences{
+				{
 					Group:        "argoproj.io",
 					JSONPointers: []string{"/spec/generators"},
 					Kind:         "ApplicationSet",
