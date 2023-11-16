@@ -57,17 +57,19 @@ type PaasNSReconciler struct {
 func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
+	var err error
+
 	paasns := &v1alpha1.PaasNS{}
 	var paas *v1alpha1.Paas
 	logger := getLogger(ctx, paasns, paasns.Kind, req.Name)
 	logger.Info("Reconciling the PaasNs object")
 
-	if err := r.Get(ctx, req.NamespacedName, paasns); err != nil {
+	if err = r.Get(ctx, req.NamespacedName, paasns); err != nil {
 		if errors.IsNotFound(err) {
 			// Something fishy is going on
 			// Maybe someone cleaned the finalizers and then removed the PaasNs resource?
 			logger.Info(req.NamespacedName.Name + " is already gone")
-			//return ctrl.Result{}, fmt.Errorf("PaaS object %s already gone", req.NamespacedName)
+			//return ctrl.Result{}, fmt.Errorf("PaasNs object %s already gone", req.NamespacedName)
 		}
 		return ctrl.Result{}, nil
 	} else if paasns.GetDeletionTimestamp() != nil {
@@ -84,19 +86,39 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			logger.Info("Removing finalizer")
 			// Remove memcachedFinalizer. Once all finalizers have been
 			// removed, the object will be deleted.
-			controllerutil.RemoveFinalizer(paas, paasFinalizer)
-			if err := r.Update(ctx, paas); err != nil {
+			controllerutil.RemoveFinalizer(paasns, paasNsFinalizer)
+			if err := r.Update(ctx, paasns); err != nil {
 				return ctrl.Result{}, err
 			}
 			logger.Info("Finalization finished")
 		}
 		return ctrl.Result{}, nil
-	} else if paas, err = r.paasFromPaasNs(ctx, paasns); err != nil {
-		logger.Error(err, fmt.Sprintf("Cannot find PaaS %s", paasns.Spec.Paas))
-		return ctrl.Result{}, err
+	}
+
+	paasns.Status.Truncate()
+	defer r.Status().Update(ctx, paasns)
+
+	// Add finalizer for this CR
+	logger.Info("Adding finalizer for PaasNs object")
+	if !controllerutil.ContainsFinalizer(paasns, paasNsFinalizer) {
+		logger.Info("PaasNs  object has no finalizer yet")
+		controllerutil.AddFinalizer(paasns, paasNsFinalizer)
+		logger.Info("Added finalizer for PaasNs  object")
+		if err := r.Update(ctx, paasns); err != nil {
+			logger.Info("Error updating PaasNs object")
+			logger.Info(fmt.Sprintf("%v", paasns))
+			return ctrl.Result{}, err
+		}
+		logger.Info("Updated PaasNs object")
+	}
+
+	if paas, _, err = r.paasFromPaasNs(ctx, paasns); err != nil {
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
+		// This cannot be resolved by itself, so we should not have this keep on reconciling
+		return ctrl.Result{}, nil
 	} else if paas == nil {
 		err = fmt.Errorf("how can PaaS %s be %v here?", paasns.Spec.Paas, paas)
-		logger.Error(err, "This is bad")
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		return ctrl.Result{}, err
 	} else if !paas.AmIOwner(paasns.OwnerReferences) {
 		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, paas, "updating owner")
@@ -110,10 +132,12 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	if ns, err := BackendNamespace(ctx, paas, nsName, nsQuota, r.Scheme); err != nil {
-		logger.Error(err, fmt.Sprintf("Failure while defining namespace %s", nsName))
+		err = fmt.Errorf("failure while defining namespace %s: %s", nsName, err.Error())
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		return ctrl.Result{}, err
-	} else if err := EnsureNamespace(r.Client, ctx, paas, req, ns, r.Scheme); err != nil {
-		logger.Error(err, fmt.Sprintf("Failure while creating namespace %s", ns.ObjectMeta.Name))
+	} else if err := EnsureNamespace(r.Client, ctx, paasns.Status.AddMessage, paas, req, ns, r.Scheme); err != nil {
+		err = fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, ns, err.Error())
 		return ctrl.Result{}, err
 	}
 
@@ -121,9 +145,8 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	groupKeys := intersect(paas.Spec.Groups.Names(), paasns.Spec.Groups)
 	rb := r.backendAdminRoleBinding(ctx, paas, types.NamespacedName{Namespace: nsName, Name: "paas-admin"}, groupKeys)
 	if err := r.EnsureAdminRoleBinding(ctx, paas, rb); err != nil {
-		logger.Error(err, fmt.Sprintf("Failure while creating rolebinding %s/%s",
-			rb.ObjectMeta.Namespace,
-			rb.ObjectMeta.Name))
+		err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 		return ctrl.Result{}, err
 	}
 
@@ -137,10 +160,29 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 		logger.Info("Ssh secret succesfully created", "secret", secret)
 	}
-	/*
-		- Create Extrapermissions
-		- labels (voor makkelijk terugzoeken)
-	*/
+
+	if err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas); err != nil {
+		logger.Error(err, "Reconciling Extra ClusterRoleBindings failed")
+		return ctrl.Result{}, fmt.Errorf("reconciling Extra ClusterRoleBindings failed")
+	}
+
+	if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists {
+		if paasns.Name == "argocd" {
+			logger.Info("Creating Argo App for client bootstrapping")
+			// Create bootstrap Argo App
+			if err := r.EnsureArgoApp(ctx, paasns, paas); err != nil {
+				return ctrl.Result{}, err
+			}
+			if err := r.EnsureArgoCD(ctx, paasns); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+
+		logger.Info("Extending Applicationsets for PAAS object")
+		if err := r.EnsureAppSetCap(ctx, paasns, paas); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -154,17 +196,22 @@ func (r *PaasNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // nsFromNs gets all PaasNs objects from a namespace and returns a list of all the corresponding namespaces
 // It also returns PaasNS in those namespaces recursively.
-func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]bool {
-	nss := make(map[string]bool)
+func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]int {
+	nss := make(map[string]int)
 	pnsList := &v1alpha1.PaasNSList{}
 	if err := r.List(ctx, pnsList, &client.ListOptions{Namespace: ns}); err != nil {
 		return nss
 	}
 	for _, pns := range pnsList.Items {
-		nss[pns.NamespaceName()] = true
-		// Call myself (recursiveness)
-		for key := range r.nssFromNs(ctx, pns.NamespaceName()) {
-			nss[key] = true
+		nsName := pns.NamespaceName()
+		if value, exists := nss[nsName]; exists {
+			nss[nsName] = value + 1
+			// Call myself (recursiveness)
+			for key, value := range r.nssFromNs(ctx, nsName) {
+				nss[key] += value
+			}
+		} else {
+			nss[nsName] = 1
 		}
 	}
 	return nss
@@ -172,53 +219,54 @@ func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]
 
 // nsFromPaas accepts a PaaS and returns a list of all namespaces managed by this PaaS
 // nsFromPaas uses nsFromNs which is recursive.
-func (r *PaasNSReconciler) nssFromPaas(ctx context.Context, paas *v1alpha1.Paas) map[string]bool {
+func (r *PaasNSReconciler) nssFromPaas(ctx context.Context, paas *v1alpha1.Paas) map[string]int {
 	// all nss to start with is all ns from paas, and ns named after paas
 	sourceNss := paas.PrefixedAllEnabledNamespaces()
 	sourceNss[paas.Name] = true
 	// now scan them and append then to the end result
-	finalNss := make(map[string]bool)
+	finalNss := make(map[string]int)
 	for ns := range sourceNss {
-		finalNss[ns] = true
-		for key := range r.nssFromNs(ctx, ns) {
-			finalNss[key] = true
+		finalNss[ns] = 1
+		for key, value := range r.nssFromNs(ctx, ns) {
+			finalNss[key] += value
 		}
 	}
 	return finalNss
 }
 
-func (r *PaasNSReconciler) paasFromPaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, err error) {
+func (r *PaasNSReconciler) paasFromPaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, namespaces map[string]int, err error) {
 	logger := getLogger(ctx, paasns, "PaasNs", "paasFromPaasNs")
 	paas = &v1alpha1.Paas{}
 	if err := r.Get(ctx, types.NamespacedName{Name: paasns.Spec.Paas}, paas); err != nil {
+		err = fmt.Errorf("cannot find PaaS %s", paasns.Spec.Paas)
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		logger.Error(err, fmt.Sprintf("Cannot find PaaS %s", paasns.Spec.Paas))
-		return nil, err
+		return nil, namespaces, err
 	} else if paas.Name == "" {
-		logger.Error(fmt.Errorf("PaaS %v is empty", paasns.Spec.Paas), "Why was an empty PaaS returned?")
-		return nil, err
+		err = fmt.Errorf("PaaS %v is empty", paasns.Spec.Paas)
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
+		return nil, namespaces, err
 	}
 	if paasns.Namespace == paas.Name {
-		logger.Info(fmt.Sprintf("PaaS is %v", *paas))
-		return paas, nil
+		return paas, r.nssFromPaas(ctx, paas), nil
 	} else {
-		namespaces := r.nssFromPaas(ctx, paas)
-		logger.Info(fmt.Sprintf("PaaS namespaces are %v", namespaces))
+		namespaces = r.nssFromPaas(ctx, paas)
 		if _, exists := namespaces[paasns.Namespace]; exists {
-			logger.Info(fmt.Sprintf("PaaS is %v", *paas))
-			return paas, nil
+			return paas, namespaces, nil
 		} else {
 			var nss []string
 			for key := range namespaces {
 				nss = append(nss, key)
 			}
-			logger.Error(err, fmt.Sprintf(
+			err = fmt.Errorf(
 				"PaasNs %s claims to come from paas %s, but %s is not in the list of namespaces coming from %s (%s)",
 				types.NamespacedName{Name: paasns.Name, Namespace: paasns.Namespace},
 				paas.Name,
 				paasns.Namespace,
 				paas.Name,
-				strings.Join(nss, ", ")))
-			return nil, err
+				strings.Join(nss, ", "))
+			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
+			return nil, map[string]int{}, err
 		}
 	}
 }
@@ -226,17 +274,22 @@ func (r *PaasNSReconciler) paasFromPaasNs(ctx context.Context, paasns *v1alpha1.
 func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) error {
 	logger := getLogger(ctx, paasns, "PaasNs", "finalizePaasNs")
 
-	paas, err := r.paasFromPaasNs(ctx, paasns)
+	paas, nss, err := r.paasFromPaasNs(ctx, paasns)
 	if err != nil {
-		logger.Error(err, fmt.Sprintf("Cannot find PaaS %s", paasns.Spec.Paas))
-		return err
+		err = fmt.Errorf("cannot find PaaS %s: %s", paasns.Spec.Paas, err.Error())
+		logger.Info(err.Error())
+		return nil
+	} else if nss[paasns.NamespaceName()] > 1 {
+		err = fmt.Errorf("this is not the only paasns managing this namespace, silently removing this paasns")
+		logger.Info(err.Error())
+		return nil
 	}
 
 	logger.Info("Inside PaasNs finalizer")
 	if err := r.FinalizeNamespace(ctx, paasns, paas); err != nil {
-		logger.Error(err, fmt.Sprintf("Cannot remove namespace belonging to PaaS %s", paasns.Spec.Paas))
+		err = fmt.Errorf("cannot remove namespace belonging to PaaS %s: %s", paasns.Spec.Paas, err.Error())
 		return err
 	}
-	logger.Info("PaaS succesfully finalized")
+	logger.Info("PaasNs succesfully finalized")
 	return nil
 }

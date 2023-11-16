@@ -418,9 +418,7 @@ func (pg PaasGrafana) GetSshSecrets() map[string]string {
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
-	ArgoCDUrl  string   `json:"argocdUrl,omitempty"`
-	GrafanaUrl string   `json:"grafanaUrl,omitempty"`
-	Messages   []string `json:"messages,omitempty"`
+	Messages []string `json:"messages,omitempty"`
 }
 
 func (ps *PaasStatus) Truncate() {

@@ -26,8 +26,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"time"
-
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -124,6 +122,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			return ctrl.Result{}, err
 		}
 	}
+
 	for _, name := range r.BackendDisabledQuotas(ctx, paas) {
 		logger.Info("Cleaning quota " + name + " for PAAS object ")
 		if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {
@@ -137,7 +136,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		logger.Error(err, "Failure while defining namespace")
 		return ctrl.Result{}, err
 	} else {
-		EnsureNamespace(r.Client, ctx, paas, req, ns, r.Scheme)
+		EnsureNamespace(r.Client, ctx, paas.Status.AddMessage, paas, req, ns, r.Scheme)
 
 		logger.Info("Creating PaasNs resources for PAAS object")
 		for nsName := range paas.AllEnabledNamespaces() {
@@ -155,25 +154,8 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Creating Argo App for client bootstrapping")
-	// Create bootstrap Argo App
-	if paas.Spec.Capabilities.ArgoCD.Enabled {
-		if err := r.EnsureArgoApp(ctx, paas); err != nil {
-			return ctrl.Result{}, err
-		}
-	} else {
-		if err := r.FinalizeArgoApp(ctx, paas); err != nil {
-			return ctrl.Result{}, err
-		}
-	}
-
 	logger.Info("Creating Argo Project")
 	if err := r.EnsureAppProject(ctx, paas); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	logger.Info("Extending Applicationsets for PAAS object")
-	if err := r.EnsureAppSetCaps(ctx, paas); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -188,27 +170,6 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger.Info("Creating ldap groups for PAAS object ")
 	if err := r.EnsureLdapGroups(ctx, paas); err != nil {
 		return ctrl.Result{}, err
-	}
-
-	if paas.Spec.Capabilities.ArgoCD.Enabled {
-		retries := int(getConfig().ArgoPermissions.Retries)
-		for i := 1; i <= retries; i++ {
-			logger.Info(fmt.Sprintf("Updating ArgoCD Permissions (try %d/%d)", i, retries))
-			if err := r.EnsureArgoPermissions(ctx, paas); err != nil {
-				if i == retries {
-					logger.Error(err, "updating ArgoCD Permissions failed", "retries", retries)
-					return ctrl.Result{}, fmt.Errorf("updating ArgoCD Permissions failed %d times", retries)
-				}
-				time.Sleep(time.Second)
-			} else {
-				break
-			}
-		}
-	}
-
-	if err = r.ReconcileExtraClusterRoleBindings(ctx, paas); err != nil {
-		logger.Error(err, "Reconciling Extra ClusterRoleBindings failed")
-		return ctrl.Result{}, fmt.Errorf("reconciling Extra ClusterRoleBindings failed")
 	}
 
 	logger.Info("Updating PaaS object status")
@@ -244,9 +205,6 @@ func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *v1alpha1.Paas) 
 		return err
 	} else if err = r.FinalizeLdapGroups(ctx, paas, cleanedLdapQueries); err != nil {
 		logger.Error(err, "LdapGroup finalizer error")
-		return err
-	} else if err = r.FinalizeArgoApp(ctx, paas); err != nil {
-		logger.Error(err, "ArgoApp finalizer error")
 		return err
 	} else if r.FinalizeExtraClusterRoleBindings(ctx, paas); err != nil {
 		logger.Error(err, "Extra ClusterRoleBindings finalizer error")

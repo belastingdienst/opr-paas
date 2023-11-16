@@ -20,8 +20,6 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -38,27 +36,6 @@ type PaasNSSpec struct {
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
 }
 
-// PaasNSStatus defines the observed state of PaasNS
-type PaasNSStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	Messages []string `json:"messages,omitempty"`
-}
-
-func (pns *PaasNSStatus) Truncate() {
-	pns.Messages = []string{}
-}
-
-func (pns *PaasNSStatus) AddMessage(level PaasStatusLevel, action PaasStatusAction, obj client.Object, message string) {
-	namespacedName := types.NamespacedName{
-		Name:      obj.GetName(),
-		Namespace: obj.GetNamespace(),
-	}
-	pns.Messages = append(pns.Messages,
-		fmt.Sprintf("%s: %s for %s (%s) %s", level, action, namespacedName.String(), obj.GetObjectKind().GroupVersionKind().String(), message),
-	)
-}
-
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
@@ -67,12 +44,22 @@ type PaasNS struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PaasNSSpec   `json:"spec,omitempty"`
-	Status PaasNSStatus `json:"status,omitempty"`
+	Spec   PaasNSSpec `json:"spec,omitempty"`
+	Status PaasStatus `json:"status,omitempty"`
 }
 
 func (pns PaasNS) NamespaceName() string {
 	return fmt.Sprintf("%s-%s", pns.Spec.Paas, pns.Name)
+}
+
+func (p PaasNS) ClonedLabels() map[string]string {
+	labels := make(map[string]string)
+	for key, value := range p.Labels {
+		if key != "app.kubernetes.io/instance" {
+			labels[key] = value
+		}
+	}
+	return labels
 }
 
 //+kubebuilder:object:root=true
