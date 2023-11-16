@@ -226,13 +226,9 @@ spec:
           status:
             description: PaasStatus defines the observed state of Paas
             properties:
-              argocdUrl:
+              messages:
                 description: 'Important: Run "make" to regenerate code after modifying
                   this file'
-                type: string
-              grafanaUrl:
-                type: string
-              messages:
                 items:
                   type: string
                 type: array

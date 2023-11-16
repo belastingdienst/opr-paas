@@ -122,13 +122,18 @@ func entryFromPaas(paas *v1alpha1.Paas) Elements {
 }
 
 // ensureAppSetCap ensures a list entry in the AppSet voor the capability
-func (r *PaasReconciler) ensureAppSetCap(
+func (r *PaasNSReconciler) EnsureAppSetCap(
 	ctx context.Context,
+	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
-	capability string,
 ) error {
+	var err error
+	if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; !exists {
+		// Not a capability
+		return nil
+	}
 	// See if AppSet exists raise error if it doesn't
-	namespacedName := getConfig().CapabilityK8sName(capability)
+	namespacedName := getConfig().CapabilityK8sName(paasns.Name)
 	appSet := &appv1.ApplicationSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Applicationset",
@@ -139,15 +144,15 @@ func (r *PaasReconciler) ensureAppSetCap(
 			Namespace: namespacedName.Namespace,
 		},
 	}
-	logger := getLogger(ctx, paas, "AppSet", namespacedName.String())
-	logger.Info(fmt.Sprintf("Reconciling %s Applicationset %s", capability, namespacedName.String()))
-	err := r.Get(ctx, namespacedName, appSet)
+	logger := getLogger(ctx, paasns, "AppSet", namespacedName.String())
+	logger.Info(fmt.Sprintf("Reconciling %s Applicationset %s", paasns.Name, namespacedName.String()))
+	err = r.Get(ctx, namespacedName, appSet)
 	//groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
 	if err != nil {
 		// Applicationset does not exixt
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, appSet, err.Error())
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, appSet, err.Error())
 		return err
 	} else if listGen = getListGen(appSet.Spec.Generators); listGen == nil {
 		// create the list
@@ -156,10 +161,10 @@ func (r *PaasReconciler) ensureAppSetCap(
 		}
 		appSet.Spec.Generators = append(appSet.Spec.Generators, *listGen)
 		entries = Entries{
-			paas.Name: entryFromPaas(paas),
+			paasns.Spec.Paas: entryFromPaas(paas),
 		}
 	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, appSet, err.Error())
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, appSet, err.Error())
 		return err
 	} else {
 		entry := entryFromPaas(paas)
@@ -167,7 +172,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	}
 	// log.Info(fmt.Sprintf("entries: %s", entries.AsString()))
 	if json, err := entries.AsJSON(); err != nil {
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, appSet, err.Error())
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, appSet, err.Error())
 		return err
 	} else {
 		// log.Info(fmt.Sprintf("json: %v", json))
@@ -176,22 +181,21 @@ func (r *PaasReconciler) ensureAppSetCap(
 		listGen.List.Elements = json
 	}
 
-	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, appSet, "succeeded")
+	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, appSet, "succeeded")
 	appSet.Spec.Generators = clearGenerators(appSet.Spec.Generators)
 	return r.Update(ctx, appSet)
 }
 
 // ensureAppSetCap ensures a list entry in the AppSet voor the capability
-func (r *PaasReconciler) EnsureAppSetCaps(
+func (r *PaasNSReconciler) EnsureAppSetCaps(
 	ctx context.Context,
+	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) error {
-	for cap_name, c := range paas.Spec.Capabilities.AsMap() {
-		if c.IsEnabled() {
-			if err := r.ensureAppSetCap(ctx, paas, cap_name); err != nil {
-				return err
-			}
-		}
+	if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; !exists {
+		return nil
+	} else if err := r.EnsureAppSetCap(ctx, paasns, paas); err != nil {
+		return err
 	}
 	return nil
 }

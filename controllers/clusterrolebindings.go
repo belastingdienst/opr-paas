@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -13,26 +14,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-/*
-Add RB:
-- Get || Create
-- Add
-- Update
-
-Finalize RB:
-- Get && (RemoveEntry || RemoveRB) && Update
-
-
-Get
-Create
-Add
-RemoveEntry
-RemoveRB
-Update
-*/
-
 // ensureClusterRoleBinding ensures ClusterRoleBindings to enable extra permissions for certain capabilities.
-func (r *PaasReconciler) getClusterRoleBinding(
+func getClusterRoleBinding(
+	r client.Client,
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	name string,
@@ -42,18 +26,19 @@ func (r *PaasReconciler) getClusterRoleBinding(
 	found := &rbac.ClusterRoleBinding{}
 	err = r.Get(ctx, types.NamespacedName{Name: name}, found)
 	if err != nil && errors.IsNotFound(err) {
-		return r.newClusterRoleBinding(paas, name, role), nil
+		return newClusterRoleBinding(r, paas, name, role), nil
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
 		paas.Status.AddMessage(v1alpha1.PaasStatusError,
-			v1alpha1.PaasStatusFind, r.newClusterRoleBinding(paas, name, role), err.Error())
+			v1alpha1.PaasStatusFind, newClusterRoleBinding(r, paas, name, role), err.Error())
 		return nil, err
 	} else {
 		return found, nil
 	}
 }
 
-func (r *PaasReconciler) updateClusterRoleBinding(
+func updateClusterRoleBinding(
+	r client.Client,
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	crb *rbac.ClusterRoleBinding,
@@ -73,7 +58,8 @@ func (r *PaasReconciler) updateClusterRoleBinding(
 }
 
 // backendRoleBinding is a code for Creating RoleBinding
-func (r *PaasReconciler) newClusterRoleBinding(
+func newClusterRoleBinding(
+	r client.Client,
 	paas *v1alpha1.Paas,
 	name string,
 	role string,
@@ -148,48 +134,47 @@ func updateClusterRoleBindingForRemovedSAs(
 	return changed
 }
 
-func (r *PaasReconciler) ReconcileExtraClusterRoleBindings(
+func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 	ctx context.Context,
+	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) (err error) {
 	var crb *rbac.ClusterRoleBinding
 	var changed bool
-	caps := paas.Spec.Capabilities.AsMap()
-	logger := getLogger(ctx, paas, "ClusterRoleBinding", "reconcile")
+	if cap, exists := paas.Spec.Capabilities.AsMap()[paas.Name]; !exists {
+		return
+	} else if capConfig, exists := getConfig().Capabilities[paas.Name]; !exists {
+		return
+	} else {
 
-	for capName, capConfig := range getConfig().Capabilities {
-		// logger.Info(fmt.Sprintf("capName: %s", capName))
-		if cap, exists := caps[capName]; !exists {
-			// logger.Info(fmt.Sprintf("%s !exists", capName))
-			continue
-		} else {
-			capNamespace := fmt.Sprintf("%s-%s", paas.Name, capName)
-			// logger.Info(fmt.Sprintf("capNamespace %s", capNamespace))
-			for _, role := range capConfig.ExtraPermissions.Roles {
-				crbName := fmt.Sprintf("paas-%s", role)
-				// logger.Info(fmt.Sprintf("crbname %s", crbName))
-				if crb, err = r.getClusterRoleBinding(ctx, paas, crbName, role); err != nil {
-					// logger.Info(fmt.Sprintf("error: %s", err.Error()))
+		logger := getLogger(ctx, paas, "ClusterRoleBinding", "reconcile")
+
+		capNamespace := fmt.Sprintf("%s-%s", paas.Name, paas.Name)
+		// logger.Info(fmt.Sprintf("capNamespace %s", capNamespace))
+		for _, role := range capConfig.ExtraPermissions.Roles {
+			crbName := fmt.Sprintf("paas-%s", role)
+			// logger.Info(fmt.Sprintf("crbname %s", crbName))
+			if crb, err = getClusterRoleBinding(r.Client, ctx, paas, crbName, role); err != nil {
+				// logger.Info(fmt.Sprintf("error: %s", err.Error()))
+				return err
+				// } else {
+				// logger.Info(fmt.Sprintf("crb %s read from k8s", crbName))
+			}
+
+			if cap.WithExtraPermissions() {
+				if changed = addSAsToClusterRoleBinding(crb, capNamespace, capConfig.ExtraPermissions.ServiceAccounts); changed {
+					logger.Info(fmt.Sprintf("adding sa's %v for ns %s to crb %s", capConfig.ExtraPermissions.ServiceAccounts, capNamespace, crbName))
+				}
+			} else {
+				if changed = updateClusterRoleBindingForRemovedSAs(crb, *regexp.MustCompile(fmt.Sprintf("^%s$", capNamespace))); changed {
+					logger.Info(fmt.Sprintf("deleting sa's %v for ns %s from crb %s", capConfig.ExtraPermissions.ServiceAccounts, capNamespace, crbName))
+				}
+			}
+			if changed {
+				// logger.Info(fmt.Sprintf("updating crb %s", crbName))
+				if err := updateClusterRoleBinding(r.Client, ctx, paas, crb); err != nil {
+					// logger.Info(fmt.Sprintf("updating crb %s failed", crbName))
 					return err
-					// } else {
-					// logger.Info(fmt.Sprintf("crb %s read from k8s", crbName))
-				}
-
-				if cap.WithExtraPermissions() {
-					if changed = addSAsToClusterRoleBinding(crb, capNamespace, capConfig.ExtraPermissions.ServiceAccounts); changed {
-						logger.Info(fmt.Sprintf("adding sa's %v for ns %s to crb %s", capConfig.ExtraPermissions.ServiceAccounts, capNamespace, crbName))
-					}
-				} else {
-					if changed = updateClusterRoleBindingForRemovedSAs(crb, *regexp.MustCompile(fmt.Sprintf("^%s$", capNamespace))); changed {
-						logger.Info(fmt.Sprintf("deleting sa's %v for ns %s from crb %s", capConfig.ExtraPermissions.ServiceAccounts, capNamespace, crbName))
-					}
-				}
-				if changed {
-					// logger.Info(fmt.Sprintf("updating crb %s", crbName))
-					if err := r.updateClusterRoleBinding(ctx, paas, crb); err != nil {
-						// logger.Info(fmt.Sprintf("updating crb %s failed", crbName))
-						return err
-					}
 				}
 			}
 		}
@@ -208,7 +193,7 @@ func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 	}
 	for _, role := range capRoles {
 		roleName := fmt.Sprintf("paas-%s", role)
-		crb, err := r.getClusterRoleBinding(ctx, paas, roleName, role)
+		crb, err := getClusterRoleBinding(r.Client, ctx, paas, roleName, role)
 		if err != nil {
 			return err
 		}
@@ -219,7 +204,7 @@ func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 			continue
 		}
 		logger.Info(fmt.Sprintf("Updating rolebinding %s after cleaning SA's for '%s'", roleName, nsRe))
-		if err := r.updateClusterRoleBinding(ctx, paas, crb); err != nil {
+		if err := updateClusterRoleBinding(r.Client, ctx, paas, crb); err != nil {
 			return err
 		}
 	}
