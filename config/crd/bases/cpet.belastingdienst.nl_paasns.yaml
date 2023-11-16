@@ -51,11 +51,10 @@ spec:
             - paas
             type: object
           status:
-            description: PaasNSStatus defines the observed state of PaasNS
+            description: PaasStatus defines the observed state of Paas
             properties:
               messages:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
+                description: 'Important: Run "make" to regenerate code after modifying
                   this file'
                 items:
                   type: string

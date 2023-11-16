@@ -18,44 +18,53 @@ const (
 )
 
 // ensureArgoApp ensures ArgoApp presence in given argo application.
-func (r *PaasReconciler) EnsureArgoApp(
+func (r *PaasNSReconciler) EnsureArgoApp(
 	ctx context.Context,
+	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) error {
 
-	logger := getLogger(ctx, paas, "ArgoApp", appName)
+	if paasns.Name != "argocd" {
+		return nil
+	}
+
+	logger := getLogger(ctx, paasns, "ArgoApp", appName)
 	namespacedName := types.NamespacedName{
-		Namespace: fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, "argocd"),
+		Namespace: paasns.NamespaceName(),
 		Name:      appName,
 	}
 
 	// See if argo application exists and create if it doesn't
-	argoApp := r.backendArgoApp(ctx, paas)
 	found := &argo.Application{}
-	if err := r.Get(ctx, namespacedName, found); err == nil {
+	if argoApp, err := r.backendArgoApp(ctx, paasns, paas); err != nil {
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusAction(v1alpha1.PaasStatusInfo), argoApp, err.Error())
+		return err
+	} else if err := r.Get(ctx, namespacedName, found); err == nil {
 		logger.Info("Argo Application already exists, updating")
 		found.Spec = argoApp.Spec
-		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, found, "succeeded")
+		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, found, "succeeded")
 		return r.Update(ctx, found)
 	} else if !errors.IsNotFound(err) {
 		logger.Error(err, "Could not retrieve info of Argo Application")
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusAction(v1alpha1.PaasStatusInfo), argoApp, err.Error())
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusAction(v1alpha1.PaasStatusInfo), argoApp, err.Error())
 		return err
 	} else {
 		logger.Info("Creating Argo Application")
-		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, argoApp, "succeeded")
-		return r.Create(ctx, r.backendArgoApp(ctx, paas))
+		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, argoApp, "succeeded")
+		return r.Create(ctx, argoApp)
 	}
 }
 
 // backendArgoApp is code for creating a ArgoApp
-func (r *PaasReconciler) backendArgoApp(
+func (r *PaasNSReconciler) backendArgoApp(
 	ctx context.Context,
+	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
-) *argo.Application {
-	logger := getLogger(ctx, paas, "ArgoApp", appName)
+) (*argo.Application, error) {
+	logger := getLogger(ctx, paasns, "ArgoApp", appName)
 	logger.Info(fmt.Sprintf("Defining %s Argo Application", appName))
-	namespace := fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, "argocd")
+
+	namespace := paasns.NamespaceName()
 	argoConfig := paas.Spec.Capabilities.ArgoCD
 	argoConfig.SetDefaults()
 	app := &argo.Application{
@@ -66,7 +75,7 @@ func (r *PaasReconciler) backendArgoApp(
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      appName,
 			Namespace: namespace,
-			Labels:    paas.ClonedLabels(),
+			Labels:    paasns.ClonedLabels(),
 		},
 		Spec: argo.ApplicationSpec{
 			Destination: argo.ApplicationDestination{
@@ -97,18 +106,18 @@ func (r *PaasReconciler) backendArgoApp(
 
 	logger.Info("Setting Owner")
 	controllerutil.SetControllerReference(paas, app, r.Scheme)
-	return app
+	return app, nil
 }
 
-func (r *PaasReconciler) FinalizeArgoApp(
+func (r *PaasNSReconciler) FinalizeArgoApp(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paasns *v1alpha1.PaasNS,
 ) error {
 	namespacedName := types.NamespacedName{
-		Namespace: fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, "argocd"),
+		Namespace: paasns.NamespaceName(),
 		Name:      appName,
 	}
-	logger := getLogger(ctx, paas, "Application", namespacedName.String())
+	logger := getLogger(ctx, paasns, "Application", namespacedName.String())
 	logger.Info("Finalizing")
 	obj := &argo.Application{}
 	if err := r.Get(ctx, namespacedName, obj); err != nil && errors.IsNotFound(err) {

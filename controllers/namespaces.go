@@ -20,6 +20,7 @@ import (
 func EnsureNamespace(
 	r client.Client,
 	ctx context.Context,
+	addMessageFunc func(v1alpha1.PaasStatusLevel, v1alpha1.PaasStatusAction, client.Object, string),
 	paas *v1alpha1.Paas,
 	request reconcile.Request,
 	ns *corev1.Namespace,
@@ -34,19 +35,19 @@ func EnsureNamespace(
 	if err != nil && errors.IsNotFound(err) {
 		if err = r.Create(ctx, ns); err != nil {
 			// creating the namespace failed
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, ns, err.Error())
+			addMessageFunc(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, ns, err.Error())
 			return err
 		} else {
 			// creating the namespace was successful
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, ns, "succeeded")
+			addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, ns, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, ns, err.Error())
+		addMessageFunc(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, ns, err.Error())
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
-		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
+		addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
 		controllerutil.SetControllerReference(paas, found, scheme)
 	}
 	var changed bool
