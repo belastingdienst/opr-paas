@@ -86,6 +86,14 @@ func EntriesFromJSON(data []apiextensionsv1.JSON) (Entries, error) {
 	return e, nil
 }
 
+func clearGenerators(generators []appv1.ApplicationSetGenerator) (clean []appv1.ApplicationSetGenerator) {
+	for _, generator := range generators {
+		if generator.Size() > 0 {
+			clean = append(clean, generator)
+		}
+	}
+	return clean
+}
 func getListGen(generators []appv1.ApplicationSetGenerator) *appv1.ApplicationSetGenerator {
 	for _, generator := range generators {
 		if len(generator.List.Elements) > 0 {
@@ -169,6 +177,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	}
 
 	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, appSet, "succeeded")
+	appSet.Spec.Generators = clearGenerators(appSet.Spec.Generators)
 	return r.Update(ctx, appSet)
 }
 
