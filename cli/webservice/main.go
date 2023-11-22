@@ -24,6 +24,7 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	_version "github.com/belastingdienst/opr-paas/internal/version"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 var (
@@ -129,6 +130,7 @@ func main() {
 	router.GET("/v1/generate", v1Generate)
 	router.GET("/healthz", healthz)
 	router.GET("/readyz", readyz)
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	ep := getConfig().Endpoint
 	log.Printf("Listening on: %s", ep)
 	router.Run(ep)
