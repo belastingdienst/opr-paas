@@ -100,6 +100,7 @@ func (r *PaasNSReconciler) backendArgoApp(
 				Automated: &argo.SyncPolicyAutomated{
 					SelfHeal: true,
 				},
+				SyncOptions: []string{"RespectIgnoreDifferences=true"},
 			},
 		},
 	}
