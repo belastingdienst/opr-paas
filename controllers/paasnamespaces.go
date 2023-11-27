@@ -8,6 +8,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -79,9 +80,23 @@ func (r *PaasReconciler) EnsurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 		controllerutil.SetControllerReference(paas, found, r.Scheme)
 	}
 	var changed bool
-	if pns.Spec.Paas != found.Spec.Paas ||
-		!reflect.DeepEqual(pns.Spec.Groups, found.Spec.Groups) ||
-		!reflect.DeepEqual(pns.Spec.SshSecrets, found.Spec.SshSecrets) {
+	logger.Info("reconciling PaasNs", "PaasNs", pns, "found", found,
+		"!group eq", !reflect.DeepEqual(pns.Spec.Groups, found.Spec.Groups),
+		"!ssh eq", !reflect.DeepEqual(pns.Spec.SshSecrets, found.Spec.SshSecrets),
+	)
+	if pns.Spec.Paas != found.Spec.Paas {
+		logger.Info("Paas changed", "PaasNs", pns)
+		found.Spec.Paas = pns.Spec.Paas
+		changed = true
+	}
+	if !reflect.DeepEqual(pns.Spec.Groups, found.Spec.Groups) {
+		logger.Info("Groups changed", "PaasNs", pns)
+		found.Spec.Groups = pns.Spec.Groups
+		changed = true
+	}
+	if !reflect.DeepEqual(pns.Spec.SshSecrets, found.Spec.SshSecrets) {
+		logger.Info("sshSecrets changed", "PaasNs", pns)
+		found.Spec.SshSecrets = pns.Spec.SshSecrets
 		changed = true
 	}
 	for key, value := range pns.ObjectMeta.Labels {
@@ -93,10 +108,12 @@ func (r *PaasReconciler) EnsurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 			// No action required
 			continue
 		}
+		logger.Info(fmt.Sprintf("Label [%s] changed", key), "PaasNs", pns)
 		changed = true
 		found.ObjectMeta.Labels[key] = value
 	}
 	if changed {
+		logger.Info("Updating PaasNs", "PaasNs", pns)
 		return r.Update(ctx, found)
 	}
 	return nil

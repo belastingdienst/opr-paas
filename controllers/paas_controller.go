@@ -123,11 +123,12 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	logger.Info("Creating default namespace to hold PaasNs resources for PAAS object")
 	if ns, err := BackendNamespace(ctx, paas, paas.Name, paas.Name, r.Scheme); err != nil {
-		logger.Error(err, "Failure while defining namespace")
+		logger.Error(err, fmt.Sprintf("Failure while defining namespace %s", paas.Name))
+		return ctrl.Result{}, err
+	} else if err = EnsureNamespace(r.Client, ctx, paas.Status.AddMessage, paas, req, ns, r.Scheme); err != nil {
+		logger.Error(err, fmt.Sprintf("Failure while creating namespace %s", paas.Name))
 		return ctrl.Result{}, err
 	} else {
-		EnsureNamespace(r.Client, ctx, paas.Status.AddMessage, paas, req, ns, r.Scheme)
-
 		logger.Info("Creating PaasNs resources for PAAS object")
 		for nsName := range paas.AllEnabledNamespaces() {
 			pns := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Names(), paas.GetNsSshSecrets(nsName))
