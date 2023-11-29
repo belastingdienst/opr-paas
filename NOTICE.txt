@@ -1,0 +1,8 @@
+Licensing
+=========
+
+This software project and its files are copyright 2023, Tax Administration of
+The Netherlands. Licensed under the Apache License, Version 2.0 (the "License");
+
+For FULL details of the license under which this software has been made
+available, please see the LICENSE.txt file in the root folder of this project.
