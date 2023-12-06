@@ -65,8 +65,13 @@ func (r *PaasReconciler) EnsureGroup(
 		for user := range users {
 			found.Users = append(found.Users, user)
 		}
-		for key, value := range group.Annotations {
-			found.ObjectMeta.Annotations[key] = value
+		if found.Annotations == nil {
+			found.Annotations = group.Annotations
+		} else {
+			for key, value := range group.Annotations {
+				found.Annotations[key] = value
+			}
+
 		}
 		if !paas.AmIOwner(found.OwnerReferences) {
 			logger.Info("Setting owner reference")
