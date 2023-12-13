@@ -89,12 +89,16 @@ func (r *PaasReconciler) EnsurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 		found.Spec.Paas = pns.Spec.Paas
 		changed = true
 	}
-	if !reflect.DeepEqual(pns.Spec.Groups, found.Spec.Groups) {
+	if len(pns.Spec.Groups) == 0 && len(found.Spec.Groups) == 0 {
+		logger.Info("No groups defined", "PaasNs", pns)
+	} else if !reflect.DeepEqual(pns.Spec.Groups, found.Spec.Groups) {
 		logger.Info("Groups changed", "PaasNs", pns)
 		found.Spec.Groups = pns.Spec.Groups
 		changed = true
 	}
-	if !reflect.DeepEqual(pns.Spec.SshSecrets, found.Spec.SshSecrets) {
+	if len(pns.Spec.Groups) == 0 && len(found.Spec.Groups) == 0 {
+		logger.Info("no sshSecrets defined", "PaasNs", pns)
+	} else if !reflect.DeepEqual(pns.Spec.SshSecrets, found.Spec.SshSecrets) {
 		logger.Info("sshSecrets changed", "PaasNs", pns)
 		found.Spec.SshSecrets = pns.Spec.SshSecrets
 		changed = true
