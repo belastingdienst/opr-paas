@@ -19,6 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	v1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 )
@@ -181,6 +182,13 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 func (r *PaasNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.PaasNS{}).
+		WithEventFilter(
+			predicate.Or(
+				// Spec updated
+				predicate.GenerationChangedPredicate{},
+				// Labels updated
+				predicate.LabelChangedPredicate{},
+			)).
 		Complete(r)
 }
 
