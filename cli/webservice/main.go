@@ -13,6 +13,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	_version "github.com/belastingdienst/opr-paas/internal/version"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -108,8 +109,17 @@ func main() {
 	log.Println("Starting API endpoint")
 	log.Printf("Version: %s", _version.PAAS_VERSION)
 	gin.SetMode(gin.ReleaseMode)
-	router := gin.New()
+	router := gin.Default()
+	// - No origin allowed by default
+	// - GET,POST, PUT, HEAD methods
+	// - Credentials share disabled
+	// - Preflight requests cached for 12 hours
+	config := cors.DefaultConfig()
+	// config.AllowOrigins = []string{"http://bla.com"}
+	config.AllowAllOrigins = true
+
 	router.Use(
+		cors.New(config),
 		gin.LoggerWithWriter(gin.DefaultWriter, "/healthz", "/readyz"),
 		gin.Recovery(),
 	)
