@@ -115,6 +115,7 @@ func main() {
 	// - Credentials share disabled
 	// - Preflight requests cached for 12 hours
 	config := cors.DefaultConfig()
+	config.AllowMethods = []string{"GET", "POST"}
 	// config.AllowOrigins = []string{"http://bla.com"}
 	config.AllowAllOrigins = true
 
