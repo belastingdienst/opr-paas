@@ -1,17 +1,46 @@
 # opr-paas
-Deze operator is bedoeld om PaaS resources te kunnen reconcilen naar namespaces, cluster quota,s ldap groepen, etc.
 
-## IMPORTANT
-The config folder is in this repo as an example only.
-The actual argocd config is maintained in the opr-paas-config repo.
+## Goal
+
+The PaaS operator delivers an opiniated 'Project as a Service' implementation
+where development teams can request a 'Project as a Service' by defining a PaaS resource,
+which the PaaS operator uses as input to create namespaces limited by Cluster Resource Quota's,
+granting groups permissions and (together with a clusterwide ArgoCD) creating capabilities such as
+a PaaS specific deployment of ArgoCD (continuous deployment), Tekton (continuous integration),
+Grafana (observability), and KeyCloak (Application level Signle Sign On).
+A PaaS is all a team needs to hit the ground running.
+
+## Quickstart
+
+Deploy the operator using the following command:
+```
+kubectl apply -f \
+  https://raw.githubusercontent.com/belastingdienst/paas/release-1.0.0/releases/opr-paas-1.0.0.yaml
+```
+
+This will create:
+- a namespace called paas-system
+- 2 CRD's (PaaS and PaasNs)
+- a service account, role, rolebinding, clusterrole and clusterrolebinding for all permissions required by the operator
+- a viewer and an editor clusterrole for PaaS and PaasNs resources
+- a configmap with all operator configuration options
+- a secret with a newly generated keypair used for
+- a deployment running the operator and a deployment running an encryption service
+
+Feel free to change config as required.
+
+### Change configuration
+The quickstart yaml file is a result from parts of the config folder, which is in this repo as an example only.
+It is adviced to copy it to a config repo and use that to maintain your own deployment.
+
 When changing the crd, first run `make manifests` in the root of this repo.
 Then copy config/crd/bases/cpet.belastingdienst.nl_paas.yaml to the opr-paas-config repo and dsitribute with ArgoCD from there
 
 ## Description
-Het idee is dat onze klanten een PaaS resource kunnen aanmaken en dat ze hiermee een applicatieomgeving kunnen (laten) creeren.
-de applicatie omgeving omvat:
+We want our developer teams to be able to create application environments with great ease and provide PaaS as an interface for this.
+Application environments consist of:
 - argocd (namespace, quota, argocd CR
-- ci (namespace, quota, tekton dingen)
+- ci (namespace, quota, tekton example pipelines and tasks, etc.)
 - SSO (namespace, quota, keycloak)
 - Grafana (namepace, quota, Grafana)
 
@@ -66,43 +95,11 @@ make undeploy
 ```
 
 ## Contributing
-For now this is a Belastingdienst Internal project.
-We might Open Source it in the future, or we might not.
 
-### How it works
-This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/).
-
-It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/),
-which provide a reconcile function responsible for synchronizing resources until the desired state is reached on the cluster.
-
-### Test It Out
-1. Install the CRDs into the cluster:
-
-```sh
-make install
-```
-
-2. Run your controller (this will run in the foreground, so switch to a new terminal if you want to leave it running):
-
-```sh
-make run
-```
-
-**NOTE:** You can also run this in one step by running: `make install run`
-
-### Modifying the API definitions
-If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
-
-```sh
-make manifests
-```
-
-**NOTE:** Run `make --help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
+ Please refer to our documentation on [how to contribute](CONTRIBUTING.md) if you want to help us improve the PaaS solution.
 
 ## License
 
 Copyright 2023, Tax Administration of The Netherlands.
 Licensed under the EUPL 1.2.
-See LICENSE.md for details.
+See [LICENSE.md](LICENSE.md) for details.
