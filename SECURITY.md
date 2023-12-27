@@ -25,4 +25,4 @@ Private disclosure of a potential vulnerability is important.
 The maintainers will reply to acknowledge the report, and decide whether to keep
 it private or publicly disclose it.
 
-PaaS relies on the [GitHub infrastructure to manage security advisories and manage vulnerabilities](https://github.com/belastingdienst/paas/security).
+PaaS relies on the [GitHub infrastructure](https://github.com/belastingdienst/paas/security) to manage security advisories and manage vulnerabilities.
