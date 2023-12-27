@@ -2,12 +2,15 @@
 
 ## Goal
 
-The PaaS operator delivers an opiniated 'Project as a Service' implementation
-where development teams can request a 'Project as a Service' by defining a PaaS resource,
-which the PaaS operator uses as input to create namespaces limited by Cluster Resource Quota's,
-granting groups permissions and (together with a clusterwide ArgoCD) creating capabilities such as
-a PaaS specific deployment of ArgoCD (continuous deployment), Tekton (continuous integration),
-Grafana (observability), and KeyCloak (Application level Signle Sign On).
+The PaaS operator delivers an opiniated 'Project as a Service' implementation where
+development teams can request a 'Project as a Service' by defining a PaaS resource.
+
+A PaaS resource is used by the operator uses as an input to create namespaces
+limited by Cluster Resource Quota's, granting groups permissions and (together
+with a clusterwide ArgoCD) creating capabilities such as a PaaS specific deployment
+of ArgoCD (continuous deployment), Tekton (continuous integration), Grafana (observability),
+and KeyCloak (Application level Signle Sign On).
+
 A PaaS is all a team needs to hit the ground running.
 
 ## Quickstart
@@ -96,10 +99,11 @@ make undeploy
 
 ## Contributing
 
- Please refer to our documentation on [how to contribute](CONTRIBUTING.md) if you want to help us improve the PaaS solution.
+ Please refer to our documentation on [how to contribute](./CONTRIBUTING.md) if you want to help us improve the PaaS solution.
 
 ## License
 
 Copyright 2023, Tax Administration of The Netherlands.
 Licensed under the EUPL 1.2.
-See [LICENSE.md](LICENSE.md) for details.
+
+See [LICENSE.md](./LICENSE.md) for details.

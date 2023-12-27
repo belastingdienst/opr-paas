@@ -11,13 +11,13 @@ is not enough, let us know or provide a pull request based on your experience.
 
 ## About our development workflow
 
-PaaS follows [trunk-based development](https://cloud.google.com/architecture/devops/devops-tech-trunk-based-development),
+PaaS follows [trunk-based development](https://trunkbaseddevelopment.com),
 with the `main` branch representing the trunk.
 
 We adopt the ["Github Flow"](https://guides.github.com/introduction/flow/)
 development workflow, with some customizations:
 
-- the [Continuous Delivery](https://cloud.google.com/architecture/devops/devops-tech-continuous-delivery)
+- the [Continuous Delivery](https://en.wikipedia.org/wiki/Continuous_delivery)
   branch is called `main` and is protected
 - Github is configured for linear development (no merge commits)
 - development happens in separate branches created from the `main` branch and
@@ -60,7 +60,7 @@ kubectl apply -f \
 In order to write even the simplest patch for PaaS you must have setup
 your workstation to build and locally test the version of the operator you are
 developing.  All you have to do is follow the instructions you find in
-["Setting up your development environment for PaaS"](development_environment/README.md).
+["Setting up your development environment for PaaS"](devenv/README.md).
 
 ---
 
@@ -77,7 +77,7 @@ the Istio documentation which contains very good insights and best practices:
 If you have written code for an improvement to PaaS or a bug fix,
 please follow this procedure to submit a pull request:
 
-1. [Create a fork](development_environment/README.md#forking-the-repository) of PaaS
+1. [Create a fork](devenv/README.md#forking-the-repository) of PaaS
 2. Self-assign the ticket and begin working on it in the forked project. Move
    the ticket to `Analysis` or `In Development` phase of
    [PaaS operator development](https://github.com/orgs/belastingdienst/projects/2)
@@ -102,7 +102,7 @@ We use the Developer Certificate of Origin (DCO) as an additional safeguard for
 the PaaS project. This is a well established and widely used mechanism
 to assure contributors have confirmed their right to license their contribution
 under the project's license. Please read
-[developer-certificate-of-origin](./developer-certificate-of-origin).
+[https://developercertificate.org](https://developercertificate.org).
 
 If you can certify it, then just add a line to every git commit message:
 
