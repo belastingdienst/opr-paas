@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+title: Project as a Service Operator
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - name: Tax Administration of The Netherlands
+    website: 'https://www.belastingdienst.nl'
+repository-code: 'https://github.com/orgs/belastingdienst/opr-paas/'
+url: 'https://github.com/orgs/belastingdienst/opr-paas/'
+abstract: >-
+  The PaaS operator delivers an opiniated 'Project as a
+  Service' implementation where development teams can
+  request a 'Project as a Service' by defining a PaaS
+  resource.
+
+  A PaaS resource is used by the operator uses as an input
+  to create namespaces limited by Cluster Resource Quota's,
+  granting groups permissions and (together with a
+  clusterwide ArgoCD) creating capabilities such as a PaaS
+  specific deployment of ArgoCD (continuous deployment),
+  Tekton (continuous integration), Grafana (observability),
+  and KeyCloak (Application level Signle Sign On).
+keywords:
+  - kubernetes
+  - openshift
+  - go
+  - golang
+  - operator
+  - paas
+  - project
+  - service
+license: EUPL-1.2
