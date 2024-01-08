@@ -408,7 +408,8 @@ func (pg PaasGrafana) GetSshSecrets() map[string]string {
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
-	Messages []string `json:"messages,omitempty"`
+	Messages []string              `json:"messages,omitempty"`
+	Quota    map[string]PaasQuotas `json:"quotas"`
 }
 
 func (ps *PaasStatus) Truncate() {
