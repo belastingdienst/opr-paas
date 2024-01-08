@@ -113,6 +113,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			return ctrl.Result{}, err
 		}
 	}
+	paas.Status.Quota = r.BackendEnabledQuotaStatus(paas)
 
 	for _, name := range r.BackendDisabledQuotas(ctx, paas) {
 		logger.Info("Cleaning quota " + name + " for PAAS object ")

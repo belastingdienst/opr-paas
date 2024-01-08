@@ -125,6 +125,23 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 	return quotas
 }
 
+func (r *PaasReconciler) BackendEnabledQuotaStatus(
+	paas *v1alpha1.Paas,
+) (quotas map[string]v1alpha1.PaasQuotas) {
+	quotas = make(map[string]v1alpha1.PaasQuotas)
+	quotas["default"] = paas.Spec.Quota
+	for name, cap := range paas.Spec.Capabilities.AsMap() {
+		if cap.IsEnabled() {
+			defaults := getConfig().DefaultQuota(
+				cap.CapabilityName())
+			quota := cap.Quotas().QuotaWithDefaults(
+				defaults)
+			quotas[name] = quota
+		}
+	}
+	return quotas
+}
+
 func (r *PaasReconciler) BackendDisabledQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
