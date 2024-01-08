@@ -10,6 +10,8 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -34,8 +36,8 @@ type PaasNS struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PaasNSSpec `json:"spec,omitempty"`
-	Status PaasStatus `json:"status,omitempty"`
+	Spec   PaasNSSpec   `json:"spec,omitempty"`
+	Status PaasNsStatus `json:"status,omitempty"`
 }
 
 func (pns PaasNS) NamespaceName() string {
@@ -63,4 +65,24 @@ type PaasNSList struct {
 
 func init() {
 	SchemeBuilder.Register(&PaasNS{}, &PaasNSList{})
+}
+
+// PaasStatus defines the observed state of Paas
+type PaasNsStatus struct {
+	// Important: Run "make" to regenerate code after modifying this file
+	Messages []string `json:"messages,omitempty"`
+}
+
+func (ps *PaasNsStatus) Truncate() {
+	ps.Messages = []string{}
+}
+
+func (ps *PaasNsStatus) AddMessage(level PaasStatusLevel, action PaasStatusAction, obj client.Object, message string) {
+	namespacedName := types.NamespacedName{
+		Name:      obj.GetName(),
+		Namespace: obj.GetNamespace(),
+	}
+	ps.Messages = append(ps.Messages,
+		fmt.Sprintf("%s: %s for %s (%s) %s", level, action, namespacedName.String(), obj.GetObjectKind().GroupVersionKind().String(), message),
+	)
 }
