@@ -147,16 +147,14 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 ) (err error) {
 	var crb *rbac.ClusterRoleBinding
 	var changed bool
-	if cap, exists := paas.Spec.Capabilities.AsMap()[paas.Name]; !exists {
+	if cap, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; !exists {
 		return
-	} else if capConfig, exists := getConfig().Capabilities[paas.Name]; !exists {
+	} else if capConfig, exists := getConfig().Capabilities[paasns.Name]; !exists {
 		return
 	} else {
 
 		logger := getLogger(ctx, paas, "ClusterRoleBinding", "reconcile")
-
-		capNamespace := fmt.Sprintf("%s-%s", paas.Name, paas.Name)
-		// logger.Info(fmt.Sprintf("capNamespace %s", capNamespace))
+		// logger.Info(fmt.Sprintf("capNamespace %s", paasns.NamespaceName()))
 		for _, role := range capConfig.ExtraPermissions.Roles {
 			crbName := fmt.Sprintf("paas-%s", role)
 			// logger.Info(fmt.Sprintf("crbname %s", crbName))
@@ -168,7 +166,7 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 			}
 
 			if cap.WithExtraPermissions() {
-				if changed = addSAsToClusterRoleBinding(crb, capNamespace, capConfig.ExtraPermissions.ServiceAccounts); changed {
+				if changed = addSAsToClusterRoleBinding(crb, paasns.NamespaceName(), capConfig.ExtraPermissions.ServiceAccounts); changed {
 					logger.Info(fmt.Sprintf("adding sa's %v for ns %s to crb %s", capConfig.ExtraPermissions.ServiceAccounts, capNamespace, crbName))
 				}
 			} else {
