@@ -175,11 +175,11 @@ func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha
 func (r *PaasReconciler) FinalizeClusterQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
 	suffixes := []string{
 		"",
-		"-argocd",
-		"-ci",
-		"-grafana",
-		"-sso",
 	}
+	for name := range paas.Spec.Capabilities.AsMap() {
+		suffixes = append(suffixes, name)
+	}
+
 	var err error
 	for _, suffix := range suffixes {
 		quotaName := fmt.Sprintf("%s%s", paas.Name, suffix)
