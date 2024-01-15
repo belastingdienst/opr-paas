@@ -103,7 +103,7 @@ make undeploy
 
 ## License
 
-Copyright 2023, Tax Administration of The Netherlands.
+Copyright 2024, Tax Administration of The Netherlands.
 Licensed under the EUPL 1.2.
 
 See [LICENSE.md](./LICENSE.md) for details.
