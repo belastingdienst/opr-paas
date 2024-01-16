@@ -167,11 +167,11 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 
 			if cap.WithExtraPermissions() {
 				if changed = addSAsToClusterRoleBinding(crb, paasns.NamespaceName(), capConfig.ExtraPermissions.ServiceAccounts); changed {
-					logger.Info(fmt.Sprintf("adding sa's %v for ns %s to crb %s", capConfig.ExtraPermissions.ServiceAccounts, capNamespace, crbName))
+					logger.Info(fmt.Sprintf("adding sa's %v for ns %s to crb %s", capConfig.ExtraPermissions.ServiceAccounts, paasns.NamespaceName(), crbName))
 				}
 			} else {
-				if changed = updateClusterRoleBindingForRemovedSAs(crb, *regexp.MustCompile(fmt.Sprintf("^%s$", capNamespace))); changed {
-					logger.Info(fmt.Sprintf("deleting sa's %v for ns %s from crb %s", capConfig.ExtraPermissions.ServiceAccounts, capNamespace, crbName))
+				if changed = updateClusterRoleBindingForRemovedSAs(crb, *regexp.MustCompile(fmt.Sprintf("^%s$", paasns.NamespaceName()))); changed {
+					logger.Info(fmt.Sprintf("deleting sa's %v for ns %s from crb %s", capConfig.ExtraPermissions.ServiceAccounts, paasns.NamespaceName(), crbName))
 				}
 			}
 			if changed {
