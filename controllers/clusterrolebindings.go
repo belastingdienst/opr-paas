@@ -32,11 +32,11 @@ func getClusterRoleBinding(
 	found := &rbac.ClusterRoleBinding{}
 	err = r.Get(ctx, types.NamespacedName{Name: name}, found)
 	if err != nil && errors.IsNotFound(err) {
-		return newClusterRoleBinding(r, paas, name, role), nil
+		return newClusterRoleBinding(name, role), nil
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
 		paas.Status.AddMessage(v1alpha1.PaasStatusError,
-			v1alpha1.PaasStatusFind, newClusterRoleBinding(r, paas, name, role), err.Error())
+			v1alpha1.PaasStatusFind, newClusterRoleBinding(name, role), err.Error())
 		return nil, err
 	} else {
 		return found, nil
@@ -65,8 +65,6 @@ func updateClusterRoleBinding(
 
 // backendRoleBinding is a code for Creating RoleBinding
 func newClusterRoleBinding(
-	r client.Client,
-	paas *v1alpha1.Paas,
 	name string,
 	role string,
 ) *rbac.ClusterRoleBinding {

@@ -16,12 +16,10 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 	ctx context.Context,
-	whiteListConfigMap types.NamespacedName,
 	groups string,
 ) error {
 	// Create the ConfigMap
@@ -64,7 +62,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("Creating whitelist configmap")
 		// Create the ConfigMap
-		if err = r.ensureLdapGroupsConfigMap(ctx, namespacedName, gs.AsString()); err != nil {
+		if err = r.ensureLdapGroupsConfigMap(ctx, gs.AsString()); err != nil {
 			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, cm, err.Error())
 		} else {
 			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, cm, "succeeded")
