@@ -28,7 +28,49 @@ type Config struct {
 	RequestorLabel    string                `yaml:"requestor_label"`
 	ManagedByLabel    string                `yaml:"managed_by_label"`
 	ExcludeAppSetName string                `yaml:"exclude_appset_name"`
+	// Grant permissions to all groups according to config in configmap and role selected per group in paas.
+	RoleMappings ConfigRoleMappings `yaml:"rolemappings"`
 }
+
+type ConfigRoleMappings map[string][]string
+
+func (crm ConfigRoleMappings) Roles(roleMaps []string) []string {
+	var mappedRoles []string
+	for _, roleMap := range roleMaps {
+		if roles, exists := crm[roleMap]; exists {
+			mappedRoles = append(mappedRoles, roles...)
+		}
+	}
+	return mappedRoles
+}
+
+/*
+      rolemappings:
+        edit:
+          - alert-routing-edit
+          - monitoring-edit
+          - edit
+          - neuvector
+        read:
+          - read
+        admin:
+          - admin
+	  /*
+
+/*
+Feature for rolemappings:
+Grant permissions to all groups according to config in configmap and role selected per group in paas.
+Paas:
+  groups:
+    aug_cpet:
+      query: >-
+        CN=aug_cpet,OU=ANNA_managed,OU=AUGGroepen,OU=UID,DC=ont,DC=belastingdienst,DC=nl
+      role: admin
+    aug_cpet_clusteradmin:
+      query: >-
+        CN=aug_cpet_clusteradmin,OU=ANNA_managed,OU=AUGGroepen,OU=UID,DC=ont,DC=belastingdienst,DC=nl
+      role: readonly
+*/
 
 type ConfigArgoPermissions struct {
 	ResourceName string `yaml:"resource_name"`

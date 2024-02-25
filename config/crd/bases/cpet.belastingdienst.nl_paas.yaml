@@ -185,6 +185,10 @@ spec:
                   properties:
                     query:
                       type: string
+                    roles:
+                      items:
+                        type: string
+                      type: array
                     users:
                       items:
                         type: string

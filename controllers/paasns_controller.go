@@ -32,6 +32,10 @@ type PaasNSReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+func (pr PaasNSReconciler) GetScheme() *runtime.Scheme {
+	return pr.Scheme
+}
+
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paasns,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paasns/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paasns/finalizers,verbs=update
@@ -137,13 +141,27 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Creating paas-admin RoleBinding for PAASNS object")
-	groupKeys := intersect(paas.Spec.Groups.Names(), paasns.Spec.Groups)
-	rb := r.backendAdminRoleBinding(ctx, paas, types.NamespacedName{Namespace: nsName, Name: "paas-admin"}, groupKeys)
-	if err := r.EnsureAdminRoleBinding(ctx, paasns, rb); err != nil {
-		err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
-		return ctrl.Result{}, err
+	// Creating a list of roles and the groups that should have them, for this namespace
+	roles := make(map[string][]string)
+	for groupName, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
+		for _, mappedRole := range getConfig().RoleMappings.Roles(groupRoles) {
+			if role, exists := roles[mappedRole]; exists {
+				roles[mappedRole] = append(role, groupName)
+			} else {
+				roles[mappedRole] = []string{groupName}
+			}
+		}
+	}
+	logger.Info("Creating paas RoleBindings for PAASNS object", "Rolebindings map", roles)
+	for roleName, groupKeys := range roles {
+		rbName := types.NamespacedName{Namespace: nsName, Name: fmt.Sprintf("paas-%s", roleName)}
+		logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
+		rb := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
+		if err := EnsureRoleBinding(ctx, r, paasns, &paasns.Status, rb); err != nil {
+			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
+			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
+			return ctrl.Result{}, err
+		}
 	}
 
 	// Create argo ssh secrets
@@ -208,7 +226,7 @@ func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]
 	}
 	for _, pns := range pnsList.Items {
 		nsName := pns.NamespaceName()
-		if value, exists := nss[nsName]; exists {
+		if value, exists := nss[nsName]; !exists {
 			nss[nsName] = value + 1
 			// Call myself (recursiveness)
 			for key, value := range r.nssFromNs(ctx, nsName) {
@@ -236,6 +254,29 @@ func (r *PaasNSReconciler) nssFromPaas(ctx context.Context, paas *v1alpha1.Paas)
 		}
 	}
 	return finalNss
+}
+
+// nsFromNs gets all PaasNs objects from a namespace and returns a list of all the corresponding namespaces
+// It also returns PaasNS in those namespaces recursively.
+func (r *PaasReconciler) pnsFromNs(ctx context.Context, ns string) map[string]v1alpha1.PaasNS {
+	nss := make(map[string]v1alpha1.PaasNS)
+	pnsList := &v1alpha1.PaasNSList{}
+	if err := r.List(ctx, pnsList, &client.ListOptions{Namespace: ns}); err != nil {
+		return nss
+	}
+	for _, pns := range pnsList.Items {
+		nsName := pns.NamespaceName()
+		if _, exists := nss[nsName]; !exists {
+			nss[nsName] = pns
+			// Call myself (recursiveness)
+			for key, value := range r.pnsFromNs(ctx, nsName) {
+				nss[key] = value
+			}
+		} else {
+			nss[nsName] = pns
+		}
+	}
+	return nss
 }
 
 func (r *PaasNSReconciler) paasFromPaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, namespaces map[string]int, err error) {

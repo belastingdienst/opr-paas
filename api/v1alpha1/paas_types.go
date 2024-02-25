@@ -139,6 +139,7 @@ func (p Paas) extraNamespaces() (ns map[string]bool) {
 type PaasGroup struct {
 	Query string   `json:"query,omitempty"`
 	Users []string `json:"users,omitempty"`
+	Roles []string `json:"roles,omitempty"`
 }
 
 func (g PaasGroup) Name(defName string) string {
@@ -152,6 +153,23 @@ func (g PaasGroup) Name(defName string) string {
 }
 
 type PaasGroups map[string]PaasGroup
+
+func (gs PaasGroups) Filtered(groups []string) PaasGroups {
+	filterd := make(PaasGroups)
+	for _, groupName := range groups {
+		if group, exists := gs[groupName]; exists {
+			filterd[groupName] = group
+		}
+	}
+	return filterd
+}
+func (gs PaasGroups) Roles() map[string][]string {
+	roles := make(map[string][]string)
+	for groupName, group := range gs {
+		roles[groupName] = group.Roles
+	}
+	return roles
+}
 
 // NameFromQuery finds a group by its key, and retrieves a name
 // - from query if possible
@@ -439,6 +457,14 @@ func (ps *PaasStatus) AddMessage(level PaasStatusLevel, action PaasStatusAction,
 	ps.Messages = append(ps.Messages,
 		fmt.Sprintf("%s: %s for %s (%s) %s", level, action, namespacedName.String(), obj.GetObjectKind().GroupVersionKind().String(), message),
 	)
+}
+
+func (ps *PaasStatus) GetMessages() []string {
+	return ps.Messages
+}
+
+func (ps *PaasStatus) AddMessages(msgs []string) {
+	ps.Messages = append(ps.Messages, msgs...)
 }
 
 //+kubebuilder:object:root=true
