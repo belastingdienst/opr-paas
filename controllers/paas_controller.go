@@ -29,6 +29,18 @@ type PaasReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+func (pr PaasReconciler) GetScheme() *runtime.Scheme {
+	return pr.Scheme
+}
+
+type Reconciler interface {
+	Get(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error
+	Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
+	Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
+	GetScheme() *runtime.Scheme
+	Delete(context.Context, client.Object, ...client.DeleteOption) error
+}
+
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paas,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paas/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paas/finalizers,verbs=update
@@ -147,6 +159,38 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
+	for _, paasns := range r.pnsFromNs(ctx, paas.ObjectMeta.Name) {
+		roles := make(map[string][]string)
+		for _, roleList := range getConfig().RoleMappings {
+			for _, role := range roleList {
+				roles[role] = []string{}
+			}
+		}
+		logger.Info("All roles", "Rolebindings map", roles)
+		for groupName, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
+			for _, mappedRole := range getConfig().RoleMappings.Roles(groupRoles) {
+				if role, exists := roles[mappedRole]; exists {
+					roles[mappedRole] = append(role, groupName)
+				} else {
+					roles[mappedRole] = []string{groupName}
+				}
+			}
+		}
+		logger.Info("Creating paas RoleBindings for PAASNS object", "Rolebindings map", roles)
+		for roleName, groupKeys := range roles {
+			statusMessages := v1alpha1.PaasNsStatus{}
+			rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
+			logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
+			rb := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
+			if err := EnsureRoleBinding(ctx, r, &paasns, &statusMessages, rb); err != nil {
+				err = fmt.Errorf("failure while creating/updating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
+				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
+				return ctrl.Result{}, err
+			}
+			paas.Status.AddMessages(statusMessages.GetMessages())
+		}
+	}
+
 	logger.Info("Cleaning obsolete namespaces ")
 	if err := r.FinalizePaasNss(ctx, paas); err != nil {
 		return ctrl.Result{}, err
@@ -204,14 +248,14 @@ func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *v1alpha1.Paas) 
 		// can also be ldapGroups (lines in a field in a configmap)
 		// ldapGroups are only cleaned if the corresponding group is also cleaned
 		logger.Error(err, "Group finalizer error")
-		if ldapErr := r.FinalizeLdapGroups(ctx, paas, cleanedLdapQueries); err != nil {
+		if ldapErr := r.FinalizeLdapGroups(ctx, paas, cleanedLdapQueries); ldapErr != nil {
 			logger.Error(ldapErr, "And ldapGroup finalizer error")
 		}
 		return err
 	} else if err = r.FinalizeLdapGroups(ctx, paas, cleanedLdapQueries); err != nil {
 		logger.Error(err, "LdapGroup finalizer error")
 		return err
-	} else if r.FinalizeExtraClusterRoleBindings(ctx, paas); err != nil {
+	} else if err = r.FinalizeExtraClusterRoleBindings(ctx, paas); err != nil {
 		logger.Error(err, "Extra ClusterRoleBindings finalizer error")
 		return err
 	}

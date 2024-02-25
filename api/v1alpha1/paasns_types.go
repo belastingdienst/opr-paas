@@ -106,3 +106,11 @@ func (ps *PaasNsStatus) AddMessage(level PaasStatusLevel, action PaasStatusActio
 		fmt.Sprintf("%s: %s for %s (%s) %s", level, action, namespacedName.String(), obj.GetObjectKind().GroupVersionKind().String(), message),
 	)
 }
+
+func (ps *PaasNsStatus) GetMessages() []string {
+	return ps.Messages
+}
+
+func (ps *PaasNsStatus) AddMessages(msgs []string) {
+	ps.Messages = append(ps.Messages, msgs...)
+}

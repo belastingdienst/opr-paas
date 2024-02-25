@@ -9,6 +9,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
@@ -19,12 +20,41 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+func diffRbacSubjects(l1 []rbac.Subject, l2 []rbac.Subject) bool {
+	subResults := make(map[string]bool)
+	for _, s := range l1 {
+		key := fmt.Sprintf("%s.%s.%s", s.Namespace, s.Name, s.Kind)
+		subResults[key] = false
+	}
+	for _, s := range l2 {
+		key := fmt.Sprintf("%s.%s.%s", s.Namespace, s.Name, s.Kind)
+		if _, exists := subResults[key]; !exists {
+			// Something is in l2, but not in l1
+			return true
+		} else {
+			subResults[key] = true
+		}
+	}
+	for _, value := range subResults {
+		if !value {
+			// Something is in l2, but not in l1
+			return true
+		}
+	}
+	return false
+}
+
 // ensureRoleBinding ensures RoleBinding presence in given rolebinding.
-func (r *PaasNSReconciler) EnsureAdminRoleBinding(
+func EnsureRoleBinding(
 	ctx context.Context,
+	r Reconciler,
 	paasns *v1alpha1.PaasNS,
+	statusMessages *v1alpha1.PaasNsStatus,
 	rb *rbac.RoleBinding,
 ) error {
+	if len(rb.Subjects) < 1 {
+		return FinalizeRoleBinding(ctx, r, statusMessages, rb)
+	}
 	namespacedName := types.NamespacedName{
 		Name:      rb.Name,
 		Namespace: rb.Namespace,
@@ -39,31 +69,60 @@ func (r *PaasNSReconciler) EnsureAdminRoleBinding(
 
 		if err != nil {
 			// creating the rolebinding failed
-			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
+			statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
 			return err
 		} else {
 			// creating the rolebinding was successful
-			paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "succeeded")
-			return nil
+			statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "succeeded")
+			return err
 		}
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
+		statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 		return err
-	} else if !paasns.AmIOwner(found.OwnerReferences) {
-		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
-		controllerutil.SetControllerReference(paasns, found, r.Scheme)
-		return r.Update(ctx, found)
 	}
-	return nil
+	var changed bool
+	if !paasns.AmIOwner(found.OwnerReferences) {
+		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
+		controllerutil.SetControllerReference(paasns, found, r.GetScheme())
+		changed = true
+	}
+	var ist []string
+	for _, subj := range found.Subjects {
+		ist = append(ist, subj.Name)
+	}
+	var sol []string
+	for _, subj := range rb.Subjects {
+		sol = append(sol, subj.Name)
+	}
+	if diffRbacSubjects(found.Subjects, rb.Subjects) {
+		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found,
+			fmt.Sprintf("updating subjects. %s: [%s], %s: [%s]", "ist", strings.Join(ist, ", "), "sol", strings.Join(sol, ", ")))
+		found.Subjects = rb.Subjects
+		changed = true
+	} else {
+		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found,
+			fmt.Sprintf("updating subjects not needed. %s: [%s], %s: [%s]", "ist", strings.Join(ist, ", "), "sol", strings.Join(sol, ", ")))
+	}
+	if changed {
+		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating resource")
+		if err = r.Update(ctx, found); err != nil {
+			statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, rb, err.Error())
+			return err
+		}
+	}
+	statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "succeeded")
+	return err
 
 }
 
 // backendRoleBinding is a code for Creating RoleBinding
-func (r *PaasNSReconciler) backendAdminRoleBinding(
+func backendRoleBinding(
 	ctx context.Context,
+	r Reconciler,
 	paas *v1alpha1.Paas,
 	name types.NamespacedName,
+	role string,
 	groups []string,
 ) *rbac.RoleBinding {
 	logger := getLogger(ctx, paas, "RoleBinding", name.String())
@@ -93,25 +152,36 @@ func (r *PaasNSReconciler) backendAdminRoleBinding(
 		RoleRef: rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
-			Name:     "admin",
+			Name:     role,
 		},
 	}
 	logger.Info("Setting Owner")
-	controllerutil.SetControllerReference(paas, rb, r.Scheme)
+	controllerutil.SetControllerReference(paas, rb, r.GetScheme())
 	return rb
 }
 
-func (r *PaasNSReconciler) BackendEnabledRoleBindings(
+// ensureRoleBinding ensures RoleBinding presence in given rolebinding.
+func FinalizeRoleBinding(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
-) (rb []*rbac.RoleBinding) {
-	groupKeys := paas.Spec.Groups.Names()
-	for ns_name := range paas.PrefixedAllEnabledNamespaces() {
-		name := types.NamespacedName{
-			Name:      "paas-admin",
-			Namespace: ns_name,
-		}
-		rb = append(rb, r.backendAdminRoleBinding(ctx, paas, name, groupKeys))
+	r Reconciler,
+	statusMessages *v1alpha1.PaasNsStatus,
+	rb *rbac.RoleBinding,
+) error {
+	namespacedName := types.NamespacedName{
+		Name:      rb.Name,
+		Namespace: rb.Namespace,
 	}
-	return rb
+	// See if rolebinding exists and create if it doesn't
+	found := &rbac.RoleBinding{}
+	err := r.Get(ctx, namespacedName, found)
+	if err != nil && errors.IsNotFound(err) {
+		return nil
+	} else if err != nil {
+		// Error that isn't due to the rolebinding not existing
+		statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
+		return err
+	} else {
+		statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, rb, "Succeeded")
+		return r.Delete(ctx, rb)
+	}
 }

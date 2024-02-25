@@ -79,7 +79,8 @@ func (r *PaasReconciler) EnsurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
 		controllerutil.SetControllerReference(paas, found, r.Scheme)
 	}
-	var changed bool
+	// Since 
+	// var changed bool
 	logger.Info("reconciling PaasNs", "PaasNs", pns, "found", found,
 		"!group eq", !reflect.DeepEqual(pns.Spec.Groups, found.Spec.Groups),
 		"!ssh eq", !reflect.DeepEqual(pns.Spec.SshSecrets, found.Spec.SshSecrets),
@@ -87,21 +88,21 @@ func (r *PaasReconciler) EnsurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 	if pns.Spec.Paas != found.Spec.Paas {
 		logger.Info("Paas changed", "PaasNs", pns)
 		found.Spec.Paas = pns.Spec.Paas
-		changed = true
+		// changed = true
 	}
 	if len(pns.Spec.Groups) == 0 && len(found.Spec.Groups) == 0 {
 		logger.Info("No groups defined", "PaasNs", pns)
 	} else if !reflect.DeepEqual(pns.Spec.Groups, found.Spec.Groups) {
 		logger.Info("Groups changed", "PaasNs", pns)
 		found.Spec.Groups = pns.Spec.Groups
-		changed = true
+		// changed = true
 	}
 	if len(pns.Spec.Groups) == 0 && len(found.Spec.Groups) == 0 {
 		logger.Info("no sshSecrets defined", "PaasNs", pns)
 	} else if !reflect.DeepEqual(pns.Spec.SshSecrets, found.Spec.SshSecrets) {
 		logger.Info("sshSecrets changed", "PaasNs", pns)
 		found.Spec.SshSecrets = pns.Spec.SshSecrets
-		changed = true
+		// changed = true
 	}
 	for key, value := range pns.ObjectMeta.Labels {
 		if orgValue, exists := found.ObjectMeta.Labels[key]; !exists {
@@ -113,14 +114,14 @@ func (r *PaasReconciler) EnsurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 			continue
 		}
 		logger.Info(fmt.Sprintf("Label [%s] changed", key), "PaasNs", pns)
-		changed = true
+		// changed = true
 		found.ObjectMeta.Labels[key] = value
 	}
-	if changed {
-		logger.Info("Updating PaasNs", "PaasNs", pns)
-		return r.Update(ctx, found)
-	}
-	return nil
+	// if changed {
+	logger.Info("Updating PaasNs", "PaasNs", pns)
+	return r.Update(ctx, found)
+	// }
+	// return nil
 }
 
 func (r *PaasReconciler) FinalizePaasNss(ctx context.Context, paas *v1alpha1.Paas) error {
