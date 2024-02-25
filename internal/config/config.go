@@ -146,16 +146,65 @@ func (caps ConfigCapabilities) Verify() []string {
 }
 
 type ConfigCapability struct {
-	AppSet           string                `yaml:"applicationset"`
-	DefQuota         ConfigDefaultQuotaDef `yaml:"defaultquotas"`
-	ExtraPermissions ConfigCapExtraPerm    `yaml:"extra_permissions"`
+	AppSet             string                `yaml:"applicationset"`
+	DefQuota           ConfigDefaultQuotaDef `yaml:"defaultquotas"`
+	ExtraPermissions   ConfigCapPerm         `yaml:"extra_permissions"`
+	DefaultPermissions ConfigCapPerm         `yaml:"default_permissions"`
 }
 
 type ConfigDefaultQuotaDef map[string]string
 
-type ConfigCapExtraPerm struct {
-	ServiceAccounts []string `yaml:"serviceaccounts"`
-	Roles           []string `yaml:"roles"`
+// This is a insoudeout representation of ConfigCapPerm, closer to rb representation
+type ConfigRolesSas map[string]map[string]bool
+
+func (crs ConfigRolesSas) Merge(other ConfigRolesSas) ConfigRolesSas {
+	var role map[string]bool
+	var exists bool
+	for rolename, sas := range other {
+		if role, exists = crs[rolename]; !exists {
+			role = make(map[string]bool)
+		}
+		for sa, add := range sas {
+			role[sa] = add
+		}
+		crs[rolename] = role
+	}
+	return crs
+}
+
+type ConfigCapPerm map[string][]string
+
+func (ccp ConfigCapPerm) AsConfigRolesSas(add bool) ConfigRolesSas {
+	crs := make(ConfigRolesSas)
+	for sa, roles := range ccp {
+		for _, role := range roles {
+			if cr, exists := crs[role]; exists {
+				cr[sa] = add
+				crs[role] = cr
+			} else {
+				cr := make(map[string]bool)
+				cr[sa] = add
+				crs[role] = cr
+			}
+		}
+	}
+	return crs
+}
+
+func (ccp ConfigCapPerm) Roles() []string {
+	var roles []string
+	for _, rolenames := range ccp {
+		roles = append(roles, rolenames...)
+	}
+	return roles
+}
+
+func (ccp ConfigCapPerm) ServiceAccounts() []string {
+	var sas []string
+	for sa := range ccp {
+		sas = append(sas, sa)
+	}
+	return sas
 }
 
 const (
