@@ -26,6 +26,7 @@ import (
 func (r *PaasNSReconciler) EnsureSecret(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
+	paasns *v1alpha1.PaasNS,
 	secret *corev1.Secret,
 ) error {
 	// See if secret exists and create if it doesn't
@@ -38,21 +39,21 @@ func (r *PaasNSReconciler) EnsureSecret(
 	if err != nil && errors.IsNotFound(err) {
 		// Create the secret
 		if err = r.Create(ctx, secret); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, secret, err.Error())
+			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, secret, err.Error())
 		} else {
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, secret, "succeeded")
+			paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, secret, "succeeded")
 		}
 		return err
 	} else if err != nil {
 		// Error that isn't due to the secret not existing
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, secret, err.Error())
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, secret, err.Error())
 		return err
 	} else {
 		if err = r.Update(ctx, secret); err != nil {
 
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, secret, err.Error())
+			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, secret, err.Error())
 		} else {
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, secret, "succeeded")
+			paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, secret, "succeeded")
 
 		}
 		return err
@@ -82,11 +83,11 @@ type: Opaque
 // backendSecret is a code for Creating Secret
 func (r *PaasNSReconciler) backendSecret(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paasns *v1alpha1.PaasNS,
 	namespacedName types.NamespacedName,
 	url string,
 ) *corev1.Secret {
-	logger := getLogger(ctx, paas, "Secret", namespacedName.String())
+	logger := getLogger(ctx, paasns, "Secret", namespacedName.String())
 	logger.Info("Defining Secret")
 
 	s := &corev1.Secret{
@@ -97,7 +98,7 @@ func (r *PaasNSReconciler) backendSecret(
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      namespacedName.Name,
 			Namespace: namespacedName.Namespace,
-			Labels:    paas.ClonedLabels(),
+			Labels:    paasns.ClonedLabels(),
 		},
 		Data: map[string][]byte{
 			"type": []byte("git"),
@@ -108,26 +109,25 @@ func (r *PaasNSReconciler) backendSecret(
 	s.Labels["argocd.argoproj.io/secret-type"] = "repo-creds"
 
 	logger.Info("Setting Owner")
-	controllerutil.SetControllerReference(paas, s, r.Scheme)
+	controllerutil.SetControllerReference(paasns, s, r.Scheme)
 	return s
 }
 
 func (r *PaasNSReconciler) getSecrets(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
-	nsName string,
+	paasns *v1alpha1.PaasNS,
 	encryptedSecrets map[string]string,
 ) (secrets []*corev1.Secret) {
 	for url, encryptedSecretData := range encryptedSecrets {
 		namespacedName := types.NamespacedName{
-			Namespace: nsName,
+			Namespace: paasns.NamespaceName(),
 			Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(hashString(url)[:8]))),
 		}
-		secret := r.backendSecret(ctx, paas, namespacedName, url)
-		if decrypted, err := getRsa(paas.Name).Decrypt(encryptedSecretData); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
+		secret := r.backendSecret(ctx, paasns, namespacedName, url)
+		if decrypted, err := getRsa(paasns.Spec.Paas).Decrypt(encryptedSecretData); err != nil {
+			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
 		} else {
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusParse, secret, "Defining generic secret")
+			paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusParse, secret, "Defining generic secret")
 			secret.Data["sshPrivateKey"] = decrypted
 			secrets = append(secrets, secret)
 		}
@@ -140,14 +140,13 @@ func (r *PaasNSReconciler) BackendSecrets(
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) (secrets []*corev1.Secret) {
-	nsName := paasns.NamespaceName()
 	// From the PaasNS resource
-	secrets = append(secrets, r.getSecrets(ctx, paas, nsName, paasns.Spec.SshSecrets)...)
+	secrets = append(secrets, r.getSecrets(ctx, paasns, paasns.Spec.SshSecrets)...)
 	//From the Paas Resource capability chapter (if applicable)
 	if cap, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists && cap.IsEnabled() {
-		secrets = append(secrets, r.getSecrets(ctx, paas, nsName, cap.GetSshSecrets())...)
+		secrets = append(secrets, r.getSecrets(ctx, paasns, cap.GetSshSecrets())...)
 	}
 	// From the Paas resource
-	secrets = append(secrets, r.getSecrets(ctx, paas, nsName, paas.Spec.SshSecrets)...)
+	secrets = append(secrets, r.getSecrets(ctx, paasns, paas.Spec.SshSecrets)...)
 	return secrets
 }

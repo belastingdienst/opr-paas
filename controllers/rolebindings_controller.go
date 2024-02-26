@@ -22,7 +22,7 @@ import (
 // ensureRoleBinding ensures RoleBinding presence in given rolebinding.
 func (r *PaasNSReconciler) EnsureAdminRoleBinding(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paasns *v1alpha1.PaasNS,
 	rb *rbac.RoleBinding,
 ) error {
 	namespacedName := types.NamespacedName{
@@ -39,20 +39,20 @@ func (r *PaasNSReconciler) EnsureAdminRoleBinding(
 
 		if err != nil {
 			// creating the rolebinding failed
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
+			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
 			return err
 		} else {
 			// creating the rolebinding was successful
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "succeeded")
+			paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 		return err
-	} else if !paas.AmIOwner(found.OwnerReferences) {
-		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
-		controllerutil.SetControllerReference(paas, found, r.Scheme)
+	} else if !paasns.AmIOwner(found.OwnerReferences) {
+		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
+		controllerutil.SetControllerReference(paasns, found, r.Scheme)
 		return r.Update(ctx, found)
 	}
 	return nil

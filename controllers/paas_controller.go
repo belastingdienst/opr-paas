@@ -88,7 +88,12 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	paas.Status.Truncate()
-	defer r.Status().Update(ctx, paas)
+	defer func() {
+		logger.Info("Updating PaaS status", "messages", len(paas.Status.Messages), "quotas", paas.Status.Quota)
+		if err = r.Status().Update(ctx, paas); err != nil {
+			logger.Error(err, "Updating PaaS status failed")
+		}
+	}()
 
 	// Add finalizer for this CR
 	logger.Info("Adding finalizer for PaaS object")

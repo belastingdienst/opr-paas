@@ -54,6 +54,26 @@ func (p PaasNS) ClonedLabels() map[string]string {
 	return labels
 }
 
+func (p PaasNS) IsItMe(reference metav1.OwnerReference) bool {
+	if p.APIVersion != reference.APIVersion {
+		return false
+	} else if p.Kind != reference.Kind {
+		return false
+	} else if p.Name != reference.Name {
+		return false
+	}
+	return true
+}
+
+func (p PaasNS) AmIOwner(references []metav1.OwnerReference) bool {
+	for _, reference := range references {
+		if p.IsItMe(reference) {
+			return true
+		}
+	}
+	return false
+}
+
 //+kubebuilder:object:root=true
 
 // PaasNSList contains a list of PaasNS
