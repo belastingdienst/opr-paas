@@ -87,7 +87,12 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	paasns.Status.Truncate()
-	defer r.Status().Update(ctx, paasns)
+	defer func() {
+		logger.Info("Updating PaasNs status", "messages", len(paasns.Status.Messages))
+		if err = r.Status().Update(ctx, paasns); err != nil {
+			logger.Error(err, "Updating PaasNs status failed")
+		}
+	}()
 
 	// Add finalizer for this CR
 	logger.Info("Adding finalizer for PaasNs object")
@@ -135,17 +140,18 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	logger.Info("Creating paas-admin RoleBinding for PAASNS object")
 	groupKeys := intersect(paas.Spec.Groups.Names(), paasns.Spec.Groups)
 	rb := r.backendAdminRoleBinding(ctx, paas, types.NamespacedName{Namespace: nsName, Name: "paas-admin"}, groupKeys)
-	if err := r.EnsureAdminRoleBinding(ctx, paas, rb); err != nil {
+	if err := r.EnsureAdminRoleBinding(ctx, paasns, rb); err != nil {
 		err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("Creating Ssh secrets")
 	// Create argo ssh secrets
+	logger.Info("Creating Ssh secrets")
 	secrets := r.BackendSecrets(ctx, paasns, paas)
+	logger.Info("Ssh secrets to create", "number", len(secrets))
 	for _, secret := range secrets {
-		if err := r.EnsureSecret(ctx, paas, secret); err != nil {
+		if err := r.EnsureSecret(ctx, paas, paasns, secret); err != nil {
 			logger.Error(err, "Failure while creating secret", "secret", secret)
 			return ctrl.Result{}, err
 		}
