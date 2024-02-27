@@ -197,10 +197,6 @@ spec:
                 items:
                   type: string
                 type: array
-              oplosGroep:
-                description: Oplosgroep is an informational field which decides on
-                  the oplosgroep that is responsible
-                type: string
               quota:
                 additionalProperties:
                   anyOf:
@@ -211,6 +207,10 @@ spec:
                 description: Quota defines the quotas which should be set on the cluster
                   resource quota as used by this PaaS project
                 type: object
+              requestor:
+                description: requestor is an informational field which decides on
+                  the requestor (also application responable)
+                type: string
               sshSecrets:
                 additionalProperties:
                   type: string
@@ -220,8 +220,8 @@ spec:
                   with the PaaS operator
                 type: object
             required:
-            - oplosGroep
             - quota
+            - requestor
             type: object
           status:
             description: PaasStatus defines the observed state of Paas
