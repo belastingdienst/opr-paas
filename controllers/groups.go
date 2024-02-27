@@ -103,7 +103,6 @@ func (r *PaasReconciler) backendGroup(
 	logger := getLogger(ctx, paas, "Group", name)
 	logger.Info("Defining group")
 
-	//matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	g := &userv1.Group{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Group",
