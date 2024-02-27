@@ -41,8 +41,8 @@ type PaasSpec struct {
 	//Cabailities is a subset of capabilities that will be available in this Pass Project
 	Capabilities PaasCapabilities `json:"capabilities,omitempty"`
 
-	//Oplosgroep is an informational field which decides on the oplosgroep that is responsible
-	Oplosgroep string `json:"oplosGroep"`
+	//requestor is an informational field which decides on the requestor (also application responable)
+	Requestor string `json:"requestor"`
 
 	Groups PaasGroups `json:"groups,omitempty"`
 
@@ -443,7 +443,7 @@ func (ps *PaasStatus) AddMessage(level PaasStatusLevel, action PaasStatusAction,
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-// +kubebuilder:resource:path=paas,scope=Cluster
+//+kubebuilder:resource:path=paas,scope=Cluster
 
 // Paas is the Schema for the paas API
 type Paas struct {

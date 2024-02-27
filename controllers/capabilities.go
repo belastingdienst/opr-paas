@@ -120,7 +120,7 @@ func splitToService(paasName string) (string, string) {
 func entryFromPaas(paas *v1alpha1.Paas) Elements {
 	service, subService := splitToService(paas.Name)
 	return Elements{
-		"oplosgroep": paas.Spec.Oplosgroep,
+		"requestor":  paas.Spec.Requestor,
 		"paas":       paas.Name,
 		"service":    service,
 		"subservice": subService,

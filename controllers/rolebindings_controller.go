@@ -68,7 +68,6 @@ func (r *PaasNSReconciler) backendAdminRoleBinding(
 ) *rbac.RoleBinding {
 	logger := getLogger(ctx, paas, "RoleBinding", name.String())
 	logger.Info(fmt.Sprintf("Defining %s RoleBinding", name))
-	//matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 
 	var subjects = []rbac.Subject{}
 	for _, g := range groups {
