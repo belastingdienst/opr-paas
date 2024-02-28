@@ -5,7 +5,19 @@ metadata:
   creationTimestamp: null
   name: manager-role
 rules:
-- resources:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - applications
+  - applicationsets
+  - appprojects
+  - argocds
+  verbs:
+  - create
+  - delete
+- apiGroups:
+  - ""
+  resources:
   - configmaps
   - namespaces
   - secrets
@@ -17,16 +29,6 @@ rules:
   - patch
   - update
   - watch
-- apiGroups:
-  - argoproj.io
-  resources:
-  - applications
-  - applicationsets
-  - appprojects
-  - argocds
-  verbs:
-  - create
-  - delete
 - apiGroups:
   - cpet.belastingdienst.nl
   resources:
