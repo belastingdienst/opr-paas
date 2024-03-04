@@ -35,6 +35,9 @@ type Config struct {
 type ConfigRoleMappings map[string][]string
 
 func (crm ConfigRoleMappings) Roles(roleMaps []string) []string {
+	if len(roleMaps) == 0 {
+		roleMaps = []string{"default"}
+	}
 	var mappedRoles []string
 	for _, roleMap := range roleMaps {
 		if roles, exists := crm[roleMap]; exists {
