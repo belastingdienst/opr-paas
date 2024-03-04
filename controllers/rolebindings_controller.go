@@ -9,7 +9,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
@@ -83,26 +82,12 @@ func EnsureRoleBinding(
 	}
 	var changed bool
 	if !paasns.AmIOwner(found.OwnerReferences) {
-		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
 		controllerutil.SetControllerReference(paasns, found, r.GetScheme())
 		changed = true
 	}
-	var ist []string
-	for _, subj := range found.Subjects {
-		ist = append(ist, subj.Name)
-	}
-	var sol []string
-	for _, subj := range rb.Subjects {
-		sol = append(sol, subj.Name)
-	}
 	if diffRbacSubjects(found.Subjects, rb.Subjects) {
-		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found,
-			fmt.Sprintf("updating subjects. %s: [%s], %s: [%s]", "ist", strings.Join(ist, ", "), "sol", strings.Join(sol, ", ")))
 		found.Subjects = rb.Subjects
 		changed = true
-	} else {
-		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found,
-			fmt.Sprintf("updating subjects not needed. %s: [%s], %s: [%s]", "ist", strings.Join(ist, ", "), "sol", strings.Join(sol, ", ")))
 	}
 	if changed {
 		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating resource")
@@ -110,8 +95,9 @@ func EnsureRoleBinding(
 			statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, rb, err.Error())
 			return err
 		}
+	} else {
+		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "not needed")
 	}
-	statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "succeeded")
 	return err
 
 }
