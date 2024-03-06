@@ -43,7 +43,7 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 	logger.Info("Defining")
 	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate,
 		pns, "Setting requestor_label")
-	pns.ObjectMeta.Labels[getConfig().OplosgroepLabel] = paas.Spec.Requestor
+	pns.ObjectMeta.Labels[getConfig().RequestorLabel] = paas.Spec.Requestor
 
 	logger.Info("Setting Owner")
 	controllerutil.SetControllerReference(paas, pns, r.Scheme)

@@ -61,7 +61,7 @@ ldap:
   host: my-ldap-host
   port: 13
 managed_by_label: argocd.argoproj.io/manby
-oplosgroep_label: o.lbl
+requestor_label: o.lbl
 quota_label: q.lbl
 whitelist:
   namespace: wlns

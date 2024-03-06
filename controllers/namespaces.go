@@ -105,7 +105,7 @@ func BackendNamespace(
 		ns.ObjectMeta.Labels[getConfig().ManagedByLabel] = argoNameSpace
 	}
 	logger.Info("Setting requestor_label")
-	ns.ObjectMeta.Labels[getConfig().OplosgroepLabel] = paas.Spec.Requestor
+	ns.ObjectMeta.Labels[getConfig().RequestorLabel] = paas.Spec.Requestor
 
 	logger.Info("Setting Owner", "PaaS", paas, "namespace", ns)
 	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {
