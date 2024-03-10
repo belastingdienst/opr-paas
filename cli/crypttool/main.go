@@ -7,40 +7,56 @@ See LICENSE.md for details.
 package main
 
 import (
-	"flag"
 	"fmt"
+	"strings"
 
-	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/version"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
+//var debug bool
+
+// requireSubcommand returns an error if no sub command is provided
+// This was copied from podman: `github.com/containers/podman/cmd/podman/validate/args.go
+// Some small style changes to match skopeo were applied, but try to apply any
+// bugfixes there first.
+func requireSubcommand(cmd *cobra.Command, args []string) error {
+	if len(args) > 0 {
+		suggestions := cmd.SuggestionsFor(args[0])
+		if len(suggestions) == 0 {
+			return fmt.Errorf("unrecognized command `%[1]s %[2]s`\nTry '%[1]s --help' for more information", cmd.CommandPath(), args[0])
+		}
+		return fmt.Errorf("unrecognized command `%[1]s %[2]s`\n\nDid you mean this?\n\t%[3]s\n\nTry '%[1]s --help' for more information", cmd.CommandPath(), args[0], strings.Join(suggestions, "\n\t"))
+	}
+	return fmt.Errorf("missing command '%[1]s COMMAND'\nTry '%[1]s --help' for more information", cmd.CommandPath())
+}
+
+// createApp returns a cobra.Command, and the underlying globalOptions object, to be run or tested.
+func createApp() *cobra.Command {
+
+	rootCommand := &cobra.Command{
+		Use:              "crypttool",
+		Long:             "Various operations for paas secret encryption",
+		RunE:             requireSubcommand,
+		SilenceUsage:     true,
+		SilenceErrors:    true,
+		TraverseChildren: true,
+	}
+	rootCommand.Version = version.PAAS_VERSION
+
+	//rootCommand.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug output")
+	rootCommand.AddCommand(
+		decryptCmd(),
+		encryptCmd(),
+		generateCmd(),
+	)
+	return rootCommand
+}
+
 func main() {
-	var get_version bool
-	var encrypt_from_stdin bool
-	var decrypt_from_stdin bool
-	var paas_name string
-	var encrypt_from_file string
-	var keyfile string
-	var generate bool
-	flag.BoolVar(&get_version, "version", false, "Print version and quit")
-	flag.StringVar(&paas_name, "paas-name", "", "The name of the PaaS object to encrypt data for")
-	flag.StringVar(&encrypt_from_file, "encrypt-from-file", "", "The path to the file to be encrypted")
-	flag.BoolVar(&encrypt_from_stdin, "encrypt-from-stdin", false, "Encrypt data from stdin")
-	flag.BoolVar(&decrypt_from_stdin, "decrypt-from-stdin", false, "Decrypt data read from stdin")
-	flag.StringVar(&keyfile, "key", "", "The path to the private or public key used for de-/encryption")
-	flag.BoolVar(&generate, "generate", false, "Generate new encryption keys")
-	flag.Parse()
-	if decrypt_from_stdin {
-		crypt.DecryptFromStdin(keyfile, paas_name)
-	} else if encrypt_from_stdin {
-		crypt.EncryptFromStdin(keyfile, paas_name)
-	} else if encrypt_from_file != "" {
-		crypt.EncryptFile(keyfile, paas_name, encrypt_from_file)
-	} else if generate {
-		crypt.GenerateKeyPair()
-	} else if get_version {
-		fmt.Printf("opr-paas version %s", version.PAAS_VERSION)
-	} else {
-		fmt.Println("Pease supply arguments")
+	rootCmd := createApp()
+	if err := rootCmd.Execute(); err != nil {
+		logrus.Fatal(err)
 	}
 }
