@@ -163,7 +163,7 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 				// logger.Info(fmt.Sprintf("crb %s read from k8s", crbName))
 			}
 
-			if (*cap).WithExtraPermissions() {
+			if cap.WithExtraPermissions() {
 				if changed = addSAsToClusterRoleBinding(crb, paasns.NamespaceName(), capConfig.ExtraPermissions.ServiceAccounts); changed {
 					logger.Info(fmt.Sprintf("adding sa's %v for ns %s to crb %s", capConfig.ExtraPermissions.ServiceAccounts, paasns.NamespaceName(), crbName))
 				}
