@@ -90,36 +90,45 @@ func newClusterRoleBinding(
 	return rb
 }
 
-func addSAToClusterRoleBinding(
+func addSAsToClusterRoleBinding(
 	crb *rbac.ClusterRoleBinding,
 	namespace string,
-	sa string,
+	serviceAccounts []string,
 ) (changed bool) {
+	sas := make(map[string]bool)
+	// First create a list of all service accounts that where already added for this namespace to this CRB
 	for _, subject := range crb.Subjects {
-		if (subject.Kind == "ServiceAccount") && (subject.Namespace == namespace) && (subject.Name == sa) {
-			// SA is already in this CRB
-			return false
+		if subject.Kind != "ServiceAccount" {
+			continue
+		} else if subject.Namespace != namespace {
+			continue
 		}
+		sas[subject.Name] = true
 	}
-	// If it was not already in the list, lets add it
-	crb.Subjects = append(crb.Subjects, rbac.Subject{
-		Kind:      "ServiceAccount",
-		Name:      sa,
-		Namespace: namespace,
-	})
-	return true
+	for _, sa := range serviceAccounts {
+		// Check if the service account is already added
+		if _, exists := sas[sa]; exists {
+			continue
+		}
+		// If it was not already in the list, lets add it
+		crb.Subjects = append(crb.Subjects, rbac.Subject{
+			Kind:      "ServiceAccount",
+			Name:      sa,
+			Namespace: namespace,
+		})
+		changed = true
+	}
+	return changed
 }
 
-func updateClusterRoleBindingForRemovedSA(
+func updateClusterRoleBindingForRemovedSAs(
 	crb *rbac.ClusterRoleBinding,
 	nsRe regexp.Regexp,
-	sa string,
 ) (changed bool) {
 	var newSubjects []rbac.Subject
-
 	for _, subject := range crb.Subjects {
-		if nsRe.MatchString(subject.Namespace) && (subject.Kind == "ServiceAccount") && (subject.Name == sa || sa == "") {
-			// Subject is this sa, don't keep.
+		if nsRe.MatchString(subject.Namespace) {
+			// Subject ns starts with prefix, don't keep.
 			changed = true
 			continue
 		}
@@ -135,44 +144,41 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 	paas *v1alpha1.Paas,
 ) (err error) {
 	var crb *rbac.ClusterRoleBinding
+	var changed bool
 	if cap, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; !exists {
 		return
 	} else if capConfig, exists := getConfig().Capabilities[paasns.Name]; !exists {
 		return
 	} else {
+
 		logger := getLogger(ctx, paas, "ClusterRoleBinding", "reconcile")
-		nsRe := *regexp.MustCompile(fmt.Sprintf("^%s$", paasns.NamespaceName()))
-		permissions := capConfig.ExtraPermissions.AsConfigRolesSas(cap.WithExtraPermissions())
-		permissions.Merge(capConfig.DefaultPermissions.AsConfigRolesSas(true))
-		for role, sas := range permissions {
-			var changed bool
+		// logger.Info(fmt.Sprintf("capNamespace %s", paasns.NamespaceName()))
+		for _, role := range capConfig.ExtraPermissions.Roles {
 			crbName := fmt.Sprintf("paas-%s", role)
+			// logger.Info(fmt.Sprintf("crbname %s", crbName))
 			if crb, err = getClusterRoleBinding(r.Client, ctx, paas, crbName, role); err != nil {
+				// logger.Info(fmt.Sprintf("error: %s", err.Error()))
 				return err
+				// } else {
+				// logger.Info(fmt.Sprintf("crb %s read from k8s", crbName))
 			}
-			for sa, add := range sas {
-				if add {
-					if isAdded := addSAToClusterRoleBinding(crb, paasns.NamespaceName(), sa); isAdded {
-						logger.Info(fmt.Sprintf("adding sa %s for ns %s to crb %v", sa, paasns.NamespaceName(), crbName))
-						changed = true
-					} else {
-						logger.Info(fmt.Sprintf("sa %s in ns %s already added to crb %v", sa, paasns.NamespaceName(), crbName))
-					}
-				} else {
-					if isRemoved := updateClusterRoleBindingForRemovedSA(crb, nsRe, sa); isRemoved {
-						logger.Info(fmt.Sprintf("deleting sa %s for ns %s from crb %s", sa, paasns.NamespaceName(), crbName))
-						changed = true
-					} else {
-						logger.Info(fmt.Sprintf("sa %s in ns %s no longer in crb %s", sa, paasns.NamespaceName(), crbName))
-					}
+
+			if (*cap).WithExtraPermissions() {
+				if changed = addSAsToClusterRoleBinding(crb, paasns.NamespaceName(), capConfig.ExtraPermissions.ServiceAccounts); changed {
+					logger.Info(fmt.Sprintf("adding sa's %v for ns %s to crb %s", capConfig.ExtraPermissions.ServiceAccounts, paasns.NamespaceName(), crbName))
+				}
+			} else {
+				if changed = updateClusterRoleBindingForRemovedSAs(crb, *regexp.MustCompile(fmt.Sprintf("^%s$", paasns.NamespaceName()))); changed {
+					logger.Info(fmt.Sprintf("deleting sa's %v for ns %s from crb %s", capConfig.ExtraPermissions.ServiceAccounts, paasns.NamespaceName(), crbName))
 				}
 			}
 			if changed {
+				// logger.Info(fmt.Sprintf("updating crb %s", crbName))
 				if err := updateClusterRoleBinding(r.Client, ctx, paas, crb); err != nil {
+					// logger.Info(fmt.Sprintf("updating crb %s failed", crbName))
 					return err
 				}
 			}
-
 		}
 	}
 	return nil
@@ -185,7 +191,7 @@ func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 	logger := getLogger(ctx, paas, "ClusterRoleBinding", "finalize")
 	var capRoles []string
 	for _, capConfig := range getConfig().Capabilities {
-		capRoles = append(capRoles, capConfig.ExtraPermissions.Roles()...)
+		capRoles = append(capRoles, capConfig.ExtraPermissions.Roles...)
 	}
 	for _, role := range capRoles {
 		roleName := fmt.Sprintf("paas-%s", role)
@@ -194,8 +200,8 @@ func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 			return err
 		}
 		nsRe := fmt.Sprintf("^%s-", paas.Name)
-		changed := updateClusterRoleBindingForRemovedSA(crb,
-			*regexp.MustCompile(nsRe), "")
+		changed := updateClusterRoleBindingForRemovedSAs(crb,
+			*regexp.MustCompile(nsRe))
 		if !changed {
 			continue
 		}
