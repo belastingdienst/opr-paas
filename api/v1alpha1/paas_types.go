@@ -70,7 +70,7 @@ func (p Paas) GetNsSshSecrets(ns string) (secrets map[string]string) {
 		secrets[key] = value
 	}
 	if cap, exists := p.Spec.Capabilities.AsMap()[ns]; exists {
-		for key, value := range cap.GetSshSecrets() {
+		for key, value := range (*cap).GetSshSecrets() {
 			secrets[key] = value
 		}
 	}
@@ -80,7 +80,7 @@ func (p Paas) GetNsSshSecrets(ns string) (secrets map[string]string) {
 func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 	ns = make(map[string]bool)
 	for name, cap := range p.Spec.Capabilities.AsMap() {
-		if cap.IsEnabled() {
+		if (*cap).IsEnabled() {
 			ns[name] = true
 		}
 	}
@@ -231,6 +231,7 @@ type paasCapability interface {
 	Quotas() PaasQuotas
 	CapabilityName() string
 	GetSshSecrets() map[string]string
+	SetSshSecret(string, string)
 	WithExtraPermissions() bool
 }
 
@@ -238,11 +239,11 @@ type paasCapability interface {
 AsMap geeft de namen van de capabilties, terwijl bijvoorbeeld de namespace namen en quota namen geprefixt zijn met de paas naam.
 Daarom een AsPrefixedMap, zodat we ook makkelijk kunnen zoeken als je de namespace naam hebt.
 */
-func (pc PaasCapabilities) AsPrefixedMap(prefix string) map[string]paasCapability {
+func (pc PaasCapabilities) AsPrefixedMap(prefix string) map[string]*paasCapability {
 	if prefix == "" {
 		return pc.AsMap()
 	}
-	caps := make(map[string]paasCapability)
+	caps := make(map[string]*paasCapability)
 	for name, cap := range pc.AsMap() {
 		caps[fmt.Sprintf("%s-%s", prefix, name)] = cap
 	}
@@ -253,21 +254,21 @@ func (pc PaasCapabilities) IsCap(name string) bool {
 	caps := pc.AsMap()
 	if cap, exists := caps[name]; !exists {
 		return false
-	} else if !cap.IsEnabled() {
+	} else if !(*cap).IsEnabled() {
 		return false
 	}
 	return true
 }
 
-func (pc PaasCapabilities) AsMap() map[string]paasCapability {
-	caps := make(map[string]paasCapability)
+func (pc PaasCapabilities) AsMap() map[string]*paasCapability {
+	caps := make(map[string]*paasCapability)
 	for _, cap := range []paasCapability{
 		&pc.ArgoCD,
 		&pc.CI,
 		&pc.SSO,
 		&pc.Grafana,
 	} {
-		caps[cap.CapabilityName()] = cap
+		caps[cap.CapabilityName()] = &cap
 	}
 	return caps
 }
@@ -321,6 +322,10 @@ func (pa PaasArgoCD) GetSshSecrets() map[string]string {
 	return pa.SshSecrets
 }
 
+func (pa *PaasArgoCD) SetSshSecret(key string, value string) {
+	pa.SshSecrets[key] = value
+}
+
 type PaasCI struct {
 	// Do we want a CI (Tekton) namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
@@ -353,6 +358,10 @@ func (pc *PaasCI) CapabilityName() string {
 
 func (pc PaasCI) GetSshSecrets() map[string]string {
 	return pc.SshSecrets
+}
+
+func (pc *PaasCI) SetSshSecret(key string, value string) {
+	pc.SshSecrets[key] = value
 }
 
 type PaasSSO struct {
@@ -389,6 +398,10 @@ func (ps PaasSSO) GetSshSecrets() map[string]string {
 	return ps.SshSecrets
 }
 
+func (ps *PaasSSO) SetSshSecret(key string, value string) {
+	ps.SshSecrets[key] = value
+}
+
 type PaasGrafana struct {
 	// Do we want a Grafana namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
@@ -421,6 +434,10 @@ func (pg *PaasGrafana) CapabilityName() string {
 
 func (pg PaasGrafana) GetSshSecrets() map[string]string {
 	return pg.SshSecrets
+}
+
+func (pg *PaasGrafana) SetSshSecret(key string, value string) {
+	pg.SshSecrets[key] = value
 }
 
 // PaasStatus defines the observed state of Paas

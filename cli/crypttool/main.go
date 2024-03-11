@@ -49,6 +49,7 @@ func createApp() *cobra.Command {
 	rootCommand.AddCommand(
 		decryptCmd(),
 		encryptCmd(),
+		reencryptCmd(),
 		generateCmd(),
 	)
 	return rootCommand
