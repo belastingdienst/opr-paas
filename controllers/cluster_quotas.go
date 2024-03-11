@@ -113,10 +113,10 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 ) (quotas []*quotav1.ClusterResourceQuota) {
 	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
 	for name, cap := range paas.Spec.Capabilities.AsMap() {
-		if (*cap).IsEnabled() {
+		if cap.IsEnabled() {
 			defaults := getConfig().DefaultQuota(
-				(*cap).CapabilityName())
-			quota := (*cap).Quotas().QuotaWithDefaults(
+				cap.CapabilityName())
+			quota := cap.Quotas().QuotaWithDefaults(
 				defaults)
 			quotas = append(quotas,
 				r.backendQuota(ctx, paas, name, quota))
@@ -131,10 +131,10 @@ func (r *PaasReconciler) BackendEnabledQuotaStatus(
 	quotas = make(map[string]v1alpha1.PaasQuotas)
 	quotas["default"] = paas.Spec.Quota
 	for name, cap := range paas.Spec.Capabilities.AsMap() {
-		if (*cap).IsEnabled() {
+		if cap.IsEnabled() {
 			defaults := getConfig().DefaultQuota(
-				(*cap).CapabilityName())
-			quota := (*cap).Quotas().QuotaWithDefaults(
+				cap.CapabilityName())
+			quota := cap.Quotas().QuotaWithDefaults(
 				defaults)
 			quotas[name] = quota
 		}
@@ -147,7 +147,7 @@ func (r *PaasReconciler) BackendDisabledQuotas(
 	paas *v1alpha1.Paas,
 ) (quotas []string) {
 	for name, cap := range paas.Spec.Capabilities.AsMap() {
-		if !(*cap).IsEnabled() {
+		if !cap.IsEnabled() {
 			quotas = append(quotas, fmt.Sprintf("%s-%s", paas.Name, name))
 		}
 	}
