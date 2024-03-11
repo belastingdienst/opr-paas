@@ -143,8 +143,8 @@ func (r *PaasNSReconciler) BackendSecrets(
 	// From the PaasNS resource
 	secrets = append(secrets, r.getSecrets(ctx, paasns, paasns.Spec.SshSecrets)...)
 	//From the Paas Resource capability chapter (if applicable)
-	if cap, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists && cap.IsEnabled() {
-		secrets = append(secrets, r.getSecrets(ctx, paasns, cap.GetSshSecrets())...)
+	if cap, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists && (*cap).IsEnabled() {
+		secrets = append(secrets, r.getSecrets(ctx, paasns, (*cap).GetSshSecrets())...)
 	}
 	// From the Paas resource
 	secrets = append(secrets, r.getSecrets(ctx, paasns, paas.Spec.SshSecrets)...)
