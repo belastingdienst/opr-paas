@@ -15,7 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//var debug bool
+var debug bool
 
 // requireSubcommand returns an error if no sub command is provided
 // This was copied from podman: `github.com/containers/podman/cmd/podman/validate/args.go
@@ -45,11 +45,12 @@ func createApp() *cobra.Command {
 	}
 	rootCommand.Version = version.PAAS_VERSION
 
-	//rootCommand.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug output")
+	rootCommand.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug output")
 	rootCommand.AddCommand(
 		decryptCmd(),
 		encryptCmd(),
 		reencryptCmd(),
+		checkPaasCmd(),
 		generateCmd(),
 	)
 	return rootCommand

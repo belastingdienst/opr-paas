@@ -70,7 +70,7 @@ func (p Paas) GetNsSshSecrets(ns string) (secrets map[string]string) {
 		secrets[key] = value
 	}
 	if cap, exists := p.Spec.Capabilities.AsMap()[ns]; exists {
-		for key, value := range (*cap).GetSshSecrets() {
+		for key, value := range cap.GetSshSecrets() {
 			secrets[key] = value
 		}
 	}
@@ -80,7 +80,7 @@ func (p Paas) GetNsSshSecrets(ns string) (secrets map[string]string) {
 func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 	ns = make(map[string]bool)
 	for name, cap := range p.Spec.Capabilities.AsMap() {
-		if (*cap).IsEnabled() {
+		if cap.IsEnabled() {
 			ns[name] = true
 		}
 	}
@@ -239,11 +239,11 @@ type paasCapability interface {
 AsMap geeft de namen van de capabilties, terwijl bijvoorbeeld de namespace namen en quota namen geprefixt zijn met de paas naam.
 Daarom een AsPrefixedMap, zodat we ook makkelijk kunnen zoeken als je de namespace naam hebt.
 */
-func (pc PaasCapabilities) AsPrefixedMap(prefix string) map[string]*paasCapability {
+func (pc PaasCapabilities) AsPrefixedMap(prefix string) map[string]paasCapability {
 	if prefix == "" {
 		return pc.AsMap()
 	}
-	caps := make(map[string]*paasCapability)
+	caps := make(map[string]paasCapability)
 	for name, cap := range pc.AsMap() {
 		caps[fmt.Sprintf("%s-%s", prefix, name)] = cap
 	}
@@ -254,21 +254,21 @@ func (pc PaasCapabilities) IsCap(name string) bool {
 	caps := pc.AsMap()
 	if cap, exists := caps[name]; !exists {
 		return false
-	} else if !(*cap).IsEnabled() {
+	} else if !cap.IsEnabled() {
 		return false
 	}
 	return true
 }
 
-func (pc PaasCapabilities) AsMap() map[string]*paasCapability {
-	caps := make(map[string]*paasCapability)
+func (pc PaasCapabilities) AsMap() map[string]paasCapability {
+	caps := make(map[string]paasCapability)
 	for _, cap := range []paasCapability{
 		&pc.ArgoCD,
 		&pc.CI,
 		&pc.SSO,
 		&pc.Grafana,
 	} {
-		caps[cap.CapabilityName()] = &cap
+		caps[cap.CapabilityName()] = cap
 	}
 	return caps
 }
