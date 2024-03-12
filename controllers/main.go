@@ -13,6 +13,7 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/go-logr/logr"
+	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -30,17 +31,22 @@ func getConfig() config.Config {
 				"Could not read config: %s",
 				err.Error()))
 		}
+		if _cnf.Debug {
+			logrus.SetLevel(logrus.DebugLevel)
+			logrus.Debug("Enabling debug logging")
+		}
 	}
 	return *_cnf
 }
 
 func getRsa(paas string) *crypt.Crypt {
+	config := getConfig()
 	if _crypt == nil {
 		_crypt = make(map[string]*crypt.Crypt)
 	}
 	if c, exists := _crypt[paas]; exists {
 		return c
-	} else if c, err := crypt.NewCrypt(getConfig().DecryptKeyPaths, "", paas); err != nil {
+	} else if c, err := crypt.NewCrypt(config.DecryptKeyPaths, "", paas); err != nil {
 		panic(fmt.Errorf("could not get a crypt: %e", err))
 	} else {
 		_crypt[paas] = c
