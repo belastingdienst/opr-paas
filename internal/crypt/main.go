@@ -20,8 +20,9 @@ func hashedKey(key []byte) []byte {
 }
 
 func encrypt(publicKey string, paasName string, data []byte) error {
-	c := NewCrypt("", publicKey, paasName)
-	if encrypted, err := c.Encrypt(data); err != nil {
+	if c, err := NewCrypt([]string{}, publicKey, paasName); err != nil {
+		return err
+	} else if encrypted, err := c.Encrypt(data); err != nil {
 		return fmt.Errorf("failed to encrypt: %e", err)
 	} else {
 		fmt.Println(encrypted)
@@ -29,12 +30,14 @@ func encrypt(publicKey string, paasName string, data []byte) error {
 	return nil
 }
 
-func DecryptFromStdin(privateKey string, paasName string) error {
+func DecryptFromStdin(privateKeys []string, paasName string) error {
 	if data, err := io.ReadAll(os.Stdin); err != nil {
 		return err
 	} else {
-		c := NewCrypt(privateKey, "", paasName)
-		if encrypted, err := c.Decrypt(string(data)); err != nil {
+		if c, err := NewCrypt(privateKeys, "", paasName); err != nil {
+			return err
+
+		} else if encrypted, err := c.Decrypt(string(data)); err != nil {
 			return fmt.Errorf("failed to decrypt: %e", err)
 		} else {
 			fmt.Println(string(encrypted))
@@ -75,7 +78,7 @@ func GenerateKeyPair(privateKey string, publicKey string) error {
 	} else {
 		publicKey = f.Name()
 	}
-	if _, err := NewCrypt(privateKey, publicKey, "").GenerateCrypt(); err != nil {
+	if _, err := NewGeneratedCrypt(privateKey, publicKey); err != nil {
 		return fmt.Errorf("failed to generate new key pair: %e", err)
 	}
 	return nil

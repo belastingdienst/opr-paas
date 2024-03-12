@@ -56,7 +56,8 @@ capabilities:
       requests.storage: "2Gi"
       thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
 debug: false
-decryptKeyPath: /path/to/key
+decryptKeyPaths: 
+  - /path/to/key
 ldap:
   host: my-ldap-host
   port: 13

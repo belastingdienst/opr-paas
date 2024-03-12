@@ -7,34 +7,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/yaml"
 )
-
-func pathToFileList(paths []string) ([]string, error) {
-	files := make(map[string]bool)
-	for _, path := range paths {
-		err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return fmt.Errorf("error while walking the path: %e", err)
-			} else if info.Mode().IsRegular() {
-				files[path] = true
-			}
-			return nil
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
-	var fileList []string
-	for key := range files {
-		fileList = append(fileList, key)
-	}
-	return fileList, nil
-}
 
 type InvalidPaasFile struct {
 	File string

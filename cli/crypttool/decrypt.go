@@ -9,7 +9,7 @@ import (
 )
 
 func decryptCmd() *cobra.Command {
-	var privateKeyFile string
+	var privateKeyFiles string
 	var paasName string
 
 	cmd := &cobra.Command{
@@ -20,15 +20,15 @@ func decryptCmd() *cobra.Command {
 			if paasName == "" {
 				return fmt.Errorf("a paas must be set with eith --paas or environment variabele PAAS_NAME")
 			}
-			return crypt.DecryptFromStdin(privateKeyFile, paasName)
+			return crypt.DecryptFromStdin([]string{privateKeyFiles}, paasName)
 		},
-		Example: `crypttool decrypt --privateKeyFile "/tmp/priv" --paas my-paas`,
+		Example: `crypttool decrypt --privateKeyFiles "/tmp/priv" --paas my-paas`,
 	}
 
 	flags := cmd.Flags()
-	flags.StringVar(&privateKeyFile, "privateKeyFile", "", "The file to read the private key from")
-	viper.BindPFlag("privateKeyFile", flags.Lookup("privateKeyFile"))
-	viper.BindEnv("privateKeyFile", "PAAS_PRIVATE_KEY_PATH")
+	flags.StringVar(&privateKeyFiles, "privateKeyFiles", "", "The file to read the private key from")
+	viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles"))
+	viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH")
 	flags.StringVar(&paasName, "paas", "", "The paas this data is to be encrypted for")
 	viper.BindPFlag("paas", flags.Lookup("paas"))
 	viper.BindEnv("paas", "PAAS_NAME")
