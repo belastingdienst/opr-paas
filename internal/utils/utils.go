@@ -12,8 +12,14 @@ func PathToFileList(paths []string) ([]string, error) {
 		err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return fmt.Errorf("error while walking the path: %e", err)
-			} else if info.Mode().IsRegular() {
-				files[path] = true
+			} else if resolvedPath, err := filepath.EvalSymlinks(path); err != nil {
+				return fmt.Errorf("failed to resolve symlink %s: %e", path, err)
+			} else if absPath, err := filepath.Abs(resolvedPath); err != nil {
+				return fmt.Errorf("failed to get absolute path for %s: %e", resolvedPath, err)
+			} else if absMode, err := os.Stat(absPath); err != nil {
+				return fmt.Errorf("failed to get filemode for %s: %e", absPath, err)
+			} else if absMode.Mode().IsRegular() {
+				files[absPath] = true
 			}
 			return nil
 		})

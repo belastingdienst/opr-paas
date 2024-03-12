@@ -152,36 +152,6 @@ func (c *Crypt) writePublicKey() error {
 	return nil
 }
 
-/*
-func (c Crypt) EncryptAes(decrypted []byte) ([]byte, error) {
-	if ci, err := aes.NewCipher(hashedKey(c.aesKey)); err != nil {
-		return nil, fmt.Errorf("could not create new AES cypher: %e", err)
-	} else if gcm, err := cipher.NewGCM(ci); err != nil {
-		// gcm or Galois/Counter Mode, is a mode of operation
-		// for symmetric key cryptographic block ciphers
-		// - https://en.wikipedia.org/wiki/Galois/Counter_Mode
-		return nil, fmt.Errorf("could not create new AES GCM: %e", err)
-	} else {
-		// creates a new byte array the size of the nonce
-		// which must be passed to Seal
-		nonce := make([]byte, gcm.NonceSize())
-
-		// populates our nonce with a cryptographically secure
-		// random sequence
-		if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-			fmt.Println(err)
-		}
-
-		// here we encrypt our text using the Seal function
-		// Seal encrypts and authenticates plaintext, authenticates the
-		// additional data and appends the result to dst, returning the updated
-		// slice. The nonce must be NonceSize() bytes long and unique for all
-		// time, for a given key.
-		return gcm.Seal(nonce, nonce, decrypted, nil), nil
-	}
-}
-*/
-
 func (c *Crypt) getPublicKey() (*rsa.PublicKey, error) {
 	if c.publicKey != nil {
 		return c.publicKey, nil
@@ -262,36 +232,18 @@ func (pk *cryptPrivateKey) DecryptRsa(data []byte, aesKey []byte) (decryptedByte
 }
 
 func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
+	if len(c.privateKeys) < 1 {
+		return nil, fmt.Errorf("cannot decrypt without any private key")
+	}
 	for _, pk := range c.privateKeys {
-
 		if decryptedBytes, err = pk.DecryptRsa(data, c.aesKey); err != nil {
 			continue
 		} else {
 			return decryptedBytes, nil
 		}
 	}
-	return nil, fmt.Errorf("unable to decrypt data with any of the private keyc")
+	return nil, fmt.Errorf("unable to decrypt data with any of the private keys")
 }
-
-/*
-func (c Crypt) DecryptAes(encrypted []byte) ([]byte, error) {
-
-	if ci, err := aes.NewCipher(hashedKey(c.aesKey)); err != nil {
-		return nil, fmt.Errorf("could not create new AES cypher: %e", err)
-	} else if gcm, err := cipher.NewGCM(ci); err != nil {
-		return nil, fmt.Errorf("could not create new AES GCM: %e", err)
-	} else if nonceSize := gcm.NonceSize(); len(encrypted) < nonceSize {
-		return nil, fmt.Errorf("AES error: invalid encrypted data (%d smaller than nonce %d)", len(encrypted), nonceSize)
-	} else {
-		nonce, ciphertext := encrypted[:nonceSize], encrypted[nonceSize:]
-		if plaintext, err := gcm.Open(nil, nonce, ciphertext, nil); err != nil {
-			return nil, fmt.Errorf("AES error: decryption failed: %e", err)
-		} else {
-			return plaintext, nil
-		}
-	}
-}
-*/
 
 func (c Crypt) Decrypt(b64 string) ([]byte, error) {
 	// Removing all characters that do not comply to base64 encoding (mainly \n and ' ')
