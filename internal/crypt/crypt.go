@@ -16,78 +16,121 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+
+	"github.com/belastingdienst/opr-paas/internal/utils"
 )
 
 type Crypt struct {
-	privateKeyPath string
-	privateKey     *rsa.PrivateKey
-	publicKeyPath  string
-	publicKey      *rsa.PublicKey
-	aesKey         []byte
-	fresh          bool
+	privateKeys   cryptPrivateKeys
+	publicKeyPath string
+	publicKey     *rsa.PublicKey
+	aesKey        []byte
 }
 
-func NewCrypt(privateKeyPath string, publicKeyPath string, symmetricKey string) *Crypt {
-	return &Crypt{
-		privateKeyPath: privateKeyPath,
-		publicKeyPath:  publicKeyPath,
-		aesKey:         []byte(symmetricKey),
+type cryptPrivateKey struct {
+	privateKeyPath string
+	privateKeyPem  []byte
+	privateKey     *rsa.PrivateKey
+}
+
+func NewPrivateKey(privateKeyPath string) (*cryptPrivateKey, error) {
+	if privateKeyPath == "" {
+		return nil, fmt.Errorf("cannot get private key without a specified path")
+	}
+	if privateKeyPem, err := os.ReadFile(privateKeyPath); err != nil {
+		panic(err)
+	} else if privateKeyBlock, _ := pem.Decode(privateKeyPem); privateKeyBlock == nil {
+		return nil, fmt.Errorf("cannot decode private key")
+	} else if privateKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes); err != nil {
+		return nil, fmt.Errorf("private key invalid: %e", err)
+	} else {
+		return &cryptPrivateKey{
+			privateKeyPath,
+			privateKeyPem,
+			privateKey,
+		}, nil
 	}
 }
 
-func (c Crypt) GenerateCrypt() (*Crypt, error) {
+func (pk *cryptPrivateKey) writePrivateKey() error {
+	if pk.privateKeyPath == "" {
+		return fmt.Errorf("cannot write private key without a specified path")
+	}
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(pk.privateKey)
+	privateKeyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privateKeyBytes,
+	})
+	if err := os.WriteFile(pk.privateKeyPath, privateKeyPEM, 0644); err != nil {
+		return fmt.Errorf("unable to write private key: %e", err)
+	}
+	fmt.Printf("Private key written to %s\n", pk.privateKeyPath)
+	return nil
+}
+
+func (pk cryptPrivateKey) getPrivateKey() (*rsa.PrivateKey, error) {
+	if pk.privateKey != nil {
+		return pk.privateKey, nil
+	}
+	if pk.privateKeyPath == "" {
+		return nil, fmt.Errorf("cannot get private key without a specified path")
+	}
+	if privateKeyPEM, err := os.ReadFile(pk.privateKeyPath); err != nil {
+		panic(err)
+	} else if privateKeyBlock, _ := pem.Decode(privateKeyPEM); privateKeyBlock == nil {
+		return nil, fmt.Errorf("cannot decode private key")
+	} else if privateRsaKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes); err != nil {
+		return nil, fmt.Errorf("private key invalid: %e", err)
+	} else {
+		pk.privateKey = privateRsaKey
+	}
+	return pk.privateKey, nil
+}
+
+type cryptPrivateKeys []cryptPrivateKey
+
+func NewCrypt(privateKeyPaths []string, publicKeyPath string, symmetricKey string) (*Crypt, error) {
+	var privateKeys cryptPrivateKeys
+	if files, err := utils.PathToFileList(privateKeyPaths); err != nil {
+		return nil, fmt.Errorf("could not find files in '%v': %e", privateKeyPaths, err)
+	} else {
+		for _, file := range files {
+			if pk, err := NewPrivateKey(file); err != nil {
+				return nil, fmt.Errorf("invalid private key file %s", file)
+			} else {
+				privateKeys = append(privateKeys, *pk)
+			}
+		}
+	}
+	return &Crypt{
+		privateKeys:   privateKeys,
+		publicKeyPath: publicKeyPath,
+		aesKey:        []byte(symmetricKey),
+	}, nil
+}
+
+func NewGeneratedCrypt(privateKeyPath string, publicKeyPath string) (*Crypt, error) {
+	var c Crypt
 	if privateKey, err := rsa.GenerateKey(rand.Reader, 4096); err != nil {
 		return nil, fmt.Errorf("unable to generate private key: %e", err)
 	} else {
-		c.privateKey = privateKey
-		c.publicKey = &privateKey.PublicKey
-	}
-	if err := c.writePrivateKey(); err != nil {
-		return nil, err
-	}
-	if err := c.writePublicKey(); err != nil {
-		return nil, err
-	}
-	return &c, nil
-}
+		pk := cryptPrivateKey{
+			privateKey:     privateKey,
+			privateKeyPath: privateKeyPath,
+		}
+		c.privateKeys = cryptPrivateKeys{pk}
+		if err := pk.writePrivateKey(); err != nil {
+			return nil, err
+		}
 
-func (c Crypt) GenerateStrings() (private string, public string, err error) {
-	if privateKey, err := rsa.GenerateKey(rand.Reader, 4096); err != nil {
-		return "", "", fmt.Errorf("unable to generate private key: %e", err)
-	} else {
-		c.privateKey = privateKey
+		c.publicKeyPath = publicKeyPath
 		c.publicKey = &privateKey.PublicKey
-	}
-	privateKeyBytes := x509.MarshalPKCS1PrivateKey(c.privateKey)
-	privateKeyPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: privateKeyBytes,
-	})
-	if publicKeyBytes, err := x509.MarshalPKIXPublicKey(c.publicKey); err != nil {
-		return "", "", fmt.Errorf("unable to marshal public key: %e", err)
-	} else {
-		publicKeyPEM := pem.EncodeToMemory(&pem.Block{
-			Type:  "RSA PUBLIC KEY",
-			Bytes: publicKeyBytes,
-		})
-		return string(privateKeyPEM), string(publicKeyPEM), nil
-	}
-}
+		if err := c.writePublicKey(); err != nil {
+			return nil, err
+		}
 
-func (c *Crypt) writePrivateKey() error {
-	if c.privateKeyPath == "" {
-		return fmt.Errorf("cannot write private key without a specified path")
+		return &c, nil
 	}
-	privateKeyBytes := x509.MarshalPKCS1PrivateKey(c.privateKey)
-	privateKeyPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: privateKeyBytes,
-	})
-	if err := os.WriteFile(c.privateKeyPath, privateKeyPEM, 0644); err != nil {
-		return fmt.Errorf("unable to write private key: %e", err)
-	}
-	fmt.Printf("Private key written to %s\n", c.privateKeyPath)
-	return nil
 }
 
 func (c *Crypt) writePublicKey() error {
@@ -193,27 +236,8 @@ func (c *Crypt) Encrypt(secret []byte) (encrypted string, err error) {
 	}
 }
 
-func (c *Crypt) getPrivateKey() (*rsa.PrivateKey, error) {
-	if c.privateKey != nil {
-		return c.privateKey, nil
-	}
-	if c.privateKeyPath == "" {
-		return nil, fmt.Errorf("cannot get private key without a specified path")
-	}
-	if privateKeyPEM, err := os.ReadFile(c.privateKeyPath); err != nil {
-		panic(err)
-	} else if privateKeyBlock, _ := pem.Decode(privateKeyPEM); privateKeyBlock == nil {
-		return nil, fmt.Errorf("cannot decode private key")
-	} else if privateRsaKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes); err != nil {
-		return nil, fmt.Errorf("private key invalid: %e", err)
-	} else {
-		c.privateKey = privateRsaKey
-	}
-	return c.privateKey, nil
-}
-
-func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
-	if privateKey, err := c.getPrivateKey(); err != nil {
+func (pk *cryptPrivateKey) DecryptRsa(data []byte, aesKey []byte) (decryptedBytes []byte, err error) {
+	if privateKey, err := pk.getPrivateKey(); err != nil {
 		return nil, err
 	} else {
 		hash := sha512.New()
@@ -227,7 +251,7 @@ func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
 				finish = msgLen
 			}
 
-			decryptedBlockBytes, err := rsa.DecryptOAEP(hash, random, privateKey, data[start:finish], c.aesKey)
+			decryptedBlockBytes, err := rsa.DecryptOAEP(hash, random, privateKey, data[start:finish], aesKey)
 			if err != nil {
 				return nil, err
 			}
@@ -235,6 +259,18 @@ func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
 		}
 		return decryptedBytes, nil
 	}
+}
+
+func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
+	for _, pk := range c.privateKeys {
+
+		if decryptedBytes, err = pk.DecryptRsa(data, c.aesKey); err != nil {
+			continue
+		} else {
+			return decryptedBytes, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to decrypt data with any of the private keyc")
 }
 
 /*

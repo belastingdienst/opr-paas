@@ -4,53 +4,66 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
+	"github.com/belastingdienst/opr-paas/internal/utils"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-func reencryptFiles(privateKeyFile string, publicKeyFile string, outputFormat string, files []string) error {
+func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat string, files []string) error {
 	for _, fileName := range files {
 		// Read paas from file
 		if paas, format, err := readPaasFile(fileName); err != nil {
 			return fmt.Errorf("could not read file")
 		} else {
 			paasName := paas.ObjectMeta.Name
-			srcCrypt := crypt.NewCrypt(privateKeyFile, "", paasName)
-			dstCrypt := crypt.NewCrypt("", publicKeyFile, paasName)
-			for key, secret := range paas.Spec.SshSecrets {
-				if decrypted, err := srcCrypt.Decrypt(secret); err != nil {
-					return fmt.Errorf("failed to decrypt %s.spec.sshSecrets[%s] in %s: %e", paasName, key, fileName, err)
-				} else if reencrypted, err := dstCrypt.Encrypt(decrypted); err != nil {
-					return fmt.Errorf("failed to reecrypt %s.spec.sshSecrets[%s] in %s: %e", paasName, key, fileName, err)
-				} else {
-					paas.Spec.SshSecrets[key] = reencrypted
-				}
-			}
-			for capName, cap := range paas.Spec.Capabilities.AsMap() {
-				for key, secret := range cap.GetSshSecrets() {
+			if srcCrypt, err := crypt.NewCrypt([]string{privateKeyFiles}, "", paasName); err != nil {
+				return err
+			} else if dstCrypt, err := crypt.NewCrypt([]string{}, publicKeyFile, paasName); err != nil {
+				return nil
+			} else {
+
+				for key, secret := range paas.Spec.SshSecrets {
 					if decrypted, err := srcCrypt.Decrypt(secret); err != nil {
-						return fmt.Errorf("failed to decrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %e", paasName, capName, key, fileName, err)
+						return fmt.Errorf("failed to decrypt %s.spec.sshSecrets[%s] in %s: %e", paasName, key, fileName, err)
 					} else if reencrypted, err := dstCrypt.Encrypt(decrypted); err != nil {
-						return fmt.Errorf("failed to reecrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %e", paasName, capName, key, fileName, err)
+						return fmt.Errorf("failed to reecrypt %s.spec.sshSecrets[%s] in %s: %e", paasName, key, fileName, err)
 					} else {
-						cap.SetSshSecret(key, reencrypted)
+						paas.Spec.SshSecrets[key] = reencrypted
+						logrus.Debugf("succesfully reencrypted %s.spec.sshSecrets[%s] in file %s", paasName, key, fileName)
+						logrus.Debugf("decrypted: {checksum: %s, len: %d}", hashData(decrypted), len(decrypted))
+						logrus.Debugf("reencrypted: {checksum: %s, len: %d}", hashData([]byte(reencrypted)), len(reencrypted))
 					}
 				}
-			}
-			// Write paas to file
-			if outputFormat != "auto" {
-				format = outputFormat
-			}
-			if format == "json" {
-				if err = writePaasJsonFile(paas, fileName); err != nil {
-					return err
+				for capName, cap := range paas.Spec.Capabilities.AsMap() {
+					for key, secret := range cap.GetSshSecrets() {
+						if decrypted, err := srcCrypt.Decrypt(secret); err != nil {
+							return fmt.Errorf("failed to decrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %e", paasName, capName, key, fileName, err)
+						} else if reencrypted, err := dstCrypt.Encrypt(decrypted); err != nil {
+							return fmt.Errorf("failed to reecrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %e", paasName, capName, key, fileName, err)
+						} else {
+							logrus.Debugf("succesfully reencrypted %s.spec.capabilities[%s].sshSecrets[%s] in file %s", paasName, capName, key, fileName)
+							logrus.Debugf("decrypted: {checksum: %s, len: %d}", hashData(decrypted), len(decrypted))
+							logrus.Debugf("reencrypted: {checksum: %s, len: %d}", hashData([]byte(reencrypted)), len(reencrypted))
+							cap.SetSshSecret(key, reencrypted)
+						}
+					}
 				}
-			} else if format == "yaml" {
-				if err = writePaasYamlFile(paas, fileName); err != nil {
-					return err
+				// Write paas to file
+				if outputFormat != "auto" {
+					format = outputFormat
 				}
-			} else {
-				return fmt.Errorf("invalid output format: %s", format)
+				if format == "json" {
+					if err = writePaasJsonFile(paas, fileName); err != nil {
+						return err
+					}
+				} else if format == "yaml" {
+					if err = writePaasYamlFile(paas, fileName); err != nil {
+						return err
+					}
+				} else {
+					return fmt.Errorf("invalid output format: %s", format)
+				}
 			}
 		}
 	}
@@ -58,7 +71,7 @@ func reencryptFiles(privateKeyFile string, publicKeyFile string, outputFormat st
 }
 
 func reencryptCmd() *cobra.Command {
-	var privateKeyFile string
+	var privateKeyFiles string
 	var publicKeyFile string
 	var outputFormat string
 
@@ -68,20 +81,23 @@ func reencryptCmd() *cobra.Command {
 		Long: `reencrypt can parse yaml/json files with paas objects, decrypt the sshSecrets with the previous private key,
 reencrypt with the new public key and write back the paas to the file in either yaml or json format.`,
 		RunE: func(command *cobra.Command, args []string) error {
-			if files, err := pathToFileList(args); err != nil {
+			if debug {
+				logrus.SetLevel(logrus.DebugLevel)
+			}
+			if files, err := utils.PathToFileList(args); err != nil {
 				return err
 			} else {
-				return reencryptFiles(privateKeyFile, publicKeyFile, outputFormat, files)
+				return reencryptFiles(privateKeyFiles, publicKeyFile, outputFormat, files)
 			}
 		},
 		Args:    cobra.MinimumNArgs(1),
-		Example: `crypttool reencrypt --privateKeyFile "/tmp/priv" --publicKeyFile "/tmp/pub" [file or dir] ([file or dir]...)`,
+		Example: `crypttool reencrypt --privateKeyFiles "/tmp/priv" --publicKeyFile "/tmp/pub" [file or dir] ([file or dir]...)`,
 	}
 
 	flags := cmd.Flags()
-	flags.StringVar(&privateKeyFile, "privateKeyFile", "", "The file to read the private key from")
-	viper.BindPFlag("privateKeyFile", flags.Lookup("privateKeyFile"))
-	viper.BindEnv("privateKeyFile", "PAAS_PRIVATE_KEY_PATH")
+	flags.StringVar(&privateKeyFiles, "privateKeyFiles", "", "The file to read the private key from")
+	viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles"))
+	viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH")
 	flags.StringVar(&publicKeyFile, "publicKeyFile", "", "The file to read the public key from")
 	viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile"))
 	viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH")

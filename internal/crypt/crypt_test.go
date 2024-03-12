@@ -22,17 +22,18 @@ func Test_RsaGenerate(t *testing.T) {
 	assert.NoError(t, err, "Creating tempfile for public key")
 	defer os.Remove(pub.Name()) // clean up
 
-	c, err := NewCrypt(priv.Name(), pub.Name(), "").GenerateCrypt()
+	c, err := NewGeneratedCrypt(priv.Name(), pub.Name())
 	assert.NoError(t, err, "Crypt object created")
 	assert.NotNil(t, c, "Crypt object is not nil")
 }
 
 func Test_Rsa(t *testing.T) {
-	c := NewCrypt(
-		"../../testdata/private.rsa.key",
+	c, err := NewCrypt(
+		[]string{"../../testdata/private.rsa.key"},
 		"../../testdata/public.rsa.key",
 		"",
 	)
+	assert.NoError(t, err, "Getting New Crypt")
 
 	original := "CPET_is_the_best"
 
@@ -67,11 +68,12 @@ func Test_Aes(t *testing.T) {
 
 func Test_Crypt(t *testing.T) {
 	original := "Dit is een test"
-	c := NewCrypt(
-		"../../testdata/private.rsa.key",
+	c, err := NewCrypt(
+		[]string{"../../testdata/private.rsa.key"},
 		"../../testdata/public.rsa.key",
 		"Dit is de key",
 	)
+	assert.NoError(t, err, "Getting New Crypt")
 	encrypted, err := c.Encrypt([]byte(original))
 	assert.NoError(t, err, "Encrypting")
 	assert.Greater(t, len(encrypted), 100)

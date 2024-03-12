@@ -36,11 +36,12 @@ func getRsa(paas string) *crypt.Crypt {
 		_crypt = make(map[string]*crypt.Crypt)
 	}
 	config := getConfig()
-	if c, exists := _crypt[paas]; !exists {
-		c = crypt.NewCrypt("", config.PublicKeyPath, paas)
-		_crypt[paas] = c
+	if c, exists := _crypt[paas]; exists {
 		return c
+	} else if c, err := crypt.NewCrypt([]string{}, config.PublicKeyPath, paas); err != nil {
+		panic(fmt.Errorf("unable to create a crypt: %e", err))
 	} else {
+		_crypt[paas] = c
 		return c
 	}
 }
@@ -61,27 +62,6 @@ func v1Encrypt(c *gin.Context) {
 		}
 		c.IndentedJSON(http.StatusOK, output)
 	}
-}
-
-// v1Generate generates a new keypair to be used by the the PaaS operator
-// Only to be used by PaaS administrators
-func v1Generate(c *gin.Context) {
-	var input RestGenerateInput
-	if err := c.BindJSON(&input); err != nil {
-		return
-	}
-	if input.ApiKey != getConfig().AdminApiKey {
-		return
-	}
-	var output RestGenerateResult
-	if private, public, err := crypt.NewCrypt("", "", "").GenerateStrings(); err != nil {
-		c.AbortWithError(http.StatusFailedDependency, fmt.Errorf("could not create a new crypt to generate new keys: %e", err))
-		return
-	} else {
-		output.Private = private
-		output.Public = public
-	}
-	c.IndentedJSON(http.StatusOK, output)
 }
 
 // version returns the operator version this webservice is built for
@@ -128,7 +108,6 @@ func main() {
 	router.SetTrustedProxies(nil)
 	router.GET("/version", version)
 	router.POST("/v1/encrypt", v1Encrypt)
-	router.GET("/v1/generate", v1Generate)
 	router.GET("/healthz", healthz)
 	router.GET("/readyz", readyz)
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
