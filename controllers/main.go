@@ -38,11 +38,12 @@ func getRsa(paas string) *crypt.Crypt {
 	if _crypt == nil {
 		_crypt = make(map[string]*crypt.Crypt)
 	}
-	if c, exists := _crypt[paas]; !exists {
-		c = crypt.NewCrypt(getConfig().DecryptKeyPath, "", paas)
-		_crypt[paas] = c
+	if c, exists := _crypt[paas]; exists {
 		return c
+	} else if c, err := crypt.NewCrypt(getConfig().DecryptKeyPaths, "", paas); err != nil {
+		panic(fmt.Errorf("could not get a crypt: %e", err))
 	} else {
+		_crypt[paas] = c
 		return c
 	}
 }

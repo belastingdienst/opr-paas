@@ -17,7 +17,7 @@ import (
 
 type Config struct {
 	filename          string
-	DecryptKeyPath    string                `yaml:"decryptKeyPath"`
+	DecryptKeyPaths   []string              `yaml:"decryptKeyPaths"`
 	Debug             bool                  `yaml:"debug"`
 	Capabilities      ConfigCapabilities    `yaml:"capabilities"`
 	Whitelist         types.NamespacedName  `yaml:"whitelist"`
@@ -243,9 +243,9 @@ func (config Config) Verify() error {
 		multierror = append(multierror,
 			"missing exclude_appset_name")
 	}
-	if config.DecryptKeyPath == "" {
+	if len(config.DecryptKeyPaths) < 1 {
 		multierror = append(multierror,
-			"missing decryptKeyPath")
+			"missing decryptKeyPaths")
 	}
 	if config.ManagedByLabel == "" {
 		multierror = append(multierror,

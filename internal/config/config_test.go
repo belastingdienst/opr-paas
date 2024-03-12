@@ -34,7 +34,7 @@ func Test_ValidConfig(t *testing.T) {
 	assert.Equal(t, 4, len(config.Capabilities))
 	assert.Equal(t, "argoas", config.Capabilities["argocd"].AppSet)
 	assert.Equal(t, 6, len(config.Capabilities["argocd"].DefQuota))
-	assert.Equal(t, "/path/to/key", config.DecryptKeyPath)
+	assert.Equal(t, "/path/to/key", config.DecryptKeyPaths[0])
 	assert.Equal(t, "argocd.argoproj.io/manby", config.ManagedByLabel)
 	assert.Equal(t, "o.lbl", config.RequestorLabel)
 }

@@ -79,7 +79,7 @@ func (r *PaasReconciler) EnsurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
 		controllerutil.SetControllerReference(paas, found, r.Scheme)
 	}
-	// Since 
+	// Since
 	// var changed bool
 	logger.Info("reconciling PaasNs", "PaasNs", pns, "found", found,
 		"!group eq", !reflect.DeepEqual(pns.Spec.Groups, found.Spec.Groups),
