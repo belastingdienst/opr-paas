@@ -282,7 +282,7 @@ type PaasArgoCD struct {
 	GitRevision string `json:"gitRevision,omitempty"`
 	// the path in the git repo that contains the Applications / Application Sets to be used by this ArgoCD
 	GitPath string `json:"gitPath,omitempty"`
-	// This project has it's own ClusterResourceQuota seetings
+	// This project has it's own ClusterResourceQuota settings
 	Quota PaasQuotas `json:"quota,omitempty"`
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
@@ -329,7 +329,7 @@ func (pa *PaasArgoCD) SetSshSecret(key string, value string) {
 type PaasCI struct {
 	// Do we want a CI (Tekton) namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
-	// This project has it's own ClusterResourceQuota seetings
+	// This project has it's own ClusterResourceQuota settings
 	Quota PaasQuotas `json:"quota,omitempty"`
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
@@ -367,7 +367,7 @@ func (pc *PaasCI) SetSshSecret(key string, value string) {
 type PaasSSO struct {
 	// Do we want an SSO namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
-	// This project has it's own ClusterResourceQuota seetings
+	// This project has it's own ClusterResourceQuota settings
 	Quota PaasQuotas `json:"quota,omitempty"`
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
@@ -405,7 +405,7 @@ func (ps *PaasSSO) SetSshSecret(key string, value string) {
 type PaasGrafana struct {
 	// Do we want a Grafana namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
-	// This project has it's own ClusterResourceQuota seetings
+	// This project has it's own ClusterResourceQuota settings
 	Quota PaasQuotas `json:"quota,omitempty"`
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
