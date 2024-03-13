@@ -9,7 +9,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -50,7 +49,7 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 	return pns
 }
 
-func (r *PaasReconciler) EnsurePaasNs(ctx context.Context, paas *v1alpha1.Paas, pns *v1alpha1.PaasNS) error {
+func (r *PaasReconciler) ensurePaasNs(ctx context.Context, paas *v1alpha1.Paas, pns *v1alpha1.PaasNS) error {
 	logger := getLogger(ctx, paas, pns.Kind, pns.Name)
 	logger.Info("Ensuring")
 
@@ -79,49 +78,13 @@ func (r *PaasReconciler) EnsurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
 		controllerutil.SetControllerReference(paas, found, r.Scheme)
 	}
-	// Since
-	// var changed bool
-	logger.Info("reconciling PaasNs", "PaasNs", pns, "found", found,
-		"!group eq", !reflect.DeepEqual(pns.Spec.Groups, found.Spec.Groups),
-		"!ssh eq", !reflect.DeepEqual(pns.Spec.SshSecrets, found.Spec.SshSecrets),
-	)
-	if pns.Spec.Paas != found.Spec.Paas {
-		logger.Info("Paas changed", "PaasNs", pns)
-		found.Spec.Paas = pns.Spec.Paas
-		// changed = true
-	}
-	if len(pns.Spec.Groups) == 0 && len(found.Spec.Groups) == 0 {
-		logger.Info("No groups defined", "PaasNs", pns)
-	} else if !reflect.DeepEqual(pns.Spec.Groups, found.Spec.Groups) {
-		logger.Info("Groups changed", "PaasNs", pns)
-		found.Spec.Groups = pns.Spec.Groups
-		// changed = true
-	}
-	if len(pns.Spec.Groups) == 0 && len(found.Spec.Groups) == 0 {
-		logger.Info("no sshSecrets defined", "PaasNs", pns)
-	} else if !reflect.DeepEqual(pns.Spec.SshSecrets, found.Spec.SshSecrets) {
-		logger.Info("sshSecrets changed", "PaasNs", pns)
-		found.Spec.SshSecrets = pns.Spec.SshSecrets
-		// changed = true
-	}
-	for key, value := range pns.ObjectMeta.Labels {
-		if orgValue, exists := found.ObjectMeta.Labels[key]; !exists {
-			// Not set yet
-		} else if orgValue != value {
-			// different
-		} else {
-			// No action required
-			continue
-		}
-		logger.Info(fmt.Sprintf("Label [%s] changed", key), "PaasNs", pns)
-		// changed = true
-		found.ObjectMeta.Labels[key] = value
-	}
-	// if changed {
+
+	found.Spec.Paas = pns.Spec.Paas
+	found.Spec.Groups = pns.Spec.Groups
+	found.Spec.SshSecrets = pns.Spec.SshSecrets
+	found.ObjectMeta.Labels = pns.ObjectMeta.Labels
 	logger.Info("Updating PaasNs", "PaasNs", pns)
 	return r.Update(ctx, found)
-	// }
-	// return nil
 }
 
 func (r *PaasReconciler) FinalizePaasNss(ctx context.Context, paas *v1alpha1.Paas) error {
@@ -167,7 +130,7 @@ func (r *PaasReconciler) ReconcilePaasNss(
 		logger.Info("Creating PaasNs resources for PAAS object")
 		for nsName := range paas.AllEnabledNamespaces() {
 			pns := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Names(), paas.GetNsSshSecrets(nsName))
-			if err = r.EnsurePaasNs(ctx, paas, pns); err != nil {
+			if err = r.ensurePaasNs(ctx, paas, pns); err != nil {
 				logger.Error(err, fmt.Sprintf("Failure while creating PaasNs %s",
 					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace}))
 				return err
