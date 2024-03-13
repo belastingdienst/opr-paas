@@ -134,7 +134,7 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		err = fmt.Errorf("failure while defining namespace %s: %s", nsName, err.Error())
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		return ctrl.Result{}, err
-	} else if err := EnsureNamespace(r.Client, ctx, paasns.Status.AddMessage, paas, req, ns, r.Scheme); err != nil {
+	} else if err := EnsureNamespace(r.Client, ctx, paasns.Status.AddMessage, paas, ns, r.Scheme); err != nil {
 		err = fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, ns, err.Error())
 		return ctrl.Result{}, err

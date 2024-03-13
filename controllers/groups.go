@@ -12,6 +12,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
+	"github.com/go-logr/logr"
 	userv1 "github.com/openshift/api/user/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -202,4 +203,20 @@ func (r *PaasReconciler) FinalizeGroups(
 		}
 	}
 	return cleaned, nil
+}
+
+func (r *PaasReconciler) ReconcileGroups(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	logger logr.Logger,
+) error {
+
+	logger.Info("Creating groups for PAAS object ")
+	for _, group := range r.BackendGroups(ctx, paas) {
+		if err := r.EnsureGroup(ctx, paas, group); err != nil {
+			logger.Error(err, fmt.Sprintf("Failure while creating group %s", group.ObjectMeta.Name))
+			return err
+		}
+	}
+	return nil
 }
