@@ -14,6 +14,7 @@ type RestEncryptInput struct {
 type RestEncryptResult struct {
 	PaasName  string `json:"paas"`
 	Encrypted string `json:"encrypted"`
+	Valid     bool   `json:"valid"`
 }
 
 type RestGenerateInput struct {
