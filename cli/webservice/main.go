@@ -16,6 +16,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"golang.org/x/crypto/ssh"
 )
 
 var (
@@ -53,12 +54,22 @@ func v1Encrypt(c *gin.Context) {
 		return
 	}
 	secret := []byte(input.Secret)
-	if encrypted, err := getRsa(input.PaasName).Encrypt(secret); err != nil {
-		return
+	if _, err := ssh.ParsePrivateKey(secret); err == nil {
+		if encrypted, err := getRsa(input.PaasName).Encrypt(secret); err != nil {
+			return
+		} else {
+			output := RestEncryptResult{
+				PaasName:  input.PaasName,
+				Encrypted: encrypted,
+				Valid:     true,
+			}
+			c.IndentedJSON(http.StatusOK, output)
+		}
 	} else {
 		output := RestEncryptResult{
 			PaasName:  input.PaasName,
-			Encrypted: encrypted,
+			Encrypted: "",
+			Valid:     false,
 		}
 		c.IndentedJSON(http.StatusOK, output)
 	}
