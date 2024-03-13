@@ -19,6 +19,37 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+func uniqueUsers(found userv1.OptionalNames, expected userv1.OptionalNames) (unique userv1.OptionalNames) {
+
+	// All of this is to make the list of users a unique
+	// combined list of users that where and now should be added
+	users := make(map[string]bool)
+	for _, user := range found {
+		users[user] = true
+	}
+	for _, user := range expected {
+		users[user] = true
+	}
+	for user := range users {
+		unique = append(unique, user)
+	}
+	return
+}
+
+func mergeStringMap(first map[string]string, second map[string]string) map[string]string {
+	if first == nil {
+		return second
+	}
+	if second == nil {
+		return first
+	}
+
+	for key, value := range second {
+		first[key] = value
+	}
+	return first
+}
+
 // ensureGroup ensures Group presence
 func (r *PaasReconciler) EnsureGroup(
 	ctx context.Context,
@@ -50,46 +81,28 @@ func (r *PaasReconciler) EnsureGroup(
 		logger.Error(err, "Could not retrieve info on the group")
 		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, group, err.Error())
 		return err
+	}
+	logger.Info("Updating the group")
+	// All of this is to make the list of users a unique
+	// combined list of users that where and now should be added
+	found.Users = uniqueUsers(found.Users, group.Users)
+	found.Annotations = mergeStringMap(found.Annotations, group.Annotations)
+	if !paas.AmIOwner(found.OwnerReferences) {
+		logger.Info("Setting owner reference")
+		controllerutil.SetOwnerReference(paas, found, r.Scheme)
 	} else {
-		logger.Info("Updating the group")
-		// All of this is to make the list of users a unique
-		// combined list of users that where and now should be added
-		users := make(map[string]bool)
-		for _, user := range found.Users {
-			users[user] = true
-		}
-		for _, user := range group.Users {
-			users[user] = true
-		}
-		found.Users.Reset()
-		for user := range users {
-			found.Users = append(found.Users, user)
-		}
-		if found.Annotations == nil {
-			found.Annotations = group.Annotations
-		} else {
-			for key, value := range group.Annotations {
-				found.Annotations[key] = value
-			}
-
-		}
-		if !paas.AmIOwner(found.OwnerReferences) {
-			logger.Info("Setting owner reference")
-			controllerutil.SetOwnerReference(paas, found, r.Scheme)
-		} else {
-			logger.Info("Already owner")
-		}
-		if err = r.Update(ctx, found); err != nil {
-			// Updating the group failed
-			logger.Error(err, "Updating the group failed")
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, group, err.Error())
-			return err
-		} else {
-			logger.Info("Group updated")
-			// Updating the group was successful
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, group, "succeeded")
-			return nil
-		}
+		logger.Info("Already owner")
+	}
+	if err = r.Update(ctx, found); err != nil {
+		// Updating the group failed
+		logger.Error(err, "Updating the group failed")
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, group, err.Error())
+		return err
+	} else {
+		logger.Info("Group updated")
+		// Updating the group was successful
+		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, group, "succeeded")
+		return nil
 	}
 }
 
