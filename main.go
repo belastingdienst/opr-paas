@@ -27,8 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	cpetbelastingdienstnlv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	mydomainv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	v1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/controllers"
 	"github.com/belastingdienst/opr-paas/internal/version"
 	//+kubebuilder:scaffold:imports
@@ -46,8 +45,7 @@ func init() {
 	utilruntime.Must(appv1.AddToScheme(scheme))
 	utilruntime.Must(argocd.AddToScheme(scheme))
 
-	utilruntime.Must(mydomainv1alpha1.AddToScheme(scheme))
-	utilruntime.Must(cpetbelastingdienstnlv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -55,10 +53,10 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
-	var get_version bool
+	var getVersion bool
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&get_version, "version", false, "Print version and quit")
+	flag.BoolVar(&getVersion, "version", false, "Print version and quit")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -67,7 +65,7 @@ func main() {
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
-	if get_version {
+	if getVersion {
 		fmt.Printf("opr-paas version %s", version.PAAS_VERSION)
 		os.Exit(0)
 	} else {
