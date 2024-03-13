@@ -18,6 +18,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	whitelistKeyName = "whitelist.txt"
+)
+
 func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 	ctx context.Context,
 	groups string,
@@ -34,7 +38,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 			Namespace: wlConfigMap.Namespace,
 		},
 		Data: map[string]string{
-			"whitelist.txt": groups,
+			whitelistKeyName: groups,
 		},
 	})
 }
@@ -78,17 +82,17 @@ func (r *PaasReconciler) EnsureLdapGroups(
 		cm.Data["whitelist.txt"] = gs.AsString()
 	} else {
 		logger.Info(fmt.Sprintf("Reading group queries from whitelist %v", cm))
-		whitelist_groups := groups.NewGroups()
-		whitelist_groups.AddFromString(whitelist)
+		whitelistGroups := groups.NewGroups()
+		whitelistGroups.AddFromString(whitelist)
 		logger.Info(fmt.Sprintf("Adding extra groups to whitelist: %v", gs))
-		if changed := whitelist_groups.Add(&gs); !changed {
+		if changed := whitelistGroups.Add(&gs); !changed {
 			//fmt.Printf("configured: %d, combined: %d", l1, l2)
 			logger.Info("No new info in whitelist")
 			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, cm, "no changes")
 			return nil
 		}
 		logger.Info("Adding to whitelist configmap")
-		cm.Data["whitelist.txt"] = whitelist_groups.AsString()
+		cm.Data[whitelistKeyName] = whitelistGroups.AsString()
 	}
 	logger.Info(fmt.Sprintf("Updating whitelist configmap: %v", cm))
 	if err = r.Update(ctx, cm); err != nil {
