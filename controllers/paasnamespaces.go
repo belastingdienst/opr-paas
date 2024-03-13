@@ -11,10 +11,10 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	v1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,7 +50,7 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 	return pns
 }
 
-func (r *PaasReconciler) EnsurePaasNs(ctx context.Context, paas *v1alpha1.Paas, request reconcile.Request, pns *v1alpha1.PaasNS) error {
+func (r *PaasReconciler) EnsurePaasNs(ctx context.Context, paas *v1alpha1.Paas, pns *v1alpha1.PaasNS) error {
 	logger := getLogger(ctx, paas, pns.Kind, pns.Name)
 	logger.Info("Ensuring")
 
@@ -148,5 +148,36 @@ func (r *PaasReconciler) FinalizePaasNss(ctx context.Context, paas *v1alpha1.Paa
 			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusDelete, &pns, "succeeded")
 		}
 	}
+	return nil
+}
+
+func (r *PaasReconciler) ReconcilePaasNss(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	logger logr.Logger,
+) error {
+	logger.Info("Creating default namespace to hold PaasNs resources for PAAS object")
+	if ns, err := BackendNamespace(ctx, paas, paas.Name, paas.Name, r.Scheme); err != nil {
+		logger.Error(err, fmt.Sprintf("Failure while defining namespace %s", paas.Name))
+		return err
+	} else if err = EnsureNamespace(r.Client, ctx, paas.Status.AddMessage, paas, ns, r.Scheme); err != nil {
+		logger.Error(err, fmt.Sprintf("Failure while creating namespace %s", paas.Name))
+		return err
+	} else {
+		logger.Info("Creating PaasNs resources for PAAS object")
+		for nsName := range paas.AllEnabledNamespaces() {
+			pns := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Names(), paas.GetNsSshSecrets(nsName))
+			if err = r.EnsurePaasNs(ctx, paas, pns); err != nil {
+				logger.Error(err, fmt.Sprintf("Failure while creating PaasNs %s",
+					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace}))
+				return err
+			}
+		}
+	}
+	logger.Info("Cleaning obsolete namespaces ")
+	if err := r.FinalizePaasNss(ctx, paas); err != nil {
+		return err
+	}
+
 	return nil
 }

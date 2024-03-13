@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -58,22 +59,23 @@ type Reconciler interface {
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
-func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	paas := &v1alpha1.Paas{}
-	logger := getLogger(ctx, paas, "PaaS", req.Name)
-	logger.Info("Reconciling the PAAS object")
 
-	err := r.Get(ctx, req.NamespacedName, paas)
+func (r *PaasReconciler) GetPaas(
+	ctx context.Context,
+	req ctrl.Request,
+) (paas *v1alpha1.Paas, err error) {
+	paas = &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
+	logger := getLogger(ctx, paas, "PaaS", req.Name)
+	err = r.Get(ctx, req.NamespacedName, paas)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Something fishy is going on
 			// Maybe someone cleaned the finalizers and then removed the PaaS project?
 			logger.Info(req.NamespacedName.Name + " is already gone")
+			return nil, nil
 			//return ctrl.Result{}, fmt.Errorf("PaaS object %s already gone", req.NamespacedName)
 		}
-		return ctrl.Result{}, nil
+		return nil, err
 	} else if paas.GetDeletionTimestamp() != nil {
 		logger.Info("PAAS object marked for deletion")
 		if controllerutil.ContainsFinalizer(paas, paasFinalizer) {
@@ -82,7 +84,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
 			if err := r.finalizePaaS(ctx, paas); err != nil {
-				return ctrl.Result{}, err
+				return nil, err
 			}
 
 			logger.Info("Removing finalizer")
@@ -90,20 +92,12 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			// removed, the object will be deleted.
 			controllerutil.RemoveFinalizer(paas, paasFinalizer)
 			if err := r.Update(ctx, paas); err != nil {
-				return ctrl.Result{}, err
+				return nil, err
 			}
 			logger.Info("Finalization finished")
 		}
-		return ctrl.Result{}, nil
+		return nil, nil
 	}
-
-	paas.Status.Truncate()
-	defer func() {
-		logger.Info("Updating PaaS status", "messages", len(paas.Status.Messages), "quotas", paas.Status.Quota)
-		if err = r.Status().Update(ctx, paas); err != nil {
-			logger.Error(err, "Updating PaaS status failed")
-		}
-	}()
 
 	// Add finalizer for this CR
 	logger.Info("Adding finalizer for PaaS object")
@@ -114,101 +108,48 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if err := r.Update(ctx, paas); err != nil {
 			logger.Info("Error updating PaaS object")
 			logger.Info(fmt.Sprintf("%v", paas))
-			return ctrl.Result{}, err
+			return nil, err
 		}
 		logger.Info("Updated PaaS object")
 	}
 
-	logger.Info("Creating quotas for PAAS object ")
-	// Create quotas if needed
-	for _, q := range r.BackendEnabledQuotas(ctx, paas) {
-		logger.Info("Creating quota " + q.Name + " for PAAS object ")
-		if err := r.EnsureQuota(ctx, paas, req, q); err != nil {
-			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
-			return ctrl.Result{}, err
-		}
-	}
-	paas.Status.Quota = r.BackendEnabledQuotaStatus(paas)
+	return paas, nil
+}
 
-	for _, name := range r.BackendDisabledQuotas(ctx, paas) {
-		logger.Info("Cleaning quota " + name + " for PAAS object ")
-		if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {
-			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", name))
-			return ctrl.Result{}, err
-		}
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
+func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
+	paas := &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
+	logger := getLogger(ctx, paas, "PaaS", req.Name)
+	logger.Info("Reconciling the PAAS object")
+
+	if paas, err = r.GetPaas(ctx, req); err != nil {
+		logger.Error(err, "could not get PaaS from k8s")
+		return
+	} else if paas == nil {
+		logger.Error(err, "nothing to do")
+		return
 	}
 
-	logger.Info("Creating default namespace to hold PaasNs resources for PAAS object")
-	if ns, err := BackendNamespace(ctx, paas, paas.Name, paas.Name, r.Scheme); err != nil {
-		logger.Error(err, fmt.Sprintf("Failure while defining namespace %s", paas.Name))
+	paas.Status.Truncate()
+	defer func() {
+		logger.Info("Updating PaaS status", "messages", len(paas.Status.Messages), "quotas", paas.Status.Quota)
+		if err = r.Status().Update(ctx, paas); err != nil {
+			logger.Error(err, "Updating PaaS status failed")
+		}
+	}()
+
+	if err := r.ReconcileQuotas(ctx, paas, logger); err != nil {
 		return ctrl.Result{}, err
-	} else if err = EnsureNamespace(r.Client, ctx, paas.Status.AddMessage, paas, req, ns, r.Scheme); err != nil {
-		logger.Error(err, fmt.Sprintf("Failure while creating namespace %s", paas.Name))
+	} else if err := r.ReconcilePaasNss(ctx, paas, logger); err != nil {
 		return ctrl.Result{}, err
-	} else {
-		logger.Info("Creating PaasNs resources for PAAS object")
-		for nsName := range paas.AllEnabledNamespaces() {
-			pns := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Names(), paas.GetNsSshSecrets(nsName))
-			if err = r.EnsurePaasNs(ctx, paas, req, pns); err != nil {
-				logger.Error(err, fmt.Sprintf("Failure while creating PaasNs %s",
-					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace}))
-				return ctrl.Result{}, err
-			}
-		}
-	}
-
-	for _, paasns := range r.pnsFromNs(ctx, paas.ObjectMeta.Name) {
-		roles := make(map[string][]string)
-		for _, roleList := range getConfig().RoleMappings {
-			for _, role := range roleList {
-				roles[role] = []string{}
-			}
-		}
-		logger.Info("All roles", "Rolebindings map", roles)
-		for groupName, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
-			for _, mappedRole := range getConfig().RoleMappings.Roles(groupRoles) {
-				if role, exists := roles[mappedRole]; exists {
-					roles[mappedRole] = append(role, groupName)
-				} else {
-					roles[mappedRole] = []string{groupName}
-				}
-			}
-		}
-		logger.Info("Creating paas RoleBindings for PAASNS object", "Rolebindings map", roles)
-		for roleName, groupKeys := range roles {
-			statusMessages := v1alpha1.PaasNsStatus{}
-			rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
-			logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
-			rb := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
-			if err := EnsureRoleBinding(ctx, r, &paasns, &statusMessages, rb); err != nil {
-				err = fmt.Errorf("failure while creating/updating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
-				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
-				return ctrl.Result{}, err
-			}
-			paas.Status.AddMessages(statusMessages.GetMessages())
-		}
-	}
-
-	logger.Info("Cleaning obsolete namespaces ")
-	if err := r.FinalizePaasNss(ctx, paas); err != nil {
+	} else if err := r.ReconcileRolebindings(ctx, paas, logger); err != nil {
 		return ctrl.Result{}, err
-	}
-
-	logger.Info("Creating Argo Project")
-	if err := r.EnsureAppProject(ctx, paas); err != nil {
+	} else if err := r.EnsureAppProject(ctx, paas, logger); err != nil {
 		return ctrl.Result{}, err
-	}
-
-	logger.Info("Creating groups for PAAS object ")
-	for _, group := range r.BackendGroups(ctx, paas) {
-		if err := r.EnsureGroup(ctx, paas, group); err != nil {
-			logger.Error(err, fmt.Sprintf("Failure while creating group %s", group.ObjectMeta.Name))
-			return ctrl.Result{}, err
-		}
-	}
-
-	logger.Info("Creating ldap groups for PAAS object ")
-	if err := r.EnsureLdapGroups(ctx, paas); err != nil {
+	} else if err := r.ReconcileGroups(ctx, paas, logger); err != nil {
+		return ctrl.Result{}, err
+	} else if err := r.EnsureLdapGroups(ctx, paas); err != nil {
 		return ctrl.Result{}, err
 	}
 

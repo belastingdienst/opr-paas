@@ -49,6 +49,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	paas *v1alpha1.Paas,
 ) error {
 	logger := getLogger(ctx, paas, "LdapGroup", "")
+	logger.Info("Creating ldap groups for PAAS object ")
 	// See if group already exists and create if it doesn't
 	namespacedName := getConfig().Whitelist
 	cm := &corev1.ConfigMap{

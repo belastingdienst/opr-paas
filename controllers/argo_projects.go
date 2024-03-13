@@ -12,6 +12,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	"github.com/go-logr/logr"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +23,9 @@ import (
 func (r *PaasReconciler) EnsureAppProject(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
+	logger logr.Logger,
 ) error {
+	logger.Info("Creating Argo Project")
 	project := r.BackendAppProject(ctx, paas)
 	namespacedName := types.NamespacedName{
 		Name:      project.Name,

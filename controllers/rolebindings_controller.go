@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/go-logr/logr"
 
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -170,4 +171,43 @@ func FinalizeRoleBinding(
 		statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, rb, "Succeeded")
 		return r.Delete(ctx, rb)
 	}
+}
+
+func (r *PaasReconciler) ReconcileRolebindings(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	logger logr.Logger,
+) error {
+	for _, paasns := range r.pnsFromNs(ctx, paas.ObjectMeta.Name) {
+		roles := make(map[string][]string)
+		for _, roleList := range getConfig().RoleMappings {
+			for _, role := range roleList {
+				roles[role] = []string{}
+			}
+		}
+		logger.Info("All roles", "Rolebindings map", roles)
+		for groupName, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
+			for _, mappedRole := range getConfig().RoleMappings.Roles(groupRoles) {
+				if role, exists := roles[mappedRole]; exists {
+					roles[mappedRole] = append(role, groupName)
+				} else {
+					roles[mappedRole] = []string{groupName}
+				}
+			}
+		}
+		logger.Info("Creating paas RoleBindings for PAASNS object", "Rolebindings map", roles)
+		for roleName, groupKeys := range roles {
+			statusMessages := v1alpha1.PaasNsStatus{}
+			rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
+			logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
+			rb := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
+			if err := EnsureRoleBinding(ctx, r, &paasns, &statusMessages, rb); err != nil {
+				err = fmt.Errorf("failure while creating/updating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
+				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
+				return err
+			}
+			paas.Status.AddMessages(statusMessages.GetMessages())
+		}
+	}
+	return nil
 }
