@@ -12,13 +12,13 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	v1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -46,15 +46,13 @@ func (pr PaasNSReconciler) GetScheme() *runtime.Scheme {
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
-func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
 
-	var err error
-
-	paasns := &v1alpha1.PaasNS{}
-	var paas *v1alpha1.Paas
+func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paasns *v1alpha1.PaasNS, err error) {
+	paasns = &v1alpha1.PaasNS{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: req.Name,
+		},
+	}
 	logger := getLogger(ctx, paasns, paasns.Kind, req.Name)
 	logger.Info("Reconciling the PaasNs object")
 
@@ -64,8 +62,9 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			// Maybe someone cleaned the finalizers and then removed the PaasNs resource?
 			logger.Info(req.NamespacedName.Name + " is already gone")
 			//return ctrl.Result{}, fmt.Errorf("PaasNs object %s already gone", req.NamespacedName)
+			return nil, nil
 		}
-		return ctrl.Result{}, nil
+		return nil, err
 	} else if paasns.GetDeletionTimestamp() != nil {
 		logger.Info("PaasNS object marked for deletion")
 		if controllerutil.ContainsFinalizer(paasns, paasNsFinalizer) {
@@ -74,7 +73,7 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
 			if err := r.finalizePaasNs(ctx, paasns); err != nil {
-				return ctrl.Result{}, err
+				return nil, err
 			}
 
 			logger.Info("Removing finalizer")
@@ -82,20 +81,12 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			// removed, the object will be deleted.
 			controllerutil.RemoveFinalizer(paasns, paasNsFinalizer)
 			if err := r.Update(ctx, paasns); err != nil {
-				return ctrl.Result{}, err
+				return nil, err
 			}
 			logger.Info("Finalization finished")
 		}
-		return ctrl.Result{}, nil
+		return nil, nil
 	}
-
-	paasns.Status.Truncate()
-	defer func() {
-		logger.Info("Updating PaasNs status", "messages", len(paasns.Status.Messages))
-		if err = r.Status().Update(ctx, paasns); err != nil {
-			logger.Error(err, "Updating PaasNs status failed")
-		}
-	}()
 
 	// Add finalizer for this CR
 	logger.Info("Adding finalizer for PaasNs object")
@@ -106,81 +97,67 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if err := r.Update(ctx, paasns); err != nil {
 			logger.Info("Error updating PaasNs object")
 			logger.Info(fmt.Sprintf("%v", paasns))
-			return ctrl.Result{}, err
+			return nil, err
 		}
 		logger.Info("Updated PaasNs object")
 	}
+	return
+}
 
+func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, err error) {
 	if paas, _, err = r.paasFromPaasNs(ctx, paasns); err != nil {
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		// This cannot be resolved by itself, so we should not have this keep on reconciling
-		return ctrl.Result{}, nil
+		return nil, nil
 	} else if paas == nil {
 		err = fmt.Errorf("how can PaaS %s be %v here?", paasns.Spec.Paas, paas)
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
-		return ctrl.Result{}, err
+		return nil, err
 	} else if !paas.AmIOwner(paasns.OwnerReferences) {
 		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, paas, "updating owner")
 		controllerutil.SetControllerReference(paas, paasns, r.Scheme)
 	}
+	return
+}
 
-	nsName := paasns.NamespaceName()
-	nsQuota := paas.Name
-	if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists {
-		nsQuota = nsName
+// For more details, check Reconcile and its Result here:
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
+func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
+
+	paasns := &v1alpha1.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
+	logger := getLogger(ctx, paasns, "PaasNs", req.Name)
+	logger.Info("Reconciling the PaasNs object")
+
+	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
+		logger.Error(err, "could not get PaaS from k8s")
+		return
+	} else if paasns == nil {
+		logger.Error(err, "nothing to do")
+		return
 	}
 
-	if ns, err := BackendNamespace(ctx, paas, nsName, nsQuota, r.Scheme); err != nil {
-		err = fmt.Errorf("failure while defining namespace %s: %s", nsName, err.Error())
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
+	paasns.Status.Truncate()
+	defer func() {
+		logger.Info("Updating PaasNs status", "messages", len(paasns.Status.Messages))
+		if err = r.Status().Update(ctx, paasns); err != nil {
+			logger.Error(err, "Updating PaasNs status failed")
+		}
+	}()
+
+	var paas *v1alpha1.Paas
+	if paas, err = r.GetPaas(ctx, paasns); err != nil || paas == nil {
+		// This cannot be resolved by itself, so we should not have this keep on reconciling
+		return ctrl.Result{}, nil
+	} else if r.ReconcileNamespaces(ctx, paas, paasns); err != nil {
 		return ctrl.Result{}, err
-	} else if err := EnsureNamespace(r.Client, ctx, paasns.Status.AddMessage, paas, ns, r.Scheme); err != nil {
-		err = fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, ns, err.Error())
+	} else if r.ReconcileRolebindings(ctx, paas, paasns, logger); err != nil {
 		return ctrl.Result{}, err
-	}
-
-	// Creating a list of roles and the groups that should have them, for this namespace
-	roles := make(map[string][]string)
-	for groupName, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
-		for _, mappedRole := range getConfig().RoleMappings.Roles(groupRoles) {
-			if role, exists := roles[mappedRole]; exists {
-				roles[mappedRole] = append(role, groupName)
-			} else {
-				roles[mappedRole] = []string{groupName}
-			}
-		}
-	}
-	logger.Info("Creating paas RoleBindings for PAASNS object", "Rolebindings map", roles)
-	for roleName, groupKeys := range roles {
-		rbName := types.NamespacedName{Namespace: nsName, Name: fmt.Sprintf("paas-%s", roleName)}
-		logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
-		rb := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
-		if err := EnsureRoleBinding(ctx, r, paasns, &paasns.Status, rb); err != nil {
-			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
-			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
-			return ctrl.Result{}, err
-		}
-	}
-
-	// Create argo ssh secrets
-	logger.Info("Creating Ssh secrets")
-	secrets := r.BackendSecrets(ctx, paasns, paas)
-	logger.Info("Ssh secrets to create", "number", len(secrets))
-	for _, secret := range secrets {
-		if err := r.EnsureSecret(ctx, paas, paasns, secret); err != nil {
-			logger.Error(err, "Failure while creating secret", "secret", secret)
-			return ctrl.Result{}, err
-		}
-		logger.Info("Ssh secret succesfully created", "secret", secret)
-	}
-
-	if err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas); err != nil {
+	} else if r.ReconcileSecrets(ctx, paas, paasns, logger); err != nil {
+		return ctrl.Result{}, err
+	} else if err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas); err != nil {
 		logger.Error(err, "Reconciling Extra ClusterRoleBindings failed")
 		return ctrl.Result{}, fmt.Errorf("reconciling Extra ClusterRoleBindings failed")
-	}
-
-	if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists {
+	} else if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists {
 		if paasns.Name == "argocd" {
 			logger.Info("Creating Argo App for client bootstrapping")
 			// Create bootstrap Argo App

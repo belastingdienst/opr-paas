@@ -148,3 +148,26 @@ func (r *PaasNSReconciler) FinalizeNamespace(
 		return nil
 	}
 }
+
+func (r *PaasNSReconciler) ReconcileNamespaces(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	paasns *v1alpha1.PaasNS,
+) (err error) {
+
+	nsName := paasns.NamespaceName()
+	nsQuota := paas.Name
+	if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists {
+		nsQuota = nsName
+	}
+
+	var ns *corev1.Namespace
+	if ns, err = BackendNamespace(ctx, paas, nsName, nsQuota, r.Scheme); err != nil {
+		err = fmt.Errorf("failure while defining namespace %s: %s", nsName, err.Error())
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
+	} else if err = EnsureNamespace(r.Client, ctx, paasns.Status.AddMessage, paas, ns, r.Scheme); err != nil {
+		err = fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, ns, err.Error())
+	}
+	return
+}

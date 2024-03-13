@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/go-logr/logr"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -149,4 +150,24 @@ func (r *PaasNSReconciler) BackendSecrets(
 	// From the Paas resource
 	secrets = append(secrets, r.getSecrets(ctx, paasns, paas.Spec.SshSecrets)...)
 	return secrets
+}
+
+func (r *PaasNSReconciler) ReconcileSecrets(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	paasns *v1alpha1.PaasNS,
+	logger logr.Logger,
+) error {
+	// Create argo ssh secrets
+	logger.Info("Creating Ssh secrets")
+	secrets := r.BackendSecrets(ctx, paasns, paas)
+	logger.Info("Ssh secrets to create", "number", len(secrets))
+	for _, secret := range secrets {
+		if err := r.EnsureSecret(ctx, paas, paasns, secret); err != nil {
+			logger.Error(err, "Failure while creating secret", "secret", secret)
+			return err
+		}
+		logger.Info("Ssh secret succesfully created", "secret", secret)
+	}
+	return nil
 }
