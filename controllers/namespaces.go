@@ -19,7 +19,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // ensureNamespace ensures Namespace presence in given namespace.
@@ -28,7 +27,6 @@ func EnsureNamespace(
 	ctx context.Context,
 	addMessageFunc func(v1alpha1.PaasStatusLevel, v1alpha1.PaasStatusAction, client.Object, string),
 	paas *v1alpha1.Paas,
-	request reconcile.Request,
 	ns *corev1.Namespace,
 	scheme *runtime.Scheme,
 ) error {

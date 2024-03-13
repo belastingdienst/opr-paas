@@ -12,6 +12,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
+	"github.com/go-logr/logr"
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -19,14 +20,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // ensureQuota ensures Quota presence
 func (r *PaasReconciler) EnsureQuota(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	request reconcile.Request,
 	quota *quotav1.ClusterResourceQuota,
 ) error {
 	// See if quota already exists and create if it doesn't
@@ -188,4 +187,29 @@ func (r *PaasReconciler) FinalizeClusterQuotas(ctx context.Context, paas *v1alph
 		}
 	}
 	return err
+}
+
+func (r *PaasReconciler) ReconcileQuotas(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	logger logr.Logger,
+) error {
+	logger.Info("Creating quotas for PAAS object ")
+	// Create quotas if needed
+	for _, q := range r.BackendEnabledQuotas(ctx, paas) {
+		logger.Info("Creating quota " + q.Name + " for PAAS object ")
+		if err := r.EnsureQuota(ctx, paas, q); err != nil {
+			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
+			return err
+		}
+	}
+	paas.Status.Quota = r.BackendEnabledQuotaStatus(paas)
+	for _, name := range r.BackendDisabledQuotas(ctx, paas) {
+		logger.Info("Cleaning quota " + name + " for PAAS object ")
+		if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {
+			logger.Error(err, fmt.Sprintf("Failure while finalizing quota %s", name))
+			return err
+		}
+	}
+	return nil
 }
