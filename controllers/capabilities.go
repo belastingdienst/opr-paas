@@ -206,6 +206,39 @@ func (r *PaasNSReconciler) EnsureAppSetCaps(
 	return nil
 }
 
+func (r *PaasNSReconciler) finalizeAppSetCap(
+	ctx context.Context,
+	paasns *v1alpha1.PaasNS,
+) error {
+	// See if AppSet exists raise error if it doesn't
+	as := &appv1.ApplicationSet{}
+	asNamespacedName := getConfig().CapabilityK8sName(paasns.Name)
+	logger := getLogger(ctx, paasns, "AppSet", asNamespacedName.String())
+	logger.Info(fmt.Sprintf("Reconciling %s Applicationset", paasns.Name))
+	err := r.Get(ctx, asNamespacedName, as)
+	//groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
+	var entries Entries
+	var listGen *appv1.ApplicationSetGenerator
+	if err != nil {
+		// Applicationset does not exixt
+		return nil
+	} else if listGen = getListGen(as.Spec.Generators); listGen == nil {
+		// no need to create the list
+		return nil
+	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
+		return err
+	} else {
+		delete(entries, paasns.Spec.Paas)
+	}
+	if json, err := entries.AsJSON(); err != nil {
+		return err
+	} else {
+		listGen.List.Elements = json
+	}
+
+	return r.Update(ctx, as)
+}
+
 func (r *PaasReconciler) finalizeAppSetCap(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
