@@ -314,6 +314,13 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 		err = fmt.Errorf("cannot remove paas from capability ApplicationSet belonging to PaaS %s: %s", paasns.Spec.Paas, err.Error())
 		return err
 	}
+	if _, isCapability := paas.Spec.Capabilities.AsMap()[paasns.Name]; isCapability {
+		logger.Info("PaasNs is a capability, also finalizing Cluster Resource Quota")
+		if err := r.FinalizeClusterQuota(ctx, paasns); err != nil {
+			logger.Error(err, fmt.Sprintf("Failure while finalizing quota %s", paasns.Name))
+			return err
+		}
+	}
 	logger.Info("PaasNs succesfully finalized")
 	return nil
 }
