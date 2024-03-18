@@ -334,6 +334,9 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 	if err := r.FinalizeNamespace(ctx, paasns, paas); err != nil {
 		err = fmt.Errorf("cannot remove namespace belonging to PaaS %s: %s", paasns.Spec.Paas, err.Error())
 		return err
+	} else if err = r.finalizeAppSetCap(ctx, paasns); err != nil {
+		err = fmt.Errorf("cannot remove paas from capability ApplicationSet belonging to PaaS %s: %s", paasns.Spec.Paas, err.Error())
+		return err
 	}
 	logger.Info("PaasNs succesfully finalized")
 	return nil
