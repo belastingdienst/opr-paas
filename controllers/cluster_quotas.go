@@ -171,12 +171,31 @@ func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha
 	}
 }
 
+func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1alpha1.PaasNS) error {
+
+	logger := getLogger(ctx, paasns, "Quota", paasns.Name)
+	logger.Info("Finalizing")
+	obj := &quotav1.ClusterResourceQuota{}
+	if err := r.Get(ctx, types.NamespacedName{
+		Name: paasns.Name,
+	}, obj); err != nil && errors.IsNotFound(err) {
+		logger.Info("Does not exist")
+		return nil
+	} else if err != nil {
+		logger.Info("Error retrieving info: " + err.Error())
+		return err
+	} else {
+		logger.Info("Deleting")
+		return r.Delete(ctx, obj)
+	}
+}
+
 func (r *PaasReconciler) FinalizeClusterQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
 	suffixes := []string{
 		"",
 	}
 	for name := range paas.Spec.Capabilities.AsMap() {
-		suffixes = append(suffixes, name)
+		suffixes = append(suffixes, fmt.Sprintf("-%s", name))
 	}
 
 	var err error
