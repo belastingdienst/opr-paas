@@ -9,6 +9,9 @@ bin
 testbin/*
 Dockerfile.cross
 
+# dev environment specific files
+go.work*
+
 # Test binary, build with `go test -c`
 *.test
 
