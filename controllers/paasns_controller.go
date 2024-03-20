@@ -132,7 +132,6 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 		logger.Error(err, "could not get PaaS from k8s")
 		return
 	} else if paasns == nil {
-		logger.Error(err, "nothing to do")
 		return
 	}
 

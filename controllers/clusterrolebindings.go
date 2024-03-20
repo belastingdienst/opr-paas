@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/go-logr/logr"
@@ -26,18 +27,18 @@ func getClusterRoleBinding(
 	r client.Client,
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	name string,
 	role string,
 ) (crb *rbac.ClusterRoleBinding, err error) {
 	// See if rolebinding exists and create if it doesn't
+	crbName := fmt.Sprintf("paas-%s", role)
 	found := &rbac.ClusterRoleBinding{}
-	err = r.Get(ctx, types.NamespacedName{Name: name}, found)
+	err = r.Get(ctx, types.NamespacedName{Name: crbName}, found)
 	if err != nil && errors.IsNotFound(err) {
-		return newClusterRoleBinding(name, role), nil
+		return newClusterRoleBinding(role), nil
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
 		paas.Status.AddMessage(v1alpha1.PaasStatusError,
-			v1alpha1.PaasStatusFind, newClusterRoleBinding(name, role), err.Error())
+			v1alpha1.PaasStatusFind, newClusterRoleBinding(role), err.Error())
 		return nil, err
 	} else {
 		return found, nil
@@ -66,17 +67,17 @@ func updateClusterRoleBinding(
 
 // backendRoleBinding is a code for Creating RoleBinding
 func newClusterRoleBinding(
-	name string,
 	role string,
 ) *rbac.ClusterRoleBinding {
 
+	crbName := fmt.Sprintf("paas-%s", role)
 	rb := &rbac.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterRoleBinding",
 			APIVersion: "v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name: crbName,
 			Labels: map[string]string{
 				"app.kubernetes.io/created-by": "opr-paas",
 				"app.kubernetes.io/part-of":    "opr-paas",
@@ -173,8 +174,7 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 	permissions := capConfig.ExtraPermissions.AsConfigRolesSas(cap.WithExtraPermissions())
 	permissions.Merge(capConfig.DefaultPermissions.AsConfigRolesSas(true))
 	for role, sas := range permissions {
-		crbName := fmt.Sprintf("paas-%s", role)
-		if crb, err = getClusterRoleBinding(r.Client, ctx, paas, crbName, role); err != nil {
+		if crb, err = getClusterRoleBinding(r.Client, ctx, paas, role); err != nil {
 			return err
 		}
 		if addOrUpdateCrb(paasns, crb, sas, logger) {
@@ -187,6 +187,14 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 	return nil
 }
 
+func subjectsFromCrb(crb rbac.ClusterRoleBinding) []string {
+	var subjects []string
+	for _, subject := range crb.Subjects {
+		subjects = append(subjects, fmt.Sprintf("%s/%s/%s", subject.Kind, subject.Namespace, subject.Name))
+	}
+	return subjects
+}
+
 func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
@@ -195,17 +203,21 @@ func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 	var capRoles []string
 	for _, capConfig := range getConfig().Capabilities {
 		capRoles = append(capRoles, capConfig.ExtraPermissions.Roles()...)
+		capRoles = append(capRoles, capConfig.DefaultPermissions.Roles()...)
 	}
 	for _, role := range capRoles {
 		roleName := fmt.Sprintf("paas-%s", role)
-		crb, err := getClusterRoleBinding(r.Client, ctx, paas, roleName, role)
+		crb, err := getClusterRoleBinding(r.Client, ctx, paas, role)
 		if err != nil {
 			return err
 		}
 		nsRe := fmt.Sprintf("^%s-", paas.Name)
+		logger.Info(fmt.Sprintf("subjects before update: %s", strings.Join(subjectsFromCrb(*crb), ", ")))
 		changed := updateClusterRoleBindingForRemovedSA(crb,
 			*regexp.MustCompile(nsRe), "")
+		logger.Info(fmt.Sprintf("subjects after update: %s", strings.Join(subjectsFromCrb(*crb), ", ")))
 		if !changed {
+			logger.Info("no changes")
 			continue
 		}
 		logger.Info(fmt.Sprintf("Updating rolebinding %s after cleaning SA's for '%s'", roleName, nsRe))
