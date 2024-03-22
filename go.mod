@@ -3,7 +3,7 @@ module github.com/belastingdienst/opr-paas
 go 1.21
 
 require (
-	github.com/argoproj/argo-cd/v2 v2.8.12
+	github.com/argoproj/argo-cd/v2 v2.8.13
 	github.com/go-logr/logr v1.2.4
 	github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega v1.27.10
