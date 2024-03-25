@@ -47,3 +47,7 @@ When raising issues, please specify the following:
 
 If you are trying to report a vulnerability, please refer to the
 [security policy](SECURITY.md).
+
+## Developer notes:
+- Because of depency issues we decided to use a stub instead of importing all dependencies behind the original code of ArgoCD.
+  More info in internal/stubs/argocd/v1beta1
