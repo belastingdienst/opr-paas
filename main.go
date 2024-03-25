@@ -15,7 +15,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	argocd "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
+	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argocd/v1beta1"
 	appv1 "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"

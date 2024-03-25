@@ -17,7 +17,6 @@ require (
 )
 
 require (
-	github.com/argoproj-labs/argocd-operator v0.6.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/spf13/viper v1.18.2
 )

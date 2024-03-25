@@ -12,7 +12,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
-	argocd "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
+	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argocd/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
