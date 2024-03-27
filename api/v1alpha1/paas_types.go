@@ -156,6 +156,9 @@ type PaasGroups map[string]PaasGroup
 
 func (gs PaasGroups) Filtered(groups []string) PaasGroups {
 	filterd := make(PaasGroups)
+	if len(groups) == 0 {
+		return gs
+	}
 	for _, groupName := range groups {
 		if group, exists := gs[groupName]; exists {
 			filterd[groupName] = group
