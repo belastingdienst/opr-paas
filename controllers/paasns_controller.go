@@ -197,18 +197,20 @@ func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]
 	nss := make(map[string]int)
 	pnsList := &v1alpha1.PaasNSList{}
 	if err := r.List(ctx, pnsList, &client.ListOptions{Namespace: ns}); err != nil {
-		return nss
+		// In this case panic is ok, since this situation can only occur when either k8s is down, or permissions are insufficient.
+		// Both cases we should not continue executing code...
+		panic(err)
 	}
 	for _, pns := range pnsList.Items {
 		nsName := pns.NamespaceName()
-		if value, exists := nss[nsName]; !exists {
+		if value, exists := nss[nsName]; exists {
 			nss[nsName] = value + 1
-			// Call myself (recursiveness)
-			for key, value := range r.nssFromNs(ctx, nsName) {
-				nss[key] += value
-			}
 		} else {
 			nss[nsName] = 1
+		}
+		// Call myself (recursiveness)
+		for key, value := range r.nssFromNs(ctx, nsName) {
+			nss[key] += value
 		}
 	}
 	return nss
@@ -217,16 +219,10 @@ func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]
 // nsFromPaas accepts a PaaS and returns a list of all namespaces managed by this PaaS
 // nsFromPaas uses nsFromNs which is recursive.
 func (r *PaasNSReconciler) nssFromPaas(ctx context.Context, paas *v1alpha1.Paas) map[string]int {
-	// all nss to start with is all ns from paas, and ns named after paas
-	sourceNss := paas.PrefixedAllEnabledNamespaces()
-	sourceNss[paas.Name] = true
-	// now scan them and append then to the end result
 	finalNss := make(map[string]int)
-	for ns := range sourceNss {
-		finalNss[ns] = 1
-		for key, value := range r.nssFromNs(ctx, ns) {
-			finalNss[key] += value
-		}
+	finalNss[paas.Name] = 1
+	for key, value := range r.nssFromNs(ctx, paas.Name) {
+		finalNss[key] += value
 	}
 	return finalNss
 }
@@ -295,6 +291,7 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 	logger := getLogger(ctx, paasns, "PaasNs", "finalizePaasNs")
 
 	paas, nss, err := r.paasFromPaasNs(ctx, paasns)
+	// logger.Info("debugging paasns", "list of paasnss for this paas", nss)
 	if err != nil {
 		err = fmt.Errorf("cannot find PaaS %s: %s", paasns.Spec.Paas, err.Error())
 		logger.Info(err.Error())
