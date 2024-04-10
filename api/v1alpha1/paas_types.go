@@ -155,17 +155,18 @@ func (g PaasGroup) Name(defName string) string {
 type PaasGroups map[string]PaasGroup
 
 func (gs PaasGroups) Filtered(groups []string) PaasGroups {
-	filterd := make(PaasGroups)
+	filtered := make(PaasGroups)
 	if len(groups) == 0 {
 		return gs
 	}
 	for _, groupName := range groups {
 		if group, exists := gs[groupName]; exists {
-			filterd[groupName] = group
+			filtered[groupName] = group
 		}
 	}
-	return filterd
+	return filtered
 }
+
 func (gs PaasGroups) Roles() map[string][]string {
 	roles := make(map[string][]string)
 	for groupName, group := range gs {
@@ -174,7 +175,7 @@ func (gs PaasGroups) Roles() map[string][]string {
 	return roles
 }
 
-// NameFromQuery finds a group by its key, and retrieves a name
+// Key2Name finds a group by its key, and retrieves a name
 // - from query if possible
 // - from key is needed
 // - emptystring if not in map
@@ -203,11 +204,9 @@ func (gs PaasGroups) LdapQueries() []string {
 	return queries
 }
 
+// TODO: remove either Keys() or Names()? - were duplicate functions
 func (pgs PaasGroups) Keys() (groups []string) {
-	for key, group := range pgs {
-		groups = append(groups, group.Name(key))
-	}
-	return groups
+	return pgs.Names()
 }
 
 func (pgs PaasGroups) AsGroups() groups.Groups {
@@ -255,11 +254,11 @@ func (pc PaasCapabilities) AsPrefixedMap(prefix string) map[string]paasCapabilit
 
 func (pc PaasCapabilities) IsCap(name string) bool {
 	caps := pc.AsMap()
-	if cap, exists := caps[name]; !exists {
-		return false
-	} else if !cap.IsEnabled() {
+
+	if cap, exists := caps[name]; !exists || !cap.IsEnabled() {
 		return false
 	}
+
 	return true
 }
 
@@ -519,13 +518,12 @@ func (p Paas) ClonedLabels() map[string]string {
 }
 
 func (p Paas) IsItMe(reference metav1.OwnerReference) bool {
-	if p.APIVersion != reference.APIVersion {
-		return false
-	} else if p.Kind != reference.Kind {
-		return false
-	} else if p.Name != reference.Name {
+	if p.APIVersion != reference.APIVersion ||
+		p.Kind != reference.Kind ||
+		p.Name != reference.Name {
 		return false
 	}
+
 	return true
 }
 
