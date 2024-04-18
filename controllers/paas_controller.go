@@ -9,6 +9,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +18,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -122,13 +124,20 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	paas := &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
 	logger := getLogger(ctx, paas, "PaaS", req.Name)
 	logger.Info("Reconciling the PAAS object")
+	errResult := reconcile.Result{
+		Requeue:      true,
+		RequeueAfter: time.Second * 10,
+	}
+	okResult := reconcile.Result{
+		Requeue: false,
+	}
 
 	if paas, err = r.GetPaas(ctx, req); err != nil {
 		logger.Error(err, "could not get PaaS from k8s")
-		return
+		return errResult, err
 	} else if paas == nil {
 		logger.Error(err, "nothing to do")
-		return
+		return okResult, nil
 	}
 
 	paas.Status.Truncate()
@@ -140,23 +149,23 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	}()
 
 	if err := r.ReconcileQuotas(ctx, paas, logger); err != nil {
-		return ctrl.Result{}, err
+		return errResult, err
 	} else if err := r.ReconcilePaasNss(ctx, paas, logger); err != nil {
-		return ctrl.Result{}, err
+		return errResult, err
 	} else if err := r.ReconcileRolebindings(ctx, paas, logger); err != nil {
-		return ctrl.Result{}, err
+		return errResult, err
 	} else if err := r.EnsureAppProject(ctx, paas, logger); err != nil {
-		return ctrl.Result{}, err
+		return errResult, err
 	} else if err := r.ReconcileGroups(ctx, paas, logger); err != nil {
-		return ctrl.Result{}, err
+		return errResult, err
 	} else if err := r.EnsureLdapGroups(ctx, paas); err != nil {
-		return ctrl.Result{}, err
+		return errResult, err
 	}
 
 	logger.Info("Updating PaaS object status")
 	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paas, "succeeded")
 	logger.Info("PAAS object succesfully reconciled")
-	return ctrl.Result{}, nil
+	return okResult, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
