@@ -152,13 +152,13 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return errResult, err
 	} else if err := r.ReconcilePaasNss(ctx, paas, logger); err != nil {
 		return errResult, err
-	} else if err := r.ReconcileRolebindings(ctx, paas, logger); err != nil {
-		return errResult, err
 	} else if err := r.EnsureAppProject(ctx, paas, logger); err != nil {
 		return errResult, err
 	} else if err := r.ReconcileGroups(ctx, paas, logger); err != nil {
 		return errResult, err
 	} else if err := r.EnsureLdapGroups(ctx, paas); err != nil {
+		return errResult, err
+	} else if err := r.ReconcileRolebindings(ctx, paas, logger); err != nil {
 		return errResult, err
 	}
 
