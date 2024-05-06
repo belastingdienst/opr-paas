@@ -27,10 +27,12 @@ func decryptCmd() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.StringVar(&privateKeyFiles, "privateKeyFiles", "", "The file to read the private key from")
-	viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles"))
-	viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH")
 	flags.StringVar(&paasName, "paas", "", "The paas this data is to be encrypted for")
+
+	viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles"))
 	viper.BindPFlag("paas", flags.Lookup("paas"))
+
+	viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH")
 	viper.BindEnv("paas", "PAAS_NAME")
 
 	return cmd

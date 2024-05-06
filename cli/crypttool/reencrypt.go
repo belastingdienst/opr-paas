@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+// reencryptSecret decrypts, then re-encrypts a given secret using given src and
+// destination crypt.Crypt instances.
 func reencryptSecret(srcCrypt *crypt.Crypt, dstCrypt *crypt.Crypt, secret string) (string, error) {
 	decrypted, err := srcCrypt.Decrypt(secret)
 	if err != nil {
@@ -104,13 +106,16 @@ reencrypt with the new public key and write back the paas to the file in either 
 
 	flags := cmd.Flags()
 	flags.StringVar(&privateKeyFiles, "privateKeyFiles", "", "The file to read the private key from")
-	viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles"))
-	viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH")
 	flags.StringVar(&publicKeyFile, "publicKeyFile", "", "The file to read the public key from")
-	viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile"))
-	viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH")
 	flags.StringVar(&outputFormat, "outputFormat", "auto", "The outputformat for writing a paas, either yaml, json, or auto (which will revert to same format as input)")
+
+	viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles"))
+	viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile"))
 	viper.BindPFlag("outputFormat", flags.Lookup("outputFormat"))
+
+	viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH")
+	viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH")
 	viper.BindEnv("outputFormat", "PAAS_OUTPUT_FORMAT")
+
 	return cmd
 }
