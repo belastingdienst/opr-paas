@@ -19,8 +19,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// TODO: utils.go should not exist, clean it up
-
 type InvalidPaasFile struct {
 	File string
 }
