@@ -133,7 +133,7 @@ func (caps ConfigCapabilities) Verify() []string {
 		if cap.AppSet == "" {
 			multierror = append(multierror, fmt.Sprintf("missing capabilities.%s.applicationset", key))
 		}
-		if len(cap.DefQuota) == 0 {
+		if len(cap.QuotaSettings.DefQuota) == 0 {
 			multierror = append(multierror, fmt.Sprintf("missing capabilities.%s.defaultquotas elements", key))
 		}
 	}
@@ -146,10 +146,18 @@ func (caps ConfigCapabilities) Verify() []string {
 }
 
 type ConfigCapability struct {
-	AppSet             string                `yaml:"applicationset"`
-	DefQuota           ConfigDefaultQuotaDef `yaml:"defaultquotas"`
-	ExtraPermissions   ConfigCapPerm         `yaml:"extra_permissions"`
-	DefaultPermissions ConfigCapPerm         `yaml:"default_permissions"`
+	AppSet             string              `yaml:"applicationset"`
+	QuotaSettings      ConfigQuotaSettings `yaml:"quotas"`
+	ExtraPermissions   ConfigCapPerm       `yaml:"extra_permissions"`
+	DefaultPermissions ConfigCapPerm       `yaml:"default_permissions"`
+}
+
+type ConfigQuotaRatio map[string]string
+
+type ConfigQuotaSettings struct {
+	Clusterwide bool                  `yaml:"clusterwide"`
+	Ratio       ConfigQuotaRatio      `yaml:"ratio"`
+	DefQuota    ConfigDefaultQuotaDef `yaml:"defaults"`
 }
 
 type ConfigDefaultQuotaDef map[string]string
@@ -287,7 +295,7 @@ func (config Config) CapabilityK8sName(capability string) (as types.NamespacedNa
 
 func (config Config) DefaultQuota(capability string) map[string]string {
 	if cap, exists := config.Capabilities[capability]; exists {
-		return cap.DefQuota
+		return cap.QuotaSettings.DefQuota
 	}
 	return nil
 }
