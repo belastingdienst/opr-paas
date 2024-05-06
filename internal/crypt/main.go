@@ -63,21 +63,26 @@ func EncryptFile(publicKey string, paasName string, path string) error {
 }
 
 func GenerateKeyPair(privateKey string, publicKey string) error {
-	if privateKey != "" {
+	if privateKey == "" {
+		f, err := os.CreateTemp("", "paas")
 
-	} else if f, err := os.CreateTemp("", "paas"); err != nil {
-		return fmt.Errorf("privateKey not specified and failed to create temp file: %e", err)
-	} else {
+		if err != nil {
+			return fmt.Errorf("privateKey not specified and failed to create temp file: %e", err)
+		}
+
 		privateKey = f.Name()
 	}
 
-	if publicKey != "" {
+	if publicKey == "" {
+		f, err := os.CreateTemp("", "paas")
 
-	} else if f, err := os.CreateTemp("", "paas"); err != nil {
-		return fmt.Errorf("privateKey not specified and failed to create temp file: %e", err)
-	} else {
+		if err != nil {
+			return fmt.Errorf("privateKey not specified and failed to create temp file: %e", err)
+		}
+
 		publicKey = f.Name()
 	}
+
 	if _, err := NewGeneratedCrypt(privateKey, publicKey); err != nil {
 		return fmt.Errorf("failed to generate new key pair: %e", err)
 	}
