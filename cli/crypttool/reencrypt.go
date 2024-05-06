@@ -13,59 +13,76 @@ import (
 func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat string, files []string) error {
 	for _, fileName := range files {
 		// Read paas from file
-		if paas, format, err := readPaasFile(fileName); err != nil {
+		paas, format, err := readPaasFile(fileName)
+		if err != nil {
 			return fmt.Errorf("could not read file")
-		} else {
-			paasName := paas.ObjectMeta.Name
-			if srcCrypt, err := crypt.NewCrypt([]string{privateKeyFiles}, "", paasName); err != nil {
-				return err
-			} else if dstCrypt, err := crypt.NewCrypt([]string{}, publicKeyFile, paasName); err != nil {
-				return nil
-			} else {
+		}
 
-				for key, secret := range paas.Spec.SshSecrets {
-					if decrypted, err := srcCrypt.Decrypt(secret); err != nil {
-						return fmt.Errorf("failed to decrypt %s.spec.sshSecrets[%s] in %s: %e", paasName, key, fileName, err)
-					} else if reencrypted, err := dstCrypt.Encrypt(decrypted); err != nil {
-						return fmt.Errorf("failed to reecrypt %s.spec.sshSecrets[%s] in %s: %e", paasName, key, fileName, err)
-					} else {
-						paas.Spec.SshSecrets[key] = reencrypted
-						logrus.Debugf("succesfully reencrypted %s.spec.sshSecrets[%s] in file %s", paasName, key, fileName)
-						logrus.Debugf("decrypted: {checksum: %s, len: %d}", hashData(decrypted), len(decrypted))
-						logrus.Debugf("reencrypted: {checksum: %s, len: %d}", hashData([]byte(reencrypted)), len(reencrypted))
-					}
+		paasName := paas.ObjectMeta.Name
+		srcCrypt, err := crypt.NewCrypt([]string{privateKeyFiles}, "", paasName)
+		if err != nil {
+			return err
+		}
+
+		dstCrypt, err := crypt.NewCrypt([]string{}, publicKeyFile, paasName)
+		if err != nil {
+			return nil
+		}
+
+		for key, secret := range paas.Spec.SshSecrets {
+			decrypted, err := srcCrypt.Decrypt(secret)
+			if err != nil {
+				return fmt.Errorf("failed to decrypt %s.spec.sshSecrets[%s] in %s: %e", paasName, key, fileName, err)
+			}
+
+			reencrypted, err := dstCrypt.Encrypt(decrypted)
+			if err != nil {
+				return fmt.Errorf("failed to reecrypt %s.spec.sshSecrets[%s] in %s: %e", paasName, key, fileName, err)
+			}
+
+			logrus.Debugf("succesfully reencrypted %s.spec.sshSecrets[%s] in file %s", paasName, key, fileName)
+			logrus.Debugf("decrypted: {checksum: %s, len: %d}", hashData(decrypted), len(decrypted))
+			logrus.Debugf("reencrypted: {checksum: %s, len: %d}", hashData([]byte(reencrypted)), len(reencrypted))
+			paas.Spec.SshSecrets[key] = reencrypted
+		}
+
+		for capName, cap := range paas.Spec.Capabilities.AsMap() {
+			for key, secret := range cap.GetSshSecrets() {
+				decrypted, err := srcCrypt.Decrypt(secret)
+				if err != nil {
+					return fmt.Errorf("failed to decrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %e", paasName, capName, key, fileName, err)
 				}
-				for capName, cap := range paas.Spec.Capabilities.AsMap() {
-					for key, secret := range cap.GetSshSecrets() {
-						if decrypted, err := srcCrypt.Decrypt(secret); err != nil {
-							return fmt.Errorf("failed to decrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %e", paasName, capName, key, fileName, err)
-						} else if reencrypted, err := dstCrypt.Encrypt(decrypted); err != nil {
-							return fmt.Errorf("failed to reecrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %e", paasName, capName, key, fileName, err)
-						} else {
-							logrus.Debugf("succesfully reencrypted %s.spec.capabilities[%s].sshSecrets[%s] in file %s", paasName, capName, key, fileName)
-							logrus.Debugf("decrypted: {checksum: %s, len: %d}", hashData(decrypted), len(decrypted))
-							logrus.Debugf("reencrypted: {checksum: %s, len: %d}", hashData([]byte(reencrypted)), len(reencrypted))
-							cap.SetSshSecret(key, reencrypted)
-						}
-					}
+
+				reencrypted, err := dstCrypt.Encrypt(decrypted)
+				if err != nil {
+					return fmt.Errorf("failed to reecrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %e", paasName, capName, key, fileName, err)
 				}
-				// Write paas to file
-				if outputFormat != "auto" {
-					format = outputFormat
-				}
-				if format == "json" {
-					if err = writePaasJsonFile(paas, fileName); err != nil {
-						return err
-					}
-				} else if format == "yaml" {
-					if err = writePaasYamlFile(paas, fileName); err != nil {
-						return err
-					}
-				} else {
-					return fmt.Errorf("invalid output format: %s", format)
-				}
+
+				logrus.Debugf("succesfully reencrypted %s.spec.capabilities[%s].sshSecrets[%s] in file %s", paasName, capName, key, fileName)
+				logrus.Debugf("decrypted: {checksum: %s, len: %d}", hashData(decrypted), len(decrypted))
+				logrus.Debugf("reencrypted: {checksum: %s, len: %d}", hashData([]byte(reencrypted)), len(reencrypted))
+				cap.SetSshSecret(key, reencrypted)
 			}
 		}
+
+		// Write paas to file
+		if outputFormat != "auto" {
+			format = outputFormat
+		}
+
+		switch format {
+		case "json":
+			if err = writePaasJsonFile(paas, fileName); err != nil {
+				return err
+			}
+		case "yaml":
+			if err = writePaasYamlFile(paas, fileName); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("invalid output format: %s", format)
+		}
+
 	}
 	return nil
 }

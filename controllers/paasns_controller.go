@@ -131,7 +131,9 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
 		logger.Error(err, "could not get PaaS from k8s")
 		return
-	} else if paasns == nil {
+	}
+
+	if paasns == nil {
 		return
 	}
 
@@ -147,22 +149,34 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	if paas, err = r.GetPaas(ctx, paasns); err != nil || paas == nil {
 		// This cannot be resolved by itself, so we should not have this keep on reconciling
 		return ctrl.Result{}, nil
-	} else if r.ReconcileNamespaces(ctx, paas, paasns); err != nil {
+	}
+
+	if r.ReconcileNamespaces(ctx, paas, paasns); err != nil {
 		return ctrl.Result{}, err
-	} else if r.ReconcileRolebindings(ctx, paas, paasns, logger); err != nil {
+	}
+
+	if r.ReconcileRolebindings(ctx, paas, paasns, logger); err != nil {
 		return ctrl.Result{}, err
-	} else if r.ReconcileSecrets(ctx, paas, paasns, logger); err != nil {
+	}
+
+	if r.ReconcileSecrets(ctx, paas, paasns, logger); err != nil {
 		return ctrl.Result{}, err
-	} else if err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas); err != nil {
+	}
+
+	if err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas); err != nil {
 		logger.Error(err, "Reconciling Extra ClusterRoleBindings failed")
 		return ctrl.Result{}, fmt.Errorf("reconciling Extra ClusterRoleBindings failed")
-	} else if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists {
+	}
+
+	if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists {
 		if paasns.Name == "argocd" {
 			logger.Info("Creating Argo App for client bootstrapping")
+
 			// Create bootstrap Argo App
 			if err := r.EnsureArgoApp(ctx, paasns, paas); err != nil {
 				return ctrl.Result{}, err
 			}
+
 			if err := r.EnsureArgoCD(ctx, paasns); err != nil {
 				return ctrl.Result{}, err
 			}
