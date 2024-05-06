@@ -13,6 +13,8 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// TODO: utils.go should not exist, clean it up
+
 type InvalidPaasFile struct {
 	File string
 }
@@ -22,7 +24,6 @@ func (ip *InvalidPaasFile) Error() string {
 }
 
 func readPaasFile(file string) (*v1alpha1.Paas, string, error) {
-
 	var paas v1alpha1.Paas
 
 	logrus.Debugf("parsing %s", file)
@@ -47,32 +48,36 @@ func readPaasFile(file string) (*v1alpha1.Paas, string, error) {
 	return nil, "unknown", &InvalidPaasFile{File: file}
 }
 
-func writePaasJsonFile(paas *v1alpha1.Paas, path string) error {
-
-	if buffer, err := json.Marshal(&paas); err != nil {
+func writeFile(buffer []byte, path string) error {
+	file, err := os.Create(path)
+	if err != nil {
 		return err
-	} else if file, err := os.Create(path); err != nil {
-		return err
-	} else if _, err := file.Write(buffer); err != nil {
-		return err
-	} else {
-		log.Printf("File '%s' succefully updated as json", path)
-		return nil
 	}
+
+	if _, err := file.Write(buffer); err != nil {
+		return err
+	}
+
+	log.Printf("file '%s' succesfully updated", path)
+	return nil
+}
+
+func writePaasJsonFile(paas *v1alpha1.Paas, path string) error {
+	buffer, err := json.Marshal(&paas)
+	if err != nil {
+		return err
+	}
+
+	return writeFile(buffer, path)
 }
 
 func writePaasYamlFile(paas *v1alpha1.Paas, path string) error {
-
-	if buffer, err := yaml.Marshal(&paas); err != nil {
+	buffer, err := yaml.Marshal(&paas)
+	if err != nil {
 		return err
-	} else if file, err := os.Create(path); err != nil {
-		return err
-	} else if _, err := file.Write(buffer); err != nil {
-		return err
-	} else {
-		log.Printf("File '%s' succefully updated as yaml", path)
-		return nil
 	}
+
+	return writeFile(buffer, path)
 }
 
 func hashData(original []byte) string {
