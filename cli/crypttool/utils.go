@@ -62,17 +62,19 @@ func writeFile(buffer []byte, path string) error {
 	return nil
 }
 
-func writePaasJsonFile(paas *v1alpha1.Paas, path string) error {
-	buffer, err := json.Marshal(&paas)
-	if err != nil {
-		return err
+func writeFormattedFile(paas *v1alpha1.Paas, path string, format string) error {
+	var buffer []byte
+	var err error
+
+	switch format {
+	default:
+		return fmt.Errorf("invalid output format: %s", format)
+	case "json":
+		buffer, err = json.Marshal(&paas)
+	case "yaml":
+		buffer, err = yaml.Marshal(&paas)
 	}
 
-	return writeFile(buffer, path)
-}
-
-func writePaasYamlFile(paas *v1alpha1.Paas, path string) error {
-	buffer, err := yaml.Marshal(&paas)
 	if err != nil {
 		return err
 	}
