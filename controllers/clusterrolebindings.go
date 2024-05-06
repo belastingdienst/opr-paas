@@ -22,6 +22,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+const crbNameFormat string = "paas-%s"
+
 // ensureClusterRoleBinding ensures ClusterRoleBindings to enable extra permissions for certain capabilities.
 func getClusterRoleBinding(
 	r client.Client,
@@ -30,7 +32,7 @@ func getClusterRoleBinding(
 	role string,
 ) (crb *rbac.ClusterRoleBinding, err error) {
 	// See if rolebinding exists and create if it doesn't
-	crbName := fmt.Sprintf("paas-%s", role)
+	crbName := fmt.Sprintf(crbNameFormat, role)
 	found := &rbac.ClusterRoleBinding{}
 	err = r.Get(ctx, types.NamespacedName{Name: crbName}, found)
 	if err != nil && errors.IsNotFound(err) {
@@ -70,7 +72,7 @@ func newClusterRoleBinding(
 	role string,
 ) *rbac.ClusterRoleBinding {
 
-	crbName := fmt.Sprintf("paas-%s", role)
+	crbName := fmt.Sprintf(crbNameFormat, role)
 	rb := &rbac.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterRoleBinding",
@@ -206,7 +208,7 @@ func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 		capRoles = append(capRoles, capConfig.DefaultPermissions.Roles()...)
 	}
 	for _, role := range capRoles {
-		roleName := fmt.Sprintf("paas-%s", role)
+		roleName := fmt.Sprintf(crbNameFormat, role)
 		crb, err := getClusterRoleBinding(r.Client, ctx, paas, role)
 		if err != nil {
 			return err
