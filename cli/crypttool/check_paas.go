@@ -55,6 +55,7 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 	}
 
 	logrus.Infof(errMsg)
+
 	return nil
 }
 
@@ -69,11 +70,13 @@ func checkPaasCmd() *cobra.Command {
 			if debug {
 				logrus.SetLevel(logrus.DebugLevel)
 			}
-			if files, err := utils.PathToFileList(args); err != nil {
+
+			files, err := utils.PathToFileList(args)
+			if err != nil {
 				return err
-			} else {
-				return checkPaasFiles(privateKeyFiles, files)
 			}
+
+			return checkPaasFiles(privateKeyFiles, files)
 		},
 		Args:    cobra.MinimumNArgs(1),
 		Example: `crypttool check-paas --privateKeyFiles "/tmp/priv" [file or dir] ([file or dir]...)`,
@@ -83,5 +86,6 @@ func checkPaasCmd() *cobra.Command {
 	flags.StringVar(&privateKeyFiles, "privateKeyFiles", "", "The file or folder containing the private key(s)")
 	viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles"))
 	viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH")
+
 	return cmd
 }
