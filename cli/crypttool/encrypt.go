@@ -32,13 +32,15 @@ func encryptCmd() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.StringVar(&publicKeyFile, "publicKeyFile", "", "The file to read the public key from")
-	viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile"))
-	viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH")
 	flags.StringVar(&dataFile, "dataFile", "", "The file to read the data to be encrypted from")
-	viper.BindPFlag("dataFile", flags.Lookup("dataFile"))
-	viper.BindEnv("dataFile", "PAAS_INPUT_FILE")
 	flags.StringVar(&paasName, "paas", "", "The paas this data is to be encrypted for")
+
+	viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile"))
+	viper.BindPFlag("dataFile", flags.Lookup("dataFile"))
 	viper.BindPFlag("paas", flags.Lookup("paas"))
+
+	viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH")
+	viper.BindEnv("dataFile", "PAAS_INPUT_FILE")
 	viper.BindEnv("paas", "PAAS_NAME")
 
 	return cmd
