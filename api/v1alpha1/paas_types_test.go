@@ -196,8 +196,11 @@ func TestPaasGroups_Key2Name(t *testing.T) {
 }
 
 func TestPaasGroups_Names(t *testing.T) {
-	assert.NotNil(t, testGroups.Names())
-	assert.Equal(t, []string{"test2", "test4"}, testGroups.Names())
+	output := testGroups.Names()
+	assert.NotNil(t, output)
+	assert.Len(t, output, 2)
+	assert.Contains(t, output, "test2")
+	assert.Contains(t, output, "test4")
 }
 
 func TestPaasGroups_LdapQueries(t *testing.T) {
