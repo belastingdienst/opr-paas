@@ -49,18 +49,22 @@ func formatEndpoint(endpoint string) string {
 		host := parts[0]
 		if len(host) > 63 {
 			panic(fmt.Errorf("invalid hostname %s longer than 63 characters", host))
-		} else if match, err := regexp.MatchString(`[^0-9.a-zA-Z-:]`, host); err != nil {
+		}
+
+		// TODO: should this be tighter? For example: (?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)
+		if match, err := regexp.MatchString(`[^0-9.a-zA-Z-:]`, host); err != nil {
 			panic("invalid regular expression for hostname")
 		} else if match {
 			panic(fmt.Errorf("invalid hostname %s in endpoint config", host))
 		}
+
 		port := parts[1]
 		if port == "" {
 			port = fmt.Sprintf("%d", defaultEndpointPort)
 		} else if portNum, err := strconv.Atoi(port); err != nil {
-			panic(fmt.Errorf("invalid hostname %s in endpoint config", port))
+			panic(fmt.Errorf("port %s in endpoint config is NaN", port))
 		} else if portNum < 0 || portNum > 65353 {
-			panic(fmt.Errorf("invalid port %s not in valid RFC range (0-65363)", port))
+			panic(fmt.Errorf("port %s not in valid RFC range (0-65363)", port))
 		}
 		return fmt.Sprintf("%s:%s", host, port)
 	}
