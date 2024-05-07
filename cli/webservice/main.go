@@ -36,15 +36,19 @@ func getRsa(paas string) *crypt.Crypt {
 	if _crypt == nil {
 		_crypt = make(map[string]*crypt.Crypt)
 	}
+
 	config := getConfig()
 	if c, exists := _crypt[paas]; exists {
 		return c
-	} else if c, err := crypt.NewCrypt([]string{}, config.PublicKeyPath, paas); err != nil {
-		panic(fmt.Errorf("unable to create a crypt: %e", err))
-	} else {
-		_crypt[paas] = c
-		return c
 	}
+
+	c, err := crypt.NewCrypt([]string{}, config.PublicKeyPath, paas)
+	if err != nil {
+		panic(fmt.Errorf("unable to create a crypt: %e", err))
+	}
+
+	_crypt[paas] = c
+	return c
 }
 
 // getEncrypt encrypts a secret and returns the encrypted value
@@ -96,10 +100,7 @@ func readyz(c *gin.Context) {
 	})
 }
 
-func main() {
-	log.Println("Starting API endpoint")
-	log.Printf("Version: %s", _version.PAAS_VERSION)
-	gin.SetMode(gin.ReleaseMode)
+func SetupRouter() *gin.Engine {
 	router := gin.Default()
 	// - No origin allowed by default
 	// - GET,POST, PUT, HEAD methods
@@ -122,6 +123,16 @@ func main() {
 	router.GET("/healthz", healthz)
 	router.GET("/readyz", readyz)
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
+	return router
+}
+
+func main() {
+	log.Println("Starting API endpoint")
+	log.Printf("Version: %s", _version.PAAS_VERSION)
+	gin.SetMode(gin.ReleaseMode)
+
+	router := SetupRouter()
 	ep := getConfig().Endpoint
 	log.Printf("Listening on: %s", ep)
 	router.Run(ep)
