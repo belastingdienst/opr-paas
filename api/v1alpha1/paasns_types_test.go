@@ -66,7 +66,7 @@ func TestPaasNS_ClonedLabels(t *testing.T) {
 
 	output = pns.ClonedLabels()
 	require.NotNil(t, output)
-	assert.Len(t, output, 0)
+	assert.Empty(t, output)
 	require.NotContains(t, output, "app.kubernetes.io/instance")
 	require.NotContains(t, output, "key1")
 
@@ -80,7 +80,7 @@ func TestPaasNS_ClonedLabels(t *testing.T) {
 
 	output = pns.ClonedLabels()
 	require.NotNil(t, output)
-	assert.Len(t, output, 0)
+	assert.Empty(t, output)
 
 	// subtest: single clonable label
 	pns = PaasNS{
@@ -204,7 +204,7 @@ func TestPaasNsStatus_Truncate(t *testing.T) {
 
 	ps.Truncate()
 	assert.NotNil(t, ps.Messages)
-	assert.Len(t, ps.Messages, 0)
+	assert.Empty(t, ps.Messages)
 }
 
 func TestPaasNsStatus_AddMessage(t *testing.T) {
