@@ -11,19 +11,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_RsaGenerate(t *testing.T) {
 	priv, err := os.CreateTemp("", "private")
-	assert.NoError(t, err, "Creating tempfile for private key")
+	require.NoError(t, err, "Creating tempfile for private key")
 	defer os.Remove(priv.Name()) // clean up
 
 	pub, err := os.CreateTemp("", "public")
-	assert.NoError(t, err, "Creating tempfile for public key")
+	require.NoError(t, err, "Creating tempfile for public key")
 	defer os.Remove(pub.Name()) // clean up
 
 	c, err := NewGeneratedCrypt(priv.Name(), pub.Name())
-	assert.NoError(t, err, "Crypt object created")
+	require.NoError(t, err, "Crypt object created")
 	assert.NotNil(t, c, "Crypt object is not nil")
 }
 
@@ -33,15 +34,15 @@ func Test_Rsa(t *testing.T) {
 		"../../testdata/public.rsa.key",
 		"",
 	)
-	assert.NoError(t, err, "Getting New Crypt")
+	require.NoError(t, err, "Getting New Crypt")
 
 	original := "CPET_is_the_best"
 
 	encrypted, err := c.EncryptRsa([]byte(original))
-	assert.NoError(t, err, "Encrypting data")
+	require.NoError(t, err, "Encrypting data")
 
 	decrypted, err := c.DecryptRsa(encrypted)
-	assert.NoError(t, err, "Decrypting data")
+	require.NoError(t, err, "Decrypting data")
 	assert.Equal(t, string(decrypted), string(original))
 }
 
@@ -73,12 +74,12 @@ func Test_Crypt(t *testing.T) {
 		"../../testdata/public.rsa.key",
 		"Dit is de key",
 	)
-	assert.NoError(t, err, "Getting New Crypt")
+	require.NoError(t, err, "Getting New Crypt")
 	encrypted, err := c.Encrypt([]byte(original))
-	assert.NoError(t, err, "Encrypting")
+	require.NoError(t, err, "Encrypting")
 	assert.Greater(t, len(encrypted), 100)
 
 	decrypted, err := c.Decrypt(encrypted)
-	assert.NoError(t, err, "Decrypting")
+	require.NoError(t, err, "Decrypting")
 	assert.Equal(t, original, string(decrypted))
 }
