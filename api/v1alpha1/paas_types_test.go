@@ -81,9 +81,8 @@ func TestPaas_PrefixedBoolMap(t *testing.T) {
 	assert.Contains(t, output, "paas-test")
 	assert.Contains(t, output, "paas-smt")
 	assert.NotContains(t, output, "paas-doesntexist")
-	assert.Equal(t, output["paas-test"], true)
-	assert.Equal(t, output["paas-smt"], false)
-	assert.NotEqual(t, output["paas-test"], false)
+	assert.True(t, output["paas-test"])
+	assert.False(t, output["paas-smt"])
 }
 
 func TestPaas_GetNsSshSecrets(t *testing.T) {
@@ -108,15 +107,15 @@ func TestPaas_GetNsSshSecrets(t *testing.T) {
 	assert.IsType(t, map[string]string{}, output)
 	assert.Contains(t, output, "key1")
 	assert.NotContains(t, output, "capsecret1")
-	assert.Equal(t, output["key1"], "value1")
+	assert.Equal(t, "value1", output["key1"])
 
 	output = paas.GetNsSshSecrets("argocd")
 	assert.NotNil(t, output)
 	assert.IsType(t, map[string]string{}, output)
 	assert.Contains(t, output, "key1")
 	assert.Contains(t, output, "capsecret1")
-	assert.Equal(t, output["key1"], "value1")
-	assert.Equal(t, output["capsecret1"], "capsecretvalue1")
+	assert.Equal(t, "value1", output["key1"])
+	assert.Equal(t, "capsecretvalue1", output["capsecret1"])
 }
 
 // PaasGroups
@@ -206,7 +205,7 @@ func TestPaasGroups_Names(t *testing.T) {
 func TestPaasGroups_LdapQueries(t *testing.T) {
 	ldapGroups := testGroups.LdapQueries()
 	sort.Strings(ldapGroups)
-	assert.Equal(t, 2, len(ldapGroups))
+	assert.Len(t, ldapGroups, 2)
 	assert.Equal(t, "CN=test2,OU=org_unit,DC=example,DC=org", ldapGroups[0])
 	assert.Equal(t, "CN=test4", ldapGroups[1])
 }
@@ -253,10 +252,10 @@ func TestPaasCapabilities_IsCap(t *testing.T) {
 
 	// Empty prefix
 	// assert.Fail(t, "TEST", fmt.Sprintf("%v", pc.AsMap()))
-	assert.Equal(t, true, pc.IsCap("argocd"))
-	assert.Equal(t, false, pc.IsCap("grafana"))
-	assert.Equal(t, false, pc.IsCap("ci"))
-	assert.Equal(t, false, pc.IsCap("sso"))
+	assert.True(t, pc.IsCap("argocd"))
+	assert.False(t, pc.IsCap("grafana"))
+	assert.False(t, pc.IsCap("ci"))
+	assert.False(t, pc.IsCap("sso"))
 }
 
 // PaasArgoCD
@@ -290,12 +289,12 @@ func TestPaasStatus_Truncate(t *testing.T) {
 	}
 
 	assert.IsType(t, []string{}, ps.Messages)
-	assert.Equal(t, len(ps.Messages), 2)
+	assert.Len(t, ps.Messages, 2)
 	assert.Contains(t, ps.Messages, "test msg 1")
 
 	ps.Truncate()
 	assert.IsType(t, []string{}, ps.Messages)
-	assert.Equal(t, len(ps.Messages), 0)
+	assert.Empty(t, ps.Messages)
 	assert.NotContains(t, ps.Messages, "test msg 1")
 }
 
