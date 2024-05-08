@@ -20,14 +20,14 @@ func Test_formatEndpoint(t *testing.T) {
 	assert.Equal(t, ":8080", output)
 
 	// test: endpoint contains anything but ':'
-	output = formatEndpoint("abcdefg")
+	output = formatEndpoint("abcdef")
 	require.NotNil(t, output)
-	assert.Equal(t, "abcdefg:8080", output)
+	assert.Equal(t, "abcdef:8080", output)
 
 	// test: endpoint contains ':'
-	output = formatEndpoint("ABCDEFG:3000")
+	output = formatEndpoint("ABC.DEF:3000")
 	require.NotNil(t, output)
-	assert.Equal(t, "ABCDEFG:3000", output)
+	assert.Equal(t, "ABC.DEF:3000", output)
 
 	// test: endpoint contains ':' & hostname too long
 	// note: test hostname is 70 characters long
@@ -35,6 +35,9 @@ func Test_formatEndpoint(t *testing.T) {
 
 	// test: endpoint contains ':' & hostname is invalid
 	require.NotPanics(t, func() { formatEndpoint("abc.DEF:3000") }, "Should NOT panic because hostname is valid (sanity check)")
+	require.NotPanics(t, func() { formatEndpoint("abc.DEF") }, "Should NOT panic because hostname is valid (sanity check)")
+	require.NotPanics(t, func() { formatEndpoint("abc.DEF.nl") }, "Should NOT panic because hostname is valid (sanity check)")
+	require.NotPanics(t, func() { formatEndpoint("abc") }, "Should NOT panic because hostname is valid (sanity check)")
 	require.Panics(t, func() { formatEndpoint("abc#DEF:3000") }, "Should panic because hostname contains illegal character (#)")
 	assert.Panics(t, func() { formatEndpoint(".abcDEF:3000") }, "Should panic because hostname starts with illegal character (.)")
 	assert.Panics(t, func() { formatEndpoint("ab..cDEF:3000") }, "Should panic because hostname contains double dot character (..)")
@@ -42,7 +45,7 @@ func Test_formatEndpoint(t *testing.T) {
 	assert.Panics(t, func() { formatEndpoint("abc.DEF-:3000") }, "Should panic because hostname ends with illegal character (-)")
 	assert.Panics(t, func() { formatEndpoint("abc.DEF.a:3000") }, "Should panic because hostname TLD too short (<2)")
 	assert.Panics(t, func() { formatEndpoint("abc.DEF.666:3000") }, "Should panic because hostname TLD contains illegal character (666)")
-	assert.Panics(t, func() { formatEndpoint("abc.DEF-ghi.net:3000") }, "Should NOT panic because hostname contains LEGAL character (-)")
+	assert.NotPanics(t, func() { formatEndpoint("abc.DEF-ghi.net:3000") }, "Should NOT panic because hostname contains LEGAL character (-)")
 	assert.Panics(t, func() { formatEndpoint("abc.DEF_ghi.net:3000") }, "Should panic because hostname contains illegal character (_)")
 
 	// test: endpoint contains ':' & portnum is empty
