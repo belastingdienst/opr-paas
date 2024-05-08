@@ -51,10 +51,17 @@ func formatEndpoint(endpoint string) string {
 			panic(fmt.Errorf("invalid hostname %s longer than 63 characters", host))
 		}
 
-		// TODO: should this be tighter? For example: (?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]{2,63}$)
-		if match, err := regexp.MatchString(`[^0-9.a-zA-Z-:]`, host); err != nil {
+		// Regex matches on any valid FQDN. Explanation of groups:
+		// ^                         -- String start
+		// [a-zA-Z0-9]+              -- Matches one or more of these characters
+		// ([a-zA-Z0-9-]{1,63}[.]?)* -- Match 1 to max 63 of these characters
+		//                              Followed by exactly 0 or no periods
+		//                              Match the above combination zero or more times
+		// [a-zA-Z]{2,63}            -- Match at least two, max 63 of these characters
+		// $                         -- End of string
+		if match, err := regexp.MatchString(`^[a-zA-Z0-9]+([a-zA-Z0-9-]{1,63}[.]?)*[a-zA-Z]{2,63}$`, host); err != nil {
 			panic("invalid regular expression for hostname")
-		} else if match {
+		} else if !match {
 			panic(fmt.Errorf("invalid hostname %s in endpoint config", host))
 		}
 
