@@ -41,6 +41,10 @@ type PaasNS struct {
 }
 
 func (pns PaasNS) NamespaceName() string {
+	if pns.Spec.Paas == "" || pns.Name == "" {
+		panic(fmt.Errorf("invalid paas or paasns name (empty)"))
+	}
+
 	return fmt.Sprintf("%s-%s", pns.Spec.Paas, pns.Name)
 }
 
