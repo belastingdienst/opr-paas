@@ -195,6 +195,10 @@ spec:
                       type: array
                   type: object
                 type: object
+              managedByPaas:
+                description: Indicated by which 3rd party Paas's ArgoCD this Paas
+                  is managed
+                type: string
               namespaces:
                 description: Namespaces can be used to define extra namespaces to
                   be created as part of this PaaS project
