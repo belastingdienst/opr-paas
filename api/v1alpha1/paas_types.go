@@ -54,6 +54,17 @@ type PaasSpec struct {
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
+
+	// Indicated by which 3rd party Paas's ArgoCD this Paas is managed
+	ManagedByPaas string `json:"managedByPaas,omitempty"`
+}
+
+func (p Paas) ManagedByPaas() string {
+	if p.Spec.ManagedByPaas != "" {
+		return p.Spec.ManagedByPaas
+	}
+
+	return p.Name
 }
 
 func (p Paas) PrefixedBoolMap(m map[string]bool) map[string]bool {
