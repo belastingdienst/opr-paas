@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
+	v "github.com/belastingdienst/opr-paas/internal/version"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -101,7 +102,7 @@ func Test_getRSA(t *testing.T) {
 
 func Test_version(t *testing.T) {
 	expected := gin.H{
-		"version": "v0.0.0devel",
+		"version": v.PAAS_VERSION,
 	}
 
 	router := SetupRouter()
