@@ -91,6 +91,7 @@ type cryptPrivateKeys []cryptPrivateKey
 
 func NewCrypt(privateKeyPaths []string, publicKeyPath string, symmetricKey string) (*Crypt, error) {
 	var privateKeys cryptPrivateKeys
+
 	if files, err := utils.PathToFileList(privateKeyPaths); err != nil {
 		return nil, fmt.Errorf("could not find files in '%v': %e", privateKeyPaths, err)
 	} else {
@@ -102,6 +103,14 @@ func NewCrypt(privateKeyPaths []string, publicKeyPath string, symmetricKey strin
 			}
 		}
 	}
+
+	if publicKeyPath != "" {
+		publicKeyPaths := []string{publicKeyPath}
+		if _, err := utils.PathToFileList(publicKeyPaths); err != nil {
+			return nil, fmt.Errorf("could not find files in '%v': %e", publicKeyPaths, err)
+		}
+	}
+
 	return &Crypt{
 		privateKeys:   privateKeys,
 		publicKeyPath: publicKeyPath,
