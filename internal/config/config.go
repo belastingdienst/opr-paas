@@ -152,15 +152,15 @@ type ConfigCapability struct {
 	DefaultPermissions ConfigCapPerm       `yaml:"default_permissions"`
 }
 
-type ConfigQuotaRatio map[string]string
-
 type ConfigQuotaSettings struct {
-	Clusterwide bool                  `yaml:"clusterwide"`
-	Ratio       ConfigQuotaRatio      `yaml:"ratio"`
-	DefQuota    ConfigDefaultQuotaDef `yaml:"defaults"`
+	Clusterwide bool                   `yaml:"clusterwide"`
+	Ratio       float64                `yaml:"ratio"`
+	DefQuota    ConfigDefaultQuotaSpec `yaml:"defaults"`
+	MinQuotas   ConfigDefaultQuotaSpec `yaml:"min"`
+	MaxQuotas   ConfigDefaultQuotaSpec `yaml:"max"`
 }
 
-type ConfigDefaultQuotaDef map[string]string
+type ConfigDefaultQuotaSpec map[string]string
 
 // This is a insoudeout representation of ConfigCapPerm, closer to rb representation
 type ConfigRolesSas map[string]map[string]bool
@@ -291,11 +291,4 @@ func (config Config) CapabilityK8sName(capability string) (as types.NamespacedNa
 		as.Namespace = config.AppSetNamespace
 	}
 	return as
-}
-
-func (config Config) DefaultQuota(capability string) map[string]string {
-	if cap, exists := config.Capabilities[capability]; exists {
-		return cap.QuotaSettings.DefQuota
-	}
-	return nil
 }

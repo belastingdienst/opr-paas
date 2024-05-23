@@ -49,7 +49,7 @@ func Test_ValidConfig(t *testing.T) {
 	assert.Equal(t, "q.lbl", config.QuotaLabel)
 	assert.Len(t, config.Capabilities, 4)
 	assert.Equal(t, "argoas", config.Capabilities["argocd"].AppSet)
-	assert.Len(t, config.Capabilities["argocd"].DefQuota, 6)
+	assert.Len(t, config.Capabilities["argocd"].QuotaSettings.DefQuota, 6)
 	assert.Equal(t, false, config.Capabilities["argocd"].QuotaSettings.Clusterwide)
 	assert.Equal(t, true, config.Capabilities["tekton"].QuotaSettings.Clusterwide)
 	assert.Equal(t, false, config.Capabilities["sso"].QuotaSettings.Clusterwide)
