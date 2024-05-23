@@ -28,6 +28,13 @@ capabilities:
     applicationset: cpet-paas-argocd
     quotas:
       clusterwide: true
+      min:
+        limits.cpu: "5"
+        limits.memory: 4Gi
+      max:
+        requests.cpu: "1"
+        requests.memory: 1Gi
+      ratio: 0.1
       defaults:
         limits.cpu: "5"
         limits.memory: 8Gi

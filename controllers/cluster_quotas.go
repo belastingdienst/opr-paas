@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	paas_quota "github.com/belastingdienst/opr-paas/api/quota"
 
 	"github.com/go-logr/logr"
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -51,6 +52,7 @@ func (r *PaasReconciler) EnsureQuota(
 		return err
 	} else {
 		// Update the quota
+		found.OwnerReferences = quota.OwnerReferences
 		found.Spec = quota.Spec
 		if err = r.Update(ctx, found); err != nil {
 			// updating the quota failed
@@ -109,44 +111,57 @@ func (r *PaasReconciler) backendQuota(
 func (r *PaasReconciler) BackendEnabledQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-) (quotas []*quotav1.ClusterResourceQuota) {
+) (quotas []*quotav1.ClusterResourceQuota, err error) {
+	config := getConfig()
 	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
 	for name, cap := range paas.Spec.Capabilities.AsMap() {
-		if cap.IsEnabled() {
-			defaults := getConfig().DefaultQuota(
-				cap.CapabilityName())
-			quota := cap.Quotas().QuotaWithDefaults(
-				defaults)
-			quotas = append(quotas,
-				r.backendQuota(ctx, paas, name, quota))
+		if capConfig, exists := config.Capabilities[name]; !exists {
+			return nil, fmt.Errorf("a capability is requested, but not configured")
+		} else if cap.IsEnabled() {
+			if !capConfig.QuotaSettings.Clusterwide {
+				defaults := capConfig.QuotaSettings.DefQuota
+				quotaValues := cap.Quotas().QuotaWithDefaults(
+					defaults)
+				quotas = append(quotas,
+					r.backendQuota(ctx, paas, name, quotaValues))
+			}
 		}
 	}
-	return quotas
+	return quotas, nil
 }
+
+type PaasQuotas map[string]paas_quota.Quotas
 
 func (r *PaasReconciler) BackendEnabledQuotaStatus(
 	paas *v1alpha1.Paas,
-) (quotas map[string]v1alpha1.PaasQuotas) {
-	quotas = make(map[string]v1alpha1.PaasQuotas)
+) (quotas PaasQuotas, err error) {
+	config := getConfig()
+	quotas = make(PaasQuotas)
 	quotas["default"] = paas.Spec.Quota
 	for name, cap := range paas.Spec.Capabilities.AsMap() {
-		if cap.IsEnabled() {
-			defaults := getConfig().DefaultQuota(
-				cap.CapabilityName())
-			quota := cap.Quotas().QuotaWithDefaults(
-				defaults)
-			quotas[name] = quota
+		if capConfig, exists := config.Capabilities[name]; !exists {
+			return nil, fmt.Errorf("a capability is requested, but not configured")
+		} else {
+			if cap.IsEnabled() {
+				defaults := capConfig.QuotaSettings.DefQuota
+				quota := cap.Quotas().QuotaWithDefaults(
+					defaults)
+				quotas[name] = quota
+			}
 		}
 	}
-	return quotas
+	return quotas, nil
 }
 
-func (r *PaasReconciler) BackendDisabledQuotas(
+func (r *PaasReconciler) BackendUnneededQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (quotas []string) {
+	config := getConfig()
 	for name, cap := range paas.Spec.Capabilities.AsMap() {
-		if !cap.IsEnabled() {
+		if capConfig, exists := config.Capabilities[name]; !exists {
+			quotas = append(quotas, fmt.Sprintf("%s-%s", paas.Name, name))
+		} else if !cap.IsEnabled() || capConfig.QuotaSettings.Clusterwide {
 			quotas = append(quotas, fmt.Sprintf("%s-%s", paas.Name, name))
 		}
 	}
@@ -212,22 +227,29 @@ func (r *PaasReconciler) ReconcileQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	logger logr.Logger,
-) error {
+) (err error) {
 	logger.Info("Creating quotas for PAAS object ")
 	// Create quotas if needed
-	for _, q := range r.BackendEnabledQuotas(ctx, paas) {
-		logger.Info("Creating quota " + q.Name + " for PAAS object ")
-		if err := r.EnsureQuota(ctx, paas, q); err != nil {
-			logger.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
-			return err
+	if quotas, err := r.BackendEnabledQuotas(ctx, paas); err != nil {
+		logger.Error(err, "Failure while getting list of quotas")
+	} else {
+		for _, q := range quotas {
+			logger.Info("Creating quota " + q.Name + " for PAAS object ")
+			if err := r.EnsureQuota(ctx, paas, q); err != nil {
+				logger.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
+				return err
+			}
 		}
 	}
-	paas.Status.Quota = r.BackendEnabledQuotaStatus(paas)
-	for _, name := range r.BackendDisabledQuotas(ctx, paas) {
-		logger.Info("Cleaning quota " + name + " for PAAS object ")
-		if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {
-			logger.Error(err, fmt.Sprintf("Failure while finalizing quota %s", name))
-			return err
+	if paas.Status.Quota, err = r.BackendEnabledQuotaStatus(paas); err != nil {
+		return err
+	} else {
+		for _, name := range r.BackendUnneededQuotas(ctx, paas) {
+			logger.Info("Cleaning quota " + name + " for PAAS object ")
+			if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {
+				logger.Error(err, fmt.Sprintf("Failure while finalizing quota %s", name))
+				return err
+			}
 		}
 	}
 	return nil
