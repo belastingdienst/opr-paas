@@ -2,7 +2,7 @@
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 
-FROM golang:1.21 AS builder
+FROM docker.io/golang:1.21 AS builder
 
 ARG GOINSECURE="proxy.golang.org/*,github.com,github.com/*"
 ARG GONOSUMDB="proxy.golang.org/*,github.com,github.com/*"
