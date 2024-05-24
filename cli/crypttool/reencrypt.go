@@ -8,6 +8,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/utils"
@@ -36,6 +38,10 @@ func reencryptSecret(srcCrypt *crypt.Crypt, dstCrypt *crypt.Crypt, secret string
 
 func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat string, files []string) error {
 	for _, fileName := range files {
+		// Read paas as String to preserve format
+		paasAsBytes, err := os.ReadFile(fileName)
+		paasAsString := string(paasAsBytes)
+
 		// Read paas from file
 		paas, format, err := readPaasFile(fileName)
 		if err != nil {
@@ -60,6 +66,8 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 			}
 
 			paas.Spec.SshSecrets[key] = reencrypted
+			// Use replaceAll as same secret can occur multiple times
+			paasAsString = strings.ReplaceAll(paasAsString, secret, reencrypted)
 			logrus.Debugf("succesfully reencrypted %s.spec.sshSecrets[%s] in file %s", paasName, key, fileName)
 		}
 
@@ -71,6 +79,8 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 				}
 
 				cap.SetSshSecret(key, reencrypted)
+				// Use replaceAll as same secret can occur multiple times
+				paasAsString = strings.ReplaceAll(paasAsString, secret, reencrypted)
 				logrus.Debugf("succesfully reencrypted %s.spec.capabilities[%s].sshSecrets[%s] in file %s", paasName, capName, key, fileName)
 			}
 		}
@@ -80,7 +90,17 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 			format = outputFormat
 		}
 
-		writeFormattedFile(paas, fileName, format)
+		if outputFormat == "preserved" {
+			err := writeFile([]byte(paasAsString), fileName)
+			if err != nil {
+				return err
+			}
+		} else {
+			err := writeFormattedFile(paas, fileName, format)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
@@ -113,7 +133,7 @@ reencrypt with the new public key and write back the paas to the file in either 
 	flags := cmd.Flags()
 	flags.StringVar(&privateKeyFiles, "privateKeyFiles", "", "The file to read the private key from")
 	flags.StringVar(&publicKeyFile, "publicKeyFile", "", "The file to read the public key from")
-	flags.StringVar(&outputFormat, "outputFormat", "auto", "The outputformat for writing a paas, either yaml, json, or auto (which will revert to same format as input)")
+	flags.StringVar(&outputFormat, "outputFormat", "auto", "The outputformat for writing a paas, either yaml (machine formatted), json (machine formatted), auto (which will use input format as output, machine formatted) or preserved (which will use the input format and preserve the original syntax including for example comments) ")
 
 	viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles"))
 	viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile"))
