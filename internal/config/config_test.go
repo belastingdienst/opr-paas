@@ -4,7 +4,7 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-package config_test
+package config
 
 import (
 	"os"
@@ -14,17 +14,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_ConfigRoleMappingsRoles(t *testing.T) {
+	crm := ConfigRoleMappings{}
+
+	rolemaps := []string{}
+	output := crm.Roles(rolemaps)
+	assert.Nil(t, output)
+
+	crm["Role1"] = []string{"MappedRole1", "MappedRole2"}
+	crm["Role2"] = []string{"MappedRole3"}
+	rolemaps = []string{"Role1", "Role2"}
+	output = crm.Roles(rolemaps)
+	assert.NotNil(t, output)
+	assert.Equal(t, []string{"MappedRole1", "MappedRole2", "MappedRole3"}, output)
+}
+
 func Test_InvalidConfig(t *testing.T) {
 	err := os.Setenv("PAAS_CONFIG", "../../config/test/paas_config_invalid.yml")
 	require.NoError(t, err, "Setting env")
 
-	_, err = config.NewConfig()
+	_, err = NewConfig()
 	assert.Error(t, err, "Reading invalid paas_config should raise an error")
 }
 
 func Test_ValidConfig(t *testing.T) {
 	os.Setenv("PAAS_CONFIG", "../../config/test/paas_config.yml")
-	config, err := config.NewConfig()
+	config, err := NewConfig()
 	require.NoError(t, err, "Reading valid paas_config should not raise an error")
 	assert.Equal(t, "my-ldap-host", config.LDAP.Host)
 	assert.Equal(t, int32(13), config.LDAP.Port)
