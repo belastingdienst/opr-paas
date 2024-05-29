@@ -1,0 +1,7 @@
+---
+apiVersion: cpet.belastingdienst.nl/v1alpha1
+unsupportedFieldForTesting: unsupportedByOperator
+kind: Paas
+metadata:
+  name: tst-tst
+spec:
