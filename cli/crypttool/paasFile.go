@@ -19,12 +19,12 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-type InvalidPaasFile struct {
+type InvalidPaasFileFormat struct {
 	File string
 }
 
-func (ip *InvalidPaasFile) Error() string {
-	return fmt.Sprintf("file '%s' does not contain a valid paas", ip.File)
+func (ip *InvalidPaasFileFormat) Error() string {
+	return fmt.Sprintf("file '%s' is not in a supported file format", ip.File)
 }
 
 func readPaasFile(file string) (*v1alpha1.Paas, string, error) {
@@ -34,7 +34,11 @@ func readPaasFile(file string) (*v1alpha1.Paas, string, error) {
 	buffer, err := os.ReadFile(file)
 	if err != nil {
 		logrus.Debugf("could not read %s: %e", file, err)
-		return nil, "unknown", err
+		return nil, "unable to read paas configuration file", err
+	}
+
+	if len(buffer) <= 0 {
+		return nil, "", fmt.Errorf("empty paas configuration file")
 	}
 
 	err = json.Unmarshal(buffer, &paas)
@@ -49,7 +53,7 @@ func readPaasFile(file string) (*v1alpha1.Paas, string, error) {
 	}
 	logrus.Debugf("could not parse %s as yaml: %e", file, err)
 
-	return nil, "unknown", &InvalidPaasFile{File: file}
+	return nil, "", &InvalidPaasFileFormat{File: file}
 }
 
 func writeFile(buffer []byte, path string) error {

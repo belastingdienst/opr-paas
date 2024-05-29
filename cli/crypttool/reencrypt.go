@@ -41,6 +41,9 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 		// Read paas as String to preserve format
 		paasAsBytes, err := os.ReadFile(fileName)
 		paasAsString := string(paasAsBytes)
+		if err != nil {
+			return fmt.Errorf("could not read file into string")
+		}
 
 		// Read paas from file
 		paas, format, err := readPaasFile(fileName)
