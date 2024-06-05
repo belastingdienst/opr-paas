@@ -57,10 +57,13 @@ func EnsureNamespace(
 	var changed bool
 	for key, value := range ns.ObjectMeta.Labels {
 		if orgValue, exists := found.ObjectMeta.Labels[key]; !exists {
+			addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, fmt.Sprintf("adding label '%s'='%s'", key, value))
 			// Not set yet
 		} else if orgValue != value {
+			addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, fmt.Sprintf("updating label '%s'='%s'", key, value))
 			// different
 		} else {
+			addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, fmt.Sprintf("skipping label '%s'='%s'", key, value))
 			// No action required
 			continue
 		}
@@ -68,6 +71,7 @@ func EnsureNamespace(
 		found.ObjectMeta.Labels[key] = value
 	}
 	if changed {
+		addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating namespace")
 		return r.Update(ctx, found)
 	}
 	return nil
@@ -155,9 +159,13 @@ func (r *PaasNSReconciler) ReconcileNamespaces(
 ) (err error) {
 
 	nsName := paasns.NamespaceName()
-	nsQuota := paas.Name
-	if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists {
+	var nsQuota string
+	if config, exists := getConfig().Capabilities[paasns.Name]; !exists {
+		nsQuota = paas.Name
+	} else if !config.QuotaSettings.Clusterwide {
 		nsQuota = nsName
+	} else {
+		nsQuota = ClusterWideQuotaName(paasns.Name)
 	}
 
 	var ns *corev1.Namespace
