@@ -150,15 +150,17 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 
 	if err := r.ReconcileQuotas(ctx, paas, logger); err != nil {
 		return errResult, err
-	} else if err := r.ReconcilePaasNss(ctx, paas, logger); err != nil {
+	} else if err = r.RegisterClusterWideQuotas(ctx, paas); err != nil {
 		return errResult, err
-	} else if err := r.EnsureAppProject(ctx, paas, logger); err != nil {
+	} else if err = r.ReconcilePaasNss(ctx, paas, logger); err != nil {
 		return errResult, err
-	} else if err := r.ReconcileGroups(ctx, paas, logger); err != nil {
+	} else if err = r.EnsureAppProject(ctx, paas, logger); err != nil {
 		return errResult, err
-	} else if err := r.EnsureLdapGroups(ctx, paas); err != nil {
+	} else if err = r.ReconcileGroups(ctx, paas, logger); err != nil {
 		return errResult, err
-	} else if err := r.ReconcileRolebindings(ctx, paas, logger); err != nil {
+	} else if err = r.EnsureLdapGroups(ctx, paas); err != nil {
+		return errResult, err
+	} else if err = r.ReconcileRolebindings(ctx, paas, logger); err != nil {
 		return errResult, err
 	}
 
@@ -205,6 +207,8 @@ func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *v1alpha1.Paas) 
 		return err
 	} else if err = r.FinalizeExtraClusterRoleBindings(ctx, paas); err != nil {
 		logger.Error(err, "Extra ClusterRoleBindings finalizer error")
+		return err
+	} else if err = r.UnRegisterClusterWideQuotas(ctx, paas); err != nil {
 		return err
 	}
 	logger.Info("PaaS succesfully finalized")
