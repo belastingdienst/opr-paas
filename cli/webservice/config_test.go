@@ -61,12 +61,3 @@ func Test_formatEndpoint(t *testing.T) {
 	require.PanicsWithError(t, "port -12 not in valid RFC range (0-65363)", func() { formatEndpoint("my.valid.host:-12") }, "Should panic due to invalid port number")
 	require.PanicsWithError(t, "port 70123 not in valid RFC range (0-65363)", func() { formatEndpoint("my.valid.host:70123") }, "Should panic due to invalid port number")
 }
-
-func Test_randStringBytes(t *testing.T) {
-	testLength := 10
-	output := randStringBytes(testLength)
-
-	require.NotNil(t, output)
-	require.Len(t, output, testLength)
-	assert.NotRegexpf(t, "[^a-zA-Z]+", output, "Generated string should only contain a-z and/or A-Z")
-}

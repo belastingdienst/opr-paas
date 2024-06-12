@@ -32,8 +32,6 @@ func Test_getConfig(t *testing.T) {
 	config := getConfig()
 
 	assert.NotNil(t, config)
-	assert.Len(t, config.AdminApiKey, 64)
-
 	assert.NotNil(t, config.Endpoint)
 	assert.Equal(t, ":8080", config.Endpoint)
 
@@ -43,15 +41,11 @@ func Test_getConfig(t *testing.T) {
 	_config = &WSConfig{
 		PublicKeyPath: "/some/weird/path",
 		Endpoint:      ":3000",
-		AdminApiKey:   "dkBKevKlUEveMirzLzFdDVhplnPzSKPtrPphWOPXjuGKfFjCTHaySNGGnaIBPiEJ",
 	}
 
 	config = getConfig()
 
 	assert.NotNil(t, config)
-	assert.Len(t, config.AdminApiKey, 64)
-	assert.Equal(t, "dkBKevKlUEveMirzLzFdDVhplnPzSKPtrPphWOPXjuGKfFjCTHaySNGGnaIBPiEJ", config.AdminApiKey)
-
 	assert.NotNil(t, config.Endpoint)
 	assert.Equal(t, ":3000", config.Endpoint)
 
