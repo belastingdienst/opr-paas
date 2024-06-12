@@ -1,13 +1,26 @@
-# Setting up your development environment
+---
+title: Setting up your development environment
+summary: A short manual on how to setup your development environment
+authors:
+  - Devotional Phoenix
+date: 2023-12-21
+---
 
-## Installation CRC
-You’ll need a Kubernetes cluster to run against.
-We currently use Code Ready Containers. Instructions:
-- [Red Hat](https://console.redhat.com/openshift/create/local)
+# Introduction
 
-**Note** operator-sdk uses KIND instead of CRC.
-[KIND](https://sigs.k8s.io/kind) is lower in resource consumption, but also lacking a lot we used in BD, which is shipped by default in OpenShift.
-Future releases might be more kind to [KIND](https://sigs.k8s.io/kind), in which case will update this chapter.
+Currently the PaaS operator uses Code Ready Containers for testing. The
+operator-sdk uses KIND instead of CRC. [KIND](https://sigs.k8s.io/kind) is lower
+in resource consumption, but also lacking a lot we use, which is shipped by
+default in OpenShift.
+
+Future releases might be more kind to [KIND](https://sigs.k8s.io/kind), in which
+case will update this chapter.
+
+## Installation of CRC
+You’ll need a Kubernetes cluster to run against. We currently use Code Ready
+Containers.
+
+Installation instructions can be found at [Red Hat](https://console.redhat.com/openshift/create/local).
 
 ## Starting CRC
 If you need to start CRC (like after a reboot, which is rerquired on BD DBO for some weird unknown reason), run `crc start` in a terminal other than iterm2 (like terminal or kitty).
