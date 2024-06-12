@@ -8,8 +8,6 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"math/rand"
 	"os"
 	"regexp"
 	"strconv"
@@ -21,23 +19,11 @@ const (
 	defaultPublicPath   = "/secrets/paas/publicKey"
 	endpointEnv         = "PAAS_ENDPOINT"
 	defaultEndpointPort = 8080
-	adminApiKey         = "PAAS_ADMIN_API_KEY"
 )
 
 type WSConfig struct {
 	PublicKeyPath string
 	Endpoint      string
-	AdminApiKey   string
-}
-
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-func randStringBytes(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	return string(b)
 }
 
 func formatEndpoint(endpoint string) string {
@@ -85,11 +71,7 @@ func NewWSConfig() WSConfig {
 		config.PublicKeyPath = defaultPublicPath
 	}
 	config.Endpoint = formatEndpoint(os.Getenv(endpointEnv))
-	config.AdminApiKey = os.Getenv(adminApiKey)
-	if config.AdminApiKey == "" {
-		config.AdminApiKey = randStringBytes(64)
-		log.Printf("Generated random Admin API key: %s", config.AdminApiKey)
-	}
+
 	return config
 
 }
