@@ -1,3 +1,12 @@
+---
+title: Maintenance
+summary: Introduction to contributing to the PAAS operator.
+authors:
+  - devotional-phoenix-97
+  - hikarukin
+date: 2024-07-04
+---
+
 Introduction
 ============
 

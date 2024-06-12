@@ -26,7 +26,7 @@ We welcome many types of contributions including:
 * New features
 * Builds, CI/CD
 * Bug fixes
-* [Documentation](docs/README.md)
+* [Documentation](docs/index.md)
 * Issue Triage
 * Answering questions on Github Discussions
 * Communications / Social Media / Blog Posts
