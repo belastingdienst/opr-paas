@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
@@ -54,6 +55,17 @@ func Test_getConfig(t *testing.T) {
 }
 
 func Test_getRSA(t *testing.T) {
+	// generate private/public keys
+	priv, err := os.CreateTemp("", "private")
+	require.NoError(t, err, "Creating tempfile for private key")
+	defer os.Remove(priv.Name()) // clean up
+
+	pub, err := os.CreateTemp("", "public")
+	require.NoError(t, err, "Creating tempfile for public key")
+	defer os.Remove(pub.Name()) // clean up
+
+	crypt.NewGeneratedCrypt(priv.Name(), pub.Name())
+
 	// test: non-existing public key should panic
 	getConfig()
 	_config.PublicKeyPath = "/random/non-existing/public/keyfile"
@@ -67,7 +79,7 @@ func Test_getRSA(t *testing.T) {
 
 	// test: non-existing _crypt results in single entry _crypt
 	getConfig()
-	_config.PublicKeyPath = "../../testdata/public.rsa.key"
+	_config.PublicKeyPath = pub.Name()
 	assert.Nil(t, _crypt)
 	output := getRsa("paasName")
 	assert.Len(t, _crypt, 1)
@@ -82,7 +94,7 @@ func Test_getRSA(t *testing.T) {
 
 	// test: results in two entries in _crypt
 	getConfig()
-	_config.PublicKeyPath = "../../testdata/public.rsa.key"
+	_config.PublicKeyPath = pub.Name()
 	assert.NotNil(t, _crypt)
 	output = getRsa("paasName2")
 	assert.Len(t, _crypt, 2)
