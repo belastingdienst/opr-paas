@@ -188,11 +188,11 @@ func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha
 
 func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1alpha1.PaasNS) error {
 
-	logger := getLogger(ctx, paasns, "Quota", paasns.Name)
+	logger := getLogger(ctx, paasns, "Quota", paasns.NamespaceName())
 	logger.Info("Finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
 	if err := r.Get(ctx, types.NamespacedName{
-		Name: paasns.Name,
+		Name: paasns.NamespaceName(),
 	}, obj); err != nil && errors.IsNotFound(err) {
 		logger.Info("Does not exist")
 		return nil
