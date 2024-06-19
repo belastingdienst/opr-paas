@@ -7,6 +7,8 @@ See LICENSE.md for details.
 package main
 
 import (
+	"fmt"
+
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -21,6 +23,9 @@ func generateCmd() *cobra.Command {
 		Short: "generate a new private and public key and store them in files",
 		Long:  `generate a new private and public key and store them in files`,
 		RunE: func(command *cobra.Command, args []string) error {
+			if privateKeyFile == "" || publicKeyFile == "" {
+				return fmt.Errorf("privateKeyFile of publicKeyFile not specified")
+			}
 			return crypt.GenerateKeyPair(privateKeyFile, publicKeyFile)
 		},
 		Example: `crypttool generate --publicKeyFile "/tmp/pub" --privateKeyFile "/tmp/priv"`,
