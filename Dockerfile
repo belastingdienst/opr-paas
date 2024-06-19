@@ -23,7 +23,6 @@ COPY cli/ cli/
 COPY controllers/ controllers/
 COPY internal/ internal/
 COPY config/ config/
-COPY testdata/ testdata/
 
 # Build
 # the GOARCH has not a default value to allow the binary be built according to the host where the command
