@@ -29,11 +29,17 @@ func TestRsaGenerate(t *testing.T) {
 }
 
 func TestRsa(t *testing.T) {
-	c, err := NewCrypt(
-		[]string{"../../testdata/private.rsa.key"},
-		"../../testdata/public.rsa.key",
-		"",
-	)
+	// generate private/public keys
+	priv, err := os.CreateTemp("", "private")
+	require.NoError(t, err, "Creating tempfile for private key")
+	defer os.Remove(priv.Name()) // clean up
+
+	pub, err := os.CreateTemp("", "public")
+	require.NoError(t, err, "Creating tempfile for public key")
+	defer os.Remove(pub.Name()) // clean up
+
+	c, err := NewGeneratedCrypt(priv.Name(), pub.Name())
+
 	require.NoError(t, err, "Getting New Crypt")
 
 	original := "CPET_is_the_best"
@@ -48,11 +54,18 @@ func TestRsa(t *testing.T) {
 
 func TestCrypt(t *testing.T) {
 	original := "Dit is een test"
-	c, err := NewCrypt(
-		[]string{"../../testdata/private.rsa.key"},
-		"../../testdata/public.rsa.key",
-		"Dit is de key",
-	)
+
+	// generate private/public keys
+	priv, err := os.CreateTemp("", "private")
+	require.NoError(t, err, "Creating tempfile for private key")
+	defer os.Remove(priv.Name()) // clean up
+
+	pub, err := os.CreateTemp("", "public")
+	require.NoError(t, err, "Creating tempfile for public key")
+	defer os.Remove(pub.Name()) // clean up
+
+	c, err := NewGeneratedCrypt(priv.Name(), pub.Name())
+
 	require.NoError(t, err, "Getting New Crypt")
 	encrypted, err := c.Encrypt([]byte(original))
 	require.NoError(t, err, "Encrypting")
