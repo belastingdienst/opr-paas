@@ -161,34 +161,34 @@ func (r *PaasReconciler) RegisterClusterWideQuotas(ctx context.Context, paas *v1
 		}
 		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, quota, "succeeded")
 	}
-	return r.UnRegisterClusterWideQuotas(ctx, paas)
+	return nil
 }
 
 func (r *PaasReconciler) UnRegisterClusterWideQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
 	var quota *quotav1.ClusterResourceQuota
-	var capConfig config.ConfigCapability
 	for capabilityName, capability := range paas.Spec.Capabilities.AsMap() {
-		if !capability.IsEnabled() {
+		if capability.IsEnabled() {
 			continue
 		}
 		quotaName := fmt.Sprintf("%s%s", cwqPrefix, capabilityName)
-		if capConfig, exists := getConfig().Capabilities[capabilityName]; !exists {
+		var capConfig config.ConfigCapability
+		var exists bool
+		if capConfig, exists = getConfig().Capabilities[capabilityName]; !exists {
 			return fmt.Errorf("capability %s does not seem to exist", quotaName)
 		} else {
 			quota = backendClusterWideQuota(quotaName,
 				paas_quota.NewQuota(capConfig.QuotaSettings.MinQuotas))
 		}
-
 		err := r.Get(ctx, types.NamespacedName{
 			Name: quotaName,
 		}, quota)
 		if err != nil && errors.IsNotFound(err) {
-			return nil
+			continue
 		} else if err != nil {
 			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, err.Error())
 			return err
 		} else if !capConfig.QuotaSettings.Clusterwide {
-			if err = r.Delete(ctx, quota); err != nil {
+			if err := r.Delete(ctx, quota); err != nil && !errors.IsNotFound(err) {
 				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, quota, err.Error())
 				return err
 			}
@@ -207,11 +207,13 @@ func (r *PaasReconciler) UnRegisterClusterWideQuotas(ctx context.Context, paas *
 			continue
 		}
 		if err := r.UpdateClusterWideQuotaResources(ctx, quota); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, err.Error())
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
 			return err
 		} else if err = r.Update(ctx, quota); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusFind, quota, "succeeded")
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
 			return err
+		} else {
+			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusFind, quota, "succeeded")
 		}
 	}
 	return nil

@@ -152,6 +152,8 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return errResult, err
 	} else if err = r.RegisterClusterWideQuotas(ctx, paas); err != nil {
 		return errResult, err
+	} else if err = r.UnRegisterClusterWideQuotas(ctx, paas); err != nil {
+		return errResult, err
 	} else if err = r.ReconcilePaasNss(ctx, paas, logger); err != nil {
 		return errResult, err
 	} else if err = r.EnsureAppProject(ctx, paas, logger); err != nil {
