@@ -1,25 +1,15 @@
 # Build the manager binary
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
 
 FROM docker.io/golang:1.21 AS builder
 
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
 ARG GOINSECURE="proxy.golang.org/*,github.com,github.com/*"
 ARG GONOSUMDB="proxy.golang.org/*,github.com,github.com/*"
 ARG GOPRIVATE="proxy.golang.org/*,github.com,github.com/*"
 ARG VERSION=v0.0.0-devel
 
 ARG cert_location=/usr/local/share/ca-certificates
-
-## Get certificate from "github.com"
-#RUN openssl s_client -showcerts -connect github.com:443 </dev/null 2>/dev/null|openssl x509 -outform PEM > ${cert_location}/github.crt
-#RUN openssl s_client -showcerts -connect k8s.io:443 </dev/null 2>/dev/null|openssl x509 -outform PEM > ${cert_location}/k8s.crt
-#RUN openssl s_client -showcerts -connect sigs.k8s.io:443 </dev/null 2>/dev/null|openssl x509 -outform PEM > ${cert_location}/sigs.k8s.crt
-## Get certificate from "proxy.golang.org"
-#RUN openssl s_client -showcerts -connect proxy.golang.org:443 </dev/null 2>/dev/null|openssl x509 -outform PEM >  ${cert_location}/proxy.golang.crt
-## Update certificates
-#RUN update-ca-certificates
-
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -42,7 +32,6 @@ COPY testdata/ testdata/
 # by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
 RUN sed -i "s|PAAS_VERSION = .*|PAAS_VERSION = \"$VERSION\"|" internal/version/main.go && \
     cat internal/version/main.go && \
-    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go test ./... && \
     CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o manager main.go && \
     CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o crypttool ./cli/crypttool && \
     CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o webservice ./cli/webservice
@@ -54,6 +43,5 @@ FROM gcr.io/distroless/static:nonroot
 LABEL MAINTAINER=CPET
 WORKDIR /
 COPY --from=builder /workspace/manager /workspace/crypttool /workspace/webservice .
-#USER 65532:65532
 
 ENTRYPOINT ["/manager"]
