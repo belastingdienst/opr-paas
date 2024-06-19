@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_RsaGenerate(t *testing.T) {
+func TestRsaGenerate(t *testing.T) {
 	priv, err := os.CreateTemp("", "private")
 	require.NoError(t, err, "Creating tempfile for private key")
 	defer os.Remove(priv.Name()) // clean up
@@ -28,7 +28,7 @@ func Test_RsaGenerate(t *testing.T) {
 	assert.NotNil(t, c, "Crypt object is not nil")
 }
 
-func Test_Rsa(t *testing.T) {
+func TestRsa(t *testing.T) {
 	c, err := NewCrypt(
 		[]string{"../../testdata/private.rsa.key"},
 		"../../testdata/public.rsa.key",
@@ -46,28 +46,7 @@ func Test_Rsa(t *testing.T) {
 	assert.Equal(t, string(decrypted), string(original))
 }
 
-/*
-func Test_Aes(t *testing.T) {
-	original := []byte("Dit is een test")
-	key := "Dit is de key"
-	wrong_key := "Dit is de verkeerde key"
-
-	c := NewCrypt("", "", key)
-	encrypted, err := c.EncryptAes(original)
-	assert.NoError(t, err, "Encrypting")
-	assert.Greater(t, len(encrypted), 0)
-
-	decrypted, err := c.DecryptAes(encrypted)
-	assert.NoError(t, err, "Decrypting")
-	assert.Equal(t, string(original), string(decrypted))
-
-	wrong_key_decryption, err := NewCrypt("", "", wrong_key).DecryptAes(encrypted)
-	assert.Error(t, err, "Decrypting with wrong key")
-	assert.Nil(t, wrong_key_decryption, "Encrypting with wrong key gives no data")
-}
-*/
-
-func Test_Crypt(t *testing.T) {
+func TestCrypt(t *testing.T) {
 	original := "Dit is een test"
 	c, err := NewCrypt(
 		[]string{"../../testdata/private.rsa.key"},
