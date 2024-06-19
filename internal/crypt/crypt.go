@@ -21,10 +21,10 @@ import (
 )
 
 type Crypt struct {
-	privateKeys   cryptPrivateKeys
-	publicKeyPath string
-	publicKey     *rsa.PublicKey
-	aesKey        []byte
+	privateKeys       cryptPrivateKeys
+	publicKeyPath     string
+	publicKey         *rsa.PublicKey
+	encryptionContext []byte
 }
 
 type cryptPrivateKey struct {
@@ -89,7 +89,7 @@ func (pk cryptPrivateKey) getPrivateKey() (*rsa.PrivateKey, error) {
 
 type cryptPrivateKeys []cryptPrivateKey
 
-func NewCrypt(privateKeyPaths []string, publicKeyPath string, symmetricKey string) (*Crypt, error) {
+func NewCrypt(privateKeyPaths []string, publicKeyPath string, encryptionContext string) (*Crypt, error) {
 	var privateKeys cryptPrivateKeys
 
 	if files, err := utils.PathToFileList(privateKeyPaths); err != nil {
@@ -112,9 +112,9 @@ func NewCrypt(privateKeyPaths []string, publicKeyPath string, symmetricKey strin
 	}
 
 	return &Crypt{
-		privateKeys:   privateKeys,
-		publicKeyPath: publicKeyPath,
-		aesKey:        []byte(symmetricKey),
+		privateKeys:       privateKeys,
+		publicKeyPath:     publicKeyPath,
+		encryptionContext: []byte(encryptionContext),
 	}, nil
 }
 
@@ -196,7 +196,7 @@ func (c *Crypt) EncryptRsa(secret []byte) (encryptedBytes []byte, err error) {
 				finish = msgLen
 			}
 
-			encryptedBlockBytes, err := rsa.EncryptOAEP(hash, random, publicKey, secret[start:finish], c.aesKey)
+			encryptedBlockBytes, err := rsa.EncryptOAEP(hash, random, publicKey, secret[start:finish], c.encryptionContext)
 			if err != nil {
 				return nil, err
 			}
@@ -215,7 +215,7 @@ func (c *Crypt) Encrypt(secret []byte) (encrypted string, err error) {
 	}
 }
 
-func (pk *cryptPrivateKey) DecryptRsa(data []byte, aesKey []byte) (decryptedBytes []byte, err error) {
+func (pk *cryptPrivateKey) DecryptRsa(data []byte, encryptionContext []byte) (decryptedBytes []byte, err error) {
 	if privateKey, err := pk.getPrivateKey(); err != nil {
 		return nil, err
 	} else {
@@ -230,7 +230,7 @@ func (pk *cryptPrivateKey) DecryptRsa(data []byte, aesKey []byte) (decryptedByte
 				finish = msgLen
 			}
 
-			decryptedBlockBytes, err := rsa.DecryptOAEP(hash, random, privateKey, data[start:finish], aesKey)
+			decryptedBlockBytes, err := rsa.DecryptOAEP(hash, random, privateKey, data[start:finish], encryptionContext)
 			if err != nil {
 				return nil, err
 			}
@@ -245,7 +245,7 @@ func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
 		return nil, fmt.Errorf("cannot decrypt without any private key")
 	}
 	for _, pk := range c.privateKeys {
-		if decryptedBytes, err = pk.DecryptRsa(data, c.aesKey); err != nil {
+		if decryptedBytes, err = pk.DecryptRsa(data, c.encryptionContext); err != nil {
 			continue
 		} else {
 			return decryptedBytes, nil
