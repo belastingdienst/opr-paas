@@ -8,7 +8,7 @@ package controllers
 
 import (
 	"context"
-	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -61,9 +61,9 @@ func (r *PaasNSReconciler) EnsureSecret(
 	}
 }
 
-func hashString(original string) []byte {
-	sum := sha256.Sum256([]byte(original))
-	return []byte(hex.EncodeToString(sum[:]))
+func hashData(original string) string {
+	sum := sha512.Sum512([]byte(original))
+	return hex.EncodeToString(sum[:])
 }
 
 /*
@@ -122,7 +122,7 @@ func (r *PaasNSReconciler) getSecrets(
 	for url, encryptedSecretData := range encryptedSecrets {
 		namespacedName := types.NamespacedName{
 			Namespace: paasns.NamespaceName(),
-			Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(string(hashString(url)[:8]))),
+			Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(url)[:8])),
 		}
 		secret := r.backendSecret(ctx, paasns, namespacedName, url)
 		if decrypted, err := getRsa(paasns.Spec.Paas).Decrypt(encryptedSecretData); err != nil {
