@@ -83,6 +83,5 @@ func TestHashData(t *testing.T) {
 	testString := "My Wonderful Test String"
 	out := hashData([]byte(testString))
 
-	assert.NotNil(t, out)
 	assert.Equal(t, "703fe1668c39ec0fdf3c9916d526ba4461fe10fd36bac1e2a1b708eb8a593e418eb3f92dbbd2a6e3776516b0e03743a45cfd69de6a3280afaa90f43fa1918f74", out)
 }

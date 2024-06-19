@@ -7,17 +7,10 @@ See LICENSE.md for details.
 package crypt
 
 import (
-	"crypto/sha1"
 	"fmt"
 	"io"
 	"os"
 )
-
-func hashedKey(key []byte) []byte {
-	hasher := sha1.New()
-	hasher.Write(key)
-	return hasher.Sum(nil)[:16]
-}
 
 func encrypt(publicKey string, paasName string, data []byte) error {
 	if c, err := NewCrypt([]string{}, publicKey, paasName); err != nil {
