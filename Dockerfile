@@ -39,8 +39,8 @@ RUN sed -i "s|PAAS_VERSION = .*|PAAS_VERSION = \"$VERSION\"|" internal/version/m
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 
-LABEL MAINTAINER=CPET
+LABEL MAINTAINER=belastingdienst
 WORKDIR /
-COPY --from=builder /workspace/manager /workspace/crypttool /workspace/webservice .
+COPY --from=builder /workspace/manager /workspace/crypttool /workspace/webservice ./
 
 ENTRYPOINT ["/manager"]
