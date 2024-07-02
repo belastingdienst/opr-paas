@@ -1,28 +1,25 @@
 # Security Policy
 
-## Supported Versions
+The Dutch Tax Office (Dutch: Belastingdienst) takes the security of our products and services seriously.
 
-This is a community project, and as such we work as hard as possible to deliver
-a great experience for the latest releases of PaaS. We try as hard as we can to
-resolve all your issues, but only officially support the latest two releases of
-the latest two major releases.
+If you believe you have found a security vulnerability, please report it before sharing it with the outside world. This way, we can take measures first. This is called '[Coordinated Vulnerability Disclosure](https://www.belastingdienst.nl/wps/wcm/connect/bldcontenten/standaard_functies/individuals/contact/data-leak-vulnerability-abuse-computer-systems/coordinated-vulnerability-disclosure)' (CVD).
 
-If you run into issues on older releases, please:
+## Reporting Security Issues
 
-- check the release notes for [Releases](https://github.com/belastingdienst/paas/releases) younger than the one you're experiencing issues with for a possibly easy fix;
-- check if the issue is reproducable on the latest release;
+**Please do not report security vulnerabilities through public GitHub issues.**
 
-before you issue a support request.
+The Coordinated Vulnerability Disclosure page on our webpage explains how to securly report your finding.
 
-## Reporting a Vulnerability
+In summary:
 
-To make a report, send an email containing the details of the vulnerability to
-paas-developers@belastingdienst.nl (an alias to a private mailing list containing
-just the maintainers of the project).
+- Send us your findings by e-mail: cvd@belastingdienst.nl
+- If possible, encrypt your findings with our PGP-key on the [Coordinated Vulnerability Disclosure](https://www.belastingdienst.nl/wps/wcm/connect/bldcontenten/standaard_functies/individuals/contact/data-leak-vulnerability-abuse-computer-systems/coordinated-vulnerability-disclosure) page.
+- provide sufficient information to be able to reproduce the problem, so that we can rectify this as quickly as possible. The URL of the system affected and a description of the vulnerability are sufficient, but more information may be required for more complex vulnerabilities.
+- leave your contact details so that our Security Operations Centre can contact you in order to jointly find a safe solution. Leave at least an e-mail address or telephone number.
+- do not share the information regarding the security problem with other people until we have solved it.
+- handle the information regarding the security problem responsibly by not performing any actions that go further than necessary to demonstrate the security problem.
+- realize that any information in our systems falls under the (fiscal) duty of confidentiality and that further dissemination of the said information is a punishable offence.
 
-Private disclosure of a potential vulnerability is important.
+## Policy
 
-The maintainers will reply to acknowledge the report, and decide whether to keep
-it private or publicly disclose it.
-
-PaaS relies on the [GitHub infrastructure](https://github.com/belastingdienst/paas/security) to manage security advisories and manage vulnerabilities.
+- The Dutch Tax Office (Dutch: Belastingdienst) follows the principle of [Coordinated Vulnerability Disclosure](https://www.belastingdienst.nl/wps/wcm/connect/bldcontenten/standaard_functies/individuals/contact/data-leak-vulnerability-abuse-computer-systems/coordinated-vulnerability-disclosure).
