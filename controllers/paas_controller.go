@@ -150,9 +150,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 
 	if err := r.ReconcileQuotas(ctx, paas, logger); err != nil {
 		return errResult, err
-	} else if err = r.RegisterClusterWideQuotas(ctx, paas); err != nil {
-		return errResult, err
-	} else if err = r.UnRegisterClusterWideQuotas(ctx, paas); err != nil {
+	} else if err = r.ReconcileClusterWideQuota(ctx, paas); err != nil {
 		return errResult, err
 	} else if err = r.ReconcilePaasNss(ctx, paas, logger); err != nil {
 		return errResult, err
@@ -210,9 +208,9 @@ func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *v1alpha1.Paas) 
 	} else if err = r.FinalizeExtraClusterRoleBindings(ctx, paas); err != nil {
 		logger.Error(err, "Extra ClusterRoleBindings finalizer error")
 		return err
-	} else if err = r.UnRegisterClusterWideQuotas(ctx, paas); err != nil {
+	} else if err = r.FinalizeClusterWideQuotas(ctx, paas); err != nil {
 		return err
 	}
-	logger.Info("PaaS succesfully finalized")
+	logger.Info("PaaS successfully finalized")
 	return nil
 }
