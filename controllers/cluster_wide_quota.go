@@ -125,104 +125,133 @@ func ClusterWideCapabilityName(quotaName string) (capabilityName string, err err
 	}
 	return
 }
-func (r *PaasReconciler) RegisterClusterWideQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
-	var quota *quotav1.ClusterResourceQuota
-	var exists bool
+
+func (r *PaasReconciler) FinalizeClusterWideQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
 	for capabilityName, capability := range paas.Spec.Capabilities.AsMap() {
-		if !capability.IsEnabled() {
-			continue
-		}
-		quotaName := ClusterWideQuotaName(capabilityName)
-		if config, exists := getConfig().Capabilities[capabilityName]; !exists {
-			return fmt.Errorf("capability %s does not seem to exist", capabilityName)
-		} else if !config.QuotaSettings.Clusterwide {
-			continue
-		} else {
-			quota = backendClusterWideQuota(quotaName,
-				paas_quota.NewQuota(config.QuotaSettings.MinQuotas))
-		}
-
-		err := r.Get(ctx, types.NamespacedName{Name: quotaName}, quota)
-		if err != nil && !errors.IsNotFound(err) {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, err.Error())
+		if capability.IsEnabled() {
+			err := r.removeFromClusterWideQuota(ctx, paas, capabilityName)
+			if err != nil && errors.IsNotFound(err) {
+				continue
+			}
 			return err
 		}
-		exists = (err == nil)
-
-		if !paas.AmIOwner(quota.OwnerReferences) {
-			controllerutil.SetOwnerReference(paas, quota, r.Scheme)
-		}
-		if err := r.UpdateClusterWideQuotaResources(ctx, quota); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
-			return err
-		}
-		if exists {
-			if err = r.Update(ctx, quota); err != nil {
-				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
-				return err
-			}
-		} else {
-			if err = r.Create(ctx, quota); err != nil {
-				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, quota, err.Error())
-				return err
-			}
-		}
-		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, quota, "succeeded")
 	}
 	return nil
 }
 
-func (r *PaasReconciler) UnRegisterClusterWideQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
-	var quota *quotav1.ClusterResourceQuota
+func (r *PaasReconciler) ReconcileClusterWideQuota(ctx context.Context, paas *v1alpha1.Paas) error {
 	for capabilityName, capability := range paas.Spec.Capabilities.AsMap() {
 		if capability.IsEnabled() {
-			continue
-		}
-		quotaName := fmt.Sprintf("%s%s", cwqPrefix, capabilityName)
-		var capConfig config.ConfigCapability
-		var exists bool
-		if capConfig, exists = getConfig().Capabilities[capabilityName]; !exists {
-			return fmt.Errorf("capability %s does not seem to exist", quotaName)
-		} else {
-			quota = backendClusterWideQuota(quotaName,
-				paas_quota.NewQuota(capConfig.QuotaSettings.MinQuotas))
-		}
-		err := r.Get(ctx, types.NamespacedName{
-			Name: quotaName,
-		}, quota)
-		if err != nil && errors.IsNotFound(err) {
-			continue
-		} else if err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, err.Error())
-			return err
-		} else if !capConfig.QuotaSettings.Clusterwide {
-			if err := r.Delete(ctx, quota); err != nil && !errors.IsNotFound(err) {
-				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, quota, err.Error())
+			err := r.addToClusterWideQuota(ctx, paas, capabilityName)
+			if err != nil && errors.IsNotFound(err) {
+				continue
+			}
+			if err != nil {
 				return err
 			}
-			continue
-		} else if quota == nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, "unexpectedly quota is nil")
-			return err
-		}
-		quota.OwnerReferences = paas.WithoutMe(quota.OwnerReferences)
-		if len(quota.OwnerReferences) < 1 {
-			if err = r.Delete(ctx, quota); err != nil {
-				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, quota, err.Error())
+		} else {
+			err := r.removeFromClusterWideQuota(ctx, paas, capabilityName)
+			if err != nil && errors.IsNotFound(err) {
+				continue
+			}
+			if err != nil {
 				return err
 			}
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusDelete, quota, "succeeded")
-			continue
-		}
-		if err := r.UpdateClusterWideQuotaResources(ctx, quota); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
-			return err
-		} else if err = r.Update(ctx, quota); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
-			return err
-		} else {
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusFind, quota, "succeeded")
 		}
 	}
+	return nil
+}
+
+func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alpha1.Paas, capabilityName string) error {
+	var quota *quotav1.ClusterResourceQuota
+	var exists bool
+	quotaName := ClusterWideQuotaName(capabilityName)
+	if config, exists := getConfig().Capabilities[capabilityName]; !exists {
+		return fmt.Errorf("capability %s does not seem to exist in configuration", capabilityName)
+	} else if !config.QuotaSettings.Clusterwide {
+		return nil
+	} else {
+		quota = backendClusterWideQuota(quotaName,
+			paas_quota.NewQuota(config.QuotaSettings.MinQuotas))
+	}
+
+	err := r.Get(ctx, types.NamespacedName{Name: quotaName}, quota)
+	if err != nil && !errors.IsNotFound(err) {
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, err.Error())
+		return err
+	}
+	exists = (err == nil)
+
+	if !paas.AmIOwner(quota.OwnerReferences) {
+		controllerutil.SetOwnerReference(paas, quota, r.Scheme)
+	}
+	if err := r.UpdateClusterWideQuotaResources(ctx, quota); err != nil {
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
+		return err
+	}
+	if exists {
+		if err = r.Update(ctx, quota); err != nil {
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
+			return err
+		}
+	} else {
+		if err = r.Create(ctx, quota); err != nil {
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, quota, err.Error())
+			return err
+		}
+	}
+	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, quota, "succeeded")
+	return nil
+}
+
+func (r *PaasReconciler) removeFromClusterWideQuota(ctx context.Context, paas *v1alpha1.Paas, capabilityName string) error {
+	var quota *quotav1.ClusterResourceQuota
+	quotaName := fmt.Sprintf("%s%s", cwqPrefix, capabilityName)
+	var capConfig config.ConfigCapability
+	var exists bool
+	if capConfig, exists = getConfig().Capabilities[capabilityName]; !exists {
+		return fmt.Errorf("capability %s does not seem to exist", quotaName)
+	} else {
+		quota = backendClusterWideQuota(quotaName,
+			paas_quota.NewQuota(capConfig.QuotaSettings.MinQuotas))
+	}
+	err := r.Get(ctx, types.NamespacedName{
+		Name: quotaName,
+	}, quota)
+	if err != nil && errors.IsNotFound(err) {
+		return nil
+	} else if err != nil {
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, err.Error())
+		return err
+	} else if !capConfig.QuotaSettings.Clusterwide {
+		err := r.Delete(ctx, quota)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, quota, err.Error())
+			}
+			return err
+		}
+		return err
+	} else if quota == nil {
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, "unexpectedly quota is nil")
+		return fmt.Errorf("unexpectedly quota %s is nil", quotaName)
+	}
+	quota.OwnerReferences = paas.WithoutMe(quota.OwnerReferences)
+	if len(quota.OwnerReferences) < 1 {
+		if err = r.Delete(ctx, quota); err != nil {
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, quota, err.Error())
+			return err
+		}
+		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusDelete, quota, "succeeded")
+		return nil
+	}
+	if err := r.UpdateClusterWideQuotaResources(ctx, quota); err != nil {
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
+		return err
+	} else if err = r.Update(ctx, quota); err != nil {
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
+		return err
+	}
+	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, quota, "succeeded")
 	return nil
 }
