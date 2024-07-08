@@ -41,11 +41,19 @@ func (r *PaasReconciler) FetchAllPaasCapabilityResources(
 	for _, reference := range quota.OwnerReferences {
 		paasNamespacedName := types.NamespacedName{Name: reference.Name}
 		if reference.Kind != "Paas" || reference.APIVersion != v1alpha1.GroupVersion.String() {
-			err = fmt.Errorf("quota references a missing paas")
+			// We don't bother the owner reference to a different CR is here.
+			// We just don't add it to the list of resources.
+			continue
+		}
+		if getErr := r.Get(ctx, paasNamespacedName, paas); getErr != nil {
+			if errors.IsNotFound(getErr) {
+				// Quota referencing a missing PaaS, no problem.
+				continue
+			}
+			err = fmt.Errorf("Error occuring while retrieving the PaaS %s", getErr.Error())
 			return
-		} else if err = r.Get(ctx, paasNamespacedName, paas); err != nil {
-			return
-		} else if paasCap, exists := paas.Spec.Capabilities.AsMap()[capabilityName]; !exists {
+		}
+		if paasCap, exists := paas.Spec.Capabilities.AsMap()[capabilityName]; !exists {
 			resources.Append(paas_quota.NewQuota(defaults))
 		} else {
 			resources.Append(paasCap.Quotas().QuotaWithDefaults(defaults))
