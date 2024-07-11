@@ -36,7 +36,6 @@ func requireSubcommand(cmd *cobra.Command, args []string) error {
 
 // createApp returns a cobra.Command, and the underlying globalOptions object, to be run or tested.
 func createApp() *cobra.Command {
-
 	rootCommand := &cobra.Command{
 		Use:              "crypttool",
 		Long:             "Various operations for paas secret encryption",

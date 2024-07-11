@@ -61,7 +61,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 			// Something fishy is going on
 			// Maybe someone cleaned the finalizers and then removed the PaasNs resource?
 			logger.Info(req.NamespacedName.Name + " is already gone")
-			//return ctrl.Result{}, fmt.Errorf("PaasNs object %s already gone", req.NamespacedName)
+			// return ctrl.Result{}, fmt.Errorf("PaasNs object %s already gone", req.NamespacedName)
 			return nil, nil
 		}
 		return nil, err
@@ -123,7 +123,6 @@ func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS)
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
-
 	paasns := &v1alpha1.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
 	logger := getLogger(ctx, paasns, "PaasNs", req.Name)
 	logger.Info("Reconciling the PaasNs object")
@@ -331,6 +330,6 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 			return err
 		}
 	}
-	logger.Info("PaasNs succesfully finalized")
+	logger.Info("PaasNs successfully finalized")
 	return nil
 }

@@ -35,7 +35,6 @@ func (r *PaasReconciler) EnsureQuota(
 		Name: quota.Name,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
-
 		// Create the quota
 		if err = r.Create(ctx, quota); err != nil {
 			// creating the quota failed
@@ -80,7 +79,7 @@ func (r *PaasReconciler) backendQuota(
 	}
 	logger := getLogger(ctx, paas, "Quota", quotaName)
 	logger.Info("Defining quota")
-	//matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
+	// matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	quota := &quotav1.ClusterResourceQuota{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterResourceQuota",
@@ -94,7 +93,8 @@ func (r *PaasReconciler) backendQuota(
 			Selector: quotav1.ClusterResourceQuotaSelector{
 				LabelSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						getConfig().QuotaLabel: quotaName},
+						getConfig().QuotaLabel: quotaName,
+					},
 				},
 			},
 			Quota: corev1.ResourceQuotaSpec{
@@ -187,7 +187,6 @@ func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha
 }
 
 func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1alpha1.PaasNS) error {
-
 	logger := getLogger(ctx, paasns, "Quota", paasns.NamespaceName())
 	logger.Info("Finalizing")
 	obj := &quotav1.ClusterResourceQuota{}

@@ -50,7 +50,7 @@ func (r *PaasReconciler) FetchAllPaasCapabilityResources(
 				// Quota referencing a missing PaaS, no problem.
 				continue
 			}
-			err = fmt.Errorf("Error occuring while retrieving the PaaS %s", getErr.Error())
+			err = fmt.Errorf("Error occurring while retrieving the PaaS %s", getErr.Error())
 			return
 		}
 		if paasCap, exists := paas.Spec.Capabilities.AsMap()[capabilityName]; !exists {
@@ -90,7 +90,7 @@ func backendClusterWideQuota(
 	quotaName string,
 	hardQuotas map[corev1.ResourceName]resourcev1.Quantity,
 ) *quotav1.ClusterResourceQuota {
-	//matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
+	// matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	quota := &quotav1.ClusterResourceQuota{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ClusterResourceQuota",
@@ -103,7 +103,8 @@ func backendClusterWideQuota(
 			Selector: quotav1.ClusterResourceQuotaSelector{
 				LabelSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						getConfig().QuotaLabel: quotaName},
+						getConfig().QuotaLabel: quotaName,
+					},
 				},
 			},
 			Quota: corev1.ResourceQuotaSpec{

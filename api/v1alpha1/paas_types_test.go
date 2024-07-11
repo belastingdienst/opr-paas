@@ -15,18 +15,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	testGroups = PaasGroups{
-		"cn=test1": PaasGroup{
-			Query: "CN=test2,OU=org_unit,DC=example,DC=org",
-			Users: []string{"usr1", "usr2"},
-		},
-		"cn=test3": PaasGroup{
-			Query: "CN=test4",
-			Users: []string{"usr3", "usr2"},
-		},
-	}
-)
+var testGroups = PaasGroups{
+	"cn=test1": PaasGroup{
+		Query: "CN=test2,OU=org_unit,DC=example,DC=org",
+		Users: []string{"usr1", "usr2"},
+	},
+	"cn=test3": PaasGroup{
+		Query: "CN=test4",
+		Users: []string{"usr3", "usr2"},
+	},
+}
 
 // Paas
 

@@ -61,7 +61,7 @@ func (pk *cryptPrivateKey) writePrivateKey() error {
 		Type:  "RSA PRIVATE KEY",
 		Bytes: privateKeyBytes,
 	})
-	if err := os.WriteFile(pk.privateKeyPath, privateKeyPEM, 0644); err != nil {
+	if err := os.WriteFile(pk.privateKeyPath, privateKeyPEM, 0o644); err != nil {
 		return fmt.Errorf("unable to write private key: %e", err)
 	}
 	fmt.Printf("Private key written to %s\n", pk.privateKeyPath)
@@ -153,7 +153,7 @@ func (c *Crypt) writePublicKey() error {
 			Type:  "RSA PUBLIC KEY",
 			Bytes: publicKeyBytes,
 		})
-		if err = os.WriteFile(c.publicKeyPath, publicKeyPEM, 0644); err != nil {
+		if err = os.WriteFile(c.publicKeyPath, publicKeyPEM, 0o644); err != nil {
 			return fmt.Errorf("unable to write public key: %e", err)
 		}
 	}

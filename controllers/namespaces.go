@@ -30,7 +30,6 @@ func EnsureNamespace(
 	ns *corev1.Namespace,
 	scheme *runtime.Scheme,
 ) error {
-
 	// See if namespace exists and create if it doesn't
 	found := &corev1.Namespace{}
 	err := r.Get(ctx, types.NamespacedName{
@@ -124,7 +123,6 @@ func (r *PaasNSReconciler) FinalizeNamespace(
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) error {
-
 	/*
 	   Hoe voorkomen wij dat eimand een paasns maakt voor een verkeerde paas en als hij wordt weggegooid, dat hij dan de verkeerde namespace weggooit???
 	*/
@@ -157,7 +155,6 @@ func (r *PaasNSReconciler) ReconcileNamespaces(
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 ) (err error) {
-
 	nsName := paasns.NamespaceName()
 	var nsQuota string
 	if config, exists := getConfig().Capabilities[paasns.Name]; !exists {

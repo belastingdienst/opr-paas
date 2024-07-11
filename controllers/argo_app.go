@@ -29,7 +29,6 @@ func (r *PaasNSReconciler) EnsureArgoApp(
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) error {
-
 	if paasns.Name != "argocd" {
 		return nil
 	}
