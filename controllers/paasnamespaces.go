@@ -21,7 +21,8 @@ import (
 )
 
 func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, name string,
-	groups []string, secrets map[string]string) *v1alpha1.PaasNS {
+	groups []string, secrets map[string]string,
+) *v1alpha1.PaasNS {
 	pns := &v1alpha1.PaasNS{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PaasNS",
@@ -60,7 +61,6 @@ func (r *PaasReconciler) ensurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 		Namespace: pns.Namespace,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
-
 		if err = r.Create(ctx, pns); err != nil {
 			// creating the namespace failed
 			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, pns, err.Error())

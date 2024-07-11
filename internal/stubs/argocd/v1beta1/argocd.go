@@ -115,7 +115,6 @@ type ArgoCDApplicationControllerSpec struct {
 
 // ArgoCDApplicationControllerShardSpec defines the options available for enabling sharding for the Application Controller component.
 type ArgoCDApplicationControllerShardSpec struct {
-
 	// Enabled defines whether sharding should be enabled on the Application Controller component.
 	Enabled bool `json:"enabled,omitempty"`
 
@@ -139,7 +138,6 @@ type ArgoCDApplicationControllerShardSpec struct {
 
 // ArgoCDApplicationSet defines whether the Argo CD ApplicationSet controller should be installed.
 type ArgoCDApplicationSet struct {
-
 	// Env lets you specify environment for applicationSet controller pods
 	Env []corev1.EnvVar `json:"env,omitempty"`
 
@@ -333,7 +331,6 @@ type ArgoCDList struct {
 
 // ArgoCDNotifications defines whether the Argo CD Notifications controller should be installed.
 type ArgoCDNotifications struct {
-
 	// Replicas defines the number of replicas to run for notifications-controller
 	Replicas *int32 `json:"replicas,omitempty"`
 
@@ -435,7 +432,6 @@ type ArgoCDRedisSpec struct {
 
 // ArgoCDRepoSpec defines the desired state for the Argo CD repo server component.
 type ArgoCDRepoSpec struct {
-
 	// Extra Command arguments allows users to pass command line arguments to repo server workload. They get added to default command line arguments provided
 	// by the operator.
 	// Please note that the command line arguments provided as part of ExtraRepoCommandArgs will not overwrite the default command line arguments.
@@ -684,7 +680,6 @@ type ArgoCDNodePlacementSpec struct {
 // ArgoCDSpec defines the desired state of ArgoCD
 // +k8s:openapi-gen=true
 type ArgoCDSpec struct {
-
 	// ArgoCDApplicationSet defines whether the Argo CD ApplicationSet controller should be installed.
 	ApplicationSet *ArgoCDApplicationSet `json:"applicationSet,omitempty"`
 
@@ -949,7 +944,6 @@ type SSHHostsSpec struct {
 
 // WebhookServerSpec defines the options for the ApplicationSet Webhook Server component.
 type WebhookServerSpec struct {
-
 	// Host is the hostname to use for Ingress/Route resources.
 	//+operator-sdk:csv:customresourcedefinitions:type=spec,displayName="Host",xDescriptors={"urn:alm:descriptor:com.tectonic.ui:fieldGroup:Server","urn:alm:descriptor:com.tectonic.ui:text"}
 	Host string `json:"host,omitempty"`

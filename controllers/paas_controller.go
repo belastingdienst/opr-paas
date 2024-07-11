@@ -75,7 +75,7 @@ func (r *PaasReconciler) GetPaas(
 			// Maybe someone cleaned the finalizers and then removed the PaaS project?
 			logger.Info(req.NamespacedName.Name + " is already gone")
 			return nil, nil
-			//return ctrl.Result{}, fmt.Errorf("PaaS object %s already gone", req.NamespacedName)
+			// return ctrl.Result{}, fmt.Errorf("PaaS object %s already gone", req.NamespacedName)
 		}
 		return nil, err
 	} else if paas.GetDeletionTimestamp() != nil {
@@ -166,7 +166,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 
 	logger.Info("Updating PaaS object status")
 	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paas, "succeeded")
-	logger.Info("PAAS object succesfully reconciled")
+	logger.Info("PAAS object successfully reconciled")
 	return okResult, nil
 }
 

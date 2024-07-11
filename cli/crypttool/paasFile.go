@@ -66,7 +66,7 @@ func writeFile(buffer []byte, path string) error {
 		return err
 	}
 
-	log.Printf("file '%s' succesfully updated", path)
+	log.Printf("file '%s' successfully updated", path)
 	return nil
 }
 

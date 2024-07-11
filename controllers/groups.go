@@ -21,7 +21,6 @@ import (
 )
 
 func uniqueUsers(found userv1.OptionalNames, expected userv1.OptionalNames) (unique userv1.OptionalNames) {
-
 	// All of this is to make the list of users a unique
 	// combined list of users that where and now should be added
 	users := make(map[string]bool)
@@ -57,7 +56,6 @@ func (r *PaasReconciler) EnsureGroup(
 	paas *v1alpha1.Paas,
 	group *userv1.Group,
 ) error {
-
 	logger := getLogger(ctx, paas, "Group", group.Name)
 
 	// See if group already exists and create if it doesn't
@@ -137,8 +135,8 @@ func (r *PaasReconciler) backendGroup(
 	}
 	g.ObjectMeta.Labels["openshift.io/ldap.host"] = getConfig().LDAP.Host
 
-	//If we would have multiple PaaS projects defining this group, and all are cleaned,
-	//the garbage collector would also clean this group...
+	// If we would have multiple PaaS projects defining this group, and all are cleaned,
+	// the garbage collector would also clean this group...
 	controllerutil.SetOwnerReference(paas, g, r.Scheme)
 	return g
 }
@@ -210,7 +208,6 @@ func (r *PaasReconciler) ReconcileGroups(
 	paas *v1alpha1.Paas,
 	logger logr.Logger,
 ) error {
-
 	logger.Info("Creating groups for PAAS object ")
 	for _, group := range r.BackendGroups(ctx, paas) {
 		if err := r.EnsureGroup(ctx, paas, group); err != nil {

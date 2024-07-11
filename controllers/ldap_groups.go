@@ -87,7 +87,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 		whitelistGroups.AddFromString(whitelist)
 		logger.Info(fmt.Sprintf("Adding extra groups to whitelist: %v", gs))
 		if changed := whitelistGroups.Add(&gs); !changed {
-			//fmt.Printf("configured: %d, combined: %d", l1, l2)
+			// fmt.Printf("configured: %d, combined: %d", l1, l2)
 			logger.Info("No new info in whitelist")
 			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, cm, "no changes")
 			return nil
@@ -140,12 +140,11 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 				isChanged = true
 			}
 		}
-		//fmt.Printf("configured: %d, combined: %d", l1, l2)
+		// fmt.Printf("configured: %d, combined: %d", l1, l2)
 		if !isChanged {
 			return nil
 		}
 		cm.Data[whitelistKeyName] = gs.AsString()
 	}
 	return r.Update(ctx, cm)
-
 }

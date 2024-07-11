@@ -90,7 +90,7 @@ func Test_getRSA(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, encrypted, 684)
 
-	// explicitely didn't reset
+	// explicitly didn't reset
 
 	// test: results in two entries in _crypt
 	getConfig()
