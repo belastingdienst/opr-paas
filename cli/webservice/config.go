@@ -73,5 +73,4 @@ func NewWSConfig() WSConfig {
 	config.Endpoint = formatEndpoint(os.Getenv(endpointEnv))
 
 	return config
-
 }

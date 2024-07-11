@@ -29,7 +29,6 @@ func DecryptFromStdin(privateKeys []string, paasName string) error {
 	} else {
 		if c, err := NewCrypt(privateKeys, "", paasName); err != nil {
 			return err
-
 		} else if encrypted, err := c.Decrypt(string(data)); err != nil {
 			return fmt.Errorf("failed to decrypt: %e", err)
 		} else {
@@ -58,7 +57,6 @@ func EncryptFile(publicKey string, paasName string, path string) error {
 func GenerateKeyPair(privateKey string, publicKey string) error {
 	if privateKey == "" {
 		f, err := os.CreateTemp("", "paas")
-
 		if err != nil {
 			return fmt.Errorf("privateKey not specified and failed to create temp file: %e", err)
 		}
@@ -68,7 +66,6 @@ func GenerateKeyPair(privateKey string, publicKey string) error {
 
 	if publicKey == "" {
 		f, err := os.CreateTemp("", "paas")
-
 		if err != nil {
 			return fmt.Errorf("privateKey not specified and failed to create temp file: %e", err)
 		}

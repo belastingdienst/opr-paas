@@ -71,7 +71,6 @@ func updateClusterRoleBinding(
 func newClusterRoleBinding(
 	role string,
 ) *rbac.ClusterRoleBinding {
-
 	crbName := fmt.Sprintf(crbNameFormat, role)
 	rb := &rbac.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
@@ -184,7 +183,6 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 				return err
 			}
 		}
-
 	}
 	return nil
 }

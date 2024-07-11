@@ -51,11 +51,9 @@ func (r *PaasNSReconciler) EnsureSecret(
 		return err
 	} else {
 		if err = r.Update(ctx, secret); err != nil {
-
 			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, secret, err.Error())
 		} else {
 			paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, secret, "succeeded")
-
 		}
 		return err
 	}
@@ -143,7 +141,7 @@ func (r *PaasNSReconciler) BackendSecrets(
 ) (secrets []*corev1.Secret) {
 	// From the PaasNS resource
 	secrets = append(secrets, r.getSecrets(ctx, paasns, paasns.Spec.SshSecrets)...)
-	//From the Paas Resource capability chapter (if applicable)
+	// From the Paas Resource capability chapter (if applicable)
 	if cap, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists && cap.IsEnabled() {
 		secrets = append(secrets, r.getSecrets(ctx, paasns, cap.GetSshSecrets())...)
 	}
@@ -167,7 +165,7 @@ func (r *PaasNSReconciler) ReconcileSecrets(
 			logger.Error(err, "Failure while creating secret", "secret", secret)
 			return err
 		}
-		logger.Info("Ssh secret succesfully created", "secret", secret)
+		logger.Info("Ssh secret successfully created", "secret", secret)
 	}
 	return nil
 }

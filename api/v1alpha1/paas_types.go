@@ -24,10 +24,10 @@ type PaasSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	//Cabailities is a subset of capabilities that will be available in this Pass Project
+	// Capabilities is a subset of capabilities that will be available in this PaaS Project
 	Capabilities PaasCapabilities `json:"capabilities,omitempty"`
 
-	//requestor is an informational field which decides on the requestor (also application responable)
+	// Requestor is an informational field which decides on the requestor (also application responable)
 	Requestor string `json:"requestor"`
 
 	Groups PaasGroups `json:"groups,omitempty"`
@@ -102,7 +102,6 @@ func (p Paas) AllEnabledNamespaces() (ns map[string]bool) {
 		ns[name] = true
 	}
 	return
-
 }
 
 func (p Paas) PrefixedAllEnabledNamespaces() (ns map[string]bool) {
@@ -118,7 +117,6 @@ func (p Paas) extraNamespaces() (ns map[string]bool) {
 		}
 	}
 	return
-
 }
 
 // func (p Paas) invalidExtraNamespaces() (ns map[string]bool) {
@@ -450,8 +448,10 @@ func (ps *PaasStatus) Truncate() {
 	ps.Messages = []string{}
 }
 
-type PaasStatusLevel string
-type PaasStatusAction string
+type (
+	PaasStatusLevel  string
+	PaasStatusAction string
+)
 
 const (
 	PaasStatusInfo      PaasStatusLevel  = "INFO"

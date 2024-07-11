@@ -8,7 +8,6 @@ package groups
 
 import (
 	"sort"
-
 	"strings"
 )
 
@@ -61,7 +60,7 @@ func (gs *Groups) Add(other *Groups) bool {
 }
 
 func NewGroup(query string) *Group {
-	//CN=gkey,OU=org_unit,DC=example,DC=org
+	// CN=gkey,OU=org_unit,DC=example,DC=org
 	if cn := strings.Split(string(query), ",")[0]; !strings.ContainsAny(cn, "=") {
 		return nil
 	} else {
@@ -71,6 +70,7 @@ func NewGroup(query string) *Group {
 		}
 	}
 }
+
 func (gs *Groups) AddFromStrings(l []string) {
 	for _, query := range l {
 		group := NewGroup(query)

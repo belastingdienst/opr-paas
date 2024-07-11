@@ -63,7 +63,6 @@ func EnsureRoleBinding(
 	found := &rbac.RoleBinding{}
 	err := r.Get(ctx, namespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
-
 		// Create the rolebinding
 		err = r.Create(ctx, rb)
 
@@ -100,7 +99,6 @@ func EnsureRoleBinding(
 		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "not needed")
 	}
 	return err
-
 }
 
 // backendRoleBinding is a code for Creating RoleBinding
@@ -115,7 +113,7 @@ func backendRoleBinding(
 	logger := getLogger(ctx, paas, "RoleBinding", name.String())
 	logger.Info(fmt.Sprintf("Defining %s RoleBinding", name))
 
-	var subjects = []rbac.Subject{}
+	subjects := []rbac.Subject{}
 	for _, g := range groups {
 		subjects = append(subjects,
 			rbac.Subject{

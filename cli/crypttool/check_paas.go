@@ -51,7 +51,6 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 				}
 			}
 		}
-
 	}
 
 	errMsg := fmt.Sprintf("Finished with %d errors", errNum)

@@ -36,7 +36,6 @@ func (r *PaasReconciler) EnsureAppProject(
 	found := &argo.AppProject{}
 	err := r.Get(ctx, namespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
-
 		// Create the namespace
 		err = r.Create(ctx, project)
 

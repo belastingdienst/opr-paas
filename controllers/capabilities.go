@@ -36,7 +36,6 @@ func (es Elements) AsString() string {
 		l = append(l, fmt.Sprintf("'%s': '%s'", key, strings.ReplaceAll(value, "'", "\\'")))
 	}
 	return fmt.Sprintf("{ %s }", strings.Join(l, ", "))
-
 }
 
 func (es Elements) AsJSON() ([]byte, error) {
@@ -100,6 +99,7 @@ func clearGenerators(generators []appv1.ApplicationSetGenerator) (clean []appv1.
 	}
 	return clean
 }
+
 func getListGen(generators []appv1.ApplicationSetGenerator) *appv1.ApplicationSetGenerator {
 	for _, generator := range generators {
 		if len(generator.List.Elements) > 0 {
@@ -153,7 +153,7 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 	logger := getLogger(ctx, paasns, "AppSet", namespacedName.String())
 	logger.Info(fmt.Sprintf("Reconciling %s Applicationset %s", paasns.Name, namespacedName.String()))
 	err = r.Get(ctx, namespacedName, appSet)
-	//groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
+	// groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
 	if err != nil {
@@ -216,7 +216,7 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 	logger := getLogger(ctx, paasns, "AppSet", asNamespacedName.String())
 	logger.Info(fmt.Sprintf("Reconciling %s Applicationset", paasns.Name))
 	err := r.Get(ctx, asNamespacedName, as)
-	//groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
+	// groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
 	if err != nil {
@@ -250,7 +250,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	logger := getLogger(ctx, paas, "AppSet", asNamespacedName.String())
 	logger.Info(fmt.Sprintf("Reconciling %s Applicationset", capability))
 	err := r.Get(ctx, asNamespacedName, as)
-	//groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
+	// groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
 	if err != nil {
