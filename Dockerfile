@@ -1,6 +1,6 @@
 # Build the manager binary
 
-FROM docker.io/golang:1.21 AS builder
+FROM docker.io/golang:1.22 AS builder
 
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
