@@ -11,7 +11,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	paas_quota "github.com/belastingdienst/opr-paas/api/quota"
+	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
 
 	"github.com/go-logr/logr"
 	quotav1 "github.com/openshift/api/quota/v1"

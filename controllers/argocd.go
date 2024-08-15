@@ -11,8 +11,9 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argocd/v1beta1"
+	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -62,6 +63,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusFind, argo, err.Error())
 		return err
 	}
+	patch := client.MergeFrom(argo.DeepCopy())
 	var oldPolicy string
 	if argo.Spec.RBAC.Policy != nil {
 		oldPolicy = *argo.Spec.RBAC.Policy
@@ -75,5 +77,5 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 	argo.Spec.RBAC.Scopes = &scopes
 	logger.Info("Updating ArgoCD object")
 	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, argo, "updating ArgoCD instance")
-	return r.Update(ctx, argo)
+	return r.Patch(ctx, argo, patch)
 }

@@ -11,7 +11,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	"github.com/go-logr/logr"
 
 	"k8s.io/apimachinery/pkg/api/errors"
