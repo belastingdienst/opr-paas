@@ -13,9 +13,10 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	appv1 "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // Elements represents all key, value pars for one entry in the list of the listgenerator
@@ -93,7 +94,10 @@ func EntriesFromJSON(data []apiextensionsv1.JSON) (Entries, error) {
 
 func clearGenerators(generators []appv1.ApplicationSetGenerator) (clean []appv1.ApplicationSetGenerator) {
 	for _, generator := range generators {
-		if generator.Size() > 0 {
+		if generator.List == nil {
+			// Not a list generator, not introduced by paas operator, we should preserve
+			clean = append(clean, generator)
+		} else if len(generator.List.Elements) > 0 {
 			clean = append(clean, generator)
 		}
 	}
@@ -160,7 +164,9 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 		// Applicationset does not exixt
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, appSet, err.Error())
 		return err
-	} else if listGen = getListGen(appSet.Spec.Generators); listGen == nil {
+	}
+	patch := client.MergeFrom(appSet.DeepCopy())
+	if listGen = getListGen(appSet.Spec.Generators); listGen == nil {
 		// create the list
 		listGen = &appv1.ApplicationSetGenerator{
 			List: &appv1.ListGenerator{},
@@ -189,7 +195,7 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 
 	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, appSet, "succeeded")
 	appSet.Spec.Generators = clearGenerators(appSet.Spec.Generators)
-	return r.Update(ctx, appSet)
+	return r.Patch(ctx, appSet, patch)
 }
 
 // ensureAppSetCap ensures a list entry in the AppSet voor the capability
@@ -222,7 +228,9 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 	if err != nil {
 		// Applicationset does not exixt
 		return nil
-	} else if listGen = getListGen(as.Spec.Generators); listGen == nil {
+	}
+	patch := client.MergeFrom(as.DeepCopy())
+	if listGen = getListGen(as.Spec.Generators); listGen == nil {
 		// no need to create the list
 		return nil
 	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
@@ -236,7 +244,7 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 		listGen.List.Elements = json
 	}
 
-	return r.Update(ctx, as)
+	return r.Patch(ctx, as, patch)
 }
 
 func (r *PaasReconciler) finalizeAppSetCap(
@@ -256,7 +264,9 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	if err != nil {
 		// Applicationset does not exixt
 		return nil
-	} else if listGen = getListGen(as.Spec.Generators); listGen == nil {
+	}
+	patch := client.MergeFrom(as.DeepCopy())
+	if listGen = getListGen(as.Spec.Generators); listGen == nil {
 		// no need to create the list
 		return nil
 	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
@@ -271,7 +281,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 		listGen.List.Elements = json
 	}
 
-	return r.Update(ctx, as)
+	return r.Patch(ctx, as, patch)
 }
 
 // ensureAppSetCap ensures a list entry in the AppSet voor the capability

@@ -11,11 +11,12 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -46,9 +47,10 @@ func (r *PaasNSReconciler) EnsureArgoApp(
 		return err
 	} else if err := r.Get(ctx, namespacedName, found); err == nil {
 		logger.Info("Argo Application already exists, updating")
+		patch := client.MergeFrom(found.DeepCopy())
 		found.Spec = argoApp.Spec
 		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, found, "succeeded")
-		return r.Update(ctx, found)
+		return r.Patch(ctx, found, patch)
 	} else if !errors.IsNotFound(err) {
 		logger.Error(err, "Could not retrieve info of Argo Application")
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusAction(v1alpha1.PaasStatusInfo), argoApp, err.Error())
