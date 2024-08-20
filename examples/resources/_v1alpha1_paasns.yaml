@@ -1,0 +1,19 @@
+apiVersion: cpet.belastingdienst.nl/v1alpha1
+kind: PaasNS
+metadata:
+  labels:
+    app.kubernetes.io/name: paasns
+    app.kubernetes.io/instance: paasns-sample
+    app.kubernetes.io/part-of: opr-paas
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: opr-paas
+  name: ns1
+  namespace: aap-aap
+spec:
+  paas: aap-aap
+  groups:
+    - group1
+    - group2
+  sshSecrets:
+    'ssh://git@vcs/proj/repo/': >-
+      2wkeKe==
