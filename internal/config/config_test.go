@@ -30,7 +30,7 @@ func Test_ConfigRoleMappingsRoles(t *testing.T) {
 }
 
 func Test_InvalidConfig(t *testing.T) {
-	err := os.Setenv("PAAS_CONFIG", "../../config/test/paas_config_invalid.yml")
+	err := os.Setenv("PAAS_CONFIG", "../../test/manifests/config/paas_config_invalid.yml")
 	require.NoError(t, err, "Setting env")
 
 	_, err = NewConfig()
@@ -38,7 +38,7 @@ func Test_InvalidConfig(t *testing.T) {
 }
 
 func Test_ValidConfig(t *testing.T) {
-	os.Setenv("PAAS_CONFIG", "../../config/test/paas_config.yml")
+	os.Setenv("PAAS_CONFIG", "../../test/manifests/config/paas_config.yml")
 	config, err := NewConfig()
 	require.NoError(t, err, "Reading valid paas_config should not raise an error")
 	assert.Equal(t, "my-ldap-host", config.LDAP.Host)
