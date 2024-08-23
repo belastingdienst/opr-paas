@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// See readme for more info, in short: we skip CRD creation and trigger deepcopy generation with the following markers.
+// Package v1alpha1 contains API Schema definitions for the v1alpha1 API group
+// +kubebuilder:skip
+// +kubebuilder:object:generate=true
 package v1alpha1
 
 import (
@@ -27,7 +31,7 @@ var (
 	SchemeGroup = "argoproj.io"
 
 	// SchemeGroupVersion is group version used to register these objects
-	SchemeGroupVersion = schema.GroupVersion{Group: SchemeGroup, Version: "v1beta1"}
+	SchemeGroupVersion = schema.GroupVersion{Group: SchemeGroup, Version: "v1alpha1"}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
@@ -42,6 +46,10 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		SchemeGroupVersion,
 		&AppProject{},
 		&AppProjectList{},
+		&Application{},
+		&ApplicationList{},
+		&ApplicationSet{},
+		&ApplicationSetList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
