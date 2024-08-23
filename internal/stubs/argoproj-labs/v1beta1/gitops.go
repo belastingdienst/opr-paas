@@ -20,6 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +kubebuilder:object:root=true
+
 type ArgoCD struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -28,7 +30,6 @@ type ArgoCD struct {
 }
 
 // ArgoCDSpec defines the desired state of ArgoCD
-// +k8s:openapi-gen=true
 type ArgoCDSpec struct {
 	// RBAC defines the RBAC configuration for Argo CD.
 	RBAC ArgoCDRBACSpec `json:"rbac,omitempty"`
@@ -48,6 +49,8 @@ type ArgoCDRBACSpec struct {
 	// If omitted, defaults to: '[groups]'.
 	Scopes *string `json:"scopes,omitempty"`
 }
+
+// +kubebuilder:object:root=true
 
 // ArgoCDList contains a list of ArgoCD
 type ArgoCDList struct {

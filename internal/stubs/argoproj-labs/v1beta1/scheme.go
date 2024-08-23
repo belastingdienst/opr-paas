@@ -1,8 +1,11 @@
+// See readme for more info, in short: we skip CRD creation and trigger deepcopy generation with the following markers.
+// +kubebuilder:skip
+// +kubebuilder:object:generate=true
 package v1beta1
 
 /*
-Because of depency issues we decided to use a stub instead of importing all dependencies behind the original code of ArgoCD.
-This of coarse introduces other risks, which we need to mitigate, meaning when we use axtra features of ArgoCD,
+Because of dependency issues we decided to use a stub instead of importing all dependencies behind the original code of ArgoCD.
+This of course introduces other risks, which we need to mitigate, meaning when we use extra features of ArgoCD,
 we should check that we still have all parts of their CRD in our stub.
 
 More info here: https://argo-cd.readthedocs.io/en/stable/user-guide/import/
