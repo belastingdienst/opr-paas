@@ -4,6 +4,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +kubebuilder:object:root=true
+
 type Application struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
@@ -74,4 +76,13 @@ type ApplicationDestination struct {
 
 	// nolint:govet
 	isServerInferred bool `json:"-"`
+}
+
+// +kubebuilder:object:root=true
+
+// ApplicationList is list of Application resources
+type ApplicationList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
+	Items           []Application `json:"items" protobuf:"bytes,2,rep,name=items"`
 }

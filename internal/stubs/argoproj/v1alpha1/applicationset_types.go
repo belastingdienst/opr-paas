@@ -21,12 +21,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// +kubebuilder:object:root=true
+
 // ApplicationSet is a set of Application resources
-// +genclient
-// +genclient:noStatus
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:path=applicationsets,shortName=appset;appsets
-// +kubebuilder:subresource:status
 type ApplicationSet struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
@@ -45,6 +42,14 @@ type ApplicationSetGenerator struct {
 
 // ListGenerator include items info
 type ListGenerator struct {
-	// +kubebuilder:validation:Optional
 	Elements []apiextensionsv1.JSON `json:"elements" protobuf:"bytes,1,name=elements"`
+}
+
+// +kubebuilder:object:root=true
+
+// ApplicationSetList contains a list of ApplicationSet
+type ApplicationSetList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	Items           []ApplicationSet `json:"items" protobuf:"bytes,2,rep,name=items"`
 }

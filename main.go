@@ -15,8 +15,8 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
-	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+	gitopsResources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
+	argoResources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	v1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/controllers"
 	"github.com/belastingdienst/opr-paas/internal/version"
 	//+kubebuilder:scaffold:imports
@@ -43,8 +43,8 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(quotav1.AddToScheme(scheme))
 	utilruntime.Must(userv1.AddToScheme(scheme))
-	utilruntime.Must(appv1.AddToScheme(scheme))
-	utilruntime.Must(argocd.AddToScheme(scheme))
+	utilruntime.Must(argoResources.AddToScheme(scheme))
+	utilruntime.Must(gitopsResources.AddToScheme(scheme))
 
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
