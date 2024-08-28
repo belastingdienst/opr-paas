@@ -51,7 +51,9 @@ func EnsureNamespace(
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
 		addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
-		controllerutil.SetControllerReference(paas, found, scheme)
+		if err := controllerutil.SetControllerReference(paas, found, scheme); err != nil {
+			return err
+		}
 	}
 	var changed bool
 	for key, value := range ns.ObjectMeta.Labels {

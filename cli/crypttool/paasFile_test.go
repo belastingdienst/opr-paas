@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestReadPaasFile(t *testing.T) {
@@ -31,43 +32,43 @@ func TestReadPaasFile(t *testing.T) {
 	// invalid path
 	paas, typeString, err := readPaasFile("invalid/path")
 	expectedErrorMsg := "open invalid/path: no such file or directory"
-	assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+	assert.EqualErrorf(t, err, expectedErrorMsg, `Error should be: %v, got: %v`, expectedErrorMsg, err) //nolint:testifylint // just no
 	assert.Nil(t, paas)
 	assert.Equal(t, "unable to read paas configuration file", typeString)
 
 	// empty yaml file
 	paas, typeString, err = readPaasFile("testdata/emptyPaas.yml")
 	expectedErrorMsg = "empty paas configuration file"
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.Nil(t, paas)
 	assert.Empty(t, typeString)
-	assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+	assert.EqualErrorf(t, err, expectedErrorMsg, `Error should be: %v, got: %v`, expectedErrorMsg, err) //nolint:testifylint
 
 	// empty json file
 	paas, typeString, err = readPaasFile("testdata/emptyPaas.json")
 	expectedErrorMsg = "empty paas configuration file"
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.Nil(t, paas)
 	assert.Empty(t, typeString)
-	assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+	assert.EqualErrorf(t, err, expectedErrorMsg, `Error should be: %v, got: %v`, expectedErrorMsg, err) //nolint:testifylint
 
 	// minimal yaml file
 	paas, typeString, err = readPaasFile("testdata/minimalPaas.yml")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedPaas, paas)
 	assert.Equal(t, "yaml", typeString)
 	assert.NotEqual(t, "json", typeString)
 
 	// minimal json file
 	paas, typeString, err = readPaasFile("testdata/minimalPaas.json")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedPaas, paas)
 	assert.Equal(t, "json", typeString)
 	assert.NotEqual(t, "yaml", typeString)
 
 	// unsupported field in yaml file
 	paas, typeString, err = readPaasFile("testdata/unsupportedFieldsPaas.yml")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedPaas, paas)
 	assert.Equal(t, "yaml", typeString)
 	assert.NotEqual(t, "json", typeString)

@@ -113,7 +113,9 @@ func (r *PaasNSReconciler) backendArgoApp(
 	}
 
 	logger.Info("Setting Owner")
-	controllerutil.SetControllerReference(paas, app, r.Scheme)
+	if err := controllerutil.SetControllerReference(paas, app, r.Scheme); err != nil {
+		return app, err
+	}
 	return app, nil
 }
 

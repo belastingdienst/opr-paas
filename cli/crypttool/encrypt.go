@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -41,13 +42,24 @@ func encryptCmd() *cobra.Command {
 	flags.StringVar(&dataFile, "dataFile", "", "The file to read the data to be encrypted from")
 	flags.StringVar(&paasName, "paas", "", "The paas this data is to be encrypted for")
 
-	viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile"))
-	viper.BindPFlag("dataFile", flags.Lookup("dataFile"))
-	viper.BindPFlag("paas", flags.Lookup("paas"))
-
-	viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH")
-	viper.BindEnv("dataFile", "PAAS_INPUT_FILE")
-	viper.BindEnv("paas", "PAAS_NAME")
+	if err := viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile")); err != nil {
+		logrus.Errorf("error binding public key file: %v", err)
+	}
+	if err := viper.BindPFlag("dataFile", flags.Lookup("dataFile")); err != nil {
+		logrus.Errorf("error binding data file: %v", err)
+	}
+	if err := viper.BindPFlag("paas", flags.Lookup("paas")); err != nil {
+		logrus.Errorf("error binding paas key: %v", err)
+	}
+	if err := viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH"); err != nil {
+		logrus.Errorf("error binding paas public key: %v", err)
+	}
+	if err := viper.BindEnv("dataFile", "PAAS_INPUT_FILE"); err != nil {
+		logrus.Errorf("error binding paas data file key: %v", err)
+	}
+	if err := viper.BindEnv("paas", "PAAS_NAME"); err != nil {
+		logrus.Errorf("error binding paas name: %v", err)
+	}
 
 	return cmd
 }

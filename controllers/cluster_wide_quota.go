@@ -184,7 +184,9 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 	exists = (err == nil)
 
 	if !paas.AmIOwner(quota.OwnerReferences) {
-		controllerutil.SetOwnerReference(paas, quota, r.Scheme)
+		if err := controllerutil.SetOwnerReference(paas, quota, r.Scheme); err != nil {
+			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
+		}
 	}
 	if err := r.UpdateClusterWideQuotaResources(ctx, quota); err != nil {
 		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())

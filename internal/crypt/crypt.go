@@ -42,7 +42,7 @@ func NewPrivateKey(privateKeyPath string) (*cryptPrivateKey, error) {
 	} else if privateKeyBlock, _ := pem.Decode(privateKeyPem); privateKeyBlock == nil {
 		return nil, fmt.Errorf("cannot decode private key")
 	} else if privateKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes); err != nil {
-		return nil, fmt.Errorf("private key invalid: %e", err)
+		return nil, fmt.Errorf("private key invalid: %w", err)
 	} else {
 		return &cryptPrivateKey{
 			privateKeyPath,
@@ -61,8 +61,9 @@ func (pk *cryptPrivateKey) writePrivateKey() error {
 		Type:  "RSA PRIVATE KEY",
 		Bytes: privateKeyBytes,
 	})
-	if err := os.WriteFile(pk.privateKeyPath, privateKeyPEM, 0o644); err != nil {
-		return fmt.Errorf("unable to write private key: %e", err)
+
+	if err := os.WriteFile(pk.privateKeyPath, privateKeyPEM, 0o600); err != nil {
+		return fmt.Errorf("unable to write private key: %w", err)
 	}
 	fmt.Printf("Private key written to %s\n", pk.privateKeyPath)
 	return nil
@@ -80,7 +81,7 @@ func (pk cryptPrivateKey) getPrivateKey() (*rsa.PrivateKey, error) {
 	} else if privateKeyBlock, _ := pem.Decode(privateKeyPEM); privateKeyBlock == nil {
 		return nil, fmt.Errorf("cannot decode private key")
 	} else if privateRsaKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes); err != nil {
-		return nil, fmt.Errorf("private key invalid: %e", err)
+		return nil, fmt.Errorf("private key invalid: %w", err)
 	} else {
 		pk.privateKey = privateRsaKey
 	}
@@ -93,7 +94,7 @@ func NewCrypt(privateKeyPaths []string, publicKeyPath string, encryptionContext 
 	var privateKeys cryptPrivateKeys
 
 	if files, err := utils.PathToFileList(privateKeyPaths); err != nil {
-		return nil, fmt.Errorf("could not find files in '%v': %e", privateKeyPaths, err)
+		return nil, fmt.Errorf("could not find files in '%v': %w", privateKeyPaths, err)
 	} else {
 		for _, file := range files {
 			if pk, err := NewPrivateKey(file); err != nil {
@@ -107,7 +108,7 @@ func NewCrypt(privateKeyPaths []string, publicKeyPath string, encryptionContext 
 	if publicKeyPath != "" {
 		publicKeyPaths := []string{publicKeyPath}
 		if _, err := utils.PathToFileList(publicKeyPaths); err != nil {
-			return nil, fmt.Errorf("could not find files in '%v': %e", publicKeyPaths, err)
+			return nil, fmt.Errorf("could not find files in '%v': %w", publicKeyPaths, err)
 		}
 	}
 
@@ -121,7 +122,7 @@ func NewCrypt(privateKeyPaths []string, publicKeyPath string, encryptionContext 
 func NewGeneratedCrypt(privateKeyPath string, publicKeyPath string) (*Crypt, error) {
 	var c Crypt
 	if privateKey, err := rsa.GenerateKey(rand.Reader, 4096); err != nil {
-		return nil, fmt.Errorf("unable to generate private key: %e", err)
+		return nil, fmt.Errorf("unable to generate private key: %w", err)
 	} else {
 		pk := cryptPrivateKey{
 			privateKey:     privateKey,
@@ -147,14 +148,15 @@ func (c *Crypt) writePublicKey() error {
 		return fmt.Errorf("cannot write public key without a specified path")
 	}
 	if publicKeyBytes, err := x509.MarshalPKIXPublicKey(c.publicKey); err != nil {
-		return fmt.Errorf("unable to marshal public key: %e", err)
+		return fmt.Errorf("unable to marshal public key: %w", err)
 	} else {
 		publicKeyPEM := pem.EncodeToMemory(&pem.Block{
 			Type:  "RSA PUBLIC KEY",
 			Bytes: publicKeyBytes,
 		})
-		if err = os.WriteFile(c.publicKeyPath, publicKeyPEM, 0o644); err != nil {
-			return fmt.Errorf("unable to write public key: %e", err)
+
+		if err = os.WriteFile(c.publicKeyPath, publicKeyPEM, 0o600); err != nil {
+			return fmt.Errorf("unable to write public key: %w", err)
 		}
 	}
 	fmt.Printf("Public key written to %s\n", c.publicKeyPath)
@@ -173,7 +175,7 @@ func (c *Crypt) getPublicKey() (*rsa.PublicKey, error) {
 	} else if publicKeyBlock, _ := pem.Decode(publicKeyPEM); publicKeyBlock == nil {
 		return nil, fmt.Errorf("cannot decode public key")
 	} else if publicKey, err := x509.ParsePKIXPublicKey(publicKeyBlock.Bytes); err != nil {
-		return nil, fmt.Errorf("public key invalid: %e", err)
+		return nil, fmt.Errorf("public key invalid: %w", err)
 	} else if publicRsaKey, ok := publicKey.(*rsa.PublicKey); !ok {
 		return nil, fmt.Errorf("public key not rsa public key")
 	} else {

@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -35,11 +36,18 @@ func decryptCmd() *cobra.Command {
 	flags.StringVar(&privateKeyFiles, "privateKeyFiles", "", "The file to read the private key from")
 	flags.StringVar(&paasName, "paas", "", "The paas this data is to be encrypted for")
 
-	viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles"))
-	viper.BindPFlag("paas", flags.Lookup("paas"))
-
-	viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH")
-	viper.BindEnv("paas", "PAAS_NAME")
+	if err := viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles")); err != nil {
+		logrus.Errorf("error binding private keys: %v", err)
+	}
+	if err := viper.BindPFlag("paas", flags.Lookup("paas")); err != nil {
+		logrus.Errorf("error binding paas key: %v", err)
+	}
+	if err := viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH"); err != nil {
+		logrus.Errorf("error binding paas private keys: %v", err)
+	}
+	if err := viper.BindEnv("paas", "PAAS_NAME"); err != nil {
+		logrus.Errorf("error binding PAAS_NAME: %v", err)
+	}
 
 	return cmd
 }

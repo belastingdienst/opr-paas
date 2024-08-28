@@ -89,8 +89,13 @@ func checkPaasCmd() *cobra.Command {
 
 	flags := cmd.Flags()
 	flags.StringVar(&privateKeyFiles, "privateKeyFiles", "", "The file or folder containing the private key(s)")
-	viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles"))
-	viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH")
+
+	if err := viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles")); err != nil {
+		logrus.Errorf("key binding for private key failed: %v", err)
+	}
+	if err := viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH"); err != nil {
+		logrus.Errorf("key binding for PAAS_PRIVATE_KEY_PATH failed: %v", err)
+	}
 
 	return cmd
 }
