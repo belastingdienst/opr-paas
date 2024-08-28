@@ -85,7 +85,10 @@ func (r *PaasNSReconciler) backendSecret(
 	paasns *v1alpha1.PaasNS,
 	namespacedName types.NamespacedName,
 	url string,
-) *corev1.Secret {
+) (
+	*corev1.Secret,
+	error,
+) {
 	logger := getLogger(ctx, paasns, "Secret", namespacedName.String())
 	logger.Info("Defining Secret")
 
@@ -108,8 +111,12 @@ func (r *PaasNSReconciler) backendSecret(
 	s.Labels["argocd.argoproj.io/secret-type"] = "repo-creds"
 
 	logger.Info("Setting Owner")
-	controllerutil.SetControllerReference(paasns, s, r.Scheme)
-	return s
+
+	err := controllerutil.SetControllerReference(paasns, s, r.Scheme)
+	if err != nil {
+		return s, err
+	}
+	return s, nil
 }
 
 func (r *PaasNSReconciler) getSecrets(
@@ -122,7 +129,10 @@ func (r *PaasNSReconciler) getSecrets(
 			Namespace: paasns.NamespaceName(),
 			Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(url)[:8])),
 		}
-		secret := r.backendSecret(ctx, paasns, namespacedName, url)
+		secret, err := r.backendSecret(ctx, paasns, namespacedName, url)
+		if err != nil {
+			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
+		}
 		if decrypted, err := getRsa(paasns.Spec.Paas).Decrypt(encryptedSecretData); err != nil {
 			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
 		} else {

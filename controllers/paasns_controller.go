@@ -115,7 +115,9 @@ func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS)
 		return nil, err
 	} else if !paas.AmIOwner(paasns.OwnerReferences) {
 		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, paas, "updating owner")
-		controllerutil.SetControllerReference(paas, paasns, r.Scheme)
+		if err := controllerutil.SetControllerReference(paas, paasns, r.Scheme); err != nil {
+			return nil, err
+		}
 	}
 	return
 }
@@ -150,19 +152,23 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 		return ctrl.Result{}, nil
 	}
 
-	if r.ReconcileNamespaces(ctx, paas, paasns); err != nil {
+	err = r.ReconcileNamespaces(ctx, paas, paasns)
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if r.ReconcileRolebindings(ctx, paas, paasns, logger); err != nil {
+	err = r.ReconcileRolebindings(ctx, paas, paasns, logger)
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if r.ReconcileSecrets(ctx, paas, paasns, logger); err != nil {
+	err = r.ReconcileSecrets(ctx, paas, paasns, logger)
+	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	if err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas); err != nil {
+	err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas)
+	if err != nil {
 		logger.Error(err, "Reconciling Extra ClusterRoleBindings failed")
 		return ctrl.Result{}, fmt.Errorf("reconciling Extra ClusterRoleBindings failed")
 	}

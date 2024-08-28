@@ -37,7 +37,7 @@ func readPaasFile(file string) (*v1alpha1.Paas, string, error) {
 		return nil, "unable to read paas configuration file", err
 	}
 
-	if len(buffer) <= 0 {
+	if len(buffer) == 0 {
 		return nil, "", fmt.Errorf("empty paas configuration file")
 	}
 

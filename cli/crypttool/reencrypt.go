@@ -65,7 +65,7 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 		for key, secret := range paas.Spec.SshSecrets {
 			reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 			if err != nil {
-				return fmt.Errorf("failed to decrypt/reencrypt %s.spec.sshSecrets[%s] in %s: %e", paasName, key, fileName, err)
+				return fmt.Errorf("failed to decrypt/reencrypt %s.spec.sshSecrets[%s] in %s: %w", paasName, key, fileName, err)
 			}
 
 			paas.Spec.SshSecrets[key] = reencrypted
@@ -78,7 +78,7 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 			for key, secret := range cap.GetSshSecrets() {
 				reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 				if err != nil {
-					return fmt.Errorf("failed to decrypt/reencrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %e", paasName, capName, key, fileName, err)
+					return fmt.Errorf("failed to decrypt/reencrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %w", paasName, capName, key, fileName, err)
 				}
 
 				cap.SetSshSecret(key, reencrypted)
@@ -138,13 +138,24 @@ reencrypt with the new public key and write back the paas to the file in either 
 	flags.StringVar(&publicKeyFile, "publicKeyFile", "", "The file to read the public key from")
 	flags.StringVar(&outputFormat, "outputFormat", "auto", "The outputformat for writing a paas, either yaml (machine formatted), json (machine formatted), auto (which will use input format as output, machine formatted) or preserved (which will use the input format and preserve the original syntax including for example comments) ")
 
-	viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles"))
-	viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile"))
-	viper.BindPFlag("outputFormat", flags.Lookup("outputFormat"))
-
-	viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH")
-	viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH")
-	viper.BindEnv("outputFormat", "PAAS_OUTPUT_FORMAT")
+	if err := viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles")); err != nil {
+		logrus.Errorf("key binding for privatekeyfiles failed: %v", err)
+	}
+	if err := viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile")); err != nil {
+		logrus.Errorf("key binding for publickeyfile failed: %v", err)
+	}
+	if err := viper.BindPFlag("outputFormat", flags.Lookup("outputFormat")); err != nil {
+		logrus.Errorf("key binding at output step failed: %v", err)
+	}
+	if err := viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH"); err != nil {
+		logrus.Errorf("private key to env var binding failed: %v", err)
+	}
+	if err := viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH"); err != nil {
+		logrus.Errorf("public key to env var binding failed: %v", err)
+	}
+	if err := viper.BindEnv("outputFormat", "PAAS_OUTPUT_FORMAT"); err != nil {
+		logrus.Errorf("key binding at output step failed: %v", err)
+	}
 
 	return cmd
 }

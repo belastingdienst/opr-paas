@@ -64,7 +64,7 @@ func Test_getRSA(t *testing.T) {
 	require.NoError(t, err, "Creating tempfile for public key")
 	defer os.Remove(pub.Name()) // clean up
 
-	crypt.NewGeneratedCrypt(priv.Name(), pub.Name())
+	crypt.NewGeneratedCrypt(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
 
 	// test: non-existing public key should panic
 	getConfig()

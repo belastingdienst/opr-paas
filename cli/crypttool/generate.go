@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -35,11 +36,18 @@ func generateCmd() *cobra.Command {
 	flags.StringVar(&publicKeyFile, "publicKeyFile", "", "The file to write the public key to")
 	flags.StringVar(&privateKeyFile, "privateKeyFile", "", "The file to write the private key to")
 
-	viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile"))
-	viper.BindPFlag("privateKeyFile", flags.Lookup("privateKeyFile"))
-
-	viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH")
-	viper.BindEnv("privateKeyFile", "PAAS_PRIVATE_KEY_PATH")
+	if err := viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile")); err != nil {
+		logrus.Errorf("key binding for publicKeyFile failed: %v", err)
+	}
+	if err := viper.BindPFlag("privateKeyFile", flags.Lookup("privateKeyFile")); err != nil {
+		logrus.Errorf("key binding for privateKeyFile failed: %v", err)
+	}
+	if err := viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH"); err != nil {
+		logrus.Errorf("paas public key binding failed: %v", err)
+	}
+	if err := viper.BindEnv("privateKeyFile", "PAAS_PRIVATE_KEY_PATH"); err != nil {
+		logrus.Errorf("paas private key binding failed: %v", err)
+	}
 
 	return cmd
 }
