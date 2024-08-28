@@ -22,7 +22,7 @@ import (
 
 func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, name string,
 	groups []string, secrets map[string]string,
-) *v1alpha1.PaasNS {
+) (*v1alpha1.PaasNS, error) {
 	pns := &v1alpha1.PaasNS{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PaasNS",
@@ -46,8 +46,11 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 	pns.ObjectMeta.Labels[getConfig().RequestorLabel] = paas.Spec.Requestor
 
 	logger.Info("Setting Owner")
-	controllerutil.SetControllerReference(paas, pns, r.Scheme)
-	return pns
+
+	if err := controllerutil.SetControllerReference(paas, pns, r.Scheme); err != nil {
+		return pns, err
+	}
+	return pns, nil
 }
 
 func (r *PaasReconciler) ensurePaasNs(ctx context.Context, paas *v1alpha1.Paas, pns *v1alpha1.PaasNS) error {
@@ -76,7 +79,9 @@ func (r *PaasReconciler) ensurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
 		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
-		controllerutil.SetControllerReference(paas, found, r.Scheme)
+		if err := controllerutil.SetControllerReference(paas, found, r.Scheme); err != nil {
+			return err
+		}
 	}
 
 	found.Spec.Paas = pns.Spec.Paas
@@ -100,6 +105,9 @@ func (r *PaasReconciler) FinalizePaasNss(ctx context.Context, paas *v1alpha1.Paa
 	}
 
 	for _, pns := range pnsList.Items {
+		// Reassign to make sure to use the referenced address of the current iteration
+		pns := pns
+
 		if !paas.AmIOwner(pns.OwnerReferences) {
 			// logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "I am not owner")
 		} else if _, isEnabled := enabledNs[pns.Name]; isEnabled {
@@ -129,7 +137,12 @@ func (r *PaasReconciler) ReconcilePaasNss(
 	} else {
 		logger.Info("Creating PaasNs resources for PAAS object")
 		for nsName := range paas.AllEnabledNamespaces() {
-			pns := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Names(), paas.GetNsSshSecrets(nsName))
+			pns, err := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Names(), paas.GetNsSshSecrets(nsName))
+			if err != nil {
+				logger.Error(err, fmt.Sprintf("Failure while creating PaasNs %s",
+					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace}))
+				return err
+			}
 			if err = r.ensurePaasNs(ctx, paas, pns); err != nil {
 				logger.Error(err, fmt.Sprintf("Failure while creating PaasNs %s",
 					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace}))

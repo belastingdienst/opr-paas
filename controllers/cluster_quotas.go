@@ -104,7 +104,11 @@ func (r *PaasReconciler) backendQuota(
 	}
 
 	logger.Info("Setting owner")
-	controllerutil.SetControllerReference(paas, quota, r.Scheme)
+
+	if err := controllerutil.SetControllerReference(paas, quota, r.Scheme); err != nil {
+		logger.Info("Error setting owner: " + err.Error())
+	}
+
 	return quota
 }
 
@@ -141,13 +145,11 @@ func (r *PaasReconciler) BackendEnabledQuotaStatus(
 	for name, cap := range paas.Spec.Capabilities.AsMap() {
 		if capConfig, exists := config.Capabilities[name]; !exists {
 			return nil, fmt.Errorf("a capability is requested, but not configured")
-		} else {
-			if cap.IsEnabled() {
-				defaults := capConfig.QuotaSettings.DefQuota
-				quota := cap.Quotas().QuotaWithDefaults(
-					defaults)
-				quotas[name] = quota
-			}
+		} else if cap.IsEnabled() {
+			defaults := capConfig.QuotaSettings.DefQuota
+			quota := cap.Quotas().QuotaWithDefaults(
+				defaults)
+			quotas[name] = quota
 		}
 	}
 	return quotas, nil

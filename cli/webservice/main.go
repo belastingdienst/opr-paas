@@ -44,7 +44,7 @@ func getRsa(paas string) *crypt.Crypt {
 
 	c, err := crypt.NewCrypt([]string{}, config.PublicKeyPath, paas)
 	if err != nil {
-		panic(fmt.Errorf("unable to create a crypt: %e", err))
+		panic(fmt.Errorf("unable to create a crypt: %w", err))
 	}
 
 	_crypt[paas] = c
@@ -117,7 +117,11 @@ func SetupRouter() *gin.Engine {
 		gin.Recovery(),
 	)
 
-	router.SetTrustedProxies(nil)
+	err := router.SetTrustedProxies(nil)
+	if err != nil {
+		panic(fmt.Errorf("setTrustedProxies %w", err))
+	}
+
 	router.GET("/version", version)
 	router.POST("/v1/encrypt", v1Encrypt)
 	router.GET("/healthz", healthz)
@@ -135,5 +139,8 @@ func main() {
 	router := SetupRouter()
 	ep := getConfig().Endpoint
 	log.Printf("Listening on: %s", ep)
-	router.Run(ep)
+	err := router.Run(ep)
+	if err != nil {
+		panic(fmt.Errorf("router go boom: %w", err))
+	}
 }

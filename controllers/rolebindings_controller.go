@@ -82,7 +82,9 @@ func EnsureRoleBinding(
 	}
 	var changed bool
 	if !paasns.AmIOwner(found.OwnerReferences) {
-		controllerutil.SetControllerReference(paasns, found, r.GetScheme())
+		if err = controllerutil.SetControllerReference(paasns, found, r.GetScheme()); err != nil {
+			return err
+		}
 		changed = true
 	}
 	if diffRbacSubjects(found.Subjects, rb.Subjects) {
@@ -109,7 +111,7 @@ func backendRoleBinding(
 	name types.NamespacedName,
 	role string,
 	groups []string,
-) *rbac.RoleBinding {
+) (*rbac.RoleBinding, error) {
 	logger := getLogger(ctx, paas, "RoleBinding", name.String())
 	logger.Info(fmt.Sprintf("Defining %s RoleBinding", name))
 
@@ -141,8 +143,11 @@ func backendRoleBinding(
 		},
 	}
 	logger.Info("Setting Owner")
-	controllerutil.SetControllerReference(paas, rb, r.GetScheme())
-	return rb
+	if err := controllerutil.SetControllerReference(paas, rb, r.GetScheme()); err != nil {
+		return rb, err
+	}
+
+	return rb, nil
 }
 
 // ensureRoleBinding ensures RoleBinding presence in given rolebinding.
@@ -178,6 +183,9 @@ func (r *PaasReconciler) ReconcileRolebindings(
 ) error {
 	for _, paasns := range r.pnsFromNs(ctx, paas.ObjectMeta.Name) {
 		roles := make(map[string][]string)
+
+		// Guarantee use of value for current iteration when referencing
+		paasns := paasns
 		for _, roleList := range getConfig().RoleMappings {
 			for _, role := range roleList {
 				roles[role] = []string{}
@@ -198,7 +206,7 @@ func (r *PaasReconciler) ReconcileRolebindings(
 			statusMessages := v1alpha1.PaasNsStatus{}
 			rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
 			logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
-			rb := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
+			rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
 			if err := EnsureRoleBinding(ctx, r, &paasns, &statusMessages, rb); err != nil {
 				err = fmt.Errorf("failure while creating/updating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
 				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
@@ -231,7 +239,7 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 	for roleName, groupKeys := range roles {
 		rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
 		logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
-		rb := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
+		rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
 		if err := EnsureRoleBinding(ctx, r, paasns, &paasns.Status, rb); err != nil {
 			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
 			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())

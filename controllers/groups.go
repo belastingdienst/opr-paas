@@ -88,7 +88,9 @@ func (r *PaasReconciler) EnsureGroup(
 	found.Annotations = mergeStringMap(found.Annotations, group.Annotations)
 	if !paas.AmIOwner(found.OwnerReferences) {
 		logger.Info("Setting owner reference")
-		controllerutil.SetOwnerReference(paas, found, r.Scheme)
+		if err := controllerutil.SetOwnerReference(paas, found, r.Scheme); err != nil {
+			logger.Error(err, "Error while setting owner reference")
+		}
 	} else {
 		logger.Info("Already owner")
 	}
@@ -111,7 +113,7 @@ func (r *PaasReconciler) backendGroup(
 	paas *v1alpha1.Paas,
 	name string,
 	group v1alpha1.PaasGroup,
-) *userv1.Group {
+) (*userv1.Group, error) {
 	logger := getLogger(ctx, paas, "Group", name)
 	logger.Info("Defining group")
 
@@ -137,8 +139,10 @@ func (r *PaasReconciler) backendGroup(
 
 	// If we would have multiple PaaS projects defining this group, and all are cleaned,
 	// the garbage collector would also clean this group...
-	controllerutil.SetOwnerReference(paas, g, r.Scheme)
-	return g
+	if err := controllerutil.SetOwnerReference(paas, g, r.Scheme); err != nil {
+		return g, err
+	}
+	return g, nil
 }
 
 func (r *PaasReconciler) BackendGroups(
@@ -149,10 +153,8 @@ func (r *PaasReconciler) BackendGroups(
 	for key, group := range paas.Spec.Groups {
 		groupName := paas.Spec.Groups.Key2Name(key)
 		logger.Info("Groupname is " + groupName)
-		groups = append(groups, r.backendGroup(ctx,
-			paas,
-			groupName,
-			group))
+		beGroup, _ := r.backendGroup(ctx, paas, groupName, group)
+		groups = append(groups, beGroup)
 	}
 	return groups
 }
