@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/controllers"
+	"github.com/belastingdienst/opr-paas/internal/controller"
 	"github.com/belastingdienst/opr-paas/internal/version"
 	//+kubebuilder:scaffold:imports
 )
@@ -98,14 +98,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.PaasReconciler{
+	if err = (&controller.PaasReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Paas")
 		os.Exit(1)
 	}
-	if err = (&controllers.PaasNSReconciler{
+	if err = (&controller.PaasNSReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {

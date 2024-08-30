@@ -4,7 +4,7 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-package controllers
+package controller
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	v1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 )
 
 const paasNsFinalizer = "paasns.cpet.belastingdienst.nl/finalizer"

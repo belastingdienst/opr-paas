@@ -4,7 +4,7 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-package controllers
+package controller
 
 // broken with adding ArgoPermissions capability
 // Seems we need to downgrade to v.0.26.4
@@ -29,7 +29,7 @@ func TestMain_getLogger(t *testing.T) {
 }
 
 func TestMain_getConfig(t *testing.T) {
-	os.Setenv("PAAS_CONFIG", "../test/manifests/config/paas_config.yml")
+	os.Setenv("PAAS_CONFIG", "../../test/manifests/config/paas_config.yml")
 	assert.NotNil(t, getConfig(), "some-ns")
 }
 
