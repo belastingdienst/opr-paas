@@ -9,20 +9,15 @@ ARG GONOSUMDB="proxy.golang.org/*,github.com,github.com/*"
 ARG GOPRIVATE="proxy.golang.org/*,github.com,github.com/*"
 ARG VERSION=v0.0.0-devel
 
-ARG cert_location=/usr/local/share/ca-certificates
-
 WORKDIR /workspace
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
 
 # Copy the go source
-COPY main.go main.go
+COPY cmd/ cmd/
 COPY api/ api/
-COPY cli/ cli/
-COPY controllers/ controllers/
 COPY internal/ internal/
-COPY config/ config/
 
 # Build
 # the GOARCH has not a default value to allow the binary be built according to the host where the command
@@ -31,9 +26,9 @@ COPY config/ config/
 # by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
 RUN sed -i "s|PAAS_VERSION = .*|PAAS_VERSION = \"$VERSION\"|" internal/version/main.go && \
     cat internal/version/main.go && \
-    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o manager main.go && \
-    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o crypttool ./cli/crypttool && \
-    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o webservice ./cli/webservice
+    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o manager cmd/manager/main.go && \
+    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o crypttool cmd/crypttool && \
+    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o webservice cmd/webservice
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
