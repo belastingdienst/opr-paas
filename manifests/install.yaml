@@ -16,8 +16,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.11.1
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: paas.cpet.belastingdienst.nl
 spec:
   group: cpet.belastingdienst.nl
@@ -34,14 +33,19 @@ spec:
         description: Paas is the Schema for the paas API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -60,10 +64,10 @@ spec:
                         description: Do we want an ArgoCD namespace, default false
                         type: boolean
                       extra_permissions:
-                        description: You can enable extra permissions for the service
-                          accounts beloning to this capability Exact definitions is
-                          configured in Paas Configmap Note that we want to remove
-                          (some of) these permissions in future releases (like self-provisioner)
+                        description: |-
+                          You can enable extra permissions for the service accounts beloning to this capability
+                          Exact definitions is configured in Paas Configmap
+                          Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
                         type: boolean
                       gitPath:
                         description: the path in the git repo that contains the Applications
@@ -90,10 +94,9 @@ spec:
                       sshSecrets:
                         additionalProperties:
                           type: string
-                        description: You can add ssh keys (which is a type of secret)
-                          for ArgoCD to use for access to bitBucket They must be encrypted
-                          with the public key corresponding to the private key deployed
-                          together with the PaaS operator
+                        description: |-
+                          You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+                          They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
                         type: object
                     type: object
                   grafana:
@@ -104,10 +107,10 @@ spec:
                         description: Do we want a Grafana namespace, default false
                         type: boolean
                       extra_permissions:
-                        description: You can enable extra permissions for the service
-                          accounts beloning to this capability Exact definitions is
-                          configured in Paas Configmap Note that we want to remove
-                          (some of) these permissions in future releases (like self-provisioner)
+                        description: |-
+                          You can enable extra permissions for the service accounts beloning to this capability
+                          Exact definitions is configured in Paas Configmap
+                          Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
                         type: boolean
                       quota:
                         additionalProperties:
@@ -122,10 +125,9 @@ spec:
                       sshSecrets:
                         additionalProperties:
                           type: string
-                        description: You can add ssh keys (which is a type of secret)
-                          for ArgoCD to use for access to bitBucket They must be encrypted
-                          with the public key corresponding to the private key deployed
-                          together with the PaaS operator
+                        description: |-
+                          You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+                          They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
                         type: object
                     type: object
                   sso:
@@ -136,10 +138,10 @@ spec:
                         description: Do we want an SSO namespace, default false
                         type: boolean
                       extra_permissions:
-                        description: You can enable extra permissions for the service
-                          accounts beloning to this capability Exact definitions is
-                          configured in Paas Configmap Note that we want to remove
-                          (some of) these permissions in future releases (like self-provisioner)
+                        description: |-
+                          You can enable extra permissions for the service accounts beloning to this capability
+                          Exact definitions is configured in Paas Configmap
+                          Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
                         type: boolean
                       quota:
                         additionalProperties:
@@ -148,16 +150,15 @@ spec:
                           - type: string
                           pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
-                        description: This project has it's own ClusterResourceQuota
+                        description: This project has its own ClusterResourceQuota
                           settings
                         type: object
                       sshSecrets:
                         additionalProperties:
                           type: string
-                        description: You can add ssh keys (which is a type of secret)
-                          for ArgoCD to use for access to bitBucket They must be encrypted
-                          with the public key corresponding to the private key deployed
-                          together with the PaaS operator
+                        description: |-
+                          You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+                          They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
                         type: object
                     type: object
                   tekton:
@@ -168,10 +169,10 @@ spec:
                         description: Do we want a CI (Tekton) namespace, default false
                         type: boolean
                       extra_permissions:
-                        description: You can enable extra permissions for the service
-                          accounts beloning to this capability Exact definitions is
-                          configured in Paas Configmap Note that we want to remove
-                          (some of) these permissions in future releases (like self-provisioner)
+                        description: |-
+                          You can enable extra permissions for the service accounts beloning to this capability
+                          Exact definitions is configured in Paas Configmap
+                          Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
                         type: boolean
                       quota:
                         additionalProperties:
@@ -186,10 +187,9 @@ spec:
                       sshSecrets:
                         additionalProperties:
                           type: string
-                        description: You can add ssh keys (which is a type of secret)
-                          for ArgoCD to use for access to bitBucket They must be encrypted
-                          with the public key corresponding to the private key deployed
-                          together with the PaaS operator
+                        description: |-
+                          You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+                          They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
                         type: object
                     type: object
                 type: object
@@ -235,10 +235,9 @@ spec:
               sshSecrets:
                 additionalProperties:
                   type: string
-                description: You can add ssh keys (which is a type of secret) for
-                  ArgoCD to use for access to bitBucket They must be encrypted with
-                  the public key corresponding to the private key deployed together
-                  with the PaaS operator
+                description: |-
+                  You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+                  They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
                 type: object
             required:
             - quota
@@ -276,8 +275,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.11.1
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: paasns.cpet.belastingdienst.nl
 spec:
   group: cpet.belastingdienst.nl
@@ -294,14 +292,19 @@ spec:
         description: PaasNS is the Schema for the paasns API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -399,7 +402,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: manager-role
 rules:
 - apiGroups:
