@@ -4,7 +4,7 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-package controllers
+package controller
 
 import (
 	"context"
@@ -181,7 +181,7 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, err.Error())
 		return err
 	}
-	exists = (err == nil)
+	exists = err == nil
 
 	if !paas.AmIOwner(quota.OwnerReferences) {
 		if err := controllerutil.SetOwnerReference(paas, quota, r.Scheme); err != nil {
