@@ -4,9 +4,6 @@ FROM docker.io/golang:1.22 AS builder
 
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
-ARG GOINSECURE="proxy.golang.org/*,github.com,github.com/*"
-ARG GONOSUMDB="proxy.golang.org/*,github.com,github.com/*"
-ARG GOPRIVATE="proxy.golang.org/*,github.com,github.com/*"
 ARG VERSION=v0.0.0-devel
 
 WORKDIR /workspace
