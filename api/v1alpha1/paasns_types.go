@@ -30,6 +30,7 @@ type PaasNSSpec struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:path=paasns,scope=Namespaced
 
 // PaasNS is the Schema for the paasns API
 type PaasNS struct {
