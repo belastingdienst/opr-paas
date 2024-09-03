@@ -291,7 +291,7 @@ type PaasArgoCD struct {
 }
 
 func (pa *PaasArgoCD) WithExtraPermissions() bool {
-	return (pa.Enabled && pa.ExtraPermissions)
+	return pa.Enabled && pa.ExtraPermissions
 }
 
 func (pa *PaasArgoCD) IsEnabled() bool {
@@ -338,7 +338,7 @@ type PaasCI struct {
 }
 
 func (pc *PaasCI) WithExtraPermissions() bool {
-	return (pc.Enabled && pc.ExtraPermissions)
+	return pc.Enabled && pc.ExtraPermissions
 }
 
 func (pc PaasCI) Quotas() (pq paas_quota.Quotas) {
@@ -364,7 +364,7 @@ func (pc *PaasCI) SetSshSecret(key string, value string) {
 type PaasSSO struct {
 	// Do we want an SSO namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
-	// This project has it's own ClusterResourceQuota settings
+	// This project has its own ClusterResourceQuota settings
 	Quota paas_quota.Quotas `json:"quota,omitempty"`
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
@@ -376,7 +376,7 @@ type PaasSSO struct {
 }
 
 func (ps *PaasSSO) WithExtraPermissions() bool {
-	return (ps.Enabled && ps.ExtraPermissions)
+	return ps.Enabled && ps.ExtraPermissions
 }
 
 func (ps PaasSSO) Quotas() (pq paas_quota.Quotas) {
@@ -414,7 +414,7 @@ type PaasGrafana struct {
 }
 
 func (pg *PaasGrafana) WithExtraPermissions() bool {
-	return (pg.Enabled && pg.ExtraPermissions)
+	return pg.Enabled && pg.ExtraPermissions
 }
 
 func (pg PaasGrafana) Quotas() (pq paas_quota.Quotas) {
