@@ -1,8 +1,8 @@
 module github.com/belastingdienst/opr-paas
 
-go 1.22.0
+go 1.22.3
 
-toolchain go1.22.6
+toolchain go1.23.0
 
 require (
 	github.com/go-logr/logr v1.4.2
@@ -18,27 +18,34 @@ require (
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/spf13/viper v1.19.0
+	sigs.k8s.io/e2e-framework v0.4.0
 )
 
 require (
+	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/moby/spdystream v0.4.0 // indirect
+	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
 	github.com/sagikazarmark/locafero v0.6.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
+	github.com/vladimirvivien/gexe v0.2.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
+	k8s.io/component-base v0.31.0 // indirect
 )
 
 require (

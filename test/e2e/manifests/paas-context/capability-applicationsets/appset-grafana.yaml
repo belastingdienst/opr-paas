@@ -1,0 +1,12 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: grafanaas
+  namespace: asns
+spec:
+  generators: []
+  template:
+    metadata: {}
+    spec:
+      destination: {}
+      project: 'dummy'
