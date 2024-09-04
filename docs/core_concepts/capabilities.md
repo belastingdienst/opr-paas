@@ -1,53 +1,76 @@
 # Paas Capabilities
 
-The whole idea of PaaS is to create a Multi Tenancy solution which allows DevOps teams to request a context for their project, which we like to call a 'Project as a Service', e.a. PaaS.
-As part of the PaaS we want to allow DevOps teams to consume capabilities 'As A Service'.
-Examples of such capabilities are ArgoCD (Continuous Delivery), Tekton (Continuous Integration), Grafana (Observability) and KeyCloak (Single Sign On), but the list could be more.
-Every PaaS could have one or more of such capabilities enabled, which means they get these capabilities with the required permissions.
-The DevOps team requires no specific knowledge or permissions to use these capabilities.
-They are managed by a cluster-wide ArgoCD, which creates them according to the standards as defined by the platform team.
-And they would be deployed specifically for their PaaS and only usable in that context.
-We want Product teams to be able to define which capabilities should be available, and to have control over the components that comprise these capabilities.
+The whole idea of Paas is to create a multi tenancy solution which allows DevOps
+teams to request a context for their project, which we like to call a 'Project as a Service',
+e.a. Paas.
 
-Therefore it is designed as:
+As part of the Paas we want to allow DevOps teams to consume capabilities 'As A Service'.
+Examples of such capabilities are:
 
-- The available capabilities are all defined in the PaaS configuration
+- ArgoCD (Continuous Delivery);
+- Tekton (Continuous Integration);
+- Grafana (Observability); and
+- KeyCloak (Single Sign On);
+
+However, the list could be longer in the future.
+
+Every Paas could have one or more of such capabilities enabled, which means they
+get these capabilities with the required permissions. The DevOps team requires no
+specific knowledge or permissions to use these capabilities.
+
+They are managed by a cluster wide ArgoCD, which creates them according to the
+standards as defined by the platform team. They would be deployed specifically for
+their Paas and only usable in that context.
+
+We want Product teams to be able to define which capabilities should be available,
+and to have control over the components that comprise these capabilities.
+
+Therefore it is designed a follows:
+
+- The available capabilities are all defined in the Paas configuration
   Per capability the following can be defined:
-  - the default quota to be used when no quota is set in teh PaaS
-  - if the cluster-wide quota feature should be enabled for this capability
-  - the ApplicationSet that can be reconfigured (new entry in the list generator) for each Paas with the capability enabled
-- For every PaaS where the capability is enabled, the PaaS controller will create
-  - a [PaasNs](paasns.yaml)
-  - an entry in the ApplicationSet List Generator which in creates a new Application, which in turn makes a cluster-wide ArgoCD deployment read from the configured git repo and create the required resources in the namespace as required
+    - the default quota to be used when no quota is set in the Paas
+    - if the cluster wide quota feature should be enabled for this capability
+    - the ApplicationSet that can be reconfigured (new entry in the list generator)
+      for each Paas with the capability enabled
+- For every Paas where the capability is enabled, the Paas controller will create:
+    - a [PaasNs](PaasNs.yaml)
+    - an entry in the ApplicationSet List Generator which in creates a new Application,
+      which in turn makes a cluster wide ArgoCD deployment read from the configured git
+      repo and create the required resources in the namespace as required
 
 ## Example:
 
 ### Paas Config
 
-In the PaaS configuration the following could be configured:
+In the Paas configuration the following could be configured:
 
 ```yaml
 ---
 capabilities:
   # Config for the argocd capability
   argocd:
-    # for every PaaS with this capability enabled, the list generator in the paas-argocd ApplicationSet should be extended
+    # for every paas with this capability enabled, the list generator in the
+    # paas-argocd ApplicationSet should be extended
     applicationset: paas-argocd
-    # quota can be set in teh Paas, but for these quotas there are defaults to apply when not set in the PaaS.
-    # note that
+    # quota can be set in the Paas, but for these quotas there are defaults to
+    # apply when not set in the Paas.
     defaultquotas:
       limits.cpu: "7"
       requests.cpu: "3"
-    # For all PaaS's with the argocd capability enabled, by default also set these permissions for the specified service account
+    # For all Paas's with the argocd capability enabled, by default also set
+    # these permissions for the specified service account
     default_permissions:
       argocd-argocd-application-controller:
         - monitoring-edit
         - alert-routing-edit
   # Config for the grafana capability
   grafana:
-    # for every PaaS with this capability enabled, the list generator in the paas-grafana applicationset should be extended
+    # for every Paas with this capability enabled, the list generator in the
+    # paas-grafana applicationset should be extended
     applicationset: paas-grafana
-    # quota can be set in teh Paas, but for these quota's there are defaults to apply when not set in the PaaS.
+    # quota can be set in the paas, but for these quota's there are defaults to
+    # apply when not set in the Paas.
     defaultquotas:
       limits.cpu: "2"
       requests.cpu: "1"
@@ -61,13 +84,17 @@ The ArgoCD Applicationset could look like this:
 apiversion: argoproj.io/v1alpha1
 kind: applicationset
 metadata:
-  # name of the applicationset, this can be used for PaaS instances with the argocd capability enabled
+  # name of the applicationset, this can be used for Paas instances with the
+  # argocd capability enabled
   name: paas-argocd
-  # Specify the namespace of a cluster wide ArgoCD. On OpenShift the openshift-gitops namespace is meant to have the only cluster wide ArgoCD.
+  # Specify the namespace of a cluster wide ArgoCD. On OpenShift the openshift-gitops
+  # namespace is meant to have the only cluster wide ArgoCD.
   namespace: openshift-gitops
 spec:
   # This list can be empty, but is required in the definition.
-  # Note that the PaaS operator will create and manage a list generator here. So when managing this applicationset with the cluster wide ArgoCD requires setting up resourceExclusions
+  # Note that the Paas operator will create and manage a list generator here. So
+  # when managing this applicationset with the cluster wide ArgoCD requires setting
+  # up resourceExclusions
   generators: []
   template:
     metadata:
@@ -93,7 +120,7 @@ spec:
           selfheal: true
 ```
 
-### Example PaaS
+### Example Paas
 
 This would mean that someone could create a Paas with a block like this:
 
@@ -119,14 +146,18 @@ spec:
         limits.memory: "2Gi"
 ```
 
-And that would result in:
+This would result in:
 
-- a my-paas-argocd ClusterResourceQuota and a my-paas-grafana ClusterResourceQuota.
-  - my-paas-argocd has default quota's as specified in the config (limits.cpu: "7", requests.cpu: "3").
-  - my-paas-grafana has limits.cpu: overridden to "5", requests.cpu defaulting to "1" and limits.memory set to '2Gi'.
-- a my-paas namespace with a argocd PaasNs and a grafana PaasNs.
-- a namespace called my-paas-argocd linked to the my-paas-argocd ClusterResourceQuota.
-  The applicationset has an extra entry for the namespace so that the cluster wide ArgoCD will create a namespaced ArgoCD deployment in this namespace.
-  The PaaS operator creates a bootstrap application which points to the root folder (.) of main branch of the ssh://git@github.com/belastingdienst/my-paas-repo.git repo.
-- a namespace called my-paas-grafana linked to the my-paas-grafana ClusterResourceQuota.
-  The applicationset has an extra entry for the namespace so that the cluster wide ArgoCD will create a grafana deployment in this namespace.
+- a `my-paas-argocd` `ClusterResourceQuota` and a `my-paas-grafana` `ClusterResourceQuota`;
+  - `my-paas-argocd` has default quotas as specified in the configuration;
+     (`limits.cpu: "7"`, `requests.cpu: "3"`)
+  - `my-paas-grafana` has `limits.cpu` overridden to "5", `requests.cpu` defaulting to "1" and `limits.memory` set to '2Gi';
+- a `my-paas` namespace with a `argocd` PaasNs and a `grafana` PaasNs;
+- a namespace called `my-paas-argocd` linked to the `my-paas-argocd` `ClusterResourceQuota`;
+  The `applicationset` has an extra entry for the namespace so that the cluster-wide
+  ArgoCD will create a namespaced ArgoCD deployment in this namespace. The Paas operator
+  creates a bootstrap application which points to the root folder (`.`) of main
+  branch of the `ssh://git@github.com/belastingdienst/my-paas-repo.git` repository.
+- a namespace called `my-paas-grafana` linked to the `my-paas-grafana` `ClusterResourceQuota`;
+  The `applicationset` has an extra entry for the namespace so that the cluster-wide
+  ArgoCD will create a grafana deployment in this namespace.

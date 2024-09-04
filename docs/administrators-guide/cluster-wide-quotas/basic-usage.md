@@ -10,11 +10,11 @@ date: 2024-07-01
 Basic usage of CWQs
 ===================
 
-With Cluster Wide Quotas, cluster admins can bring all resources for all PAAS'es 
+With Cluster Wide Quotas, cluster admins can bring all resources for all Paas'es 
 belonging to a capability together in one cluster wide resource pool. This brings
 down over commit at the expense of the risks associated with resource sharing.
 
-Use a quota per PAAS
+Use a quota per Paas
 --------------------
 
 Set:
@@ -37,7 +37,7 @@ Use CWQs with autoscaling
 
 You can use cluster wide quotas with an autoscaling feature.
 
-For this example: every PAAS is expected to use 1 CPU, and a minimum of 3 CPU
+For this example: every Paas is expected to use 1 CPU, and a minimum of 3 CPU
 should always be available. Additionally a maximum of 10 CPU can be reserved,
 and we scale down to 10% of normal usage.
 

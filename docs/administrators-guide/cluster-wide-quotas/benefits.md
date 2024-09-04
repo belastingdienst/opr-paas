@@ -11,49 +11,49 @@ Benefits of using CWQs
 ======================
 
 The following is a good example of the benefits when implementing cluster wide
-quota's. The example makes use of Tekton.
+quotas. The example makes use of Tekton.
 
 Without Cluster Wide Quotas
 ---------------------------
 
-Without Cluster Wide Quota's, every Tekton namespace would be linked to a specific
+Without Cluster Wide Quotas, every Tekton namespace would be linked to a specific
 cluster quota. All of these quota would add up to a considerable total quota
 reservation.
 
-However, since Tekton pipelines only rarely actually use these quota's on average
+However, since Tekton pipelines only rarely actually use these quotas on average
 about 99% of quota would always be unused. The cluster would either be considerably
 over committed or underutilized.
 
 With Cluster Wide Quotas
 ------------------------
 
-By enabling Cluster Wide Quota's, all Tekton namespaces will be linked to one
+By enabling Cluster Wide Quotas, all Tekton namespaces will be linked to one
 cluster wide quota.
 
-The Cluster Wide Quota can be automatically tuned by the PAAS operator, having a
+The Cluster Wide Quota can be automatically tuned by the Paas operator, having a
 minimum, maximum, default, and ratio value.
 
 The algorithm comes down to using the largest value out of 3 different calculations:
 
-- ratio (PAAS config) * sum of all PAAS resources (either defined or default);
-- sum of the largest two of all PAAS quotas (either defined or defaulted);
-- a hard set minimum (PAAS config);
+- ratio (Paas config) * sum of all Paas resources (either defined or default);
+- sum of the largest two of all Paas quotas (either defined or defaulted);
+- a hard set minimum (Paas config);
 
-Furthermore, a maximum value (PAAS config) can be set to cap the quota.
+Furthermore, a maximum value (Paas config) can be set to cap the quota.
 
 Example with numbers
 --------------------
 
-Consider the following values being set in the PAAS config (e.a. for cpu.limits):
+Consider the following values being set in the Paas config (e.a. for `cpu.limits`):
 
 | cluster wide config |     |                                                                                          |
 |---------------------|-----|------------------------------------------------------------------------------------------|
 | min value           |  10 | When set, every cluster wide quota has at least this amount.                             |
 | max value           |  20 | When set, every cluster wide quota has at most this amount.                              |
-| default             |   5 | Resources can be set in PAAS. When not set in PAAS, this default is used.                |
-| ratio               | 0,3 | Scales the sum of all quotas (all PAAS'es) down to a lower value for cluster wide quota. |
+| default             |   5 | Resources can be set in Paas. When not set in Paas, this default is used.                |
+| ratio               | 0,3 | Scales the sum of all quotas (all Paas'es) down to a lower value for cluster wide quota. |
 
-Now imagine that we would have a cluster where one by one new PAAS'es would be
+Now imagine that we would have a cluster where one by one new Paas'es would be
 created, with Tekton enabled, all using the default quota config.
 
 Quota reservations would be along lines of:
@@ -84,10 +84,10 @@ Visualized in a graph, it would look like this:
 
 ![visualized in a graph](./clusterwide_quota.png)
 
-Once 10 PAAS'es would be created:
+Once 10 Paas'es would be created:
 
 - without CWQ's, about 50 CPU limits would be reserved for all Tekton namespaces;
 - with a ratio of 0.3 only 15 would be reserved, saving 35 CPU limits;
 
-Beyond 14 PAAS'es, there would only be 20 CPU's reserved no matter how much PAAS'es
+Beyond 14 Paas'es, there would only be 20 CPU's reserved no matter how much Paas'es
 would be created.

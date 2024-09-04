@@ -33,21 +33,22 @@ We welcome many types of contributions including:
 * Events participation
 * Release management
 
-For development contributions, please refer to the separate section called
-["Contributing to the source code"](contribute/README.md).
+For development contributions, please refer to the ["CONTRIBUTING.md"](CONTRIBUTING.md)
+file in the root of this repository or the documentation in the `docs` directory.
 
 ## Raising Issues
 
 When raising issues, please specify the following:
 
-- Setup details as specified in the issue template
-- A scenario where the issue occurred (with details on how to reproduce it)
-- Errors and log messages that are displayed by the involved software
-- Any other detail that might be useful
+- Setup details as specified in the issue template;
+- A scenario where the issue occurred (with details on how to reproduce it);
+- Errors and log messages that are displayed by the involved software;
+- Any other detail that might be useful;
 
 If you are trying to report a vulnerability, please refer to the
 [security policy](SECURITY.md).
 
 ## Developer notes:
-- Because of depency issues we decided to use a stub instead of importing all dependencies behind the original code of ArgoCD.
-  More info in internal/stubs/argocd/v1beta1
+- Because of dependency issues we decided to use a stub instead of importing all
+  dependencies behind the original code of ArgoCD. More information can be found
+  in `internal/stubs/argocd/v1beta1`.

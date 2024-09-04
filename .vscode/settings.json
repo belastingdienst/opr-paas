@@ -28,10 +28,12 @@
 		"gitops",
 		"healthz",
 		"ITIL",
+		"keycloak",
 		"kustomize",
 		"PAAS",
 		"paasconfig",
 		"persistentvolumeclaims",
+		"Quickstart",
 		"readyz",
 		"repourl",
 		"rolemappings",
@@ -48,6 +50,7 @@
 		"blockdiag",
 		"gitea",
 		"jdsmith",
-		"kroki"
+		"kroki",
+		"paasns"
 	]
 }
