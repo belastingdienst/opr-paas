@@ -31,7 +31,7 @@ func TestClusterResourceQuota(t *testing.T) {
 			Setup(createPaasFn(paasWithQuota, paasSpec)).
 			Assess("is created", assertCRQCreated).
 			Assess("is updated", assertCRQUpdated).
-			Assess("is deleted when PaaS is deleted", assertCRQDeleted).
+			Assess("is deleted when Paas is deleted", assertCRQDeleted).
 			Teardown(teardownPaasFn(paasWithQuota)).
 			Feature(),
 	)
@@ -40,11 +40,11 @@ func TestClusterResourceQuota(t *testing.T) {
 func assertCRQCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	crq := getCRQ(ctx, t, cfg)
 
-	// ClusterResourceQuota is created with the same name as the PaaS
+	// ClusterResourceQuota is created with the same name as the Paas
 	assert.Equal(t, paasWithQuota, crq.Name)
-	// The label selector matches the PaaS name
+	// The label selector matches the Paas name
 	assert.Equal(t, paasWithQuota, crq.Spec.Selector.LabelSelector.MatchLabels["q.lbl"])
-	// The quota size matches those passed in the PaaS spec
+	// The quota size matches those passed in the Paas spec
 	assert.Equal(t, resource.MustParse("200m"), *crq.Spec.Quota.Hard.Cpu())
 	assert.Equal(t, resource.MustParse("256Mi"), *crq.Spec.Quota.Hard.Memory())
 
@@ -59,8 +59,8 @@ func assertCRQUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) co
 		"memory": "128Mi",
 	})
 
-	if err := cfg.Client().Resources().Update(ctx, &paas); err != nil {
-		t.Fatalf("Failed to update PaaS resource: %v", err)
+	if err := cfg.Client().Resources().Update(ctx, paas); err != nil {
+		t.Fatalf("Failed to update Paas resource: %v", err)
 	}
 
 	waitForOperator()
@@ -75,24 +75,13 @@ func assertCRQUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) co
 
 func assertCRQDeleted(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	deletePaas(ctx, paasWithQuota, t, cfg)
-
-	var crqs quotav1.ClusterResourceQuotaList
-
-	if err := cfg.Client().Resources().List(ctx, &crqs); err != nil {
-		t.Fatalf("Failed to retrieve list of ClusterResourceQuotas: %v", err)
-	}
+	crqs := listOrFail(ctx, "", &quotav1.ClusterResourceQuotaList{}, t, cfg)
 
 	assert.Empty(t, crqs.Items)
 
 	return ctx
 }
 
-func getCRQ(ctx context.Context, t *testing.T, cfg *envconf.Config) quotav1.ClusterResourceQuota {
-	var crq quotav1.ClusterResourceQuota
-
-	if err := cfg.Client().Resources().Get(ctx, paasWithQuota, cfg.Namespace(), &crq); err != nil {
-		t.Fatalf("Failed to retrieve ClusterResourceQuota: %v", err)
-	}
-
-	return crq
+func getCRQ(ctx context.Context, t *testing.T, cfg *envconf.Config) *quotav1.ClusterResourceQuota {
+	return getOrFail(ctx, paasWithQuota, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 }
