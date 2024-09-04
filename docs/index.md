@@ -9,7 +9,7 @@ date: 2024-07-01
 Introduction to the PAAS Operator
 =================================
 
-The documentation files encapsulated by this directory are loosly arranged by
+The documentation files encapsulated by this directory are loosely arranged by
 topic. If you have any questions or feel that certain parts of the documentation
 can be improved or expanded, feel free to create a [PR](https://github.com/belastingdienst/opr-paas/pulls)
 (Pull Request).

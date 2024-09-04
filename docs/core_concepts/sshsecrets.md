@@ -1,20 +1,20 @@
 # sshSecrets
 
-SshSecrets is implemented to enable bootstrappign a project 100% 'as code'.
-The idea is that people can create a PaaS to bootstrap an application fornt to back, including required namespaces, quotas, a application specific ArgoCD and a running application, in one go.
+SshSecrets is implemented to enable bootstrapping a project 100% 'as code'.
+The idea is that people can create a PaaS to bootstrap an application front to back, including required namespaces, quotas, a application specific ArgoCD and a running application, in one go.
 But (when using private repositories) ArgoCD needs to be provided with a ssh key (as a secret) for ArgoCD to gain access to the git repository.
 These ssh secrets need to be provided before ArgoCD can start acting on repo contents, which is why providing these secrets is part of the PaaS solution.
 
 Other consideration was that we want sshSecrets to be defined in a PaaS, PaaS can be readable to the world, and we don't want the secrets to be open, which is why we implemented encryption.
-Encryption is based on rsa where a prublic key (shared with everyone) is used to encrypt, and a private key (deployed with the PaaS operator) is used to decrypt.
+Encryption is based on rsa where a public key (shared with everyone) is used to encrypt, and a private key (deployed with the PaaS operator) is used to decrypt.
 Which that everyone can encrypt, but only the PaaS operator can decrypt.
 
-**Note** that we implemented sshSecrets for this usecase, but they are implemented generic, and can also be used to seed secrets into other namaspaces (capability and user namespaces)...
+**Note** that we implemented sshSecrets for this use case, but they are implemented generic, and can also be used to seed secrets into other namespaces (capability and user namespaces)...
 
 For ease, and to enable extra management capabilities, the PaaS operator comes with additional tooling:
 
 - an API, which can be used to encrypt without needing to share the public key.
-- a crypt tool which can be leveraged to encrypt, reencrypt, generate key pairs, and inspect encrypted keys
+- a crypt tool which can be leveraged to encrypt, re-encrypt, generate key pairs, and inspect encrypted keys
   Both of these tools require access to the private key to be usable...
 
 ## How it works
@@ -56,14 +56,14 @@ Additionally, sshSecrets can also be created in a PaaS.
 
 ### Defining sshSecrets in a PaaS
 
-The PaaS controller only manages PaasNs's created by the conttoller as defined by the PaaS.
+The PaaS controller only manages PaasNs's created by the controller as defined by the PaaS.
 **Note** PaasNs resources which are not created by the PaaS controller require sshSecrets to be configured as part of the PaasNs definition.
 
 SshSecrets can be defined in a PaaS on 2 levels:
 
 - as part of the spec, in which case the PaaS controller will add the sshSecret to every PaasNs created by the PaaS controller
 - as part of capability, in which case the PaaS controller will add the sshSecret to PaasNs created for this capability specifically
-  This is the normal usecase (part of the argocd capability)
+  This is the normal use case (part of the argocd capability)
 
 Example:
 

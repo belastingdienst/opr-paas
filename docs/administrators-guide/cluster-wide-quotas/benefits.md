@@ -17,12 +17,12 @@ Without Cluster Wide Quotas
 ---------------------------
 
 Without Cluster Wide Quota's, every Tekton namespace would be linked to a specific
-cluster quota. All of these quota would add up to a conciderable total quota
+cluster quota. All of these quota would add up to a considerable total quota
 reservation.
 
 However, since Tekton pipelines only rarely actually use these quota's on average
 about 99% of quota would always be unused. The cluster would either be considerably
-overcomitted or underutilized.
+over committed or underutilized.
 
 With Cluster Wide Quotas
 ------------------------
@@ -44,7 +44,7 @@ Furthermore, a maximum value (PAAS config) can be set to cap the quota.
 Example with numbers
 --------------------
 
-Concider the following values being set in the PAAS config (e.a. for cpu.limits):
+Consider the following values being set in the PAAS config (e.a. for cpu.limits):
 
 | cluster wide config |     |                                                                                          |
 |---------------------|-----|------------------------------------------------------------------------------------------|

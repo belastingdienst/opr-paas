@@ -7,16 +7,16 @@ Additionally default groups can get permissions on these ArgoCD's as well.
 
 Configuring authorization is done by:
 
-- Cluster administrators define rolemappings in the PaaS operator configmap
+- Cluster administrators define role mappings in the PaaS operator configmap
 - DevOps engineers specify groups in their PaaS resources
 - DevOps engineers can specify groups in their PaasNs resources
 - For every PaasNs the PaasNs controller derives the required RoleBindings and creates as required
   - If a list is specified in the PaasNs it is correlated to the Paas ; when not defined all groups as specified in the PaaS are used by default
-  - For every group, the PaaS definition is checked for the functional roles ; when not defined the default rolemapping is used
+  - For every group, the PaaS definition is checked for the functional roles ; when not defined the default role mapping is used
   - for every functional role the technical roles are derived from the PaaS configmap
-  - for every PaasNs namespace the PaasNs controller creates a rolebinding for every applicable technical role, and adds the groups that should have the required permissions
+  - for every PaasNs namespace the PaasNs controller creates a role binding for every applicable technical role, and adds the groups that should have the required permissions
 - for the argocd capability, the PaasNs controller adds the required permissions to the RBAC block so that the applicable groups get the permissions in ArgoCD as required
-  Additionally the PaaS operatior configmap can have additional argopermissions to be handed to additional groups (e.a. cluster admins)
+  Additionally the PaaS operator configmap can have additional argopermissions to be handed to additional groups (e.a. cluster admins)
 
 ## Config examples
 
@@ -64,7 +64,7 @@ data:
 
 ### PaaS
 
-Devops engineers could create a PaaS with the folliwng definition:
+Devops engineers could create a PaaS with the following definition:
 
 ```yaml
 ---

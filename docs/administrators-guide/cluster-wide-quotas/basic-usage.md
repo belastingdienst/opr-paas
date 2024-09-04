@@ -12,7 +12,7 @@ Basic usage of CWQs
 
 With Cluster Wide Quotas, cluster admins can bring all resources for all PAAS'es 
 belonging to a capability together in one cluster wide resource pool. This brings
-down overcommit at the expense of the risks associated with resource sharing.
+down over commit at the expense of the risks associated with resource sharing.
 
 Use a quota per PAAS
 --------------------

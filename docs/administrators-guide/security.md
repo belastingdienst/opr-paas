@@ -32,4 +32,4 @@ It is a common best-practice for normal pods to opt-out of automatically mountin
 a service account token using `automountServiceAccountToken: false`.
 
 However, since this concerns an operator that needs the service account for most
-things it does, we have opted to keep the token automounted.
+things it does, we have opted to keep the token auto-mounted.

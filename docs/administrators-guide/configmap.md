@@ -13,7 +13,7 @@ ConfigMap fields
 ----------------
 
 This section is intended to create detailed documentation with regard to the
-configmap and its fields that are used to configure the behaviour of the PAAS
+configmap and its fields that are used to configure the behavior of the PAAS
 operator.
 
 ### Top level fields

@@ -21,20 +21,20 @@ Examples can include, but are not limited to, ArgoCD, Tekton or Grafana.
 With cluster wide resource quotas, cluster admins can bring all resources for all
 PAAS'es belonging to a capability, together in one cluster wide resource pool.
 
-This brings down overcommit at the expense of the risk of resource sharing.
+This brings down over commit at the expense of the risk of resource sharing.
 
 For more details, see the [relevant details in the administrators section](admin-guide/cwq/cluster-wide-quotas.md)
 
 ## Crypttool
 
-The crypttool is a small commandline utility that allows a user to perform some
+The crypttool is a small command-line utility that allows a user to perform some
 simple operations with regards to secrets in a PAAS.
 
-Basic functionality includes sub-commands for `encrypt`, `decrypt` and `reencrypt`
+Basic functionality includes sub-commands for `encrypt`, `decrypt` and `re-encrypt`
 with regards to PAAS related secrets.
 
-The `reencrypt` sub-command specifically will parse the yaml/json file for a PAAS,
-decrypt the SSH secrets with the previous private key, reencrypt with the new public
+The `re-encrypt` sub-command specifically will parse the yaml/json file for a PAAS,
+decrypt the SSH secrets with the previous private key, re-encrypt with the new public
 key & write back the PAAS configuration to the file in either yaml or json format.
 
 This will allow for key rotation.
@@ -43,7 +43,7 @@ You can also run the `check-paas` sub-command to "check" the PAAS, which means
 it will parse the yaml/json file for a PAAS, decrypt the SSH secrets and display
 their length and checksums.
 
-Lastly it can be used to `generate` a new public/private keypair.
+Lastly it can be used to `generate` a new public/private key pair.
 
 ## Groups [openshift]
 
@@ -88,9 +88,9 @@ instance.
 The SSH secrets must be encrypted with the public key corresponding to the
 private key that was deployed together with the PAAS operator.
 
-## Webservice
+## Web service
 
-The webservice exposes a `/v1/encrypt` endpoint that allows a user to encrypt a
+The web service exposes a `/v1/encrypt` endpoint that allows a user to encrypt a
 secret using that cluster's private key.
 
 Apart from the encrypt endpoint, some standard endpoints like `/healthz`, `/readyz`,

@@ -36,7 +36,7 @@ To add user namespaces, the following options are available:
 
 - In this PaaS, the `spec.namespaces` field could have a list of namespaces.
   If this would be set to (just as an example: `[ ns1, ns2, ns3 ]`, the PaaS controller would create three PaasNs resources in a namespace called my-paas.
-  the PaasNs controller would proces them as being part of my-paas and create the following namespaces: my-paas-ns1, my-paas-ns2 and my-paas-ns3.
+  the PaasNs controller would process them as being part of my-paas and create the following namespaces: my-paas-ns1, my-paas-ns2 and my-paas-ns3.
 - Another option would be to manually create a PaasNs resource in a namespace which already belongs to my-paas.
   Example:
   ```yaml
@@ -50,7 +50,7 @@ To add user namespaces, the following options are available:
     paas: my-paas
   ```
 - Another option would be to create a PaasNs resource using automation such as argocd or tekton.
-  It is adviced to create them in the namespace belonging to the capability that is being used (e.a. my-paas-argocd or my-paas-tekton).
+  It is advised to create them in the namespace belonging to the capability that is being used (e.a. my-paas-argocd or my-paas-tekton).
 - A cool feature is that PaasNs resources could be stacked. This means that a PaasNs resource could be in a namespace which is the product of a PaasNs resources in a namespace, which...
   As as the top namespace is the product of a PaasNs resource in the namespace called after the paas, all child PaasNs's are assumed to be part of the same paas.
 

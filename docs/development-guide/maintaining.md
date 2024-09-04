@@ -22,7 +22,7 @@ We adhere to the [Conventional Commits v1.0](https://www.conventionalcommits.org
 
 ### Versioning
 
-For versioning purposes, we adhere to the [SemVer v2.0.0](https://semver.org/spec/v2.0.0.html) standard with a sidenote that we always prefix the sentic version number with the character 'v'. This stands for "version".
+For versioning purposes, we adhere to the [SemVer v2.0.0](https://semver.org/spec/v2.0.0.html) standard with a side note that we always prefix the semantic version number with the character 'v'. This stands for "version".
 
 As a quick summary, this means we use version numbers in the style of vX.Y.Z.
 With:

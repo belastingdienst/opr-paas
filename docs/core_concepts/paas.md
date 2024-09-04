@@ -5,7 +5,7 @@ The PaaS is a higher level construct, which consists of many parts, including
 
 - namespaces
 - Quotas
-- authorzation
+- authorization
 - capabilities
 
 DevOps teams request this PaaS context by defining a PaaS resource through the k8s api.
@@ -15,7 +15,7 @@ At the very least a PaaS resource has the following defined:
 - apiVersion, kind (as needs to be defined for every other k8s resource)
 - metadata.name, which is unique (cluster-wide)
 - spec.requestor, which is an informational field representing the requestor of this PaaS, for administrative purposes
-- quota, which sets the amount of quota for all namespaces that are part of this PaaS (capability namaspaces excluded)
+- quota, which sets the amount of quota for all namespaces that are part of this PaaS (capability namespaces excluded)
 
 Additionally the following optional settings can also be defined:
 
