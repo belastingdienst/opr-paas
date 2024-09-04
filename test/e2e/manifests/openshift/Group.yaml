@@ -1,0 +1,29 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: groups.user.openshift.io
+spec:
+  group: user.openshift.io
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            users:
+              type: array
+              items:
+                type: string
+  scope: Cluster
+  names:
+    plural: groups
+    singular: group
+    kind: Group
