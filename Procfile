@@ -1,0 +1,1 @@
+paas: go run cmd/manager/main.go
