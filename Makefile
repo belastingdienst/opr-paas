@@ -70,6 +70,8 @@ CONTAINER_TOOL ?= docker
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
+PAAS_PROCFILE?=Procfile
+
 .PHONY: all
 all: build
 
@@ -112,11 +114,6 @@ vet: ## Run go vet against code.
 test: ## Run tests.
 	go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
 
-# Utilize Kind or modify the e2e tests to load the image locally, enabling compatibility with other vendors.
-.PHONY: test-e2e  # Run the e2e tests against a Kind k8s instance that is spun up.
-test-e2e:
-	go test ./test/e2e/ -v -ginkgo.v
-
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter & yamllint
 	$(GOLANGCI_LINT) run
@@ -124,6 +121,67 @@ lint: golangci-lint ## Run golangci-lint linter & yamllint
 .PHONY: lint-fix
 lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 	$(GOLANGCI_LINT) run --fix
+
+## Installs all tools required for running end-to-end tests
+.PHONY: install-test-tools-local
+install-test-tools-local:
+	go install sigs.k8s.io/kind@latest
+	go install github.com/mattn/goreman@v0.3.15
+
+.PHONY: setup-kind-for-e2e
+setup-kind-for-e2e:
+	kind delete cluster || echo 'Clean environment'
+	# TODO determine if / how we switch k8s versions --> preferably use k3s as shown in matrix https://github.com/argoproj/argo-cd/blob/master/.github/workflows/ci-build.yaml#L440
+	kind create cluster
+
+# Setup e2e
+.PHONY: setup-e2e
+setup-e2e: kustomize
+	# Create GitOps operator mocks
+	# Use create instead of apply, because of https://medium.com/pareture/kubectl-install-crd-failed-annotations-too-long-2ebc91b40c7d
+	$(KUSTOMIZE) build test/e2e/manifests/gitops-operator | kubectl create -f -
+	# Apply OpenShift mocks
+	$(KUSTOMIZE) build test/e2e/manifests/openshift | kubectl apply -f -
+	# Apply context needed by operator
+	$(KUSTOMIZE) build test/e2e/manifests/paas-context | kubectl apply -f -
+	# Apply opr-paas crds
+	$(KUSTOMIZE) build manifests/crds | kubectl apply -f -
+	# Create namespace as desired in RBAC
+	kubectl create namespace paas
+	# TODO determine if needed as we don't run the opr in cluster
+	# Apply opr-paas rbac
+	$(KUSTOMIZE) build manifests/rbac | kubectl apply -f -
+	# Clean start
+	killall goreman || true
+	mkdir -p /tmp/paas-e2e/secrets/priv && chmod 0700 /tmp/paas-e2e/secrets/priv
+	cp -r ./test/e2e/fixtures/crypt/priv* /tmp/paas-e2e/secrets/priv
+	# TODO log to file for archiving purposes :)
+	PAAS_CONFIG=./test/e2e/fixtures/paas_config.yml \
+		goreman -f $(PAAS_PROCFILE) start
+	rm -rf /tmp/paas-e2e
+
+.PHONY: run-e2e-tests
+run-e2e-tests:
+	@count=1; \
+	until curl -f http://127.0.0.1:8081/healthz; do \
+		sleep 10; \
+		if [ $$count -ge 20 ]; then \
+	  		echo "Timeout"; \
+	  		exit 1; \
+		fi; \
+		count=$$((count+1)); \
+	done
+	go test -v ./test/e2e
+	killall goreman || echo "goreman trouble"
+
+.PHONY: test-e2e
+test-e2e:
+	make -j 2 setup-e2e run-e2e-tests
+
+.PHONY: test-e2e-against-kind
+test-e2e-against-kind: install-test-tools-local setup-kind-for-e2e
+	make -j 2 setup-e2e run-e2e-tests
+	kind delete cluster || echo Clean environment
 
 ##@ Build
 
@@ -200,11 +258,13 @@ $(LOCALBIN):
 KUBECTL ?= kubectl
 KUSTOMIZE ?= $(LOCALBIN)/kustomize-$(KUSTOMIZE_VERSION)
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen-$(CONTROLLER_TOOLS_VERSION)
+GOREMAN ?= $(LOCALBIN)/goreman-$(GOREMAN_VERSION)
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint-$(GOLANGCI_LINT_VERSION)
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.3.0
 CONTROLLER_TOOLS_VERSION ?= v0.14.0
+GOREMAN_VERSION ?= v0.3.15
 GOLANGCI_LINT_VERSION ?= v1.60.3
 
 .PHONY: kustomize
