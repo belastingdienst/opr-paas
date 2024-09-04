@@ -53,13 +53,13 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 		}
 	}
 
-	errMsg := fmt.Sprintf("Finished with %d errors", errNum)
+	errMsg := fmt.Errorf("Finished with %d errors", errNum)
 	if errNum > 0 {
 		logrus.Error(errMsg)
-		return fmt.Errorf(errMsg)
+		return errMsg
 	}
 
-	logrus.Infof(errMsg)
+	logrus.Info(errMsg)
 
 	return nil
 }
