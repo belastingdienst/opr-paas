@@ -27,7 +27,25 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code -- .
-
+  
+  build-go:
+    name: Build & cache Go code
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8410ad0602e1e429cee44a835ae9f77f654a6694 # v4.0.0
+      - name: Setup Golang
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+      - name: Cache go build
+        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-v1-${{ github.run_id }}
+      - name: Download all Go modules
+        run: go mod download
+        
   lint-go:
     permissions:
       contents: read  # for actions/checkout to fetch code
@@ -61,6 +79,8 @@ jobs:
   unit-test:
     name: Run unit tests
     runs-on: ubuntu-22.04
+    needs:
+      - build-go
     steps:
       - name: Checkout code
         uses: actions/checkout@8410ad0602e1e429cee44a835ae9f77f654a6694 # v4.0.0
@@ -74,6 +94,8 @@ jobs:
   e2e-test:
     name: Run e2e tests
     runs-on: ubuntu-22.04
+    needs:
+      - build-go
     steps:
       - name: Checkout code
         uses: actions/checkout@8410ad0602e1e429cee44a835ae9f77f654a6694 # v4.0.0
