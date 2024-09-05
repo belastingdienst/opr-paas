@@ -151,6 +151,9 @@ setup-e2e: kustomize
 	# TODO determine if needed as we don't run the opr in cluster
 	# Apply opr-paas rbac
 	$(KUSTOMIZE) build manifests/rbac | kubectl apply -f -
+
+.PHONY: run-operator
+run-operator:
 	# Clean start
 	killall goreman || true
 	mkdir -p /tmp/paas-e2e/secrets/priv && chmod 0700 /tmp/paas-e2e/secrets/priv
@@ -159,6 +162,7 @@ setup-e2e: kustomize
 	PAAS_CONFIG=./test/e2e/fixtures/paas_config.yml \
 		goreman -f $(PAAS_PROCFILE) start
 	rm -rf /tmp/paas-e2e
+
 
 .PHONY: run-e2e-tests
 run-e2e-tests:
@@ -172,15 +176,15 @@ run-e2e-tests:
 		count=$$((count+1)); \
 	done
 	go test -v ./test/e2e
-	killall goreman || echo "goreman trouble"
 
 .PHONY: test-e2e
-test-e2e:
-	make -j 2 setup-e2e run-e2e-tests
+test-e2e: setup-e2e
+	&>/tmp/opr-paas.out make run-operator &
+	make run-e2e-tests
+	killall goreman || echo "goreman trouble"
 
 .PHONY: test-e2e-against-kind
-test-e2e-against-kind: install-test-tools-local setup-kind-for-e2e
-	make -j 2 setup-e2e run-e2e-tests
+test-e2e-against-kind: install-test-tools-local setup-kind-for-e2e test-e2e
 	kind delete cluster || echo Clean environment
 
 ##@ Build
