@@ -1,6 +1,11 @@
 name: ci-build
 on:
-  - pull_request
+  pull_request:
+    paths:
+      - '**'
+      - '!/docs/**'
+      - '!/.github/ISSUE_TEMPLATE/**'
+      - '!/.github/PULL_REQUEST_TEMPLATE.md'
 
 env:
   # Golang version to use across CI steps
