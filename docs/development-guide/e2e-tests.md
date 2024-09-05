@@ -10,7 +10,10 @@ date: 2024-08-21
 
 ## Running the tests
 
-Run the tests using the following command: `go test -v ./test/e2e`
+1. Have a vanilla kubernetes or OpenShift cluster running
+2. In case of a vanilla kubernetes cluster, run: `make setup-e2e` to apply mocks etc. needed to run the operator.
+3. Start the operator by calling: `make start-e2e`
+4. Run the e2e tests by calling: `make test-e2e`
 
 ## Design considerations
 
