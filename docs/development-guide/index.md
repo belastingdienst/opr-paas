@@ -89,15 +89,12 @@ the Istio documentation which contains very good insights and best practices:
 If you have written code for an improvement to Paas or a bug fix,
 please follow this procedure to submit a pull request:
 
-1. [Create a fork](development-environment/index.md#forking-the-repository) of Paas
-2. Self-assign the ticket and begin working on it in the forked project. Move
-   the ticket to `Analysis` or `In Development` phase of
-   [Paas operator development](https://github.com/orgs/belastingdienst/projects/2)
-3. [Run the e2e tests in the forked repository](e2e_testing_environment/README.md#running-e2e-tests-on-a-fork-of-the-repository)
+1. [Create a fork](development-environment/index.md) of Paas
+2. Self-assign the ticket and begin working on it in the forked project.
+3. Run the e2e tests in the forked repository, see our [related documentation]](development-guide/e2e-tests.md)
 4. Once development is finished, create a pull request from your forked project
-   to the Paas project and move the ticket to the `Waiting for First Review`
-   phase. Please make sure the pull request title and message follow
-   [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+   to the Paas project.
+   Please make sure the pull request title and message follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 
 One of the maintainers will then proceed with the first review and approve the
 CI workflow to run in the Paas project.  The second reviewer will run

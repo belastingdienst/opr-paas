@@ -33,8 +33,8 @@ We welcome many types of contributions including:
 * Events participation
 * Release management
 
-For development contributions, please refer to the ["CONTRIBUTING.md"](CONTRIBUTING.md)
-file in the root of this repository or the documentation in the `docs` directory.
+For development contributions, please refer to the ["docs/development-guide"](docs/development-guide)
+section of the documentation.
 
 ## Raising Issues
 
@@ -47,8 +47,3 @@ When raising issues, please specify the following:
 
 If you are trying to report a vulnerability, please refer to the
 [security policy](SECURITY.md).
-
-## Developer notes:
-- Because of dependency issues we decided to use a stub instead of importing all
-  dependencies behind the original code of ArgoCD. More information can be found
-  in `internal/stubs/argocd/v1beta1`.

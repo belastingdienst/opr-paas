@@ -20,8 +20,7 @@ A PaaS is all a team needs to hit the ground running.
 
 Deploy the operator using the following command:
 ```
-kubectl apply -f \
-  https://raw.githubusercontent.com/belastingdienst/paas/release-1.0.0/releases/opr-paas-1.0.0.yaml
+kubectl apply -f manifests/install.yaml
 ```
 
 This will create:
@@ -32,7 +31,6 @@ This will create:
   all permissions required by the operator;
 - a viewer & an editor cluster role for PaaS and PaasNs resources;
 - a configmap with all operator configuration options;
-- a secret with a newly generated key pair used for;
 - a deployment running the operator and a deployment running an encryption service;
 
 Feel free to change config as required.
@@ -44,16 +42,7 @@ that to maintain your own deployment.
 
 When changing the crd, first run `make manifests` in the root of this repository.
 
-Then copy `config/crd/bases/cpet.belastingdienst.nl_paas.yaml` to the `opr-paas-config` repo and distribute with ArgoCD from there.
-
-## Description
-We want our developer teams to be able to create application environments with
-great ease and provide PaaS as an interface for this. Application environments consist of:
-
-- argocd (namespace, quota, argocd CR);
-- ci (namespace, quota, tekton example pipelines and tasks, etc.);
-- SSO (namespace, quota, keycloak);
-- Grafana (namespace, quota, Grafana);
+Then copy `manifests/crds/cpet.belastingdienst.nl_paas.yaml` to the `opr-paas-config` repo and distribute with ArgoCD from there.
 
 ## Background information
 - [build-kubernetes-operator-six-steps](https://developers.redhat.com/articles/2021/09/07/build-kubernetes-operator-six-steps#setup_and_prerequisites)
