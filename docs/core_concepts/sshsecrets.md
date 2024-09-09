@@ -102,13 +102,13 @@ metadata:
 spec:
   # Specifying a sshSecret for all capability- and functional- namespaces
   sshSecrets:
-    "ssh://git@github.com/belastingdienst/Paas.git": >-
+    "ssh://git@github.com/belastingdienst/paas.git": >-
       2wkeKebCnqgl...L/jDAUmhWG3ng==
   capabilities:
     argocd:
       # Specifying a sshSecret for a specific capability namespace
       sshSecrets:
-        "ssh://git@github.com/belastingdienst/Paas.git": >-
+        "ssh://git@github.com/belastingdienst/paas.git": >-
           2wkeKebCnqgl...L/jDAUmhWG3ng==
   requestor: my-team
   quota:
@@ -122,7 +122,7 @@ defined in the PaasNs (either manually created or managed by the Paas controller
 
 The PaasNs controller will update SSH secrets in the namespace if the `sshSecret`
 value is changed in the PaasNs resource. However, when the key changes
-(e.a. `ssh://git@github.com/belastingdienst/Paas.git` in the example below), the
+(e.a. `ssh://git@github.com/belastingdienst/paas.git` in the example below), the
 original SSH secret is not removed.
 
 ```yaml
@@ -133,7 +133,7 @@ metadata:
   name: my-ns
   namespace: my-paas-argocd
 spec:
-  Paas: my-paas
+  paas: my-paas
   sshSecrets:
     "ssh://git@github.com/belastingdienst/paas.git": >-
       2wkeKebCnqgl...L/jDAUmhWG3ng==
