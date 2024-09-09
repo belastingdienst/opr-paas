@@ -35,15 +35,6 @@ This will create:
 
 Feel free to change config as required.
 
-### Change configuration
-The quick start yaml file is a result from parts of the config folder, which is
-in this repo as an example only. It is advised to copy it to a config repo and use
-that to maintain your own deployment.
-
-When changing the crd, first run `make manifests` in the root of this repository.
-
-Then copy `manifests/crds/cpet.belastingdienst.nl_paas.yaml` to the `opr-paas-config` repo and distribute with ArgoCD from there.
-
 ## Background information
 - [build-kubernetes-operator-six-steps](https://developers.redhat.com/articles/2021/09/07/build-kubernetes-operator-six-steps#setup_and_prerequisites)
 - [operator sdk installation instructions](https://sdk.operatorframework.io/docs/installation/)
