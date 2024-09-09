@@ -13,7 +13,7 @@ ConfigMap fields
 ----------------
 
 This section is intended to create detailed documentation with regard to the
-configmap and its fields that are used to configure the behaviour of the PAAS
+configmap and its fields that are used to configure the behavior of the Paas
 operator.
 
 ### Top level fields
@@ -48,12 +48,12 @@ The `argopermissions` level has the following underlying fields:
 
 The `capabilities` field is a map of objects, each having:
 
-| Name                     | Type   | Description |
-| ------------------------ | ------ | ----------- |
-| applicationset           | string | |
-| quotas                   |  ConfigQuotaSettings      | |
-| extra_permissions        |  ConfigCapPerm      | |
-| default_permissions      |   ConfigCapPerm     | |
+| Name                     | Type   | Description  |
+| ------------------------ | ------ | ------------ |
+| applicationset           | string |              |
+| quotas                   | ConfigQuotaSettings | |
+| extra_permissions        | ConfigCapPerm       | |
+| default_permissions      | ConfigCapPerm       | |
 
 ### Fields `ldap` level
 
