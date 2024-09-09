@@ -9,10 +9,10 @@ date: 2024-07-04
 Basic Usage
 ===========
 
-Minimal PAAS managed by another PAAS
+Minimal Paas managed by another Paas
 ------------------------------------
 
-Creating a configuration file to define a PAAS is fairly straight forward. The
+Creating a configuration file to define a Paas is fairly straight forward. The
 configuration file should use the current API version `cpet.belastingdienst.nl/v1alpha1`
 and define a `kind: Paas`.
 
@@ -20,9 +20,9 @@ The most minimal configuration requires at least a `name` in the `metadata` sect
 and either a capability `argocd` that is `enabled`, or a `managedByPaas` entry.
 
 In the following example, we'll use the latter. The `managedByPaas` entry should
-contain the name of the PAAS that is allowed to manage this PAAS.
+contain the name of the Paas that is allowed to manage this Paas.
 
-Example PAAS definition being managed by another PAAS:
+Example Paas definition being managed by another Paas:
 
 ```yaml
 ---
@@ -34,10 +34,10 @@ spec:
   managedByPaas: trd-prt
 ```
 
-Minimal PAAS, self-managed using ArgoCD
+Minimal Paas, self-managed using ArgoCD
 ---------------------------------------
 
-Example PAAS definition, using its own ArgoCD:
+Example Paas definition, using its own ArgoCD:
 
 ```yaml
 ---
@@ -60,9 +60,9 @@ Adding extra components or functionality
 
 ### SSH Secrets
 
-It is possible to define SSH secrets for your PAAS's ArgoCD to use for access to
+It is possible to define SSH secrets for your Paas's ArgoCD to use for access to
 Github or BitBucket. They must be encrypted with the public key corresponding to
-the private key that was deployed with the PAAS operator.
+the private key that was deployed with the Paas operator.
 
 SSH Secrets can be either defined on the generic `spec` level or underneath the
 `argocd` capability.
@@ -81,7 +81,7 @@ spec:
 
 ### Groups and Users
 
-It is possible to define groups in your PAAS to allow access to the PAAS' resources.
+It is possible to define groups in your Paas to allow access to the Paas' resources.
 These groups are filled with either an LDAP query and/or a list of users.
 
 When both an LDAP query and a list of users is defined, the users from the list
@@ -106,13 +106,14 @@ spec:
         - jdsmith
 ```
 
-### PAAS Quota
+### Paas Quota
 
-It is possible to request a specific quota for your PAAS. This request will be
+It is possible to request a specific quota for your Paas. This request will be
 ignored if cluster wide resource quotas are configured by the administrators.
 
-**Please note:** these will never overrule the maximum values configured by the
-                 administrators.
+!!! Note
+    Please note these will never overrule the maximum values configured by the
+    administrators.
 
 Example:
 ```yaml
@@ -131,7 +132,7 @@ spec:
 
 ### Capabilities
 
-It is possible to easily add certain capabilities to your PAAS through the yaml
+It is possible to easily add certain capabilities to your Paas through the yaml
 configuration. For each capability you are also able to request a certain quota.
 
 Example:
@@ -170,11 +171,11 @@ spec:
 
 ### Adding extra application namespaces
 
-It is possible to define a list of extra namespaces to be created within the PAAS.
+It is possible to define a list of extra namespaces to be created within the Paas.
 These can be used for various purposes like dev, test and prod or for example a
 team member's personal test.
 
-These namespaces count towards the global quota requested by the PAAS.
+These namespaces count towards the global quota requested by the Paas.
 
 Example:
 ```yaml
