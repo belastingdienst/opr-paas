@@ -56,17 +56,6 @@ TODO:
 
 -->
 
-Testing the latest development snapshot
----------------------------------------
-
-If you want to test or evaluate the latest development snapshot of Paas before
-the next official patch release, you can simply run:
-
-```sh
-kubectl apply -f \
-  https://raw.githubusercontent.com/belastingdienst/artifacts/main/manifests/paas-operator-manifest.yaml
-```
-
 Your development environment for Paas
 -------------------------------------
 
