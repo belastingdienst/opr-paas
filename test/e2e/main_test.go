@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 			envfuncs.CreateNamespace(namespace),
 		)
 		testenv.Finish(
-			envfuncs.DeleteNamespace(namespace),
+		// envfuncs.DeleteNamespace(namespace),
 		)
 	}
 
