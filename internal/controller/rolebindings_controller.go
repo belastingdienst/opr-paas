@@ -48,7 +48,7 @@ func diffRbacSubjects(l1 []rbac.Subject, l2 []rbac.Subject) bool {
 func EnsureRoleBinding(
 	ctx context.Context,
 	r Reconciler,
-	paasns *v1alpha1.PaasNS,
+	paas *v1alpha1.Paas,
 	statusMessages *v1alpha1.PaasNsStatus,
 	rb *rbac.RoleBinding,
 ) error {
@@ -81,8 +81,8 @@ func EnsureRoleBinding(
 		return err
 	}
 	var changed bool
-	if !paasns.AmIOwner(found.OwnerReferences) {
-		if err = controllerutil.SetControllerReference(paasns, found, r.GetScheme()); err != nil {
+	if !paas.AmIOwner(found.OwnerReferences) {
+		if err = controllerutil.SetControllerReference(paas, found, r.GetScheme()); err != nil {
 			return err
 		}
 		changed = true
@@ -207,7 +207,7 @@ func (r *PaasReconciler) ReconcileRolebindings(
 			rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
 			logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
 			rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
-			if err := EnsureRoleBinding(ctx, r, &paasns, &statusMessages, rb); err != nil {
+			if err := EnsureRoleBinding(ctx, r, paas, &statusMessages, rb); err != nil {
 				err = fmt.Errorf("failure while creating/updating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
 				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 				return err
@@ -240,7 +240,7 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 		rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
 		logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
 		rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
-		if err := EnsureRoleBinding(ctx, r, paasns, &paasns.Status, rb); err != nil {
+		if err := EnsureRoleBinding(ctx, r, paas, &paasns.Status, rb); err != nil {
 			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
 			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 			return err
