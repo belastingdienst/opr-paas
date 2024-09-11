@@ -39,6 +39,7 @@ func TestMain(m *testing.M) {
 		cfg = cfg.WithNamespace(namespace)
 	} else {
 		testenv.Setup(
+			// envfuncs.DeleteNamespace(namespace),
 			envfuncs.CreateNamespace(namespace),
 		)
 		testenv.Finish(

@@ -40,12 +40,14 @@ func assertPaasNSWithoutPaas(ctx context.Context, t *testing.T, cfg *envconf.Con
 	}
 
 	fetchedPaasNS := getPaasNS(ctx, t, cfg)
+	fmt.Println("----------------")
+	fmt.Println(fetchedPaasNS.Name)
 
 	// checking for vals...
-	var errMsg = fetchedPaasNS.Status.Messages[0]
-	fmt.Println(fetchedPaasNS.Name)
-	fmt.Printf("messages:", fetchedPaasNS.Status.Messages)
-	fmt.Println(errMsg)
+	// var errMsg = fetchedPaasNS.Status.Messages[0]
+	// fmt.Println(fetchedPaasNS.Name)
+	// fmt.Println(fetchedPaasNS.Status.Messages)
+	// fmt.Println(errMsg)
 
 	// TODO: test for error
 	// assert.Equal(t, paasNsName, &paasns.Name)
