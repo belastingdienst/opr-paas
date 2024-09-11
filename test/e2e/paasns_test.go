@@ -15,6 +15,31 @@ import (
 const paasNsName = "a-paasns"
 const paasName = "a-paas"
 
+// Consider reorganising into 3 feature segments,
+// possibly removing the need for wait/sleep
+
+// Features:
+// 1 - PaasNS creation without linked Paas
+// 2 - PaasNS creation with linked Paas
+// 3 - PaasNS deletion
+
+// func PaasNSCreationWithoutLinkedPaas(t *testing.T) {
+// 	badPaasNS := &api.PaasNS{
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      paasNsName,
+// 			Namespace: "paas-e2e",
+// 		},
+// 		Spec: api.PaasNSSpec{Paas: paasName}, // this paas does not exist but we do reference it
+// 	}
+
+// 	testenv.Test(
+// 		t,
+// 		features.New("PaasNS creation without linked Paas").
+// 		Setup().
+// 		Feature(),
+// 	)
+// }
+
 func TestPaasNS(t *testing.T) {
 	testenv.Test(
 		t,
@@ -50,7 +75,7 @@ func assertPaasNSWithoutPaas(ctx context.Context, t *testing.T, cfg *envconf.Con
 
 	fetchedPaasNS := getPaasNS(ctx, t, cfg)
 
-	// TODO: assert paasns status message
+	// assert paasns status message
 	fmt.Println("----------------")
 	fmt.Println(fetchedPaasNS)
 	fmt.Println(fetchedPaasNS.Name)
