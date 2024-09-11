@@ -43,8 +43,10 @@ func assertPaasNSWithoutPaas(ctx context.Context, t *testing.T, cfg *envconf.Con
 	// fetch paas but expect it to error because it shouldn't have been created just because we referenced it
 	_, errPaas := getPaas(ctx, t, cfg)
 
-	// referenced paas still does not exist
+	// referenced paas still should not exist
 	assert.Error(t, errPaas)
+
+	waitForOperator()
 
 	fetchedPaasNS := getPaasNS(ctx, t, cfg)
 
@@ -55,11 +57,10 @@ func assertPaasNSWithoutPaas(ctx context.Context, t *testing.T, cfg *envconf.Con
 	fmt.Println(fetchedPaasNS.Status.Messages) // Error message disappeared but was there last week. Possibly a timing issue
 
 	// checking for vals...
-	// var errMsg = fetchedPaasNS.Status.Messages[0]
-	// fmt.Println(fetchedPaasNS.Status.Messages)
-	// fmt.Println(errMsg)
+	var errMsg = fetchedPaasNS.Status.Messages[0]
+	fmt.Println(errMsg)
 	// assert.Equal(t, paasNsName, &paasns.Name)
-	// assert.Contains(t, "cannot find PaaS", errMsg)
+	assert.Contains(t, errMsg, "cannot find PaaS")
 
 	return ctx
 }
