@@ -48,7 +48,7 @@ func diffRbacSubjects(l1 []rbac.Subject, l2 []rbac.Subject) bool {
 func EnsureRoleBinding(
 	ctx context.Context,
 	r Reconciler,
-	paasns *v1alpha1.PaasNS,
+	paas *v1alpha1.Paas,
 	statusMessages *v1alpha1.PaasNsStatus,
 	rb *rbac.RoleBinding,
 ) error {
@@ -67,13 +67,17 @@ func EnsureRoleBinding(
 		err = r.Create(ctx, rb)
 
 		if err != nil {
-			// creating the rolebinding failed
+			// Creating the rolebinding failed
 			statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
 			return err
 		} else {
-			// creating the rolebinding was successful
+			// Creating the rolebinding was successful
 			statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "succeeded")
-			return err
+			// Map the created RB to the `found` variable
+			err := r.Get(ctx, namespacedName, found)
+			if err != nil {
+				return err
+			}
 		}
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
@@ -81,8 +85,8 @@ func EnsureRoleBinding(
 		return err
 	}
 	var changed bool
-	if !paasns.AmIOwner(found.OwnerReferences) {
-		if err = controllerutil.SetControllerReference(paasns, found, r.GetScheme()); err != nil {
+	if !paas.AmIOwner(found.OwnerReferences) {
+		if err = controllerutil.SetControllerReference(paas, found, r.GetScheme()); err != nil {
 			return err
 		}
 		changed = true
@@ -128,7 +132,7 @@ func backendRoleBinding(
 	rb := &rbac.RoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RoleBinding",
-			APIVersion: "v1",
+			APIVersion: "rbac.authorization.k8s.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name.Name,
@@ -176,6 +180,7 @@ func FinalizeRoleBinding(
 	}
 }
 
+// ReconcileRolebindings is used by the Paas reconciler to reconcile RB's
 func (r *PaasReconciler) ReconcileRolebindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
@@ -207,7 +212,7 @@ func (r *PaasReconciler) ReconcileRolebindings(
 			rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
 			logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
 			rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
-			if err := EnsureRoleBinding(ctx, r, &paasns, &statusMessages, rb); err != nil {
+			if err := EnsureRoleBinding(ctx, r, paas, &statusMessages, rb); err != nil {
 				err = fmt.Errorf("failure while creating/updating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
 				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 				return err
@@ -218,6 +223,7 @@ func (r *PaasReconciler) ReconcileRolebindings(
 	return nil
 }
 
+// ReconcileRolebindings is used by the PaasNS reconciler to reconcile RB's
 func (r *PaasNSReconciler) ReconcileRolebindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
@@ -240,7 +246,7 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 		rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
 		logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
 		rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
-		if err := EnsureRoleBinding(ctx, r, paasns, &paasns.Status, rb); err != nil {
+		if err := EnsureRoleBinding(ctx, r, paas, &paasns.Status, rb); err != nil {
 			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
 			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 			return err
