@@ -135,70 +135,106 @@ TODO
 
 Post scenarios: reset environment to clean slate.
 
+## Groups => Users
 
----
----
----
+What we test: managing users and group memberships through `Paas` configuration.
 
+Scenarios:
 
-## Groups Users
+1. Creating a group with a single user without a specified role.<br/><br/>
+   **Given** a minimal `Paas` with a single namespace,<br/>
+   **and** a group with a single user without a specified role,<br/>
+   **when** that `Paas` is created,<br/>
+   **then** a `Group` was created with the correct name,<br/>
+   **and** the user is a member of said group,<br/>
+   **and** the correct labels were placed on the group,<br/>
+   **and** the Owner Reference for the Group points to the correct Paas,<br/>
+   **and** there are were no changes to the Whitelist,<br/>
+   **and** the rolebinding on the namespace points to the group to the default role,<br/>
+   **and** the rolebinding was not applied to the default `Paas` namespace (name of the `Paas`)
 
-1. Create a minimal `Paas` with a single namespace and a group with a single user, without a specified role;
-    1. Assess that a `Group` was created with the correct name;
-    2. Assess that the user is a member of the group;
-    3. Assess that the correct labels are placed on the group;
-    4. Assess Owner Reference naar Group naar correcte Paas  !!!!!!
-    5. Assess there are no changed on Whitelist;
-    6. Assess that the rolebinding on the namespace points to the group to the default role;
-    7. Assess that the rolebinding is not applied to the default `Paas` namespace (name of the `Paas`)
-2. Update the `Paas` from step 1, add a group with a specific role, other than default (see test_config), add different user than in step 1;
-    *Assess everything one more time*
-    1.  Assess that a `Group` was created with the correct name;
-    2. Assess that the user is a member of the group;
-    3. Assess that the correct labels are placed on the group;
-    4. Assess Owner Reference naar Group naar correcte Paas  !!!!!!
-    5. Assess there are no changed on Whitelist;
-    6. Assess that the rolebinding on the namespace points to the group to the specified role;
-    7. Assess that the rolebinding is not applied to the default `Paas` namespace (name of the `Paas`);
-3. Remove the `Paas`;
-   *There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation*
+2. Updating the `Paas`, adding a group with a role other than default.<br/><br/>
+   **Given** an existing, minimal `Paas` with a single namespace,<br/>
+   **when** a group is added to said `Paas`,<br/>
+   **and** said group has a specific role, other than default (see test_config),<br/>
+   **and** a different user is a member of said group than in scenario 1,<br/>
+   **then** a `Group` was created with the correct name,<br/>
+   **and** the user is a member of said group,<br/>
+   **and** the correct labels were placed on the group,<br/>
+   **and** the Owner Reference for the Group points to the correct Paas,<br/>
+   **and** there are were no changes to the Whitelist,<br/>
+   **and** the rolebinding on the namespace points to the group to the default role,<br/>
+   **and** the rolebinding was not applied to the default `Paas` namespace (name of the `Paas`)
+
+3. Removing the `Paas`.<br/><br/>
+   **Given** an existing `Paas` with a single group,<br/>
+   **when** said `Paas` is removed,<br/>
+
+!!! note
+   *There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation.*
+
    *Determine what that baseline currently is.*
 
-## Groups Query
+Post scenarios: reset environment to clean slate.
 
-1. Create a minimal `Paas` with one namespace and a group with a `Query` without having a Role specified;
-    1. Assess that a `Group` with the correct name was created;
-    2. Assess there are no users in the group;
-    3. Assess the correct labels were added onto the group;
-    4. Assess Owner Reference naar Group naar correcte Paas    !!!!!!!
-    5. Assess the query was added to Whitelist;
-    6. Assess that the rolebinding on the namespace points to the group to the specified role;
-    7. Assess that the rolebinding is not applied to the default `Paas` namespace (name of the `Paas`);
-2. Update `Paas` from step 1, add group with a specific role, other than default (see test_config), add another query than was added for step 1;
-    *Assess everything one more time*
-    1. Assess that a `Group` with the correct name was created;
-    2. Assess there are no users in the group;
-    3. Assess the correct labels were added onto the group; (no ldap things)
-    4. Assess Owner Reference naar Group naar correcte Paas   !!!!!!!
-    5. Assess changes were made to Whitelist;
-    6. Assess that the rolebinding on the namespace points to the group to the specified role;
-    7. Assess that the rolebinding is not applied to the default `Paas` namespace (name of the `Paas`);
-3. Remove the `Paas`;
-   *There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation*
+## Groups => Query
+
+What we test: managing users and group memberships through an LDAP query specified
+              in the `Paas` configuration.
+
+Scenarios:
+
+1. Minimal `Paas` with one namespace and a `Group` with a `Query` but no `Role`.<br/><br/>
+   **Given** no existing `Paas`,<br/>
+   **when** a minimal `Paas` is created with a single namespace,<br/>
+   **and** a `Group` with a `Query`, but without a `Role`,<br/>
+   **then** a `Group` with the correct name should have been created,<br/>
+   **and** there should be no users in said `Group`,<br/>
+   **and** the correct labels were added onto the `Group`,<br/>
+   **and** the Owner Reference for the Group points to the correct Paas,<br/>
+   **and** the query was added to the whitelist,<br/>
+   **and** the rolebinding on the namespace points to the group, to the specified role,<br/>
+   **and** the rolebinding was not applied to the default `Paas` namespace (name of the `Paas`).
+   
+2. Updating the `Paas`, adding a group with a role other than default.<br/><br/>
+   **Given** an existing, minimal `Paas` with a single namespace,<br/>
+   **when** another query is added to said `Paas` (compared to step scenario 1),<br/>
+   **and** said group has a specific role, other than default (see test_config),<br/>
+   **then** a `Group` was created with the correct name,<br/>
+   **and** there are no users in said group,<br/>
+   **and** the correct labels were placed on the group, (no ldap things)<br/>
+   **and** the Owner Reference for the Group points to the correct Paas,<br/>
+   **and** there were changes made to the Whitelist,<br/>
+   **and** the rolebinding on the namespace points to the group to the specified role,<br/>
+   **and** the rolebinding was not applied to the default `Paas` namespace (name of the `Paas`)
+
+3. Removing the `Paas`.<br/><br/>
+   **Given** an existing `Paas` with a single group,<br/>
+   **when** said `Paas` is removed,<br/>
+
+!!! note
+   *There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation.*
+
    *Determine what that baseline currently is.*
 
+Post scenarios: reset environment to clean slate.
 
-// TODO, there a known issue regarding groups. Good regression test to model the following steps:
-1. Create `Paas` with query;
-2. Update `Paas` from step 1, remove query and add users to the group;
-3. Group is not removed from whitelist;
-4. Sync fails because the required `ldap.uid` doesn't match the groupname. (We don't fully test sync.)
+!!! note
+    TODO, there a known issue regarding groups. Good regression test to model the following steps:
+      1. Create `Paas` with query;
+      2. Update `Paas` from step 1, remove query and add users to the group;
+      3. Group is not removed from whitelist;
+      4. Sync fails because the required `ldap.uid` doesn't match the groupname. (We don't fully test sync.)
 
 ## Secrets
 
 *The capabilities are also used to test clusterwide quotas*
 
-## Capability ArgoCD
+### Capability ArgoCD
+
+What we test: creating a `Paas` with the `ArgoCD` capability enabled.
+
+Scenarios:
 
 1. Create a minimal `Paas` with ArgoCD capability enabled;
     1. Assess the list entry exists in the applicationset;
@@ -216,6 +252,8 @@ Post scenarios: reset environment to clean slate.
     5. Assess default_permissions;
         1. Rolebindings to service account etc. (TODO: can these RBs be created without the existence of a ServiceAccount?)
 
+Post scenarios: reset environment to clean slate.
+
 ## Capability Tekton
 
 Check Quota
@@ -227,6 +265,10 @@ Check Quota
 
 
 ## Capability SSO
+
+What we test: creating a `Paas` with the `SSO` capability enabled.
+
+Scenarios:
 
 1. Create a minimal `Paas` SSO capability enabled, no capability quota;
     1. Assess that the list entry exists in the applicationset;
@@ -240,3 +282,5 @@ Check Quota
     1. Assess that the `Quota` was removed;
     2. Assess that the `Namespace` was removed;
     3. Assess that the list entry in the `ApplicationSet` was removed;
+
+Post scenarios: reset environment to clean slate.
