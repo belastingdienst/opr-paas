@@ -23,16 +23,12 @@ const ssoApplicationSet = "ssoas"
 const applicationSetNamespace = "asns"
 
 func TestCapabilitySSO(t *testing.T) {
-	capabilities := api.PaasCapabilities{
-		SSO: api.PaasSSO{
-			Enabled: true,
-		},
-	}
-
 	paasSpec := api.PaasSpec{
-		Requestor:    "paas-user",
-		Quota:        make(quota.Quotas),
-		Capabilities: capabilities,
+		Requestor: "paas-user",
+		Quota:     make(quota.Quotas),
+		Capabilities: api.PaasCapabilities{
+			SSO: api.PaasSSO{Enabled: true},
+		},
 	}
 
 	testenv.Test(
