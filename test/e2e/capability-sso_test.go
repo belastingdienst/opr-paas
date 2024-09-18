@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -12,7 +11,6 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/quota"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
@@ -22,6 +20,7 @@ import (
 const paasWithCapabilitySSO = "paasnaam"
 const paasSSO = "paasnaam-sso"
 const ssoApplicationSet = "ssoas"
+const applicationSetNamespace = "asns"
 
 func TestCapabilitySSO(t *testing.T) {
 	capabilities := api.PaasCapabilities{
@@ -50,7 +49,7 @@ func TestCapabilitySSO(t *testing.T) {
 func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapabilitySSO, t, cfg)
 	namespace := getNamespace(ctx, t, cfg, paasWithCapabilitySSO)
-	applicationSet := getApplicationSet(ctx, t, cfg)
+	applicationSet := getApplicationSet(ctx, t, cfg, ssoApplicationSet, applicationSetNamespace)
 	ssoQuota := getSsoQuota(ctx, t, cfg)
 
 	// ClusterResource is created with the same name as the PaaS
@@ -62,17 +61,13 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	// SSO should be enabled
 	assert.True(t, paas.Spec.Capabilities.SSO.Enabled)
 
-	// Application Set tests:
-
 	// ApplicationSet exist
 	assert.NotEmpty(t, applicationSet)
 
-	applicationSetListEntries, appSetListEntriesError := getJSONStringsFromGenerators(applicationSet)
-
-	// Error should be nil
-	assert.NoError(t, appSetListEntriesError)
+	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
 
 	// List entries should not be empty
+	assert.NoError(t, appSetListEntriesError)
 	assert.NotEmpty(t, applicationSetListEntries)
 
 	// Flag to check if we find a JSON object
@@ -83,7 +78,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		err := json.Unmarshal([]byte(jsonString), &obj)
 
 		// Check of json successfully unmarshalled
-		assert.NoError(t, err, "Error parse JSON string")
+		assert.NoError(t, err)
 
 		// Check if the JSON object has a "paas" property with value "paasnaam"
 		if paas, ok := obj["paas"]; ok && paas == paasWithCapabilitySSO {
@@ -96,14 +91,8 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 
 	// Check whether the LabelSelector is specific to the paasnaam-sso namespace
 	labelSelector := ssoQuota.Spec.Selector.LabelSelector
-
-	// q.lbl=paasnaam-sso should exist in MatchLabels
 	assert.True(t, MatchLabelExists(labelSelector.MatchLabels, "q.lbl", paasSSO))
-
-	// q.lbl=wrong-value should not exist in MatchLabels
 	assert.False(t, MatchLabelExists(labelSelector.MatchLabels, "q.lbl", "wrong-value"))
-
-	// nonexistent.lbl=paasnaam-sso should not exist in MatchLabels
 	assert.False(t, MatchLabelExists(labelSelector.MatchLabels, "nonexistent.lbl", paasSSO))
 
 	// Quota namespace name
@@ -125,6 +114,7 @@ func assertCapSSODeleted(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		t.Fatalf("Failed to retrieve Quota list: %v", err)
 	}
 
+	// Quota list not contains paas
 	assert.NotContains(t, quotaList.Items, paasSSO)
 
 	// Namespace is deleted
@@ -133,40 +123,18 @@ func assertCapSSODeleted(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		t.Fatalf("Failed to retrieve Namespace list: %v", err)
 	}
 
-	// Namespace not contains paas
+	// Namespace list not contains paas
 	assert.NotContains(t, namespaceList.Items, paasWithCapabilitySSO)
 
 	// ApplicationSet is deleted
-	applicationSet := getApplicationSet(ctx, t, cfg)
-	applicationSetListEntries, appSetListEntriesError := getJSONStringsFromGenerators(applicationSet)
-
-	// Error should be nil
-	assert.NoError(t, appSetListEntriesError)
+	applicationSet := getApplicationSet(ctx, t, cfg, ssoApplicationSet, applicationSetNamespace)
+	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
 
 	// List Entries should be empty
+	assert.NoError(t, appSetListEntriesError)
 	assert.Empty(t, applicationSetListEntries)
 
 	return ctx
-}
-
-func getApplicationSet(ctx context.Context, t *testing.T, cfg *envconf.Config) appv1.ApplicationSet {
-	var appSet appv1.ApplicationSet
-
-	if err := cfg.Client().Resources().Get(ctx, ssoApplicationSet, "asns", &appSet); err != nil {
-		t.Fatal(err)
-	}
-
-	return appSet
-}
-
-func getNamespace(ctx context.Context, t *testing.T, cfg *envconf.Config, name string) corev1.Namespace {
-	var ns corev1.Namespace
-
-	if err := cfg.Client().Resources().Get(ctx, name, cfg.Namespace(), &ns); err != nil {
-		t.Fatal(err)
-	}
-
-	return ns
 }
 
 func getSsoQuota(ctx context.Context, t *testing.T, cfg *envconf.Config) quotav1.ClusterResourceQuota {
@@ -184,31 +152,4 @@ func MatchLabelExists(matchLabels map[string]string, key string, value string) b
 		return true
 	}
 	return false
-}
-
-func getJSONStringsFromGenerators(applicationSet appv1.ApplicationSet) ([]string, error) {
-	var jsonStrings []string
-
-	for _, generator := range applicationSet.Spec.Generators {
-		if generator.List != nil {
-			for _, element := range generator.List.Elements {
-				jsonStr, err := intArrayToString(element.Raw)
-				if err != nil {
-					return nil, fmt.Errorf("error converting int array to string: %v", err)
-				}
-				jsonStrings = append(jsonStrings, jsonStr)
-			}
-		}
-	}
-
-	return jsonStrings, nil
-}
-
-func intArrayToString(intArray []byte) (string, error) {
-	byteSlice := make([]byte, len(intArray))
-	for i, v := range intArray {
-		byteSlice[i] = byte(v)
-	}
-
-	return string(byteSlice), nil
 }

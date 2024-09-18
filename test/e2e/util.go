@@ -2,6 +2,9 @@ package e2e
 
 import (
 	"context"
+	"fmt"
+	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"testing"
 	"time"
 
@@ -72,4 +75,50 @@ func deletePaas(ctx context.Context, name string, t *testing.T, cfg *envconf.Con
 	}
 
 	waitForOperator()
+}
+
+func getNamespace(ctx context.Context, t *testing.T, cfg *envconf.Config, name string) corev1.Namespace {
+	var ns corev1.Namespace
+
+	if err := cfg.Client().Resources().Get(ctx, name, cfg.Namespace(), &ns); err != nil {
+		t.Fatalf("Failed to retrieve namespace: %v", err)
+	}
+
+	return ns
+}
+
+func getApplicationSet(ctx context.Context, t *testing.T, cfg *envconf.Config, applicationSetName string, namespace string) appv1.ApplicationSet {
+	var applicationSet appv1.ApplicationSet
+
+	if err := cfg.Client().Resources().Get(ctx, applicationSetName, namespace, &applicationSet); err != nil {
+		t.Fatal(err)
+	}
+
+	return applicationSet
+}
+
+func getApplicationSetListEntries(applicationSet appv1.ApplicationSet) ([]string, error) {
+	var jsonStrings []string
+
+	for _, generator := range applicationSet.Spec.Generators {
+		if generator.List != nil {
+			for _, element := range generator.List.Elements {
+				jsonStr, err := intArrayToString(element.Raw)
+				if err != nil {
+					return nil, fmt.Errorf("error converting int array to string: %v", err)
+				}
+				jsonStrings = append(jsonStrings, jsonStr)
+			}
+		}
+	}
+
+	return jsonStrings, nil
+}
+
+func intArrayToString(intArray []byte) (string, error) {
+	byteSlice := make([]byte, len(intArray))
+	for i, v := range intArray {
+		byteSlice[i] = byte(v)
+	}
+	return string(byteSlice), nil
 }
