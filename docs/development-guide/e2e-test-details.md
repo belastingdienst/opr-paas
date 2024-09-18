@@ -3,10 +3,6 @@
 Below you will find a list of features that we want to test using end-to-end testing.
 For each feature, the setup and the assessments are listed.
 
-TODO:
-1. Take up `RoleMappings` in `testConfig`;
-2. Test `extra_permissions` / `default_permissions` in config;
-
 ## Paas
 
 What we test: CRUD for Paas
@@ -73,7 +69,7 @@ Post scenarios: reset environment to clean slate.
 ## Namespaces
 
 1. A minimal `Paas` configuration without namespaces results in one namespace.<br/><br/>
-   **Give** a minimal `Paas` configuration without namespaces,<br/>
+   **Given** a minimal `Paas` configuration without namespaces,<br/>
    **when** someone adds said configuration to the system,<br/>
    **then** a single namespace should have been created,<br/>
    **and** this namespace should be named the same as the `Paas`,<br/>
@@ -293,7 +289,7 @@ Scenarios:
       3. Assess that the size of the quota equals the size of the default quota specified in the paas_config;
 
 2. The `Paas` from scenario 1 is removed.<br/><br/>
-   **Give** a the `Paas` remaining from scenario 1 above,<br/>
+   **Given** a the `Paas` remaining from scenario 1 above,<br/>
    **when** said `Paas` is deleted,<br/>
    **then** the associated `Quota` should have been removed,<br/>
    **then** the associated `Namespace` should have been removed,<br/>
