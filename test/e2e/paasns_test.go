@@ -61,9 +61,11 @@ func assertPaasNSCreatedWithoutPaas(ctx context.Context, t *testing.T, cfg *envc
 	}
 
 	// create paasns including reference to non-existent paas
-	if err := cfg.Client().Resources().Create(ctx, paasNs); err != nil {
-		t.Fatal(err)
-	}
+	createPaasNS(ctx, t, cfg, *paasNs)
+
+	// if err := cfg.Client().Resources().Create(ctx, paasNs); err != nil {
+	// 	t.Fatal(err)
+	// }
 
 	// give cluster some time to create resources otherwise asserts fire too soon
 	// possibly better solved by seperating into Setup() and Assess() steps (refactor)
@@ -79,12 +81,23 @@ func assertPaasNSCreatedWithoutPaas(ctx context.Context, t *testing.T, cfg *envc
 	var errMsg = fetchedPaasNS.Status.Messages[0]
 	assert.Contains(t, errMsg, "cannot find PaaS")
 
+	// TODO: cleanup
+
 	return ctx
 }
 
 // func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 
 // }
+
+func createPaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paasns api.PaasNS) api.PaasNS {
+
+	if err := cfg.Client().Resources().Create(ctx, &paasns); err != nil {
+		t.Fatalf("Failed to create PaasNS: %v", err)
+	}
+
+	return paasns
+}
 
 func getPaas(ctx context.Context, t *testing.T, cfg *envconf.Config) (paas api.Paas, err error) {
 	err = cfg.Client().Resources().Get(ctx, paasNsName, cfg.Namespace(), &paas)
@@ -100,3 +113,13 @@ func getPaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config) api.PaasN
 
 	return paasns
 }
+
+// func deletePaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config) api.PaasNS {
+// 	var paasns api.PaasNS
+
+// 	if err := cfg.Client().Resources().Delete(ctx, paasNsName, cfg.Namespace(), &paasns); err != nil {
+// 		t.Fatalf("Failed to retrieve PaasNS: %v", err)
+// 	}
+
+// 	return paasns
+// }
