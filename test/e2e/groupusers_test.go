@@ -84,11 +84,9 @@ func assertGroupCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *envco
 		Users: []string{"bar"},
 	}
 
-	if err := cfg.Client().Resources().Update(ctx, paas); err != nil {
-		t.Fatalf("Failed to update Paas resource: %v", err)
+	if err := updatePaasSync(ctx, cfg, paas); err != nil {
+		t.Fatal(err)
 	}
-
-	waitForOperator()
 
 	group2 := getOrFail(ctx, group2Name, cfg.Namespace(), &userv1.Group{}, t, cfg)
 	whitelist := getOrFail(ctx, "wlname", "wlns", &corev1.ConfigMap{}, t, cfg)
@@ -121,7 +119,7 @@ func assertGroupCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *envco
 }
 
 func assertGroupsDeleted(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	deletePaas(ctx, paasWithGroups, t, cfg)
+	deletePaasSync(ctx, paasWithGroups, t, cfg)
 	groups := listOrFail(ctx, "", &userv1.GroupList{}, t, cfg)
 
 	assert.Empty(t, groups.Items)
