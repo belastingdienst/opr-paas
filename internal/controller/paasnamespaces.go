@@ -26,7 +26,7 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 	pns := &v1alpha1.PaasNS{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "PaasNS",
-			APIVersion: "v1",
+			APIVersion: "cpet.belastingdienst.nl/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
