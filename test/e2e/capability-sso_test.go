@@ -6,6 +6,7 @@ import (
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/json"
 	"testing"
 
 	"github.com/belastingdienst/opr-paas/internal/quota"
@@ -50,9 +51,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	paas := getPaas(ctx, paasWithCapabilitySSO, t, cfg)
 	namespace := getNamespace(ctx, t, cfg, paasWithCapabilitySSO)
 	applicationSet := getApplicationSet(ctx, t, cfg)
-
-	fmt.Println("AppSet before deleting:", applicationSet)
-	fmt.Println("=========================================")
+	ssoQuota := getSsoQuota(ctx, t, cfg)
 
 	// ClusterResource is created with the same name as the PaaS
 	assert.Equal(t, paasWithCapabilitySSO, paas.Name)
@@ -63,13 +62,41 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	// SSO should be enabled
 	assert.True(t, paas.Spec.Capabilities.SSO.Enabled)
 
+	// Application Set tests:
+
 	// ApplicationSet exist
 	assert.NotEmpty(t, applicationSet)
 
-	ssoQuota := getSsoQuota(ctx, t, cfg)
-	labelSelector := ssoQuota.Spec.Selector.LabelSelector
+	applicationSetListEntries, appSetListEntriesError := getJSONStringsFromGenerators(applicationSet)
+
+	// Error should be nil
+	assert.NoError(t, appSetListEntriesError)
+
+	// List entries should not be empty
+	assert.NotEmpty(t, applicationSetListEntries)
+
+	// Flag to check if we find a JSON object
+	foundNameTest := false
+
+	for _, jsonString := range applicationSetListEntries {
+		var obj map[string]interface{}
+		err := json.Unmarshal([]byte(jsonString), &obj)
+
+		// Check of json successfully unmarshalled
+		assert.NoError(t, err, "Error parse JSON string")
+
+		// Check if the JSON object has a "paas" property with value "paasnaam"
+		if paas, ok := obj["paas"]; ok && paas == paasWithCapabilitySSO {
+			foundNameTest = true
+		}
+	}
+
+	// At least one JSON object should have "paas": "paasnaam"
+	assert.True(t, foundNameTest)
 
 	// Check whether the LabelSelector is specific to the paasnaam-sso namespace
+	labelSelector := ssoQuota.Spec.Selector.LabelSelector
+
 	// q.lbl=paasnaam-sso should exist in MatchLabels
 	assert.True(t, MatchLabelExists(labelSelector.MatchLabels, "q.lbl", paasSSO))
 
@@ -106,13 +133,18 @@ func assertCapSSODeleted(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		t.Fatalf("Failed to retrieve Namespace list: %v", err)
 	}
 
+	// Namespace not contains paas
 	assert.NotContains(t, namespaceList.Items, paasWithCapabilitySSO)
 
 	// ApplicationSet is deleted
 	applicationSet := getApplicationSet(ctx, t, cfg)
+	applicationSetListEntries, appSetListEntriesError := getJSONStringsFromGenerators(applicationSet)
 
-	fmt.Println("AppSet after deleting:", applicationSet)
-	fmt.Println("=========================================")
+	// Error should be nil
+	assert.NoError(t, appSetListEntriesError)
+
+	// List Entries should be empty
+	assert.Empty(t, applicationSetListEntries)
 
 	return ctx
 }
@@ -138,13 +170,13 @@ func getNamespace(ctx context.Context, t *testing.T, cfg *envconf.Config, name s
 }
 
 func getSsoQuota(ctx context.Context, t *testing.T, cfg *envconf.Config) quotav1.ClusterResourceQuota {
-	var quota quotav1.ClusterResourceQuota
+	var ssoQuota quotav1.ClusterResourceQuota
 
-	if err := cfg.Client().Resources().Get(ctx, paasSSO, cfg.Namespace(), &quota); err != nil {
+	if err := cfg.Client().Resources().Get(ctx, paasSSO, cfg.Namespace(), &ssoQuota); err != nil {
 		t.Fatalf("Failed to retrieve ssoQuota: %v", err)
 	}
 
-	return quota
+	return ssoQuota
 }
 
 func MatchLabelExists(matchLabels map[string]string, key string, value string) bool {
@@ -152,4 +184,31 @@ func MatchLabelExists(matchLabels map[string]string, key string, value string) b
 		return true
 	}
 	return false
+}
+
+func getJSONStringsFromGenerators(applicationSet appv1.ApplicationSet) ([]string, error) {
+	var jsonStrings []string
+
+	for _, generator := range applicationSet.Spec.Generators {
+		if generator.List != nil {
+			for _, element := range generator.List.Elements {
+				jsonStr, err := intArrayToString(element.Raw)
+				if err != nil {
+					return nil, fmt.Errorf("error converting int array to string: %v", err)
+				}
+				jsonStrings = append(jsonStrings, jsonStr)
+			}
+		}
+	}
+
+	return jsonStrings, nil
+}
+
+func intArrayToString(intArray []byte) (string, error) {
+	byteSlice := make([]byte, len(intArray))
+	for i, v := range intArray {
+		byteSlice[i] = byte(v)
+	}
+
+	return string(byteSlice), nil
 }
