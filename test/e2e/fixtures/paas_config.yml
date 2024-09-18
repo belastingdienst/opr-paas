@@ -80,4 +80,9 @@ quota_label: q.lbl
 whitelist:
   namespace: wlns
   name: wlname
+rolemappings:
+  default:
+    - admin
+  viewer:
+    - view
 exclude_appset_name: whatever
