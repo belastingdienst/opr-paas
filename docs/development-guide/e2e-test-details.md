@@ -80,18 +80,18 @@ Post scenarios: reset environment to clean slate.
    **and** no `PaasNs`'s or there namespaces are linked to th `Paas`.
 
 2. Adding two namespaces to the `Paas`'s spec.<br/><br/>
-   Given a minimal `Paas` without any namespaces exists,<br/>
-   when the `Paas` is updated by adding 2 namespaces to the spec,<br/>
-   then one namespace with the same name as the `Paas` must exist,<br/>
-   and two `PaasNs`'s must exist in the namespace of the `Paas`,<br/>
-   and these `PaasNs`'s each have a namespace,<br/>
-   and these `PaasNs` namespaces must be named according to their `spec.namespaces` entries, prefixed by the `Paas` namespace name
+   **Given** a minimal `Paas` without any namespaces exists,<br/>
+   **when** the `Paas` is updated by adding 2 namespaces to the spec,<br/>
+   **then** one namespace with the same name as the `Paas` must exist,<br/>
+   **and** two `PaasNs`'s must exist in the namespace of the `Paas`,<br/>
+   **and** these `PaasNs`'s each have a namespace,<br/>
+   **and** these `PaasNs` namespaces must be named according to their `spec.namespaces` entries, prefixed by the `Paas` namespace name
 
 3. Removing the namespaces from a `Paas`.<br/><br/>
-   Given a minimal `Paas` with two namespaces exists,<br/>
-   when the `Paas` configuration is updated to remove the namespaces,<br/>
-   then the `PaasNs`'s should have be removed from the `Paas` namespace,<br/>
-   and the `Paas` namespace was removed.
+   **Given** a minimal `Paas` with two namespaces exists,<br/>
+   **when** the `Paas` configuration is updated to remove the namespaces,<br/>
+   **then** the `PaasNs`'s should have be removed from the `Paas` namespace,<br/>
+   **and** the `Paas` namespace was removed.
 
 Post scenarios: reset environment to clean slate.
 
@@ -236,51 +236,67 @@ What we test: creating a `Paas` with the `ArgoCD` capability enabled.
 
 Scenarios:
 
-1. Create a minimal `Paas` with ArgoCD capability enabled;
-    1. Assess the list entry exists in the applicationset;
-    2. Assess that namespace: `paasnaam-argocd` was created;
-    3. Assess that the Argo Application was created in namespaces;
-        1. Assess gitUrl, path etc. exist in spec;
-        2. Assess RBAC .. determine how;
-        3. Assess Secrets exist in namespace and in argo...?
-        4. Assess Exclude appset is included in spec as ignoreDiff;
-    4. Assess quota
-        1. Assess a quota with the name `paasnaam-argocd` was created;
-        2. Assess that the `quota_label` label was used as selector on the quota;
-        3. Assess that the quota selector was set in such a manner so that only the `paasnaam-sso` namespace is selected;
-        4. Assess that the size of the quota equals the size of the default quota specified in the paas_config;
-    5. Assess default_permissions;
+1. A minimal `Paas` with ArgoCD capability enabled.<br/><br/>
+   **Given** a minimal `Paas` and `ArgoCD` capability configuration,<br/>
+   **when** the minimal `Paas` is created with the `ArgoCD` capability enabled,<br/>
+   **then** the list entry in the applicationset should have been created,<br/>
+   **and** a namespace with the name `paasname-argocd` should have been created,<br/>
+   **and** an ArgoCD Application should have been created in namespaces,<br/>
+   **and** a quota with the name `paasname-argocd` should have been created,<br/>
+   **and** the ArgoCD Application and quota conform to the points below.
+
+   ArgoCD Application points:
+      1. Assess gitUrl, path etc. exist in spec;
+      2. Assess RBAC .. determine how;
+      3. Assess Secrets exist in namespace and in argo...?
+      4. Assess Exclude appset is included in spec as ignoreDiff;
+    
+    Quota points:
+      1. Assess a quota with the name `paasnaam-argocd` was created;
+      2. Assess that the `quota_label` label was used as selector on the quota;
+      3. Assess that the quota selector was set in such a manner so that only the `paasnaam-sso` namespace is selected;
+      4. Assess that the size of the quota equals the size of the default quota specified in the paas_config;
+   
+   !!! Note
+       TODO Assess default_permissions;
         1. Rolebindings to service account etc. (TODO: can these RBs be created without the existence of a ServiceAccount?)
 
 Post scenarios: reset environment to clean slate.
 
-## Capability Tekton
+### Capability Tekton
 
 Check Quota
 
 
-## Capability Grafana
+### Capability Grafana
 
 Check Quota
 
 
-## Capability SSO
+### Capability SSO
 
 What we test: creating a `Paas` with the `SSO` capability enabled.
 
 Scenarios:
 
-1. Create a minimal `Paas` SSO capability enabled, no capability quota;
-    1. Assess that the list entry exists in the applicationset;
-    2. Assess that the namespace: `paasnaam-sso` was created;
-    3. Assess quota;
-        1. Assess that a quota with the name `paasnaam-sso` was created;
-        2. Assess that the `quota_label` label was used as selector on the quota;
-        3. Assess that the quota selector was set in such a manner so that only the `paasnaam-sso` namespace is selected;
-        4. Assess that the size of the quota equals the size of the default quota specified in the paas_config;
-2. Remove the `Paas` from step 1;
-    1. Assess that the `Quota` was removed;
-    2. Assess that the `Namespace` was removed;
-    3. Assess that the list entry in the `ApplicationSet` was removed;
+1. A minimal `Paas` with SSO capability enabled and no capability quota.<br/><br/>
+   **Given** a minimal `Paas` and `SSO` capability configuration,<br/>
+   **when** the minimal `Paas` is created with the `SSO` capability enabled,<br/>
+   **then** the list entry in the applicationset should have been created,<br/>
+   **and** a namespace with the name `paasname-sso` should have been created,<br/>
+   **and** a quota with the name `paasname-sso` should have been created,<br/>
+   **and** the quota conforms to the points below.
+
+   Quota points:
+      1. Assess that the `quota_label` label was used as selector on the quota;
+      2. Assess that the quota selector was set in such a manner so that only the `paasnaam-sso` namespace is selected;
+      3. Assess that the size of the quota equals the size of the default quota specified in the paas_config;
+
+2. The `Paas` from scenario 1 is removed.<br/><br/>
+   **Give** a the `Paas` remaining from scenario 1 above,<br/>
+   **when** said `Paas` is deleted,<br/>
+   **then** the associated `Quota` should have been removed,<br/>
+   **then** the associated `Namespace` should have been removed,<br/>
+   **then** the associated list entry in the `ApplicationSet` should have been removed.
 
 Post scenarios: reset environment to clean slate.
