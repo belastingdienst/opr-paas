@@ -3,10 +3,11 @@ package e2e
 import (
 	"context"
 	"fmt"
-	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	"testing"
 	"time"
+
+	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 

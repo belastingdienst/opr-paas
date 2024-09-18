@@ -2,12 +2,13 @@ package e2e
 
 import (
 	"context"
+	"testing"
+
 	quotav1 "github.com/openshift/api/quota/v1"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/json"
-	"testing"
 
 	"github.com/belastingdienst/opr-paas/internal/quota"
 
@@ -18,10 +19,12 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
-const paasWithCapabilitySSO = "paasnaam"
-const paasSSO = "paasnaam-sso"
-const ssoApplicationSet = "ssoas"
-const applicationSetNamespace = "asns"
+const (
+	paasWithCapabilitySSO   = "paasnaam"
+	paasSSO                 = "paasnaam-sso"
+	ssoApplicationSet       = "ssoas"
+	applicationSetNamespace = "asns"
+)
 
 func TestCapabilitySSO(t *testing.T) {
 	paasSpec := api.PaasSpec{

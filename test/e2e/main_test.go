@@ -8,9 +8,10 @@ package e2e
 
 import (
 	"fmt"
-	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	"os"
 	"testing"
+
+	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
