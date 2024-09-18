@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	quotav1 "github.com/openshift/api/quota/v1"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -52,7 +53,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Equal(t, paasWithCapabilitySSO, paas.Name)
 
 	// Paas Namespace exist
-	assert.Equal(t, namespace.Name, paasWithCapabilitySSO)
+	assert.Equal(t, paasWithCapabilitySSO, namespace.Name)
 
 	// SSO should be enabled
 	assert.True(t, paas.Spec.Capabilities.SSO.Enabled)
@@ -63,7 +64,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
 
 	// List entries should not be empty
-	assert.NoError(t, appSetListEntriesError)
+	require.NoError(t, appSetListEntriesError)
 	assert.NotEmpty(t, applicationSetListEntries)
 
 	// Flag to check if we find a JSON object
@@ -74,7 +75,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		err := json.Unmarshal([]byte(jsonString), &obj)
 
 		// Check of json successfully unmarshalled
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Check if the JSON object has a "paas" property with value "paasnaam"
 		if paas, ok := obj["paas"]; ok && paas == paasWithCapabilitySSO {
@@ -127,7 +128,7 @@ func assertCapSSODeleted(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
 
 	// List Entries should be empty
-	assert.NoError(t, appSetListEntriesError)
+	require.NoError(t, appSetListEntriesError)
 	assert.Empty(t, applicationSetListEntries)
 
 	return ctx

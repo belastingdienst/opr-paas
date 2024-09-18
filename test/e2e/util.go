@@ -119,7 +119,7 @@ func getApplicationSetListEntries(applicationSet appv1.ApplicationSet) ([]string
 			for _, element := range generator.List.Elements {
 				jsonStr, err := intArrayToString(element.Raw)
 				if err != nil {
-					return nil, fmt.Errorf("error converting int array to string: %v", err)
+					return nil, fmt.Errorf("error converting int array to string: %w", err)
 				}
 				jsonStrings = append(jsonStrings, jsonStr)
 			}
