@@ -45,13 +45,41 @@ func TestPaasNS(t *testing.T) {
 	testenv.Test(
 		t,
 		features.New("PaasNS").
-			// Setup(createPaasFn(paasWithQuota, paasSpec)).
+			Assess("PaasNS deletion", assertPaasNSDeletion).
 			Assess("PaasNS creation without linked Paas", assertPaasNSCreatedWithoutPaas).
 			Assess("PaasNS creation with unlinked Paas", assertPaasNSCreatedWithUnlinkedPaas).
 			Assess("PaasNS creation with linked Paas", assertPaasNSCreated).
-			// Assess("PaasNS deletion", assertPaasNSDeletion).
 			Feature(),
 	)
+}
+
+func assertPaasNSDeletion(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	paasNs := &api.PaasNS{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      paasNsName,
+			Namespace: cfg.Namespace(),
+		},
+		Spec: api.PaasNSSpec{Paas: paasName},
+	}
+
+	// create basic paasns
+	createPaasNS(ctx, t, cfg, *paasNs)
+
+	// give cluster some time to create resources otherwise asserts fire too soon
+	// possibly better solved by seperating into Setup() and Assess() steps (refactor)
+	// or we could maybe use sigs.k8s.io/e2e-framework/klient/wait
+	waitForOperator()
+
+	// remove it immediately
+	deletePaasNS(ctx, t, cfg, *paasNs)
+	waitForOperator()
+
+	// check that we cannot get the paasns because we deleted it
+	_, errPaasNS := getPaasNS(ctx, t, cfg, paasNsName, cfg.Namespace())
+	assert.Error(t, errPaasNS)
+	waitForOperator()
+
+	return ctx
 }
 
 func assertPaasNSCreatedWithoutPaas(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
@@ -65,10 +93,6 @@ func assertPaasNSCreatedWithoutPaas(ctx context.Context, t *testing.T, cfg *envc
 
 	// create paasns including reference to non-existent paas
 	createPaasNS(ctx, t, cfg, *paasNs)
-
-	// give cluster some time to create resources otherwise asserts fire too soon
-	// possibly better solved by seperating into Setup() and Assess() steps (refactor)
-	// or we could maybe use sigs.k8s.io/e2e-framework/klient/wait
 	waitForOperator()
 
 	// check that the referenced paas hasn't been created on-the-fly
@@ -76,7 +100,7 @@ func assertPaasNSCreatedWithoutPaas(ctx context.Context, t *testing.T, cfg *envc
 	assert.Error(t, errPaas)
 
 	// check that the paasns has been created but also contains an error status message
-	fetchedPaasNS := getPaasNS(ctx, t, cfg, paasNsName, cfg.Namespace())
+	fetchedPaasNS, _ := getPaasNS(ctx, t, cfg, paasNsName, cfg.Namespace())
 	var errMsg = fetchedPaasNS.Status.Messages[0]
 	assert.Contains(t, errMsg, "cannot find PaaS")
 
@@ -116,7 +140,7 @@ func assertPaasNSCreatedWithUnlinkedPaas(ctx context.Context, t *testing.T, cfg 
 	waitForOperator()
 
 	// check that the paasns has been created but also contains an error status message
-	fetchedPaasNS := getPaasNS(ctx, t, cfg, paasNsName, cfg.Namespace())
+	fetchedPaasNS, _ := getPaasNS(ctx, t, cfg, paasNsName, cfg.Namespace())
 	var errMsg = fetchedPaasNS.Status.Messages[0]
 	assert.Contains(t, errMsg, "not in the list of namespaces")
 
@@ -163,7 +187,7 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	waitForOperator()
 
 	// check that the paasns has been created and is linked to the correct paas
-	fetchedPaasNS := getPaasNS(ctx, t, cfg, paasNsName, generatedName)
+	fetchedPaasNS, _ := getPaasNS(ctx, t, cfg, paasNsName, generatedName)
 	waitForOperator()
 
 	var linkedPaas = fetchedPaasNS.Spec.Paas
@@ -189,14 +213,9 @@ func createPaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paasns
 	return paasns
 }
 
-func getPaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paasnsName string, namespace string) api.PaasNS {
-	var paasns api.PaasNS
-
-	if err := cfg.Client().Resources().Get(ctx, paasnsName, namespace, &paasns); err != nil {
-		t.Fatalf("Failed to retrieve PaasNS: %v", err)
-	}
-
-	return paasns
+func getPaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paasnsName string, namespace string) (paasns api.PaasNS, err error) {
+	err = cfg.Client().Resources().Get(ctx, paasnsName, namespace, &paasns)
+	return paasns, err
 }
 
 func deletePaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paasns api.PaasNS) {
@@ -206,7 +225,6 @@ func deletePaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paasns
 }
 
 func createPaas(ctx context.Context, t *testing.T, cfg *envconf.Config, paas api.Paas) api.Paas {
-
 	if err := cfg.Client().Resources().Create(ctx, &paas); err != nil {
 		t.Fatalf("Failed to create Paas: %v", err)
 	}
