@@ -71,13 +71,12 @@ func assertPaasNSCreatedWithoutPaas(ctx context.Context, t *testing.T, cfg *envc
 	// or we could maybe use sigs.k8s.io/e2e-framework/klient/wait
 	waitForOperator()
 
-	// TODO: this check currently fails - it appears a-paas does get created on-the-fly. Bug?
 	// check that the referenced paas hasn't been created on-the-fly
 	_, errPaas := getPaas(ctx, t, cfg)
 	assert.Error(t, errPaas)
 
 	// check that the paasns has been created but also contains an error status message
-	fetchedPaasNS := getPaasNS(ctx, t, cfg)
+	fetchedPaasNS := getPaasNS(ctx, t, cfg, paasNsName, cfg.Namespace())
 	var errMsg = fetchedPaasNS.Status.Messages[0]
 	assert.Contains(t, errMsg, "cannot find PaaS")
 
@@ -117,7 +116,7 @@ func assertPaasNSCreatedWithUnlinkedPaas(ctx context.Context, t *testing.T, cfg 
 	waitForOperator()
 
 	// check that the paasns has been created but also contains an error status message
-	fetchedPaasNS := getPaasNS(ctx, t, cfg)
+	fetchedPaasNS := getPaasNS(ctx, t, cfg, paasNsName, cfg.Namespace())
 	var errMsg = fetchedPaasNS.Status.Messages[0]
 	assert.Contains(t, errMsg, "not in the list of namespaces")
 
@@ -130,13 +129,17 @@ func assertPaasNSCreatedWithUnlinkedPaas(ctx context.Context, t *testing.T, cfg 
 }
 
 func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	var thisPaas = "this-paas"
+	var thisNamespace = "this-namespace"
+	var generatedName = thisPaas + "-" + thisNamespace
+
 	// setup: create paas to link to
 	paas := &api.Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "good-paas",
+			Name: thisPaas,
 		},
 		Spec: api.PaasSpec{
-			Namespaces: []string{"my-namespace"}, // define suffixes to use for namespace names
+			Namespaces: []string{thisNamespace}, // define suffixes to use for namespace names
 			Quota: quota.NewQuota(map[string]string{
 				"cpu":    "2",
 				"memory": "2Gi",
@@ -150,25 +153,24 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	paasNs := &api.PaasNS{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      paasNsName,
-			Namespace: "good-paas-my-namespace",
+			Namespace: generatedName,
+			// Namespace: "paas-e2e",
 		},
-		Spec: api.PaasNSSpec{Paas: "good-paas"},
+		Spec: api.PaasNSSpec{Paas: thisPaas},
 	}
 
 	createPaasNS(ctx, t, cfg, *paasNs)
 	waitForOperator()
 
 	// check that the paasns has been created and is linked to the correct paas
-	fetchedPaasNS := getPaasNS(ctx, t, cfg)
+	fetchedPaasNS := getPaasNS(ctx, t, cfg, paasNsName, generatedName)
 	waitForOperator()
 
 	var linkedPaas = fetchedPaasNS.Spec.Paas
-	assert.Equal(t, linkedPaas, "good-paas")
+	assert.Equal(t, linkedPaas, thisPaas)
 
 	// check that there are no errors
-	assert.Empty(t, fetchedPaasNS.Status.Messages)
-	// fmt.Printf(fetchedPaasNS.Status.Messages[0])
-	// fmt.Printf(fetchedPaasNS.Status.Messages[1])
+	assert.NotContains(t, fetchedPaasNS.Status.Messages, "ERROR")
 
 	// cleanup
 	deletePaas(ctx, t, cfg, *paas)
@@ -187,10 +189,10 @@ func createPaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paasns
 	return paasns
 }
 
-func getPaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config) api.PaasNS {
+func getPaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paasnsName string, namespace string) api.PaasNS {
 	var paasns api.PaasNS
 
-	if err := cfg.Client().Resources().Get(ctx, paasNsName, cfg.Namespace(), &paasns); err != nil {
+	if err := cfg.Client().Resources().Get(ctx, paasnsName, namespace, &paasns); err != nil {
 		t.Fatalf("Failed to retrieve PaasNS: %v", err)
 	}
 
