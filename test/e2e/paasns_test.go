@@ -63,10 +63,6 @@ func assertPaasNSCreatedWithoutPaas(ctx context.Context, t *testing.T, cfg *envc
 	// create paasns including reference to non-existent paas
 	createPaasNS(ctx, t, cfg, *paasNs)
 
-	// if err := cfg.Client().Resources().Create(ctx, paasNs); err != nil {
-	// 	t.Fatal(err)
-	// }
-
 	// give cluster some time to create resources otherwise asserts fire too soon
 	// possibly better solved by seperating into Setup() and Assess() steps (refactor)
 	// or we could maybe use sigs.k8s.io/e2e-framework/klient/wait
@@ -81,7 +77,8 @@ func assertPaasNSCreatedWithoutPaas(ctx context.Context, t *testing.T, cfg *envc
 	var errMsg = fetchedPaasNS.Status.Messages[0]
 	assert.Contains(t, errMsg, "cannot find PaaS")
 
-	// TODO: cleanup
+	// cleanup
+	deletePaasNS(ctx, t, cfg, *paasNs)
 
 	return ctx
 }
@@ -99,11 +96,6 @@ func createPaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paasns
 	return paasns
 }
 
-func getPaas(ctx context.Context, t *testing.T, cfg *envconf.Config) (paas api.Paas, err error) {
-	err = cfg.Client().Resources().Get(ctx, paasNsName, cfg.Namespace(), &paas)
-	return paas, err
-}
-
 func getPaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config) api.PaasNS {
 	var paasns api.PaasNS
 
@@ -114,12 +106,13 @@ func getPaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config) api.PaasN
 	return paasns
 }
 
-// func deletePaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config) api.PaasNS {
-// 	var paasns api.PaasNS
+func deletePaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paasns api.PaasNS) {
+	if err := cfg.Client().Resources().Delete(ctx, &paasns); err != nil {
+		t.Fatalf("Failed to delete PaasNS: %v", err)
+	}
+}
 
-// 	if err := cfg.Client().Resources().Delete(ctx, paasNsName, cfg.Namespace(), &paasns); err != nil {
-// 		t.Fatalf("Failed to retrieve PaasNS: %v", err)
-// 	}
-
-// 	return paasns
-// }
+func getPaas(ctx context.Context, t *testing.T, cfg *envconf.Config) (paas api.Paas, err error) {
+	err = cfg.Client().Resources().Get(ctx, paasNsName, cfg.Namespace(), &paas)
+	return paas, err
+}
