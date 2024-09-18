@@ -1,64 +1,12 @@
 ---
-title: Basic usage
+title: Adding extra components
 summary: A description of the basic usage from the perspective of an end user.
 authors:
   - hikarukin
 date: 2024-07-04
 ---
 
-Basic Usage
-===========
-
-Minimal Paas managed by another Paas
-------------------------------------
-
-Creating a configuration file to define a Paas is fairly straight forward. The
-configuration file should use the current API version `cpet.belastingdienst.nl/v1alpha1`
-and define a `kind: Paas`.
-
-The most minimal configuration requires at least a `name` in the `metadata` section
-and either a capability `argocd` that is `enabled`, or a `managedByPaas` entry.
-
-In the following example, we'll use the latter. The `managedByPaas` entry should
-contain the name of the Paas that is allowed to manage this Paas.
-
-Example Paas definition being managed by another Paas:
-
-```yaml
----
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: tst-tst
-spec:
-  managedByPaas: trd-prt
-```
-
-Minimal Paas, self-managed using ArgoCD
----------------------------------------
-
-Example Paas definition, using its own ArgoCD:
-
-```yaml
----
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: tst-tst
-spec:
-  capabilities:
-    argocd:
-      enabled: true
-      gitPath: environments/production
-      gitRevision: main
-      gitUrl: >-
-        ssh://git@git.example.nl/example/example-repo.git
-```
-
-Adding extra components or functionality
-----------------------------------------
-
-### SSH Secrets
+## SSH Secrets
 
 It is possible to define SSH secrets for your Paas's ArgoCD to use for access to
 Github or BitBucket. They must be encrypted with the public key corresponding to
@@ -79,7 +27,7 @@ spec:
       2wkeKe...g==
 ```
 
-### Groups and Users
+## Groups and Users
 
 It is possible to define groups in your Paas to allow access to the Paas' resources.
 These groups are filled with either an LDAP query and/or a list of users.
@@ -106,7 +54,7 @@ spec:
         - jdsmith
 ```
 
-### Paas Quota
+## Paas Quota
 
 It is possible to request a specific quota for your Paas. This request will be
 ignored if cluster wide resource quotas are configured by the administrators.
@@ -130,7 +78,7 @@ spec:
     requests.storage: 200Gi
 ```
 
-### Capabilities
+## Capabilities
 
 It is possible to easily add certain capabilities to your Paas through the yaml
 configuration. For each capability you are also able to request a certain quota.
@@ -169,7 +117,7 @@ spec:
         requests.storage: 40Gi
 ```
 
-### Adding extra application namespaces
+## Adding extra application namespaces
 
 It is possible to define a list of extra namespaces to be created within the Paas.
 These can be used for various purposes like dev, test and prod or for example a

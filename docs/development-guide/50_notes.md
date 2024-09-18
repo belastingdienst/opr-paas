@@ -1,6 +1,6 @@
 ---
-title: Development notes
-summary: Some notes for developers of the code.
+title: Developer notes
+summary: Some notes for developers of the Paas Operator code.
 authors:
   - hikarukin
 date: 2024-07-04

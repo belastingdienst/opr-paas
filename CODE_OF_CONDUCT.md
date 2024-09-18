@@ -1,3 +1,3 @@
 # Code of Conduct
 
-PaaS follows the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md).
+The Paas Operator project follows the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/master/code-of-conduct.md).
