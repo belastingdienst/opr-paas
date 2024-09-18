@@ -12,7 +12,6 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
-const paasNamespace = "paas-e2e"
 const paasNsName = "a-paasns"
 const paasName = "a-paas"
 
@@ -81,19 +80,21 @@ func assertPaasNSCreatedWithoutPaas(ctx context.Context, t *testing.T, cfg *envc
 	assert.Contains(t, errMsg, "cannot find PaaS")
 
 	// cleanup
+	waitForOperator()
 	deletePaasNS(ctx, t, cfg, *paasNs)
+	waitForOperator()
 
 	return ctx
 }
 
 func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	// var quota = api.PaasSpec.Quota
+	waitForOperator()
 
 	// setup: create paas to link to
 	paas := &api.Paas{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      paasName,
-			Namespace: paasNamespace,
+			Namespace: "paas-e2e",
 		},
 		Spec: api.PaasSpec{
 			Quota: quota.NewQuota(map[string]string{
@@ -105,26 +106,37 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 
 	createPaas(ctx, t, cfg, *paas)
 	waitForOperator()
+	waitForOperator()
 
 	paasNs := &api.PaasNS{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      paasNsName,
-			Namespace: paasNamespace,
+			Namespace: "paas-e2e",
 		},
 		Spec: api.PaasNSSpec{Paas: paasName},
 	}
 
 	createPaasNS(ctx, t, cfg, *paasNs)
 	waitForOperator()
+	waitForOperator()
 
 	// check that the paasns has been created and is linked to the correct paas
 	fetchedPaasNS := getPaasNS(ctx, t, cfg)
+	waitForOperator()
+	waitForOperator()
+
 	var linkedPaas = fetchedPaasNS.Spec.Paas
 	assert.Equal(t, linkedPaas, paasName)
 
+	// check that the status does not contain errors
+	var statusMessages = fetchedPaasNS.Status.Messages
+	assert.Empty(t, statusMessages)
+
 	// cleanup
 	deletePaas(ctx, t, cfg, *paas)
+	waitForOperator()
 	deletePaasNS(ctx, t, cfg, *paasNs)
+	waitForOperator()
 
 	return ctx
 }
