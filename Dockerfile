@@ -23,9 +23,7 @@ COPY internal/ internal/
 # by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
 RUN sed -i "s|PAAS_VERSION = .*|PAAS_VERSION = \"$VERSION\"|" internal/version/main.go && \
     cat internal/version/main.go && \
-    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o manager cmd/manager/main.go && \
-    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o crypttool ./cmd/crypttool && \
-    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o webservice ./cmd/webservice
+    CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -v -a -o manager cmd/manager/main.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
@@ -33,6 +31,6 @@ FROM gcr.io/distroless/static:nonroot
 
 LABEL MAINTAINER=belastingdienst
 WORKDIR /
-COPY --from=builder /workspace/manager /workspace/crypttool /workspace/webservice ./
+COPY --from=builder /workspace/manager ./
 
 ENTRYPOINT ["/manager"]

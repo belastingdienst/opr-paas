@@ -1,6 +1,7 @@
 name: ci-build
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 env:
   # Golang version to use across CI steps
@@ -10,7 +11,15 @@ permissions:
   contents: read
 
 jobs:
+  fail_if_pull_request_is_draft:
+    if: ${{ github.event.pull_request.draft == true }}
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Fails in order to indicate that pull request needs to be marked as ready to review and other checks needs to pass.
+      run: exit 1
+
   changes:
+    if: ${{ github.event.pull_request.draft == false }}
     runs-on: ubuntu-22.04
     outputs:
       backend: ${{ steps.filter.outputs.backend_any_changed }}
@@ -29,7 +38,7 @@ jobs:
   check-go:
     name: Ensure Go modules synchronicity
     runs-on: ubuntu-22.04
-    if: ${{ needs.changes.outputs.backend == 'true' }}
+    if: ${{ needs.changes.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
       - changes
     steps:
@@ -50,7 +59,7 @@ jobs:
   lint-go:
     name: Lint Go code
     runs-on: ubuntu-22.04
-    if: ${{ needs.changes.outputs.backend == 'true' }}
+    if: ${{ needs.changes.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
       - changes
     permissions:
@@ -72,7 +81,7 @@ jobs:
   code-gen:
     name: Check generated code
     runs-on: ubuntu-22.04
-    if: ${{ needs.changes.outputs.backend == 'true' }}
+    if: ${{ needs.changes.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
       - changes
     steps:
@@ -86,7 +95,7 @@ jobs:
   unit-test:
     name: Run unit tests
     runs-on: ubuntu-22.04
-    if: ${{ needs.changes.outputs.backend == 'true' }}
+    if: ${{ needs.changes.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
       - changes
     steps:
@@ -102,7 +111,7 @@ jobs:
   e2e-test:
     name: Run e2e tests
     runs-on: ubuntu-22.04
-    if: ${{ needs.changes.outputs.backend == 'true' }}
+    if: ${{ needs.changes.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
       - changes
     steps:
