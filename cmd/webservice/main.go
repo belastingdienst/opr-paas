@@ -42,7 +42,7 @@ func getRsa(paas string) *crypt.Crypt {
 		return c
 	}
 
-	c, err := crypt.NewCrypt([]string{}, config.PublicKeyPath, paas)
+	c, err := crypt.NewCrypt(config.PrivateKeyPaths, config.PublicKeyPath, paas)
 	if err != nil {
 		panic(fmt.Errorf("unable to create a crypt: %w", err))
 	}
@@ -51,7 +51,7 @@ func getRsa(paas string) *crypt.Crypt {
 	return c
 }
 
-// getEncrypt encrypts a secret and returns the encrypted value
+// v1Encrypt encrypts a secret and returns the encrypted value
 func v1Encrypt(c *gin.Context) {
 	var input RestEncryptInput
 	if err := c.BindJSON(&input); err != nil {
@@ -74,6 +74,26 @@ func v1Encrypt(c *gin.Context) {
 			PaasName:  input.PaasName,
 			Encrypted: "",
 			Valid:     false,
+		}
+		c.IndentedJSON(http.StatusOK, output)
+	}
+}
+
+// v1CheckPaas encrypts a secret and returns the encrypted value
+func v1CheckPaas(c *gin.Context) {
+	var input RestCheckPaasInput
+	if err := c.BindJSON(&input); err != nil {
+		return
+	}
+	rsa := getRsa(input.Paas.Name)
+	err := CheckPaas(rsa, &input.Paas)
+	if err != nil {
+		// TODO (portly-halicore-76): return error in and not valid result
+		return
+	} else {
+		output := RestCheckPaasResult{
+			PaasName: input.Paas.Name,
+			Valid:    true,
 		}
 		c.IndentedJSON(http.StatusOK, output)
 	}
@@ -124,6 +144,7 @@ func SetupRouter() *gin.Engine {
 
 	router.GET("/version", version)
 	router.POST("/v1/encrypt", v1Encrypt)
+	router.POST("/v1/checkpaas", v1CheckPaas)
 	router.GET("/healthz", healthz)
 	router.GET("/readyz", readyz)
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))

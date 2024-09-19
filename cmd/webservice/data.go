@@ -6,6 +6,8 @@ See LICENSE.md for details.
 
 package main
 
+import "github.com/belastingdienst/opr-paas/api/v1alpha1"
+
 type RestEncryptInput struct {
 	PaasName string `json:"paas"`
 	Secret   string `json:"secret"`
@@ -15,6 +17,15 @@ type RestEncryptResult struct {
 	PaasName  string `json:"paas"`
 	Encrypted string `json:"encrypted"`
 	Valid     bool   `json:"valid"`
+}
+
+type RestCheckPaasInput struct {
+	Paas v1alpha1.Paas `json:"paas"`
+}
+
+type RestCheckPaasResult struct {
+	PaasName string `json:"paas"`
+	Valid    bool   `json:"valid"`
 }
 
 type RestGenerateInput struct {
