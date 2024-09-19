@@ -11,13 +11,16 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	v "github.com/belastingdienst/opr-paas/internal/version"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Helper function for testing
@@ -80,6 +83,7 @@ func Test_getRSA(t *testing.T) {
 	// test: non-existing _crypt results in single entry _crypt
 	getConfig()
 	_config.PublicKeyPath = pub.Name()
+	_config.PrivateKeyPath = priv.Name()
 	assert.Nil(t, _crypt)
 	output := getRsa("paasName")
 	assert.Len(t, _crypt, 1)
@@ -158,4 +162,115 @@ func Test_readyz(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, exists)
 	assert.Equal(t, expected["message"], value)
+}
+
+func Test_v1CheckPaas(t *testing.T) {
+	priv, err := os.CreateTemp("", "private")
+	require.NoError(t, err, "Creating tempfile for private key")
+	defer os.Remove(priv.Name()) // clean up
+
+	pub, err := os.CreateTemp("", "")
+	require.NoError(t, err, "Creating tempfile for public key")
+	defer os.Remove(pub.Name()) // clean up
+
+	// Set env for ws Config
+	os.Setenv("PAAS_PUBLIC_KEY_PATH", pub.Name())    //nolint:errcheck // this is fine in test
+	os.Setenv("PAAS_PRIVATE_KEYS_PATH", priv.Name()) //nolint:errcheck // this is fine in test
+	defer os.Unsetenv("PAAS_PUBLIC_KEY_PATH")
+	defer os.Unsetenv("PAAS_PRIVATE_KEYS_PATH")
+
+	// Generate keyPair to be used during test
+	crypt.NewGeneratedCrypt(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
+
+	// Encrypt secret for test
+	rsa := getRsa("testPaas")
+
+	encrypted, err := rsa.Encrypt([]byte("My test string"))
+	require.NoError(t, err)
+
+	router := SetupRouter()
+
+	w := httptest.NewRecorder()
+
+	validRequest := RestCheckPaasInput{
+		Paas: v1alpha1.Paas{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "testPaas",
+			},
+			Spec: v1alpha1.PaasSpec{
+				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+				Capabilities: v1alpha1.PaasCapabilities{
+					SSO: v1alpha1.PaasSSO{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted}},
+				},
+			},
+		},
+	}
+	checkPaasJson, _ := json.Marshal(validRequest)
+
+	req, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(checkPaasJson)))
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+	response := RestCheckPaasResult{
+		PaasName:  "testPaas",
+		Decrypted: true,
+		Error:     "",
+	}
+	responseJson, _ := json.MarshalIndent(response, "", "    ")
+	assert.Equal(t, string(responseJson), w.Body.String())
+
+	// Reset recorder
+	w = httptest.NewRecorder()
+
+	invalidRequest := RestCheckPaasInput{
+		Paas: v1alpha1.Paas{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "testPaas2",
+			},
+			Spec: v1alpha1.PaasSpec{
+				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
+				Capabilities: v1alpha1.PaasCapabilities{
+					SSO: v1alpha1.PaasSSO{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted}},
+				},
+			},
+		},
+	}
+	invalidCheckPaasJson, _ := json.Marshal(invalidRequest)
+
+	req2, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(invalidCheckPaasJson)))
+	router.ServeHTTP(w, req2)
+
+	assert.Equal(t, 422, w.Code)
+	response2 := RestCheckPaasResult{
+		PaasName:  "testPaas2",
+		Decrypted: false,
+		Error:     "testPaas2: .spec.sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys. , testPaas2: .spec.capabilities[sso].sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys.",
+	}
+	response2Json, _ := json.MarshalIndent(response2, "", "    ")
+	assert.Equal(t, string(response2Json), w.Body.String())
+}
+
+func Test_v1CheckPaasInternalServerError(t *testing.T) {
+
+	router := SetupRouter()
+
+	w := httptest.NewRecorder()
+
+	validRequest := RestCheckPaasInput{
+		Paas: v1alpha1.Paas{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "testPaas",
+			},
+			Spec: v1alpha1.PaasSpec{
+				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
+			},
+		},
+	}
+	checkPaasJson, _ := json.Marshal(validRequest)
+
+	req, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(checkPaasJson)))
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 500, w.Code)
+	assert.Equal(t, "", w.Body.String())
 }
