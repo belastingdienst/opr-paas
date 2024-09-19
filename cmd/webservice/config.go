@@ -16,14 +16,18 @@ import (
 
 const (
 	publicEnv           = "PAAS_PUBLIC_KEY_PATH"
+	privateKeyEnv       = "PAAS_PRIVATE_KEYS_PATH"
 	defaultPublicPath   = "/secrets/paas/publicKey"
+	defaultPrivatePath  = "/secrets/paas/privateKeys"
 	endpointEnv         = "PAAS_ENDPOINT"
 	defaultEndpointPort = 8080
 )
 
 type WSConfig struct {
 	PublicKeyPath string
-	Endpoint      string
+	// comma separated list of privateKeyPaths
+	PrivateKeyPath string
+	Endpoint       string
 }
 
 func formatEndpoint(endpoint string) string {
@@ -69,6 +73,10 @@ func NewWSConfig() WSConfig {
 	config.PublicKeyPath = os.Getenv(publicEnv)
 	if config.PublicKeyPath == "" {
 		config.PublicKeyPath = defaultPublicPath
+	}
+	config.PrivateKeyPath = os.Getenv(privateKeyEnv)
+	if config.PrivateKeyPath == "" {
+		config.PrivateKeyPath = defaultPrivatePath
 	}
 	config.Endpoint = formatEndpoint(os.Getenv(endpointEnv))
 

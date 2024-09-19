@@ -7,7 +7,11 @@ See LICENSE.md for details.
 package main
 
 import (
+	"errors"
 	"fmt"
+	"strings"
+
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/utils"
@@ -18,6 +22,11 @@ import (
 
 func checkPaasFiles(privateKeyFiles string, files []string) error {
 	var errNum int
+
+	srcCrypt, err := crypt.NewCrypt([]string{privateKeyFiles}, "", "checkPaas")
+	if err != nil {
+		return err
+	}
 	for _, fileName := range files {
 		// Read paas from file
 		paas, _, err := readPaasFile(fileName)
@@ -25,35 +34,13 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 			return fmt.Errorf("could not read file %s: %s", fileName, err.Error())
 		}
 
-		paasName := paas.ObjectMeta.Name
-		srcCrypt, err := crypt.NewCrypt([]string{privateKeyFiles}, "", paasName)
-		if err != nil {
-			return err
-		}
-
-		for key, secret := range paas.Spec.SshSecrets {
-			if decrypted, err := srcCrypt.Decrypt(secret); err != nil {
-				errNum += 1
-				logrus.Errorf("%s: { .spec.sshSecrets[%s] } > { error: %e }", fileName, key, err)
-			} else {
-				logrus.Infof("%s: { .spec.sshSecrets[%s] } > { checksum: %s, len %d }", fileName, key, hashData(decrypted), len(decrypted))
-			}
-		}
-
-		for capName, cap := range paas.Spec.Capabilities.AsMap() {
-			logrus.Debugf("cap name: %s", cap.CapabilityName())
-			for key, secret := range cap.GetSshSecrets() {
-				if decrypted, err := srcCrypt.Decrypt(secret); err != nil {
-					logrus.Errorf("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { error: %e }", fileName, capName, key, err)
-					errNum += 1
-				} else {
-					logrus.Infof("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { checksum: %s, len %d }", fileName, capName, key, hashData(decrypted), len(decrypted))
-				}
-			}
+		checkPaasErr := CheckPaas(srcCrypt, paas, fileName)
+		if checkPaasErr != nil {
+			errNum++
 		}
 	}
 
-	errMsg := fmt.Errorf("Finished with %d errors", errNum)
+	errMsg := fmt.Errorf("finished with %d errors", errNum)
 	if errNum > 0 {
 		logrus.Error(errMsg)
 		return errMsg
@@ -61,6 +48,41 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 
 	logrus.Info(errMsg)
 
+	return nil
+}
+
+// CheckPaas determines whether a Paas can be decrypted using the provided crypt
+// it returns an error containing which secrets cannot be decrypted if any
+func CheckPaas(crypt *crypt.Crypt, paas *v1alpha1.Paas, fileName string) error {
+	var allErrors []string
+	for key, secret := range paas.Spec.SshSecrets {
+		decrypted, err := crypt.Decrypt(secret)
+		if err != nil {
+			errMessage := fmt.Errorf("%s: { .spec.sshSecrets[%s] } > { error: %w }", fileName, key, err)
+			logrus.Error(errMessage)
+			allErrors = append(allErrors, errMessage.Error())
+		} else {
+			logrus.Infof("%s: { .spec.sshSecrets[%s] } > { checksum: %s, len %d }", fileName, key, hashData(decrypted), len(decrypted))
+		}
+	}
+
+	for capName, capability := range paas.Spec.Capabilities.AsMap() {
+		logrus.Debugf("capability name: %s", capability.CapabilityName())
+		for key, secret := range capability.GetSshSecrets() {
+			decrypted, err := crypt.Decrypt(secret)
+			if err != nil {
+				errMessage := fmt.Errorf("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { error: %w }", fileName, capName, key, err)
+				logrus.Error(errMessage)
+				allErrors = append(allErrors, errMessage.Error())
+			} else {
+				logrus.Infof("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { checksum: %s, len %d }", fileName, capName, key, hashData(decrypted), len(decrypted))
+			}
+		}
+	}
+	if len(allErrors) > 0 {
+		errorString := strings.Join(allErrors, " , ")
+		return errors.New(errorString)
+	}
 	return nil
 }
 
