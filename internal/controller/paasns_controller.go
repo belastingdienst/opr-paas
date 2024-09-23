@@ -123,14 +123,14 @@ func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS)
 }
 
 // For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
 func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	paasns := &v1alpha1.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
 	logger := getLogger(ctx, paasns, "PaasNs", req.Name)
 	logger.Info("Reconciling the PaasNs object")
 
 	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
-		logger.Error(err, "could not get PaaS from k8s")
+		logger.Error(err, "could not get Paas from k8s")
 		return
 	}
 
@@ -187,11 +187,15 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 			}
 		}
 
-		logger.Info("Extending Applicationsets for PAAS object")
+		logger.Info("Extending Applicationsets for Paas object")
 		if err := r.EnsureAppSetCap(ctx, paasns, paas); err != nil {
 			return ctrl.Result{}, err
 		}
 	}
+
+	logger.Info("Updating PaasNs object status")
+	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paasns, "succeeded")
+	logger.Info("PaasNs object successfully reconciled")
 
 	return ctrl.Result{}, nil
 }
@@ -210,7 +214,7 @@ func (r *PaasNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// nsFromNs gets all PaasNs objects from a namespace and returns a list of all the corresponding namespaces
+// nssFromNs gets all PaasNs objects from a namespace and returns a list of all the corresponding namespaces
 // It also returns PaasNS in those namespaces recursively.
 func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]int {
 	nss := make(map[string]int)
@@ -227,7 +231,7 @@ func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]
 		} else {
 			nss[nsName] = 1
 		}
-		// Call myself (recursiveness)
+		// Call myself (recursively)
 		for key, value := range r.nssFromNs(ctx, nsName) {
 			nss[key] += value
 		}

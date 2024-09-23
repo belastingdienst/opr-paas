@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+
 	apimachinerywait "k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/e2e-framework/klient/k8s"
 	"sigs.k8s.io/e2e-framework/klient/wait"
@@ -56,4 +58,30 @@ func listOrFail[L k8s.ObjectList](ctx context.Context, namespace string, obj L, 
 	}
 
 	return obj
+}
+
+func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) ([]string, error) {
+	var jsonStrings []string
+
+	for _, generator := range applicationSet.Spec.Generators {
+		if generator.List != nil {
+			for _, element := range generator.List.Elements {
+				jsonStr, err := intArrayToString(element.Raw)
+				if err != nil {
+					return nil, fmt.Errorf("error converting int array to string: %w", err)
+				}
+				jsonStrings = append(jsonStrings, jsonStr)
+			}
+		}
+	}
+
+	return jsonStrings, nil
+}
+
+func intArrayToString(intArray []byte) (string, error) {
+	byteSlice := make([]byte, len(intArray))
+	for i, v := range intArray {
+		byteSlice[i] = byte(v)
+	}
+	return string(byteSlice), nil
 }
