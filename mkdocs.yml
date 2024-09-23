@@ -1,5 +1,5 @@
 site_name: opr-paas
-site_url: https://belastingdienst.github.io/opr-paas
+site_url: https://belastingdienst.github.io/opr-paas/
 site_author: Dutch Tax Office
 
 # Repository
@@ -58,6 +58,9 @@ plugins:
   - literate-nav:
       nav_file: README.md
       implicit_index: true
+  - redirects:
+      redirect_maps:
+        'index.md': 'overview/index.md'
 
 # Navigation
 nav:
