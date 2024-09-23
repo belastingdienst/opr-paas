@@ -82,7 +82,7 @@ func (r *PaasReconciler) GetPaas(
 		logger.Info("PAAS object marked for deletion")
 		if controllerutil.ContainsFinalizer(paas, paasFinalizer) {
 			logger.Info("Finalizing PaaS")
-			// Run finalization logic for memcachedFinalizer. If the
+			// Run finalization logic for paasFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
 			if err := r.finalizePaaS(ctx, paas); err != nil {
@@ -90,7 +90,7 @@ func (r *PaasReconciler) GetPaas(
 			}
 
 			logger.Info("Removing finalizer")
-			// Remove memcachedFinalizer. Once all finalizers have been
+			// Remove paasFinalizer. Once all finalizers have been
 			// removed, the object will be deleted.
 			controllerutil.RemoveFinalizer(paas, paasFinalizer)
 			if err := r.Update(ctx, paas); err != nil {
@@ -102,28 +102,28 @@ func (r *PaasReconciler) GetPaas(
 	}
 
 	// Add finalizer for this CR
-	logger.Info("Adding finalizer for PaaS object")
+	logger.Info("Adding finalizer for Paas object")
 	if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
-		logger.Info("PaaS object has no finalizer yet")
+		logger.Info("Paas object has no finalizer yet")
 		controllerutil.AddFinalizer(paas, paasFinalizer)
-		logger.Info("Added finalizer for PaaS object")
+		logger.Info("Added finalizer for Paas object")
 		if err := r.Update(ctx, paas); err != nil {
-			logger.Info("Error updating PaaS object")
+			logger.Info("Error updating Paas object")
 			logger.Info(fmt.Sprintf("%v", paas))
 			return nil, err
 		}
-		logger.Info("Updated PaaS object")
+		logger.Info("Updated Paas object")
 	}
 
 	return paas, nil
 }
 
 // For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
+// - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
 func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	paas := &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
-	logger := getLogger(ctx, paas, "PaaS", req.Name)
-	logger.Info("Reconciling the PAAS object")
+	logger := getLogger(ctx, paas, "Paas", req.Name)
+	logger.Info("Reconciling the Paas object")
 	errResult := reconcile.Result{
 		Requeue:      true,
 		RequeueAfter: time.Second * 10,
@@ -133,7 +133,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	}
 
 	if paas, err = r.GetPaas(ctx, req); err != nil {
-		logger.Error(err, "could not get PaaS from k8s")
+		logger.Error(err, "could not get Paas from k8s")
 		return errResult, err
 	} else if paas == nil {
 		logger.Error(err, "nothing to do")
@@ -142,9 +142,9 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 
 	paas.Status.Truncate()
 	defer func() {
-		logger.Info("Updating PaaS status", "messages", len(paas.Status.Messages), "quotas", paas.Status.Quota)
+		logger.Info("Updating Paas status", "messages", len(paas.Status.Messages), "quotas", paas.Status.Quota)
 		if err = r.Status().Update(ctx, paas); err != nil {
-			logger.Error(err, "Updating PaaS status failed")
+			logger.Error(err, "Updating Paas status failed")
 		}
 	}()
 
@@ -164,9 +164,9 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return errResult, err
 	}
 
-	logger.Info("Updating PaaS object status")
+	logger.Info("Updating Paas object status")
 	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paas, "succeeded")
-	logger.Info("PAAS object successfully reconciled")
+	logger.Info("Paas object successfully reconciled")
 	return okResult, nil
 }
 
