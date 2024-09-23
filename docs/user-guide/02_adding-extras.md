@@ -1,6 +1,6 @@
 ---
 title: Adding extra components
-summary: A description of the basic usage from the perspective of an end user.
+summary: A short overview of extra components that can be added to a Paas.
 authors:
   - hikarukin
 date: 2024-07-04
