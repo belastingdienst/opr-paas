@@ -9,6 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/e2e-framework/klient/k8s"
+	"sigs.k8s.io/e2e-framework/klient/wait"
+	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
@@ -42,21 +45,11 @@ func assertPaasNSDeletion(ctx context.Context, t *testing.T, cfg *envconf.Config
 	// create basic paasns
 	pnsCreatePaasNS(ctx, t, cfg, *paasNs)
 
-	// give cluster some time to create resources otherwise asserts fire too soon
-	// possibly better solved by separating into Setup() and Assess() steps (refactor)
-	// or we could maybe use sigs.k8s.io/e2e-framework/klient/wait
-	waitForOperator()
-
 	// remove it immediately
 	pnsDeletePaasNS(ctx, t, cfg, *paasNs)
-	waitForOperator()
 
 	// check that we cannot get the paasns because we deleted it
-	_, errPaasNS := func() (paasns api.PaasNS, err error) {
-		var namespace string = cfg.Namespace()
-		return pnsGetPaasNS(ctx, cfg, paasNsName, namespace)
-	}()
-	waitForOperator()
+	_, errPaasNS := pnsGetPaasNS(ctx, cfg, paasNsName, cfg.Namespace())
 	require.Error(t, errPaasNS)
 
 	return ctx
@@ -73,24 +66,18 @@ func assertPaasNSCreatedWithoutPaas(ctx context.Context, t *testing.T, cfg *envc
 
 	// create paasns including reference to non-existent paas
 	pnsCreatePaasNS(ctx, t, cfg, *paasNs)
-	waitForOperator()
 
 	// check that the referenced paas hasn't been created on-the-fly
-	var errPaas error
-	_, errPaas = pnsGetPaas(ctx, cfg)
+	_, errPaas := pnsGetPaas(ctx, cfg)
 	require.Error(t, errPaas)
 
 	// check that the paasns has been created but also contains an error status message
-	fetchedPaasNS, _ := func() (paasns api.PaasNS, err error) {
-		var namespace string = cfg.Namespace()
-		return pnsGetPaasNS(ctx, cfg, paasNsName, namespace)
-	}()
+	fetchedPaasNS, _ := pnsGetPaasNS(ctx, cfg, paasNsName, cfg.Namespace())
 	errMsg := fetchedPaasNS.Status.Messages[0]
 	assert.Contains(t, errMsg, "cannot find PaaS")
 
 	// cleanup
 	pnsDeletePaasNS(ctx, t, cfg, *paasNs)
-	waitForOperator()
 
 	return ctx
 }
@@ -110,7 +97,6 @@ func assertPaasNSCreatedWithUnlinkedPaas(ctx context.Context, t *testing.T, cfg 
 	}
 
 	pnsCreatePaas(ctx, t, cfg, *paas)
-	waitForOperator()
 
 	paasNs := &api.PaasNS{
 		ObjectMeta: metav1.ObjectMeta{
@@ -121,20 +107,15 @@ func assertPaasNSCreatedWithUnlinkedPaas(ctx context.Context, t *testing.T, cfg 
 	}
 
 	pnsCreatePaasNS(ctx, t, cfg, *paasNs)
-	waitForOperator()
 
 	// check that the paasns has been created but also contains an error status message
-	fetchedPaasNS, _ := func() (paasns api.PaasNS, err error) {
-		var namespace string = cfg.Namespace()
-		return pnsGetPaasNS(ctx, cfg, paasNsName, namespace)
-	}()
+	fetchedPaasNS, _ := pnsGetPaasNS(ctx, cfg, paasNsName, cfg.Namespace())
 	errMsg := fetchedPaasNS.Status.Messages[0]
 	assert.Contains(t, errMsg, "not in the list of namespaces")
 
 	// cleanup
 	pnsDeletePaas(ctx, t, cfg, *paas)
 	pnsDeletePaasNS(ctx, t, cfg, *paasNs)
-	waitForOperator()
 
 	return ctx
 }
@@ -159,7 +140,6 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	}
 
 	pnsCreatePaas(ctx, t, cfg, *paas)
-	waitForOperator()
 
 	paasNs := &api.PaasNS{
 		ObjectMeta: metav1.ObjectMeta{
@@ -170,11 +150,9 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	}
 
 	pnsCreatePaasNS(ctx, t, cfg, *paasNs)
-	waitForOperator()
 
 	// check that the paasns has been created and is linked to the correct paas
 	fetchedPaasNS, _ := pnsGetPaasNS(ctx, cfg, paasNsName, generatedName)
-	waitForOperator()
 
 	linkedPaas := fetchedPaasNS.Spec.Paas
 	assert.Equal(t, linkedPaas, thisPaas)
@@ -185,7 +163,6 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	// cleanup
 	pnsDeletePaas(ctx, t, cfg, *paas)
 	pnsDeletePaasNS(ctx, t, cfg, *paasNs)
-	waitForOperator()
 
 	return ctx
 }
@@ -193,6 +170,14 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 func pnsCreatePaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paasns api.PaasNS) api.PaasNS {
 	if err := cfg.Client().Resources().Create(ctx, &paasns); err != nil {
 		t.Fatalf("Failed to create PaasNS: %v", err)
+	}
+
+	waitUntilPaasNSExists := wait.For(conditions.New(cfg.Client().Resources()).ResourceMatch(&paasns, func(obj k8s.Object) bool {
+		return obj.(*api.PaasNS).Name == paasns.Name
+	}))
+
+	if waitUntilPaasNSExists != nil {
+		t.Fatalf("PaasNS creation was fired successfully but PaasNS wasn't found to exist: %v", waitUntilPaasNSExists)
 	}
 
 	return paasns
@@ -207,11 +192,25 @@ func pnsDeletePaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paa
 	if err := cfg.Client().Resources().Delete(ctx, &paasns); err != nil {
 		t.Fatalf("Failed to delete PaasNS: %v", err)
 	}
+
+	waitUntilPaasNSDeleted := wait.For(conditions.New(cfg.Client().Resources()).ResourceDeleted(&paasns))
+
+	if waitUntilPaasNSDeleted != nil {
+		t.Fatalf("PaasNS deletion was initiated but we never got a v1.StatusReasonNotFound error: %v", waitUntilPaasNSDeleted)
+	}
 }
 
 func pnsCreatePaas(ctx context.Context, t *testing.T, cfg *envconf.Config, paas api.Paas) api.Paas {
 	if err := cfg.Client().Resources().Create(ctx, &paas); err != nil {
 		t.Fatalf("Failed to create Paas: %v", err)
+	}
+
+	waitUntilPaasExists := wait.For(conditions.New(cfg.Client().Resources()).ResourceMatch(&paas, func(obj k8s.Object) bool {
+		return obj.(*api.Paas).Name == paas.Name
+	}))
+
+	if waitUntilPaasExists != nil {
+		t.Fatalf("Paas creation was fired successfully but Paas wasn't found to exist: %v", waitUntilPaasExists)
 	}
 
 	return paas
@@ -225,5 +224,11 @@ func pnsGetPaas(ctx context.Context, cfg *envconf.Config) (paas api.Paas, err er
 func pnsDeletePaas(ctx context.Context, t *testing.T, cfg *envconf.Config, paas api.Paas) {
 	if err := cfg.Client().Resources().Delete(ctx, &paas); err != nil {
 		t.Fatalf("Failed to delete Paas: %v", err)
+	}
+
+	waitUntilPaasDeleted := wait.For(conditions.New(cfg.Client().Resources()).ResourceDeleted(&paas))
+
+	if waitUntilPaasDeleted != nil {
+		t.Fatalf("Paas deletion was initiated but we never got a v1.StatusReasonNotFound error: %v", waitUntilPaasDeleted)
 	}
 }
