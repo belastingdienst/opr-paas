@@ -36,3 +36,4 @@ go.work*
 
 site/
 .cache/
+dist/
