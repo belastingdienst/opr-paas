@@ -11,11 +11,13 @@ categories:
       - 'bugfix'
       - 'bug'
   - title: '🧰 Maintenance'
-    label: 'chore'
-    label: 'documentation'
+    labels:
+      - 'chore'
+      - 'documentation'
   - title: '🔒 Security'
-    label: 'dependency'
-    label: 'security'
+    labels:
+      - 'dependency'
+      - 'security'
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 version-resolver:
@@ -29,10 +31,6 @@ version-resolver:
     labels:
       - 'patch'
   default: patch
-template: |
-  ## Changes
-
-  $CHANGES
 autolabeler:
   - label: 'chore'
     files:
@@ -49,3 +47,7 @@ autolabeler:
       - '/feature\/.+/'
       - '/feat\/.+/'
       - '/enhancement\/.+/'
+template: |
+  ## Changes
+
+  $CHANGES
