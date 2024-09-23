@@ -33,3 +33,6 @@ go.work*
 
 # We use kroki instead of direct insertion of svg files
 *.svg
+
+site/
+.cache/

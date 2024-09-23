@@ -13,12 +13,12 @@ we aim to provide safe, secure and sane defaults for our settings. If you have a
 improvements you'd like to share, feel free to create an issue or a pull request (PR)
 in our source code repository.
 
-For more information on contributing to this project, please see the
-[development guide](/development-guide) section in this documentation and the
+For more information on contributing to this project, please see the [Contributing](../about/contributing.md) section,
+[Developers Guide](../development-guide/index.md) section in this documentation and the
 `CONTRIBUTING.md` file in the root of our source code repository.
 
-Should you find a security issue, please refer to the `SECURITY.md` file in the
-root of our source code repository.
+Should you find a security issue, please refer to the
+[Raising security issues](../development-guide/21_security-issues.md) section.
 
 ## Things to be aware of
 

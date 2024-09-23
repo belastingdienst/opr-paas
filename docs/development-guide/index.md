@@ -61,8 +61,6 @@ Your development environment for Paas
 
 In order to write even the simplest patch for Paas you must have setup your
 workstation to build and locally test the version of the operator you are developing.
-All you have to do is follow the instructions you find in
-["Setting up your development environment for Paas"](development-environment/index.md).
 
 Submit a pull request
 ---------------------
@@ -78,12 +76,14 @@ the Istio documentation which contains very good insights and best practices:
 If you have written code for an improvement to Paas or a bug fix,
 please follow this procedure to submit a pull request:
 
-1. [Create a fork](development-environment/index.md) of Paas
-2. Self-assign the ticket and begin working on it in the forked project.
-3. Run the e2e tests in the forked repository, see our [related documentation]](development-guide/e2e-tests.md)
+1. Create a personal fork of the Paas Operator project;
+2. If there is a related issue, please leave a comment that you intend to work on it;
+3. Run the e2e tests in the forked repository, see our [related documentation](40_e2e-tests.md);
 4. Once development is finished, create a pull request from your forked project
-   to the Paas project.
-   Please make sure the pull request title and message follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+   to the Paas project;
+
+Please make sure the pull request title and message follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+For more details on submitting a PR, see "[Submitting A PR](30_submitting-a-pr.md)".
 
 One of the maintainers will then proceed with the first review and approve the
 CI workflow to run in the Paas project.  The second reviewer will run

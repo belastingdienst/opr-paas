@@ -41,7 +41,9 @@ Feel free to change config as required.
 
 ## Contributing
 
-Please refer to our documentation in the [CONTRIBUTING.md](./CONTRIBUTING.md) file and the developer section of the documentation site if you want to help us improve the PaaS solution.
+Please refer to our documentation in the [CONTRIBUTING.md](./CONTRIBUTING.md) file
+and the Developer Guide section of the documentation site if you want to help us
+improve the Paas Operator.
 
 ## License
 

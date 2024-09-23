@@ -16,5 +16,4 @@ When raising issues, please specify the following:
 - Errors and log messages that are displayed by the involved software
 - Any other detail that might be useful
 
-If you are trying to report a vulnerability, please refer to the
-[security policy](/SECURITY.md) in the root of the project's repository.
+For security related issues, we have a [dedicated security policy](21_security-issues.md).
