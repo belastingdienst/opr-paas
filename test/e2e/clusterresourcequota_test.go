@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
+	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/quota"
 
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	quotav1 "github.com/openshift/api/quota/v1"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -59,11 +59,9 @@ func assertCRQUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) co
 		"memory": "128Mi",
 	})
 
-	if err := cfg.Client().Resources().Update(ctx, paas); err != nil {
-		t.Fatalf("Failed to update Paas resource: %v", err)
+	if err := updatePaasSync(ctx, cfg, paas); err != nil {
+		t.Fatal(err)
 	}
-
-	waitForOperator()
 
 	crq := getCRQ(ctx, t, cfg)
 
@@ -74,7 +72,7 @@ func assertCRQUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) co
 }
 
 func assertCRQDeleted(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	deletePaas(ctx, paasWithQuota, t, cfg)
+	deletePaasSync(ctx, paasWithQuota, t, cfg)
 	crqs := listOrFail(ctx, "", &quotav1.ClusterResourceQuotaList{}, t, cfg)
 
 	assert.Empty(t, crqs.Items)
