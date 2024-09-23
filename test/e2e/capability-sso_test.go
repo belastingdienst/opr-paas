@@ -4,17 +4,16 @@ import (
 	"context"
 	"testing"
 
+	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/quota"
+	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+
 	quotav1 "github.com/openshift/api/quota/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/json"
-
-	"github.com/belastingdienst/opr-paas/internal/quota"
-
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
-
-	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
@@ -48,9 +47,9 @@ func TestCapabilitySSO(t *testing.T) {
 
 func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapabilitySSO, t, cfg)
-	namespace := getNamespace(ctx, t, cfg, paasWithCapabilitySSO)
-	applicationSet := getApplicationSet(ctx, t, cfg, ssoApplicationSet, applicationSetNamespace)
-	ssoQuota := getSsoQuota(ctx, t, cfg)
+	namespace := getOrFail(ctx, paasWithCapabilitySSO, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
+	applicationSet := getOrFail(ctx, ssoApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
+	ssoQuota := getOrFail(ctx, paasSSO, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
 	// ClusterResource is created with the same name as the PaaS
 	assert.Equal(t, paasWithCapabilitySSO, paas.Name)
@@ -106,7 +105,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 }
 
 func assertCapSSODeleted(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	deletePaas(ctx, paasWithCapabilitySSO, t, cfg)
+	deletePaasSync(ctx, paasWithCapabilitySSO, t, cfg)
 
 	// Quota is deleted
 	var quotaList quotav1.ClusterResourceQuotaList
@@ -127,7 +126,7 @@ func assertCapSSODeleted(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.NotContains(t, namespaceList.Items, paasWithCapabilitySSO)
 
 	// ApplicationSet is deleted
-	applicationSet := getApplicationSet(ctx, t, cfg, ssoApplicationSet, applicationSetNamespace)
+	applicationSet := getOrFail(ctx, ssoApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
 	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
 
 	// List Entries should be empty
@@ -135,16 +134,6 @@ func assertCapSSODeleted(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Empty(t, applicationSetListEntries)
 
 	return ctx
-}
-
-func getSsoQuota(ctx context.Context, t *testing.T, cfg *envconf.Config) quotav1.ClusterResourceQuota {
-	var ssoQuota quotav1.ClusterResourceQuota
-
-	if err := cfg.Client().Resources().Get(ctx, paasSSO, cfg.Namespace(), &ssoQuota); err != nil {
-		t.Fatalf("Failed to retrieve ssoQuota: %v", err)
-	}
-
-	return ssoQuota
 }
 
 func MatchLabelExists(matchLabels map[string]string, key string, value string) bool {
