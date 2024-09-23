@@ -11,6 +11,8 @@ import (
 	"os"
 	"testing"
 
+	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -67,6 +69,8 @@ func registerSchemes(cfg *envconf.Config) error {
 	} else if err = quotav1.AddToScheme(scheme); err != nil {
 		return err
 	} else if err = userv1.AddToScheme(scheme); err != nil {
+		return err
+	} else if err = appv1.AddToScheme(scheme); err != nil {
 		return err
 	}
 
