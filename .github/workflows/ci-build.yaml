@@ -15,10 +15,10 @@ jobs:
     if: ${{ github.event.pull_request.draft == true }}
     runs-on: ubuntu-22.04
     steps:
-    - name: Fails in order to indicate that pull request needs to be marked as ready to review and other checks needs to pass.
-      run: exit 1
+      - name: Fails in order to indicate that pull request needs to be marked as ready to review and other checks needs to pass.
+        run: exit 1
 
-  changes:
+  codechanges:
     if: ${{ github.event.pull_request.draft == false }}
     runs-on: ubuntu-22.04
     outputs:
@@ -31,16 +31,17 @@ jobs:
           # Any file which is not under docs/ or is not a markdown file is counted as a backend file
           files_yaml: |
             backend:
-              - '!**.md'
-              - '!**/*.md'
-              - '!docs/**'
+              - go.mod
+              - go.sum
+              - '**.go'
+              - '.github/workflows/ci-build.yaml'
 
   check-go:
     name: Ensure Go modules synchronicity
     runs-on: ubuntu-22.04
-    if: ${{ needs.changes.outputs.backend == 'true' && github.event.pull_request.draft == false}}
+    if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
-      - changes
+      - codechanges
     steps:
       - name: Checkout code
         uses: actions/checkout@8410ad0602e1e429cee44a835ae9f77f654a6694 # v4.0.0
@@ -59,12 +60,12 @@ jobs:
   lint-go:
     name: Lint Go code
     runs-on: ubuntu-22.04
-    if: ${{ needs.changes.outputs.backend == 'true' && github.event.pull_request.draft == false}}
+    if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
-      - changes
+      - codechanges
     permissions:
-      contents: read  # for actions/checkout to fetch code
-      pull-requests: read  # for golangci/golangci-lint-action to fetch pull requests
+      contents: read # for actions/checkout to fetch code
+      pull-requests: read # for golangci/golangci-lint-action to fetch pull requests
     steps:
       - name: Checkout code
         uses: actions/checkout@8410ad0602e1e429cee44a835ae9f77f654a6694 # v4.0.0
@@ -81,9 +82,9 @@ jobs:
   code-gen:
     name: Check generated code
     runs-on: ubuntu-22.04
-    if: ${{ needs.changes.outputs.backend == 'true' && github.event.pull_request.draft == false}}
+    if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
-      - changes
+      - codechanges
     steps:
       - name: Checkout code
         uses: actions/checkout@8410ad0602e1e429cee44a835ae9f77f654a6694 # v4.0.0
@@ -95,9 +96,9 @@ jobs:
   unit-test:
     name: Run unit tests
     runs-on: ubuntu-22.04
-    if: ${{ needs.changes.outputs.backend == 'true' && github.event.pull_request.draft == false}}
+    if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
-      - changes
+      - codechanges
     steps:
       - name: Checkout code
         uses: actions/checkout@8410ad0602e1e429cee44a835ae9f77f654a6694 # v4.0.0
@@ -111,9 +112,9 @@ jobs:
   e2e-test:
     name: Run e2e tests
     runs-on: ubuntu-22.04
-    if: ${{ needs.changes.outputs.backend == 'true' && github.event.pull_request.draft == false}}
+    if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
-      - changes
+      - codechanges
     steps:
       - name: Checkout code
         uses: actions/checkout@8410ad0602e1e429cee44a835ae9f77f654a6694 # v4.0.0
