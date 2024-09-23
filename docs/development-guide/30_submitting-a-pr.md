@@ -14,7 +14,7 @@ date: 2024-09-23
 !!! Tip
     Before you submit a pull request, please read this document from the Istio
     documentation which contains very good insights and best practices:
-    ["Writing Good Pull Requests"](https://github.com/istio/istio/wiki/Writing-Good-Pull-Requests).
+    ["Writing Good Pull Requests"](31_writing-good-pull-request.md).
 
 If you have written code for an improvement to Paas or a bug fix, please follow
 this procedure to submit a pull request:
@@ -22,7 +22,7 @@ this procedure to submit a pull request:
 1. Create a fork of the Paas Operator project;
 2. Add a comment to the related issue to let us know you're working on it;
 3. Develop your feature or fix on your forked repository;
-3. Run the e2e tests in your forked repository, see our [related e2e testing]](development-guide/e2e-tests/)
+3. Run the e2e tests in your forked repository, see our [related e2e testing](40_e2e-tests.md)
    documentation;
 4. Once development is finished, create a pull request from your forked project
    to the Paas project.
