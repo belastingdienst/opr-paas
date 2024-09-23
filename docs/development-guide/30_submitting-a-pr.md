@@ -4,7 +4,7 @@ summary: How to submit a Pull Request
 authors:
   - devotional-phoenix-97
   - hikarukin
-date: 2024-07-04
+date: 2024-09-23
 ---
 
 > First and foremost: as a potential contributor, your changes and ideas are
