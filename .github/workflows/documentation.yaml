@@ -30,6 +30,8 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
+          cache-dependency-path: |
+            requirements.txt
 
       - name: Set up build cache
         uses: actions/cache/restore@v4
