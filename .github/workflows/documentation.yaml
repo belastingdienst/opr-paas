@@ -43,6 +43,7 @@ jobs:
         run: |
           pip install mkdocs-material
           pip install mkdocs-literate-nav
+          pip install mkdocs-redirects
 
       - name: Build documentation
         env:
