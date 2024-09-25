@@ -16,6 +16,8 @@ jobs:
             goos: darwin
           - goarch: arm64
             goos: windows
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
