@@ -7,15 +7,6 @@ on:
 jobs:
   binaries:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        goos: [linux, windows, darwin]
-        goarch: [amd64, arm64]
-        exclude:
-          - goarch: arm64
-            goos: darwin
-          - goarch: arm64
-            goos: windows
     permissions:
       contents: write
     steps:
