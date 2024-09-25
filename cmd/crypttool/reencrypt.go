@@ -69,8 +69,8 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 			}
 
 			paas.Spec.SshSecrets[key] = reencrypted
-			// Use replaceAll as same secret can occur multiple times
-			paasAsString = strings.ReplaceAll(paasAsString, secret, reencrypted)
+			// Use replaceAll as same secret can occur multiple times and use TrimSpace to prevent removal of newlines.
+			paasAsString = strings.ReplaceAll(paasAsString, strings.TrimSpace(secret), reencrypted)
 			logrus.Debugf("successfully reencrypted %s.spec.sshSecrets[%s] in file %s", paasName, key, fileName)
 		}
 
@@ -82,8 +82,8 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 				}
 
 				cap.SetSshSecret(key, reencrypted)
-				// Use replaceAll as same secret can occur multiple times
-				paasAsString = strings.ReplaceAll(paasAsString, secret, reencrypted)
+				// Use replaceAll as same secret can occur multiple times and use TrimSpace to prevent removal of newlines.
+				paasAsString = strings.ReplaceAll(paasAsString, strings.TrimSpace(secret), reencrypted)
 				logrus.Debugf("successfully reencrypted %s.spec.capabilities[%s].sshSecrets[%s] in file %s", paasName, capName, key, fileName)
 			}
 		}
