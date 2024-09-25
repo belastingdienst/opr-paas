@@ -8,6 +8,8 @@ jobs:
   image:
     name: Push Docker image to ghcr.io
     runs-on: ubuntu-latest
+    permissions:
+      packages: write
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
