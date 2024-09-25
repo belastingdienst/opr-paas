@@ -1,6 +1,14 @@
 name-template: 'v$RESOLVED_VERSION 🌈'
 tag-template: 'v$RESOLVED_VERSION'
+exclude-labels:
+  - 'skip-changelog'
+replacers:
+  - search: '/CVE-(\d{4})-(\d+)/g'
+    replace: 'https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-$1-$2'
 categories:
+  - title: '💥 BREAKING CHANGES'
+    labels:
+      - 'breaking'
   - title: '🚀 Features'
     labels:
       - 'feature'
@@ -14,9 +22,13 @@ categories:
     labels:
       - 'chore'
       - 'documentation'
+      - 'ci'
+      - 'refactor'
+      - 'style'
+      - 'test'
   - title: '🔒 Security'
     labels:
-      - 'dependency'
+      - 'dependencies'
       - 'security'
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
@@ -24,29 +36,64 @@ version-resolver:
   major:
     labels:
       - 'major'
+      - 'breaking'
   minor:
     labels:
       - 'minor'
+      - 'refactor'
   patch:
     labels:
       - 'patch'
+      - 'documentation'
+      - 'ci'
+      - 'style'
+      - 'test'
   default: patch
 autolabeler:
+  - label: 'breaking'
+    title:
+      - '/!:/'
+    body:
+      - '/BREAKING CHANGE/'
   - label: 'chore'
+    title:
+      - '/chore/i'
+  - label: 'ci'
+    title:
+      - '/ci/i'
+      - '/build/i'
     files:
+      - '.github/*'
+      - '.github/**/*'
+  - label: 'documentation'
+    title:
+      - '/docs/i'
+    files:
+      - 'docs/*'
+      - 'docs/**/*'
       - '*.md'
+      - '**/*.md'
+  - label: 'enhancement'
+    title:
+      - '/feat/i'
+      - '/perf/i'
   - label: 'bug'
-    branch:
-      - '/hotfix\/.+/'
-      - '/fix\/.+/'
     title:
       - '/fix/i'
       - '/hotfix/i'
-  - label: 'enhancement'
-    branch:
-      - '/feature\/.+/'
-      - '/feat\/.+/'
-      - '/enhancement\/.+/'
+      - '/bug/i'
+  - label: 'refactor'
+    title:
+      - '/refactor/i'
+  - label: 'revert'
+    title:
+      - '/revert/i'
+  - label: 'style'
+    title:
+      - '/style/i'
+  - label: 'test'
+    title:
+      - '/test/i'
 template: |
   ## Changes
 
