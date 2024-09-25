@@ -62,6 +62,9 @@ autolabeler:
     title:
       - '/ci/i'
       - '/build/i'
+    files:
+      - '.github/*'
+      - '.github/**/*'
   - label: 'documentation'
     title:
       - '/docs/i'
@@ -78,6 +81,7 @@ autolabeler:
     title:
       - '/fix/i'
       - '/hotfix/i'
+      - '/bug/i'
   - label: 'refactor'
     title:
       - '/refactor/i'
