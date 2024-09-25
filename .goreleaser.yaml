@@ -16,7 +16,8 @@ before:
     - go generate ./...
 
 builds:
-  - env:
+  - id: crypttool
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
