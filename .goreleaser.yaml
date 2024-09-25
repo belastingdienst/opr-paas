@@ -29,6 +29,7 @@ builds:
       - goos: windows
         goarch: arm64
     main: ./cmd/crypttool
+    binary: crypttool
     ldflags:
       - -s -w -X "internal.version.Version={{.Version}}"
 
