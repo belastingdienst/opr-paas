@@ -30,6 +30,8 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
+          cache-dependency-path: |
+            requirements.txt
 
       - name: Set up build cache
         uses: actions/cache/restore@v4
@@ -41,8 +43,11 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install mkdocs-material
-          pip install mkdocs-literate-nav
+          pip install --no-cache-dir mkdocs-material \
+                                     mkdocs-literate-nav \
+                                     mkdocs-redirects \
+                                     mkdocs-material[recommended] \
+                                     mkdocs-material[imaging]
 
       - name: Build documentation
         env:
