@@ -36,9 +36,8 @@ func teardownPaasFn(paasName string) types.StepFunc {
 	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 		paas := &api.Paas{ObjectMeta: metav1.ObjectMeta{Name: paasName}}
 
-		if cfg.Client().Resources().Delete(ctx, paas) == nil {
-			t.Logf("Paas %s deleted", paasName)
-		}
+		// Paas is deleted synchronously to prevent race conditions between test invocations
+		_ = deleteResourceSync(ctx, cfg, paas)
 
 		return ctx
 	}
