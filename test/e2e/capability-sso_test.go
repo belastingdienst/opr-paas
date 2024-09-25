@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/util/json"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
@@ -67,26 +66,10 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 
 	// List entries should not be empty
 	require.NoError(t, appSetListEntriesError)
-	assert.NotEmpty(t, applicationSetListEntries)
-
-	// Flag to check if we find a JSON object
-	foundNameTest := false
-
-	for _, jsonString := range applicationSetListEntries {
-		var obj map[string]interface{}
-		err := json.Unmarshal([]byte(jsonString), &obj)
-
-		// Check of json successfully unmarshalled
-		require.NoError(t, err)
-
-		// Check if the JSON object has a "paas" property with value "paasnaam"
-		if paas, ok := obj["paas"]; ok && paas == paasWithCapabilitySSO {
-			foundNameTest = true
-		}
-	}
+	assert.Len(t, applicationSetListEntries, 1)
 
 	// At least one JSON object should have "paas": "paasnaam"
-	assert.True(t, foundNameTest)
+	assert.Equal(t, paasWithCapabilitySSO, applicationSetListEntries[0]["paas"])
 
 	// Check whether the LabelSelector is specific to the paasnaam-sso namespace
 	labelSelector := ssoQuota.Spec.Selector.LabelSelector
