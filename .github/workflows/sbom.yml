@@ -9,7 +9,7 @@ jobs:
     name: Generate and upload SBOM
     runs-on: ubuntu-latest
     permissions:
-      packages: write
+      contents: write
     strategy:
       matrix:
         # build and publish in parallel: linux/386, linux/amd64, windows/386, windows/amd64, darwin/amd64
