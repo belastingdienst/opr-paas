@@ -18,6 +18,11 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
 
+      - name: Download cyclonedx-gomod
+        uses: CycloneDX/gh-gomod-generate-sbom@v2
+        with:
+          version: v1
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
