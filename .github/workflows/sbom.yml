@@ -1,0 +1,35 @@
+name: Release workflow for creating SBOM and attaching to the release
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  sbom:
+    name: Generate and upload SBOM
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    strategy:
+      matrix:
+        # build and publish in parallel: linux/386, linux/amd64, windows/386, windows/amd64, darwin/amd64
+        goos: [linux, darwin]
+        goarch: [amd64, arm64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate SBOM
+        uses: CycloneDX/gh-gomod-generate-sbom@v2
+        with:
+          version: v1
+          # added assert-licenses as required by dependency-track
+          args: mod -licenses -assert-licenses -output ${{ matrix.goos }}-${{ matrix.goarch }}.bom.xml
+        env:
+          GOARCH: ${{ matrix.goarch }}
+          GOOS: ${{ matrix.goos }}
+
+      - name: Add SBOM to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.goos }}-${{ matrix.goarch }}.bom.xml

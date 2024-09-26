@@ -51,6 +51,22 @@ jobs:
           labels: ${{ steps.opr-paas-meta.outputs.labels }}
           build-args: VERSION=${{ github.ref_name }}
 
+      - name: Generate opr-paas image SBOM
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: 'ghcr.io/belastingdienst/opr-paas'
+          scan-type: image
+          format: 'github'
+          output: 'opr-paas-image.sbom.json'
+          github-pat: ${{ secrets.GITHUB_TOKEN }}
+          severity: 'MEDIUM,HIGH,CRITICAL'
+          scanners: 'vuln'
+
+      - name: Add SBOM to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '${{ github.workspace }}/opr-paas-image.sbom.json'
+
   webservice_image:
     name: Push operator image to ghcr.io
     runs-on: ubuntu-latest
@@ -97,3 +113,19 @@ jobs:
           tags: ${{ steps.webservice-meta.outputs.tags }}
           labels: ${{ steps.webservice-meta.outputs.labels }}
           build-args: VERSION=${{ github.ref_name }}
+
+      - name: Generate webservice image SBOM
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: 'ghcr.io/belastingdienst/webservice'
+          scan-type: image
+          format: 'github'
+          output: 'webservice-image.sbom.json'
+          github-pat: ${{ secrets.GITHUB_TOKEN }}
+          severity: 'MEDIUM,HIGH,CRITICAL'
+          scanners: 'vuln'
+
+      - name: Add SBOM to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '${{ github.workspace }}/webservice-image.sbom.json'
