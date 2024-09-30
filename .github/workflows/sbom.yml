@@ -24,7 +24,7 @@ jobs:
         with:
           version: v1
           # added assert-licenses as required by dependency-track
-          args: mod -licenses -assert-licenses -output ${{ matrix.goos }}-${{ matrix.goarch }}.bom.xml
+          args: mod -licenses -assert-licenses -output sources_${{ matrix.goos }}_${{ matrix.goarch }}.sbom.xml
         env:
           GOARCH: ${{ matrix.goarch }}
           GOOS: ${{ matrix.goos }}

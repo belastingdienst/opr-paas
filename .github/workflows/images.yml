@@ -58,7 +58,7 @@ jobs:
           image-ref: 'ghcr.io/belastingdienst/opr-paas'
           scan-type: image
           format: 'github'
-          output: 'opr-paas-image.sbom.json'
+          output: 'opr-paas_image.sbom.json'
           github-pat: ${{ secrets.GITHUB_TOKEN }}
           severity: 'MEDIUM,HIGH,CRITICAL'
           scanners: 'vuln'
@@ -122,7 +122,7 @@ jobs:
           image-ref: 'ghcr.io/belastingdienst/webservice'
           scan-type: image
           format: 'github'
-          output: 'webservice-image.sbom.json'
+          output: 'webservice_image.sbom.json'
           github-pat: ${{ secrets.GITHUB_TOKEN }}
           severity: 'MEDIUM,HIGH,CRITICAL'
           scanners: 'vuln'
