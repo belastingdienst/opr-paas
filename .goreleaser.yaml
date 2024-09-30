@@ -58,9 +58,7 @@ changelog:
 
 # Please see https://github.com/CycloneDX/cyclonedx-gomod?tab=readme-ov-file#goreleaser-
 sboms:
-  - documents:
-      - sbom.xml
-    artifacts: binary
+  - artifacts: binary
     cmd: cyclonedx-gomod
     # changes: xml instead of json, and assert-licenses to add licen info per component
     args:
