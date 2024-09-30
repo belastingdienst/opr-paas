@@ -11,6 +11,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -149,16 +150,21 @@ func (r *PaasNSReconciler) BackendSecrets(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
-) (secrets []*corev1.Secret) {
+) []*corev1.Secret {
+	secrets := make(map[string]string)
+
 	// From the PaasNS resource
-	secrets = append(secrets, r.getSecrets(ctx, paas, paasns, paasns.Spec.SshSecrets)...)
+	maps.Copy(secrets, paasns.Spec.SshSecrets)
+
 	// From the Paas Resource capability chapter (if applicable)
 	if cap, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists && cap.IsEnabled() {
-		secrets = append(secrets, r.getSecrets(ctx, paas, paasns, cap.GetSshSecrets())...)
+		maps.Copy(secrets, cap.GetSshSecrets())
 	}
+
 	// From the Paas resource
-	secrets = append(secrets, r.getSecrets(ctx, paas, paasns, paas.Spec.SshSecrets)...)
-	return secrets
+	maps.Copy(secrets, paas.Spec.SshSecrets)
+
+	return r.getSecrets(ctx, paas, paasns, secrets)
 }
 
 func (r *PaasNSReconciler) ReconcileSecrets(
