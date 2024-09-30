@@ -32,4 +32,4 @@ jobs:
       - name: Add SBOM to release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ matrix.goos }}-${{ matrix.goarch }}.bom.xml
+          files: sources_${{ matrix.goos }}_${{ matrix.goarch }}.sbom.xml

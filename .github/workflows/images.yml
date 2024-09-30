@@ -66,7 +66,7 @@ jobs:
       - name: Add SBOM to release
         uses: softprops/action-gh-release@v2
         with:
-          files: '${{ github.workspace }}/opr-paas-image.sbom.json'
+          files: '${{ github.workspace }}/opr-paas_image.sbom.json'
 
   webservice_image:
     name: Push webservice image to ghcr.io
@@ -130,4 +130,4 @@ jobs:
       - name: Add SBOM to release
         uses: softprops/action-gh-release@v2
         with:
-          files: '${{ github.workspace }}/webservice-image.sbom.json'
+          files: '${{ github.workspace }}/webservice_image.sbom.json'
