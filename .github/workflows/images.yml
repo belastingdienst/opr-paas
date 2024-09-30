@@ -69,10 +69,11 @@ jobs:
           files: '${{ github.workspace }}/opr-paas-image.sbom.json'
 
   webservice_image:
-    name: Push operator image to ghcr.io
+    name: Push webservice image to ghcr.io
     runs-on: ubuntu-latest
     permissions:
       packages: write
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
