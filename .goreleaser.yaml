@@ -60,7 +60,7 @@ changelog:
 sboms:
   - documents:
       - sbom.xml
-    artifacts: any
+    artifacts: binary
     cmd: cyclonedx-gomod
     # changes: xml instead of json, and assert-licenses to add licen info per component
     args:
