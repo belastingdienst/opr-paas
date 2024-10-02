@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -60,28 +61,24 @@ func listOrFail[L k8s.ObjectList](ctx context.Context, namespace string, obj L, 
 	return obj
 }
 
-func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) ([]string, error) {
-	var jsonStrings []string
+// getApplicationSetListEntries returns the parsed elements of all list generators
+// (https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-List/) present in the passed ApplicationSet.
+func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) ([]map[string]string, error) {
+	entries := make([]map[string]string, 0)
 
 	for _, generator := range applicationSet.Spec.Generators {
 		if generator.List != nil {
 			for _, element := range generator.List.Elements {
-				jsonStr, err := intArrayToString(element.Raw)
-				if err != nil {
-					return nil, fmt.Errorf("error converting int array to string: %w", err)
+				parsed := map[string]string{}
+
+				if err := json.Unmarshal(element.Raw, &parsed); err != nil {
+					return nil, fmt.Errorf("error parsing elements as JSON: %w", err)
 				}
-				jsonStrings = append(jsonStrings, jsonStr)
+
+				entries = append(entries, parsed)
 			}
 		}
 	}
 
-	return jsonStrings, nil
-}
-
-func intArrayToString(intArray []byte) (string, error) {
-	byteSlice := make([]byte, len(intArray))
-	for i, v := range intArray {
-		byteSlice[i] = byte(v)
-	}
-	return string(byteSlice), nil
+	return entries, nil
 }
