@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/log"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -34,7 +35,7 @@ func (r *PaasNSReconciler) EnsureArgoApp(
 		return nil
 	}
 
-	logger := getLogger(ctx, paasns, "ArgoApp", appName)
+	ctx, logger := log.WithAttributes(ctx, "ArgoApp", appName)
 	namespacedName := types.NamespacedName{
 		Namespace: paasns.NamespaceName(),
 		Name:      appName,

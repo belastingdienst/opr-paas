@@ -11,9 +11,9 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/log"
 	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
 
-	"github.com/go-logr/logr"
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -227,8 +227,8 @@ func (r *PaasReconciler) FinalizeClusterQuotas(ctx context.Context, paas *v1alph
 func (r *PaasReconciler) ReconcileQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	logger logr.Logger,
 ) (err error) {
+	logger := log.Get(ctx)
 	logger.Info("Creating quotas for PAAS object ")
 	// Create quotas if needed
 	if quotas, err := r.BackendEnabledQuotas(ctx, paas); err != nil {

@@ -11,8 +11,8 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/log"
 
-	"github.com/go-logr/logr"
 	userv1 "github.com/openshift/api/user/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -208,8 +208,8 @@ func (r *PaasReconciler) FinalizeGroups(
 func (r *PaasReconciler) ReconcileGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	logger logr.Logger,
 ) error {
+	logger := log.Get(ctx)
 	logger.Info("Creating groups for PAAS object ")
 	for _, group := range r.BackendGroups(ctx, paas) {
 		if err := r.EnsureGroup(ctx, paas, group); err != nil {

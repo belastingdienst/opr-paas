@@ -11,17 +11,17 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/log"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 )
 
 const paasNsFinalizer = "paasns.cpet.belastingdienst.nl/finalizer"
@@ -126,7 +126,7 @@ func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS)
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
 func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	paasns := &v1alpha1.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
-	logger := getLogger(ctx, paasns, "PaasNs", req.Name)
+	logger := log.Get(ctx)
 	logger.Info("Reconciling the PaasNs object")
 
 	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
@@ -157,12 +157,12 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 		return ctrl.Result{}, err
 	}
 
-	err = r.ReconcileRolebindings(ctx, paas, paasns, logger)
+	err = r.ReconcileRolebindings(ctx, paas, paasns)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	err = r.ReconcileSecrets(ctx, paas, paasns, logger)
+	err = r.ReconcileSecrets(ctx, paas, paasns)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -220,6 +220,7 @@ func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]
 	nss := make(map[string]int)
 	pnsList := &v1alpha1.PaasNSList{}
 	if err := r.List(ctx, pnsList, &client.ListOptions{Namespace: ns}); err != nil {
+		log.Get(ctx).Error(err, "failed to retrieve list of PaasNS from namespace", "namespace", ns)
 		// In this case panic is ok, since this situation can only occur when either k8s is down, or permissions are insufficient.
 		// Both cases we should not continue executing code...
 		panic(err)

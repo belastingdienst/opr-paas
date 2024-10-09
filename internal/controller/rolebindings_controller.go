@@ -11,7 +11,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/go-logr/logr"
+	"github.com/belastingdienst/opr-paas/internal/log"
 
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -184,8 +184,9 @@ func FinalizeRoleBinding(
 func (r *PaasReconciler) ReconcileRolebindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	logger logr.Logger,
 ) error {
+	logger := log.Get(ctx)
+
 	for _, paasns := range r.pnsFromNs(ctx, paas.ObjectMeta.Name) {
 		roles := make(map[string][]string)
 
@@ -228,8 +229,8 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
-	logger logr.Logger,
 ) error {
+	logger := log.Get(ctx)
 	// Creating a list of roles and the groups that should have them, for this namespace
 	roles := make(map[string][]string)
 	for groupName, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
