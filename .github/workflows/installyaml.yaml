@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    strategy:
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
