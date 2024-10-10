@@ -1,5 +1,6 @@
 name: Release workflow for generating install.yaml
 on:
+  workflow_dispatch:
   release:
     types:
       - published
@@ -20,6 +21,8 @@ jobs:
 
       - name: Generate install.yaml
         run: make build-installer
+        env:
+          IMAGE_TAG: ${{ github.ref_name }}
 
       - name: Add install.yaml to release
         uses: softprops/action-gh-release@v2
