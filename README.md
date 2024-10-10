@@ -19,6 +19,7 @@ A PaaS is all a team needs to hit the ground running.
 ## Quickstart
 
 Deploy the operator using the following command:
+
 ```
 kubectl apply -f manifests/install.yaml
 ```
@@ -36,6 +37,7 @@ This will create:
 Feel free to change config as required.
 
 ## Background information
+
 - [build-kubernetes-operator-six-steps](https://developers.redhat.com/articles/2021/09/07/build-kubernetes-operator-six-steps#setup_and_prerequisites)
 - [operator sdk installation instructions](https://sdk.operatorframework.io/docs/installation/)
 

@@ -1,0 +1,32 @@
+name: Release workflow for generating install.yaml
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  sbom:
+    name: Generate and upload install.yaml
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kustomize
+        run: make kustomize
+
+      - name: Generate install.yaml
+        run: make build-installer
+
+      - name: Add install.yaml to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: manifests/install.yaml
+
+      - name: Create PR
+        run: gh pr create -B release_${{ github.ref_name }} -H main --title 'Update release info into main' --body 'Created by install.yaml action'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
