@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/go-logr/logr"
+	"github.com/belastingdienst/opr-paas/internal/log"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -171,8 +171,8 @@ func (r *PaasNSReconciler) ReconcileSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
-	logger logr.Logger,
 ) error {
+	logger := log.Get(ctx)
 	// Create argo ssh secrets
 	logger.Info("Creating Ssh secrets")
 	secrets := r.BackendSecrets(ctx, paasns, paas)

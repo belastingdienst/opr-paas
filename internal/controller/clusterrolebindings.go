@@ -13,13 +13,13 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/go-logr/logr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"github.com/belastingdienst/opr-paas/internal/log"
 
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const crbNameFormat string = "paas-%s"
@@ -133,11 +133,12 @@ func updateClusterRoleBindingForRemovedSA(
 }
 
 func addOrUpdateCrb(
+	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 	crb *rbac.ClusterRoleBinding,
 	sas map[string]bool,
-	logger logr.Logger,
 ) (changed bool) {
+	logger := log.Get(ctx)
 	crbName := crb.ObjectMeta.Name
 	for sa, add := range sas {
 		if add {
@@ -170,15 +171,13 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 		return
 	}
 
-	logger := getLogger(ctx, paas, "ClusterRoleBinding", "reconcile")
-
 	permissions := capConfig.ExtraPermissions.AsConfigRolesSas(cap.WithExtraPermissions())
 	permissions.Merge(capConfig.DefaultPermissions.AsConfigRolesSas(true))
 	for role, sas := range permissions {
 		if crb, err = getClusterRoleBinding(r.Client, ctx, paas, role); err != nil {
 			return err
 		}
-		if addOrUpdateCrb(paasns, crb, sas, logger) {
+		if addOrUpdateCrb(ctx, paasns, crb, sas) {
 			if err := updateClusterRoleBinding(r.Client, ctx, paas, crb); err != nil {
 				return err
 			}
