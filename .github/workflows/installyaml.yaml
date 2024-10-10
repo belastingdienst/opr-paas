@@ -20,16 +20,43 @@ jobs:
         run: make kustomize
 
       - name: Generate install.yaml
-        run: make build-installer
+        run: |
+          make build-installer
         env:
           IMAGE_TAG: ${{ github.ref_name }}
+
+      - name: Create PR
+        run: |
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          export DESTINATION_BRANCH="release_${{ github.ref_name }}"
+          git checkout -b "${DESTINATION_BRANCH}"
+          git commit -a -m "chore: Bump release info"
+          git push --force --set-upstream origin "${DESTINATION_BRANCH}"
+          gh pr create -H "${DESTINATION_BRANCH}" -B main --title 'chore: Update release info into main' --body 'Created by install.yaml action'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #- name: Create PR
+      #  run: |
+      #    export TODAY=$( date -u '+%Y-%m-%d' )
+      #    export DESTINATION_BRANCH="release_${{ github.ref_name }}"
+      #    git push origin "HEAD:refs/heads/${DESTINATION_BRANCH}"
+      #    git diff --name-only | while read FILE_TO_COMMIT; do
+      #      export MESSAGE="chore: regenerate $FILE_TO_COMMIT for $TODAY"
+      #      export SHA=$( git rev-parse $DESTINATION_BRANCH:$FILE_TO_COMMIT )
+      #      export CONTENT=$( base64 -i $FILE_TO_COMMIT )
+      #      gh api --method PUT /repos/:owner/:repo/contents/$FILE_TO_COMMIT \
+      #        --field message="$MESSAGE" \
+      #        --field content="$CONTENT" \
+      #        --field encoding="base64" \
+      #        --field branch="$DESTINATION_BRANCH" \
+      #        --field sha="$SHA"
+      #    done
+      #    gh pr create -H release_${{ github.ref_name }} -B main --title 'ci: Update release info into main' --body 'Created by install.yaml action'
+      #  env:
+      #    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Add install.yaml to release
         uses: softprops/action-gh-release@v2
         with:
           files: manifests/install.yaml
-
-      - name: Create PR
-        run: gh pr create -B release_${{ github.ref_name }} -H main --title 'Update release info into main' --body 'Created by install.yaml action'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
