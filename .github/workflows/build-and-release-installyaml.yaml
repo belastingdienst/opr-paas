@@ -22,7 +22,7 @@ jobs:
       - name: Generate install.yaml
         run: make build-installer
         env:
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.ref_name }}
 
       - name: Add install.yaml to release
         uses: softprops/action-gh-release@v2
