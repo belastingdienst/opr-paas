@@ -3,7 +3,8 @@ kind: Kustomization
 
 images:
 - name: ghcr.io/belastingdienst/opr-paas
-  newTag: v1.2.3
+  newName: ghcr.io/belastingdienst/opr-paas
+  newTag: feature/install_yaml_release
 
 resources:
 - config
