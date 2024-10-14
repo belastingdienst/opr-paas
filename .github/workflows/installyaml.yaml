@@ -40,7 +40,8 @@ jobs:
         run: |
           export TODAY=$( date -u '+%Y-%m-%d' )
           export DESTINATION_BRANCH="release_${{ github.ref_name }}"
-          git push origin "HEAD:refs/heads/${DESTINATION_BRANCH}"
+          git push origin HEAD:refs/heads/${DESTINATION_BRANCH}
+          echo "DEBUG - Passed push"
           git diff --name-only | while read FILE_TO_COMMIT; do
             export MESSAGE="chore: regenerate $FILE_TO_COMMIT for $TODAY"
             export SHA=$( git rev-parse $DESTINATION_BRANCH:$FILE_TO_COMMIT )
@@ -52,6 +53,7 @@ jobs:
               --field branch="$DESTINATION_BRANCH" \
               --field sha="$SHA"
           done
+          echo "DEBUG - Passed commit"
           gh pr create -H release_${{ github.ref_name }} -B main --title 'ci: Update release info into main' --body 'Created by install.yaml action'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
