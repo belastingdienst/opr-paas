@@ -1,4 +1,4 @@
-name: Release workflow for generating install.yaml
+name: Build and add install.yaml to release
 on:
   workflow_dispatch:
   release:
@@ -28,8 +28,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: manifests/install.yaml
-
-      - name: Create PR
-        run: gh pr create -B release_${{ github.ref_name }} -H main --title 'Update release info into main' --body 'Created by install.yaml action'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

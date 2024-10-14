@@ -1,4 +1,4 @@
-name: Release workflow for building images and adding to ghcr.io
+name: Build images and add to ghcr.io upon release
 on:
   release:
     types:
