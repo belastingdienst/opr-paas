@@ -1,4 +1,4 @@
-name: Workflow for building binaries and adding to Release
+name: Build and add binaries to release
 on:
   release:
     types:

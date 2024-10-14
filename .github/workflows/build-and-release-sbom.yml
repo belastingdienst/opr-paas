@@ -1,4 +1,4 @@
-name: Release workflow for creating SBOM and attaching to the release
+name: Build and add SBOM to release
 on:
   release:
     types:

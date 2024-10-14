@@ -1,4 +1,4 @@
-name: documentation
+name: Build and publish documentation
 on:
   push:
     branches:

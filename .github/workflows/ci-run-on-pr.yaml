@@ -1,4 +1,4 @@
-name: ci-build
+name: CI run on PR
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
