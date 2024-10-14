@@ -44,25 +44,27 @@ jobs:
           echo "DEBUG - Passed push"
           git diff --name-only | while read FILE_TO_COMMIT; do
             # Explicitly skip any workflow related files
-            if [[ "$FILE_TO_COMMIT" == .github/workflows* ]]; then
+            if [[ "${FILE_TO_COMMIT}" == .github/workflows* ]]; then
+              echo "Found workflow file being changed, skipping commit for that file"
               continue
             fi
-            export MESSAGE="chore: regenerate $FILE_TO_COMMIT for $TODAY"
-            export SHA=$( git rev-parse $DESTINATION_BRANCH:$FILE_TO_COMMIT )
-            export CONTENT=$( base64 -i $FILE_TO_COMMIT )
+            export MESSAGE="chore: regenerate ${FILE_TO_COMMIT} for ${TODAY}"
+            export SHA=$( git rev-parse ${DESTINATION_BRANCH}:${FILE_TO_COMMIT} )
+            export CONTENT=$( base64 -i ${FILE_TO_COMMIT} )
             # https://docs.github.com/en/rest/repos/contents?apiVersion=2022-11-28#create-or-update-file-contents
             gh api --method PUT \
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               /repos/:owner/:repo/contents/$FILE_TO_COMMIT \
-              --field message="$MESSAGE" \
-              --field content="$CONTENT" \
-              --field encoding="base64" \
-              --field branch="$DESTINATION_BRANCH" \
-              --field sha="$SHA"
+              -f "message=${MESSAGE}" \
+              -f "content=${CONTENT}" \
+              -f "encoding=base64" \
+              -f "branch=${DESTINATION_BRANCH}" \
+              -f "sha=${SHA}"
           done
           echo "DEBUG - Passed commit"
-          gh pr create -H release_${{ github.ref_name }} -B main --title 'ci: Update release info into main' --body 'Created by install.yaml action'
+          # gh pr create -H release_${{ github.ref_name }} -B main --title 'ci: Update release info into main' --body 'Created by install.yaml action'
+          gh pr create --title "ci: Update release info into main" --body "This PR merges changes from ${DESTINATION_BRANCH} to main." --base main --head ${DESTINATION_BRANCH}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
