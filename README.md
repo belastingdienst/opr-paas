@@ -21,10 +21,10 @@ A PaaS is all a team needs to hit the ground running.
 Deploy the operator using the following command:
 
 ```
-kubectl apply -f manifests/install.yaml
+kubectl apply -f https://github.com/belastingdienst/opr-paas/releases/latest/download/install.yaml
 ```
 
-This will create:
+This will install the latest release and create:
 
 - a namespace called `paas-system`;
 - 2 CRDs (`PaaS` and `PaasNs`);
