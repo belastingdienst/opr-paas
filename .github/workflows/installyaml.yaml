@@ -50,7 +50,7 @@ jobs:
               continue
             fi
             export MESSAGE="chore: regenerate ${FILE_TO_COMMIT} for ${TODAY}"
-            export SHA=$( git rev-parse origin:${DESTINATION_BRANCH}:${FILE_TO_COMMIT} )
+            export SHA=$( git rev-parse origin/${DESTINATION_BRANCH}:${FILE_TO_COMMIT} )
             export CONTENT=$( base64 -w 0 -i ${FILE_TO_COMMIT} )
             # https://docs.github.com/en/rest/repos/contents?apiVersion=2022-11-28#create-or-update-file-contents
             gh api --method PUT \
