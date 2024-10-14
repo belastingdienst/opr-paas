@@ -43,11 +43,13 @@ jobs:
           git push origin HEAD:refs/heads/${DESTINATION_BRANCH}
           echo "DEBUG - Passed push"
           git diff --name-only | while read FILE_TO_COMMIT; do
+            # Explicitly skip any workflow related files
+            if [[ "$FILE_TO_COMMIT" == .github/workflows* ]]; then
+              continue
+            fi
             export MESSAGE="chore: regenerate $FILE_TO_COMMIT for $TODAY"
             export SHA=$( git rev-parse $DESTINATION_BRANCH:$FILE_TO_COMMIT )
             export CONTENT=$( base64 -i $FILE_TO_COMMIT )
-            echo "DEBUG - file_to_commit is ${FILE_TO_COMMIT}"
-            echo "DEBUG - destination_branch is ${DESTINATION_BRANCH}
             # https://docs.github.com/en/rest/repos/contents?apiVersion=2022-11-28#create-or-update-file-contents
             gh api --method PUT \
               -H "Accept: application/vnd.github+json" \
