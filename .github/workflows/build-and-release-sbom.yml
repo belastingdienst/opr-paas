@@ -1,4 +1,4 @@
-name: Build and add SBOM to release
+name: Build add SBOM and LICENSES.md to release
 on:
   release:
     types:
@@ -29,7 +29,27 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           GOOS: ${{ matrix.goos }}
 
-      - name: Add SBOM to release
+      - name: Generate LICENSES.md
+        uses: mvdkleijn/licenses-action@v1
+        with:
+          # We only use the linux_amd64 variant here for generating the LICENSES.md
+          sbom: sources_linux_amd64.sbom.xml
+          type: xml
+          filename: LICENSES.md
+          template: |
+            # Licenses
+ 
+            The following third-party licenses are applicable to this project:
+  
+            {{range .SortedKeys}}## {{.}}
+  
+            {{range index $.ComponentsByLicense .}}- {{.Name}} ({{.Version}})
+            {{end}}
+            {{end}}
+  
+      - name: Add SBOM and LICENSES.md to release
         uses: softprops/action-gh-release@v2
         with:
-          files: sources_${{ matrix.goos }}_${{ matrix.goarch }}.sbom.xml
+          files: |
+            sources_${{ matrix.goos }}_${{ matrix.goarch }}.sbom.xml
+            LICENSES.md

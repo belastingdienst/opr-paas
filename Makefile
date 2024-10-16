@@ -336,9 +336,3 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
-
-# TODO determine whether to keep this, as there is no vendor left..?
-# Update LICENSES.md
-.PHONY: licenses
-licenses:
-	./licenses.sh
