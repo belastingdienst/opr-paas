@@ -30,6 +30,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
 
       - name: Generate LICENSES.md
+        if: ${{ matrix.goarch == 'amd64' && matrix.goos == 'linux' }}
         uses: mvdkleijn/licenses-action@v1
         with:
           # We only use the linux_amd64 variant here for generating the LICENSES.md
