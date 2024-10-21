@@ -4,27 +4,13 @@
 
 publiccodeYmlVersion: "0.3"
 
-# Dit veld bevat de korte naam van het project. Kies hier de naam waaronder het
-# project bekend is bij de meeste mensen.
 name: Paas Operator
-# De url naar de source code.
 url: "https://github.com/belastingdienst/opr-paas"
-
-# Type software zoals te vinden op: https://yml.publiccode.tools/schema.core.html#key-softwaretype
 softwareType: standalone/other
-
-# Dit is een verplicht veld. Als je geen releaseDate hebt omdat je bijvoorbeeld
-# doet aan Continuous Development vul je hier "1970-01-01" in.
 releaseDate: "1970-01-01"
-
-# Vul hier in op welke platforms de gebruiker de applicatie uitendelijk gaat
-# gebruiken. Dus niet op welk platform de software zelf draait.
 platforms:
   - kubernetes
   - openshift
-
-# Vul hier een aantal tags in die beschrijven wat jouw sofware doet. De tags
-# zijn te vinden op: https://yml.publiccode.tools/categories-list.html#categories-list
 categories:
   - agile-project-management
   - cloud-management
@@ -33,16 +19,11 @@ categories:
   - project-management
   - resource-management
   - workflow-management
-
-# De beschrijving van de verschillende statussen zijn te vinden op: https://yml.publiccode.tools/schema.core.html#key-developmentstatus
 developmentStatus: stable
-
-# Welke dependencies zijn er nodig om de applicatie te installeren en te gebruiken?
 dependsOn:
   open:
     - name: Kubernetes / Openshift
       optional: false
-
 description:
   en:
     longDescription: >
@@ -61,40 +42,23 @@ description:
       
       A PaaS is all a team needs to hit the ground running.
 
-    # Mand!
     shortDescription: An operator providing a multi tenancy solution which allows DevOps teams to request a context for their project, called a 'Project as a service'.
     
     documentation: https://belastingdienst.github.io/opr-paas/
     
-    # Welke grote features heeft dit project?
     features:
       - CRUD for Paas K8S Resources
       - Capabilities management
 
 legal:
-  # De licentie volgens de identifier van de SPDX standaard: https://spdx.org/licenses/
   license: EUPL-1.2
-  # Wie is de eigenaar van de copyright op de code?
   mainCopyrightOwner: Tax Administration of The Netherlands (Belastingdienst)
-  # Wie is de eigenaar van de repository?
   repoOwner: Tax Administration of The Netherlands (Belastingdienst)
 
 localisation:
-  # In welke talen is dit project beschikbaar?
-  # Invullen volgens IETF BCP 47 standaard: https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
   availableLanguages:
     - en
-  # Kunnen er meerdere talen geconfigureerd worden?
   localisationReady: false
 
 maintenance:
-  # Hoe is het onderhoud georganiseerd?
-  # Doet een extern bedrijf het onderhoud? Kies dan: contract
-  # Is het onderhoud intern belegd? Kies dan: internal
   type: internal
-
-# Contacts:
-# Issues: Github repo
-# PRs: Github repo
-# Docs: https://belastingdienst.github.io/opr-paas/
-# Maintainer interactions: issues, prs, etc.
