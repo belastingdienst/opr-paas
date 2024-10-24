@@ -38,7 +38,7 @@ jobs:
           images: |
             name=ghcr.io/belastingdienst/opr-paas,enable=true
           tags: |
-            type=semver,pattern={{version}}
+            type=semver,pattern={{raw}}
             type=raw,value=latest
             type=sha
 
