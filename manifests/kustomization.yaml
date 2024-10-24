@@ -3,7 +3,7 @@ kind: Kustomization
 
 images:
 - name: ghcr.io/belastingdienst/opr-paas
-  newTag: v1.2.3
+  newTag: latest
 
 resources:
 - config
