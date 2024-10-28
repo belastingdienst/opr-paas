@@ -138,7 +138,7 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 	paas *v1alpha1.Paas,
 ) error {
 	var err error
-	if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; !exists {
+	if _, exists := paas.Spec.Capabilities[paasns.Name]; !exists {
 		// Not a capability
 		return nil
 	}
@@ -204,7 +204,7 @@ func (r *PaasNSReconciler) EnsureAppSetCaps(
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) error {
-	if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; !exists {
+	if _, exists := paas.Spec.Capabilities[paasns.Name]; !exists {
 		return nil
 	} else if err := r.EnsureAppSetCap(ctx, paasns, paas); err != nil {
 		return err
@@ -289,7 +289,7 @@ func (r *PaasReconciler) FinalizeAppSetCaps(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	for capName := range paas.Spec.Capabilities.AsMap() {
+	for capName := range paas.Spec.Capabilities {
 		if err := r.finalizeAppSetCap(ctx, paas, capName); err != nil {
 			return err
 		}

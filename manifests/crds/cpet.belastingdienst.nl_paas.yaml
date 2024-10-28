@@ -40,145 +40,49 @@ spec:
             description: PaasSpec defines the desired state of Paas
             properties:
               capabilities:
+                additionalProperties:
+                  properties:
+                    enabled:
+                      description: Do we want an ArgoCD namespace, default false
+                      type: boolean
+                    extra_permissions:
+                      description: |-
+                        You can enable extra permissions for the service accounts beloning to this capability
+                        Exact definitions is configured in Paas Configmap
+                        Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
+                      type: boolean
+                    gitPath:
+                      description: the path in the git repo that contains the Applications
+                        / Application Sets to be used by this ArgoCD
+                      type: string
+                    gitRevision:
+                      description: The revision of the git repo that contains the
+                        Applications / Application Sets to be used by this ArgoCD
+                      type: string
+                    gitUrl:
+                      description: The URL that contains the Applications / Application
+                        Sets to be used by this ArgoCD
+                      type: string
+                    quota:
+                      additionalProperties:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                      description: This project has it's own ClusterResourceQuota
+                        settings
+                      type: object
+                    sshSecrets:
+                      additionalProperties:
+                        type: string
+                      description: |-
+                        You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+                        They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
+                      type: object
+                  type: object
                 description: Capabilities is a subset of capabilities that will be
                   available in this PaaS Project
-                properties:
-                  argocd:
-                    description: ArgoCD defines the ArgoCD deployment that should
-                      be available.
-                    properties:
-                      enabled:
-                        description: Do we want an ArgoCD namespace, default false
-                        type: boolean
-                      extra_permissions:
-                        description: |-
-                          You can enable extra permissions for the service accounts beloning to this capability
-                          Exact definitions is configured in Paas Configmap
-                          Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
-                        type: boolean
-                      gitPath:
-                        description: the path in the git repo that contains the Applications
-                          / Application Sets to be used by this ArgoCD
-                        type: string
-                      gitRevision:
-                        description: The revision of the git repo that contains the
-                          Applications / Application Sets to be used by this ArgoCD
-                        type: string
-                      gitUrl:
-                        description: The URL that contains the Applications / Application
-                          Sets to be used by this ArgoCD
-                        type: string
-                      quota:
-                        additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                          x-kubernetes-int-or-string: true
-                        description: This project has it's own ClusterResourceQuota
-                          settings
-                        type: object
-                      sshSecrets:
-                        additionalProperties:
-                          type: string
-                        description: |-
-                          You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
-                          They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
-                        type: object
-                    type: object
-                  grafana:
-                    description: Grafana defines the settings for a Grafana monitoring
-                      namespace for this PAAS
-                    properties:
-                      enabled:
-                        description: Do we want a Grafana namespace, default false
-                        type: boolean
-                      extra_permissions:
-                        description: |-
-                          You can enable extra permissions for the service accounts beloning to this capability
-                          Exact definitions is configured in Paas Configmap
-                          Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
-                        type: boolean
-                      quota:
-                        additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                          x-kubernetes-int-or-string: true
-                        description: This project has it's own ClusterResourceQuota
-                          settings
-                        type: object
-                      sshSecrets:
-                        additionalProperties:
-                          type: string
-                        description: |-
-                          You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
-                          They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
-                        type: object
-                    type: object
-                  sso:
-                    description: SSO defines the settings for a SSO (KeyCloak) namwespace
-                      for this PAAS
-                    properties:
-                      enabled:
-                        description: Do we want an SSO namespace, default false
-                        type: boolean
-                      extra_permissions:
-                        description: |-
-                          You can enable extra permissions for the service accounts beloning to this capability
-                          Exact definitions is configured in Paas Configmap
-                          Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
-                        type: boolean
-                      quota:
-                        additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                          x-kubernetes-int-or-string: true
-                        description: This project has its own ClusterResourceQuota
-                          settings
-                        type: object
-                      sshSecrets:
-                        additionalProperties:
-                          type: string
-                        description: |-
-                          You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
-                          They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
-                        type: object
-                    type: object
-                  tekton:
-                    description: CI defines the settings for a CI namespace (tekton)
-                      for this PAAS
-                    properties:
-                      enabled:
-                        description: Do we want a CI (Tekton) namespace, default false
-                        type: boolean
-                      extra_permissions:
-                        description: |-
-                          You can enable extra permissions for the service accounts beloning to this capability
-                          Exact definitions is configured in Paas Configmap
-                          Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
-                        type: boolean
-                      quota:
-                        additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
-                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                          x-kubernetes-int-or-string: true
-                        description: This project has it's own ClusterResourceQuota
-                          settings
-                        type: object
-                      sshSecrets:
-                        additionalProperties:
-                          type: string
-                        description: |-
-                          You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
-                          They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
-                        type: object
-                    type: object
                 type: object
               groups:
                 additionalProperties:

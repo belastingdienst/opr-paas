@@ -59,7 +59,7 @@ func TestPaas_GetNsSshSecrets(t *testing.T) {
 		Spec: PaasSpec{
 			Namespaces: []string{"argocd"},
 			Capabilities: PaasCapabilities{
-				ArgoCD: PaasArgoCD{
+				"argocd": PaasCapability{
 					Enabled:    true,
 					SshSecrets: map[string]string{"capsecret1": "capsecretvalue1"},
 				},
@@ -184,15 +184,15 @@ func TestPaasGroups_AsGroups(t *testing.T) {
 
 func TestPaasCapabilities_AsPrefixedMap(t *testing.T) {
 	pc := PaasCapabilities{
-		ArgoCD:  PaasArgoCD{},
-		Grafana: PaasGrafana{},
+		"argocd":  PaasCapability{},
+		"grafana": PaasCapability{},
 	}
 
 	// Empty prefix
 	output := pc.AsPrefixedMap("")
 
 	assert.NotNil(t, output)
-	assert.IsType(t, map[string]paasCapability{}, output)
+	assert.IsType(t, PaasCapabilities{}, output)
 	assert.Contains(t, output, "argocd")
 	assert.Contains(t, output, "grafana")
 
@@ -200,20 +200,20 @@ func TestPaasCapabilities_AsPrefixedMap(t *testing.T) {
 	output = pc.AsPrefixedMap("test")
 
 	assert.NotNil(t, output)
-	assert.IsType(t, map[string]paasCapability{}, output)
+	assert.IsType(t, PaasCapabilities{}, output)
 	assert.Contains(t, output, "test-argocd")
 	assert.Contains(t, output, "test-grafana")
 }
 
 func TestPaasCapabilities_IsCap(t *testing.T) {
 	pc := PaasCapabilities{
-		ArgoCD: PaasArgoCD{
+		"argocd": PaasCapability{
 			Enabled: true,
 		},
-		Grafana: PaasGrafana{
+		"grafana": PaasCapability{
 			Enabled: false,
 		},
-		CI: PaasCI{},
+		"ci": PaasCapability{},
 	}
 
 	// Empty prefix
@@ -224,10 +224,10 @@ func TestPaasCapabilities_IsCap(t *testing.T) {
 	assert.False(t, pc.IsCap("sso"))
 }
 
-// PaasArgoCD
+// PaasCapability
 
-func TestPaasArgoCD_SetDefaults(t *testing.T) {
-	pa := PaasArgoCD{
+func TestPaasCapability_SetDefaults(t *testing.T) {
+	pa := PaasCapability{
 		GitRevision: "",
 		GitPath:     "",
 	}
@@ -455,13 +455,13 @@ func TestPaas_Namespaces(t *testing.T) {
 				"extra",
 			},
 			Capabilities: PaasCapabilities{
-				ArgoCD: PaasArgoCD{
+				"argocd": PaasCapability{
 					Enabled: true,
 				},
-				Grafana: PaasGrafana{
+				"grafana": PaasCapability{
 					Enabled: true,
 				},
-				SSO: PaasSSO{
+				"sso": PaasCapability{
 					Enabled: false,
 				},
 			},

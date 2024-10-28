@@ -35,7 +35,7 @@ func TestCapabilityArgoCD(t *testing.T) {
 		Requestor: "paas-requestor",
 		Quota:     quota.Quotas{},
 		Capabilities: api.PaasCapabilities{
-			ArgoCD: api.PaasArgoCD{
+			"argocd": api.PaasCapability{
 				Enabled:     true,
 				SshSecrets:  map[string]string{paasArgoGitUrl: paasArgoSecret},
 				GitUrl:      paasArgoGitUrl,

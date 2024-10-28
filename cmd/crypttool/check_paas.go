@@ -34,9 +34,31 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 			return fmt.Errorf("could not read file %s: %s", fileName, err.Error())
 		}
 
-		checkPaasErr := CheckPaas(srcCrypt, paas, fileName)
-		if checkPaasErr != nil {
-			errNum++
+		paasName := paas.ObjectMeta.Name
+		srcCrypt, err := crypt.NewCrypt([]string{privateKeyFiles}, "", paasName)
+		if err != nil {
+			return err
+		}
+
+		for key, secret := range paas.Spec.SshSecrets {
+			if decrypted, err := srcCrypt.Decrypt(secret); err != nil {
+				errNum += 1
+				logrus.Errorf("%s: { .spec.sshSecrets[%s] } > { error: %e }", fileName, key, err)
+			} else {
+				logrus.Infof("%s: { .spec.sshSecrets[%s] } > { checksum: %s, len %d }", fileName, key, hashData(decrypted), len(decrypted))
+			}
+		}
+
+		for capName, cap := range paas.Spec.Capabilities {
+			logrus.Debugf("cap name: %s", cap.CapabilityName())
+			for key, secret := range cap.GetSshSecrets() {
+				if decrypted, err := srcCrypt.Decrypt(secret); err != nil {
+					logrus.Errorf("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { error: %e }", fileName, capName, key, err)
+					errNum += 1
+				} else {
+					logrus.Infof("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { checksum: %s, len %d }", fileName, capName, key, hashData(decrypted), len(decrypted))
+				}
+			}
 		}
 	}
 
