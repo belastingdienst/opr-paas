@@ -187,8 +187,8 @@ github.com/twitchyliquid64/golang-asm v0.15.1 h1:SU5vSMR7hnwNxj24w34ZyCi/FmDZTkS
 github.com/twitchyliquid64/golang-asm v0.15.1/go.mod h1:a1lVb/DtPvCB8fslRZhAngC2+aY1QWCk3Cedj/Gdt08=
 github.com/ugorji/go/codec v1.2.12 h1:9LC83zGrHhuUA9l16C9AHXAqEV/2wBQ4nkvumAE65EE=
 github.com/ugorji/go/codec v1.2.12/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
-github.com/vladimirvivien/gexe v0.2.0 h1:nbdAQ6vbZ+ZNsolCgSVb9Fno60kzSuvtzVh6Ytqi/xY=
-github.com/vladimirvivien/gexe v0.2.0/go.mod h1:LHQL00w/7gDUKIak24n801ABp8C+ni6eBht9vGVst8w=
+github.com/vladimirvivien/gexe v0.3.0 h1:4xwiOwGrDob5OMR6E92B9olDXYDglXdHhzR1ggYtWJM=
+github.com/vladimirvivien/gexe v0.3.0/go.mod h1:fp7cy60ON1xjhtEI/+bfSEIXX35qgmI+iRYlGOqbBFM=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
@@ -285,8 +285,8 @@ k8s.io/utils v0.0.0-20240821151609-f90d01438635/go.mod h1:OLgZIPagt7ERELqWJFomSt
 nullprogram.com/x/optparse v1.0.0/go.mod h1:KdyPE+Igbe0jQUrVfMqDMeJQIJZEuyV7pjYmp6pbG50=
 sigs.k8s.io/controller-runtime v0.19.1 h1:Son+Q40+Be3QWb+niBXAg2vFiYWolDjjRfO8hn/cxOk=
 sigs.k8s.io/controller-runtime v0.19.1/go.mod h1:iRmWllt8IlaLjvTTDLhRBXIEtkCK6hwVBJJsYS9Ajf4=
-sigs.k8s.io/e2e-framework v0.4.0 h1:4yYmFDNNoTnazqmZJXQ6dlQF1vrnDbutmxlyvBpC5rY=
-sigs.k8s.io/e2e-framework v0.4.0/go.mod h1:JilFQPF1OL1728ABhMlf9huse7h+uBJDXl9YeTs49A8=
+sigs.k8s.io/e2e-framework v0.5.0 h1:YLhk8R7EHuTFQAe6Fxy5eBzn5Vb+yamR5u8MH1Rq3cE=
+sigs.k8s.io/e2e-framework v0.5.0/go.mod h1:jJSH8u2RNmruekUZgHAtmRjb5Wj67GErli9UjLSY7Zc=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMmr1bNJefnuqLsRAsHZo=
 sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd/go.mod h1:B8JuhiUyNFVKdsE8h686QcCxMaH6HrOAZj4vswFpcB0=
 sigs.k8s.io/structured-merge-diff/v4 v4.4.1 h1:150L+0vs/8DA78h1u02ooW1/fFq/Lwr+sGiqlzvrtq4=

@@ -8,9 +8,9 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible
 	github.com/stretchr/testify v1.9.0
-	k8s.io/api v0.31.0
+	k8s.io/api v0.31.1
 	k8s.io/apiextensions-apiserver v0.31.0
-	k8s.io/apimachinery v0.31.0
+	k8s.io/apimachinery v0.31.1
 	k8s.io/client-go v12.0.0+incompatible
 	sigs.k8s.io/controller-runtime v0.19.1
 )
@@ -18,7 +18,7 @@ require (
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/spf13/viper v1.19.0
-	sigs.k8s.io/e2e-framework v0.4.0
+	sigs.k8s.io/e2e-framework v0.5.0
 )
 
 require (
@@ -41,11 +41,11 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/vladimirvivien/gexe v0.2.0 // indirect
+	github.com/vladimirvivien/gexe v0.3.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
-	k8s.io/component-base v0.31.0 // indirect
+	k8s.io/component-base v0.31.1 // indirect
 )
 
 require (
