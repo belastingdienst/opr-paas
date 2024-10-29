@@ -10,6 +10,8 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	"github.com/go-logr/logr"
@@ -26,45 +28,69 @@ func (r *PaasReconciler) EnsureAppProject(
 	logger logr.Logger,
 ) error {
 	logger.Info("Creating Argo Project")
-	project := r.BackendAppProject(ctx, paas)
+	project, err := r.BackendAppProject(ctx, paas)
+	if err != nil {
+		return err
+	}
 	namespacedName := types.NamespacedName{
 		Name:      project.Name,
 		Namespace: project.Namespace,
 	}
 
-	// See if namespace exists and create if it doesn't
+	// See if appProject exists and create if it doesn't
 	found := &argo.AppProject{}
-	err := r.Get(ctx, namespacedName, found)
+	err = r.Get(ctx, namespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Create the namespace
 		err = r.Create(ctx, project)
 
 		if err != nil {
-			// creating the namespace failed
+			// creating the appProject failed
 			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, found, err.Error())
 			return err
 		} else {
-			// creating the namespace was successful
+			// creating the appProject was successful
 			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, found, "succeeded")
 			return nil
 		}
 	} else if err != nil {
-		// Error that isn't due to the namespace not existing
+		// Error that isn't due to the appProject not existing
 		return err
-		// Ownerreference creeert een issue waarbij de appsetcontroller niet de app wegggooid omdat het app project niet meer bestaat
-		//	} else if !paas.AmIOwner(found.OwnerReferences) {
-		//		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
-		//		controllerutil.SetControllerReference(paas, found, r.Scheme)
-		//		return r.Update(ctx, found)
+	} else if !paas.AmIOwner(found.OwnerReferences) {
+		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
+		if err := controllerutil.SetControllerReference(paas, found, r.Scheme); err != nil {
+			return err
+		}
+		return r.Update(ctx, found)
 	}
 	return nil
 }
 
-// backendAppProject is a code for Creating AppProject
+// FinalizeAppProject finalizes AppProject
+func (r *PaasReconciler) FinalizeAppProject(ctx context.Context, paas *v1alpha1.Paas) error {
+	logger := getLogger(ctx, paas, "AppProject", paas.Name)
+	logger.Info("Finalizing App Project")
+	appProject := &argo.AppProject{}
+	if err := r.Get(ctx, types.NamespacedName{
+		Name:      paas.Name,
+		Namespace: getConfig().AppSetNamespace,
+	}, appProject); err != nil && errors.IsNotFound(err) {
+		logger.Info("App Project already deleted")
+		return nil
+	} else if err != nil {
+		logger.Info("Error retrieving App Project: " + err.Error())
+		return err
+	} else {
+		logger.Info("Deleting App Project")
+		return r.Delete(ctx, appProject)
+	}
+}
+
+// backendAppProject is code for Creating AppProject
 func (r *PaasReconciler) BackendAppProject(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-) *argo.AppProject {
+) (*argo.AppProject, error) {
 	name := paas.Name
 	logger := getLogger(ctx, paas, "AppProject", name)
 	logger.Info(fmt.Sprintf("Defining %s AppProject", name))
@@ -77,6 +103,10 @@ func (r *PaasReconciler) BackendAppProject(
 			Name:      name,
 			Namespace: getConfig().AppSetNamespace,
 			Labels:    paas.ClonedLabels(),
+			// Only removes appProject when apps no longer reference appProject
+			Finalizers: []string{
+				"resources-finalizer.argocd.argoproj.io",
+			},
 		},
 		Spec: argo.AppProjectSpec{
 			ClusterResourceWhitelist: []metav1.GroupKind{
@@ -91,7 +121,9 @@ func (r *PaasReconciler) BackendAppProject(
 		},
 	}
 
-	// logger.Info("Setting Owner")
-	// controllerutil.SetControllerReference(paas, p, r.Scheme)
-	return p
+	logger.Info("Setting Owner")
+	if err := controllerutil.SetControllerReference(paas, p, r.Scheme); err != nil {
+		return nil, err
+	}
+	return p, nil
 }

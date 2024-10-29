@@ -190,6 +190,9 @@ func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *v1alpha1.Paas) 
 	if err := r.FinalizeAppSetCaps(ctx, paas); err != nil {
 		logger.Error(err, "AppSet finalizer error")
 		return err
+	} else if err = r.FinalizeAppProject(ctx, paas); err != nil {
+		logger.Error(err, "AppProject finalizer error")
+		return err
 	} else if err = r.FinalizeClusterQuotas(ctx, paas); err != nil {
 		logger.Error(err, "Quota finalizer error")
 		return err
