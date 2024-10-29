@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	_version "github.com/belastingdienst/opr-paas/internal/version"
@@ -42,7 +43,7 @@ func getRsa(paas string) *crypt.Crypt {
 		return c
 	}
 
-	c, err := crypt.NewCrypt([]string{}, config.PublicKeyPath, paas)
+	c, err := crypt.NewCrypt([]string{config.PrivateKeyPath}, config.PublicKeyPath, paas)
 	if err != nil {
 		panic(fmt.Errorf("unable to create a crypt: %w", err))
 	}
@@ -51,7 +52,7 @@ func getRsa(paas string) *crypt.Crypt {
 	return c
 }
 
-// getEncrypt encrypts a secret and returns the encrypted value
+// v1Encrypt encrypts a secret and returns the encrypted value
 func v1Encrypt(c *gin.Context) {
 	var input RestEncryptInput
 	if err := c.BindJSON(&input); err != nil {
@@ -74,6 +75,37 @@ func v1Encrypt(c *gin.Context) {
 			PaasName:  input.PaasName,
 			Encrypted: "",
 			Valid:     false,
+		}
+		c.IndentedJSON(http.StatusOK, output)
+	}
+}
+
+// v1CheckPaas checks whether a Paas can be decrypted using provided private/public keys
+func v1CheckPaas(c *gin.Context) {
+	var input RestCheckPaasInput
+	if err := c.BindJSON(&input); err != nil {
+		return
+	}
+	rsa := getRsa(input.Paas.Name)
+	err := CheckPaas(rsa, &input.Paas)
+	if err != nil {
+		if strings.Contains(err.Error(), "unable to decrypt data with any of the private keys") {
+			output := RestCheckPaasResult{
+				PaasName:  input.Paas.Name,
+				Decrypted: false,
+				Error:     err.Error(),
+			}
+			c.IndentedJSON(http.StatusUnprocessableEntity, output)
+			return
+		} else {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+	} else {
+		output := RestCheckPaasResult{
+			PaasName:  input.Paas.Name,
+			Decrypted: true,
+			Error:     "",
 		}
 		c.IndentedJSON(http.StatusOK, output)
 	}
@@ -124,6 +156,7 @@ func SetupRouter() *gin.Engine {
 
 	router.GET("/version", version)
 	router.POST("/v1/encrypt", v1Encrypt)
+	router.POST("/v1/checkpaas", v1CheckPaas)
 	router.GET("/healthz", healthz)
 	router.GET("/readyz", readyz)
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
