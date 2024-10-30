@@ -126,7 +126,7 @@ func (r *PaasNSReconciler) FinalizeNamespace(
 	paas *v1alpha1.Paas,
 ) error {
 	/*
-	   Hoe voorkomen wij dat eimand een paasns maakt voor een verkeerde paas en als hij wordt weggegooid, dat hij dan de verkeerde namespace weggooit???
+	   Hoe voorkomen wij dat iemand een paasns maakt voor een verkeerde paas en als hij wordt weggegooid, dat hij dan de verkeerde namespace weggooit???
 	*/
 
 	found := &corev1.Namespace{}
