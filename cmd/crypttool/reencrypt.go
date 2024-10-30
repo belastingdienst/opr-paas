@@ -37,6 +37,7 @@ func reencryptSecret(srcCrypt *crypt.Crypt, dstCrypt *crypt.Crypt, secret string
 }
 
 func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat string, files []string) error {
+	var errNum int
 	for _, fileName := range files {
 		// Read paas as String to preserve format
 		paasAsBytes, err := os.ReadFile(fileName)
@@ -59,32 +60,36 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 
 		dstCrypt, err := crypt.NewCrypt([]string{}, publicKeyFile, paasName)
 		if err != nil {
-			return nil
+			return err
 		}
 
 		for key, secret := range paas.Spec.SshSecrets {
 			reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 			if err != nil {
-				return fmt.Errorf("failed to decrypt/reencrypt %s.spec.sshSecrets[%s] in %s: %w", paasName, key, fileName, err)
+				errNum += 1
+				logrus.Errorf("failed to decrypt/reencrypt %s.spec.sshSecrets[%s] in %s: %v", paasName, key, fileName, err)
+				continue
 			}
 
 			paas.Spec.SshSecrets[key] = reencrypted
 			// Use replaceAll as same secret can occur multiple times and use TrimSpace to prevent removal of newlines.
 			paasAsString = strings.ReplaceAll(paasAsString, strings.TrimSpace(secret), reencrypted)
-			logrus.Debugf("successfully reencrypted %s.spec.sshSecrets[%s] in file %s", paasName, key, fileName)
+			logrus.Infof("successfully reencrypted %s.spec.sshSecrets[%s] in file %s", paasName, key, fileName)
 		}
 
 		for capName, cap := range paas.Spec.Capabilities.AsMap() {
 			for key, secret := range cap.GetSshSecrets() {
 				reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 				if err != nil {
-					return fmt.Errorf("failed to decrypt/reencrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %w", paasName, capName, key, fileName, err)
+					errNum += 1
+					logrus.Errorf("failed to decrypt/reencrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %v", paasName, capName, key, fileName, err)
+					continue
 				}
 
 				cap.SetSshSecret(key, reencrypted)
 				// Use replaceAll as same secret can occur multiple times and use TrimSpace to prevent removal of newlines.
 				paasAsString = strings.ReplaceAll(paasAsString, strings.TrimSpace(secret), reencrypted)
-				logrus.Debugf("successfully reencrypted %s.spec.capabilities[%s].sshSecrets[%s] in file %s", paasName, capName, key, fileName)
+				logrus.Infof("successfully reencrypted %s.spec.capabilities[%s].sshSecrets[%s] in file %s", paasName, capName, key, fileName)
 			}
 		}
 
@@ -105,6 +110,13 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 			}
 		}
 	}
+
+	errMsg := fmt.Errorf("Finished with %d errors", errNum)
+	if errNum > 0 {
+		return errMsg
+	}
+
+	logrus.Info(errMsg)
 
 	return nil
 }

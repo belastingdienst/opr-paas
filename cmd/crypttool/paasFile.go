@@ -11,7 +11,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -66,7 +65,7 @@ func writeFile(buffer []byte, path string) error {
 		return err
 	}
 
-	log.Printf("file '%s' successfully updated", path)
+	logrus.Infof("file '%s' successfully updated", path)
 	return nil
 }
 

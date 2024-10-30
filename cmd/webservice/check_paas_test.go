@@ -57,7 +57,7 @@ func TestCheckPaas(t *testing.T) {
 	err = CheckPaas(rsa, notTeBeDecryptedPaas)
 	require.Error(t, err)
 
-	partialToBeDecrypedPaas := &v1alpha1.Paas{
+	partialToBeDecryptedPaas := &v1alpha1.Paas{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "paasName",
 		},
@@ -69,7 +69,7 @@ func TestCheckPaas(t *testing.T) {
 		},
 	}
 
-	// Must be able to decrypt this
-	err = CheckPaas(rsa, partialToBeDecrypedPaas)
+	// Must error as it can be partially decrypted
+	err = CheckPaas(rsa, partialToBeDecryptedPaas)
 	require.Error(t, err)
 }
