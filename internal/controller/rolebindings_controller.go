@@ -71,13 +71,9 @@ func EnsureRoleBinding(
 			statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
 			return err
 		} else {
-			// Creating the rolebinding was successful
+			// Creating the rolebinding was successful and return
 			statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "succeeded")
-			// Map the created RB to the `found` variable
-			err := r.Get(ctx, namespacedName, found)
-			if err != nil {
-				return err
-			}
+			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
@@ -248,7 +244,7 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 		rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
 		if err := EnsureRoleBinding(ctx, r, paas, &paasns.Status, rb); err != nil {
 			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
-			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
+			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
 			return err
 		}
 	}
