@@ -23,9 +23,11 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 
+	"github.com/go-logr/zerologr"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -34,10 +36,7 @@ import (
 	//+kubebuilder:scaffold:imports
 )
 
-var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
-)
+var scheme = runtime.NewScheme()
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
@@ -55,25 +54,37 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var getVersion bool
+	var pretty bool
+	var debug bool
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&getVersion, "version", false, "Print version and quit")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	opts := zap.Options{
-		Development: true,
-	}
-	opts.BindFlags(flag.CommandLine)
+	flag.BoolVar(&pretty, "pretty", false, "Pretty-print logging output")
+	flag.BoolVar(&debug, "debug", false, "Log debug messages")
+
 	flag.Parse()
+
+	if debug {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	} else {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
+
+	if pretty {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
+
 	if getVersion {
 		fmt.Printf("opr-paas version %s", version.PaasVersion)
 		os.Exit(0)
 	} else {
-		setupLog.Info("opr-paas version", version.PaasVersion)
+		log.Info().Str("version", version.PaasVersion).Msg("opr-paas version")
 	}
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	ctrl.SetLogger(zerologr.New(&log.Logger))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -94,38 +105,32 @@ func main() {
 		// LeaderElectionReleaseOnCancel: true,
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		log.Fatal().Err(err).Msg("unable to start manager")
 	}
 
 	if err = (&controller.PaasReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Paas")
-		os.Exit(1)
+		log.Fatal().Err(err).Str("controller", "Paas").Msg("unable to create controller")
 	}
 	if err = (&controller.PaasNSReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "PaasNS")
-		os.Exit(1)
+		log.Fatal().Err(err).Str("controller", "PaasNS").Msg("unable to create controller")
 	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
+		log.Fatal().Err(err).Msg("unable to set up health check")
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
+		log.Fatal().Err(err).Msg("unable to set up ready check")
 	}
 
-	setupLog.Info(fmt.Sprintf("starting manager version %s", version.PaasVersion))
+	log.Info().Msgf("starting manager version %s", version.PaasVersion)
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
+		log.Fatal().Err(err).Msg("problem running manager")
 	}
 }

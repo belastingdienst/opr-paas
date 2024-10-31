@@ -11,8 +11,8 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/go-logr/logr"
 
+	"github.com/go-logr/logr"
 	"github.com/rs/zerolog/log"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
