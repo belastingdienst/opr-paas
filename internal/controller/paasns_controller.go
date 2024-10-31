@@ -12,19 +12,18 @@ import (
 	"strings"
 	"time"
 
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
+	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const paasNsFinalizer = "paasns.cpet.belastingdienst.nl/finalizer"
@@ -129,8 +128,10 @@ func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS)
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
 func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	paasns := &v1alpha1.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
-	logger := getLogger(ctx, paasns, "PaasNs", req.Name)
-	logger.Info("Reconciling the PaasNs object")
+	ctx = setRequestLogger(ctx, paasns, r.Scheme, req)
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("Reconciling the PaasNs object")
+
 	errResult := reconcile.Result{
 		Requeue:      true,
 		RequeueAfter: time.Second * 10,
@@ -140,20 +141,23 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	}
 
 	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
-		logger.Error(err, "could not get PaasNs from k8s")
+		logger.Err(err).Msg("could not get PaasNs from k8s")
 		return errResult, err
 	}
 
 	if paasns == nil {
-		logger.Error(err, "nothing to do")
+		logger.Err(err).Msg("nothing to do")
 		return okResult, nil
 	}
 
 	paasns.Status.Truncate()
 	defer func() {
-		logger.Info("Updating PaasNs status", "messages", len(paasns.Status.Messages))
+		logger.Info().
+			Int("messages", len(paasns.Status.Messages)).
+			Msg("Updating PaasNs status")
+
 		if err = r.Status().Update(ctx, paasns); err != nil {
-			logger.Error(err, "Updating PaasNs status failed")
+			logger.Err(err).Msg("Updating PaasNs status failed")
 		}
 	}()
 
@@ -168,25 +172,25 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 		return errResult, err
 	}
 
-	err = r.ReconcileRolebindings(ctx, paas, paasns, logger)
+	err = r.ReconcileRolebindings(ctx, paas, paasns)
 	if err != nil {
 		return errResult, err
 	}
 
-	err = r.ReconcileSecrets(ctx, paas, paasns, logger)
+	err = r.ReconcileSecrets(ctx, paas, paasns)
 	if err != nil {
 		return errResult, err
 	}
 
 	err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas)
 	if err != nil {
-		logger.Error(err, "Reconciling Extra ClusterRoleBindings failed")
+		logger.Err(err).Msg("Reconciling Extra ClusterRoleBindings failed")
 		return errResult, fmt.Errorf("reconciling Extra ClusterRoleBindings failed")
 	}
 
 	if _, exists := paas.Spec.Capabilities[paasns.Name]; exists {
 		if paasns.Name == "argocd" {
-			logger.Info("Creating Argo App for client bootstrapping")
+			logger.Info().Msg("Creating Argo App for client bootstrapping")
 
 			// Create bootstrap Argo App
 			if err := r.EnsureArgoApp(ctx, paasns, paas); err != nil {
@@ -198,15 +202,15 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 			}
 		}
 
-		logger.Info("Extending Applicationsets for Paas object")
+		logger.Info().Msg("Extending Applicationsets for Paas object")
 		if err := r.EnsureAppSetCap(ctx, paasns, paas); err != nil {
 			return errResult, err
 		}
 	}
 
-	logger.Info("Updating PaasNs object status")
+	logger.Info().Msg("Updating PaasNs object status")
 	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paasns, "succeeded")
-	logger.Info("PaasNs object successfully reconciled")
+	logger.Info().Msg("PaasNs object successfully reconciled")
 
 	return okResult, nil
 }

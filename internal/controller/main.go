@@ -12,10 +12,15 @@ import (
 
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
+
 	"github.com/go-logr/logr"
+	"github.com/rs/zerolog/log"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
@@ -65,7 +70,24 @@ func getLogger(
 		fields = append(fields, "Name", name)
 	}
 
-	return log.FromContext(ctx).WithValues(fields...)
+	return ctrllog.FromContext(ctx).WithValues(fields...)
+}
+
+// setRequestLogger derives a context with a `zerolog` logger configured for a specific controller.
+// To be called once per reconciler. All functions within the reconciliation request context can access the logger with `log.Ctx()`.
+func setRequestLogger(ctx context.Context, obj client.Object, scheme *runtime.Scheme, req ctrl.Request) context.Context {
+	gvk, err := apiutil.GVKForObject(obj, scheme)
+	if err != nil {
+		log.Err(err).Msg("Failed to retrieve controller group-version-kind")
+
+		return log.Logger.WithContext(ctx)
+	}
+
+	return log.With().
+		Any("controller", gvk).
+		Any("object", req.NamespacedName).
+		Logger().
+		WithContext(ctx)
 }
 
 // intersect finds the intersection of 2 lists of strings
