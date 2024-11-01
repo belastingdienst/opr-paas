@@ -76,10 +76,11 @@ Paas:
 */
 
 type ConfigArgoPermissions struct {
-	ResourceName string `yaml:"resource_name"`
-	Role         string `yaml:"role"`
-	Header       string `yaml:"header"`
-	Retries      uint   `yaml:"retries"`
+	DefaultPolicy string `yaml:"default_policy,omitempty"`
+	ResourceName  string `yaml:"resource_name"`
+	Role          string `yaml:"role"`
+	Header        string `yaml:"header"`
+	Retries       uint   `yaml:"retries"`
 }
 
 func (ap ConfigArgoPermissions) Verify() []string {

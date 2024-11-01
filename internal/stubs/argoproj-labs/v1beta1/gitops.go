@@ -37,6 +37,11 @@ type ArgoCDSpec struct {
 
 // ArgoCDRBACSpec defines the desired state for the Argo CD RBAC configuration.
 type ArgoCDRBACSpec struct {
+	// DefaultPolicy is the name of the default role which Argo CD will falls back to, when
+	// authorizing API requests (optional). If omitted or empty, users may be still be able to login,
+	// but will see no apps, projects, etc...
+	DefaultPolicy *string `json:"defaultPolicy,omitempty"`
+
 	// Policy is CSV containing user-defined RBAC policies and role definitions.
 	// Policy rules are in the form:
 	//   p, subject, resource, action, object, effect

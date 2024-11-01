@@ -1,6 +1,7 @@
 ---
 applicationset_namespace: asns
 argopermissions:
+  default_policy: role:tester
   resource_name: argocd
   role: admin
   header: |
