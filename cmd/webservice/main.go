@@ -84,12 +84,13 @@ func v1Encrypt(c *gin.Context) {
 func v1CheckPaas(c *gin.Context) {
 	var input RestCheckPaasInput
 	if err := c.BindJSON(&input); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, RestCheckPaasResult{"", false, err.Error()})
 		return
 	}
 	rsa := getRsa(input.Paas.Name)
 	err := CheckPaas(rsa, &input.Paas)
 	if err != nil {
-		if strings.Contains(err.Error(), "unable to decrypt data with any of the private keys") {
+		if strings.Contains(err.Error(), "unable to decrypt data with any of the private keys") || strings.Contains(err.Error(), "base64") {
 			output := RestCheckPaasResult{
 				PaasName:  input.Paas.Name,
 				Decrypted: false,
@@ -133,7 +134,7 @@ func readyz(c *gin.Context) {
 }
 
 func SetupRouter() *gin.Engine {
-	router := gin.Default()
+	router := gin.New()
 	// - No origin allowed by default
 	// - GET,POST, PUT, HEAD methods
 	// - Credentials share disabled
