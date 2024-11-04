@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
+
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/quota"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
@@ -54,6 +56,7 @@ func TestCapabilityArgoCD(t *testing.T) {
 }
 
 func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	paas := getPaas(ctx, paasWithArgo, t, cfg)
 	argopaasns := getOrFail(ctx, "argocd", paasWithArgo, &api.PaasNS{}, t, cfg)
 	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, argopaasns), "ArgoCD PaasNS reconciliation succeeds")
 
@@ -69,6 +72,13 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	}, entries[0], "ApplicationSet List generator contains the correct parameters")
 
 	assert.NotNil(t, getOrFail(ctx, paasArgoNamespace, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")
+
+	// Assert ArgoCD creation
+	argocd := getOrFail(ctx, "argocd", paasArgoNamespace, &v1beta1.ArgoCD{}, t, cfg)
+	assert.Equal(t, paas.UID, argocd.OwnerReferences[0].UID)
+	assert.Equal(t, "role:tester", *argocd.Spec.RBAC.DefaultPolicy)
+	assert.Equal(t, "g, system:cluster-admins, role:admin", *argocd.Spec.RBAC.Policy)
+	assert.Equal(t, "[groups]", *argocd.Spec.RBAC.Scopes)
 
 	applications := listOrFail(ctx, paasArgoNamespace, &argo.ApplicationList{}, t, cfg).Items
 	assert.Len(t, applications, 1, "An application is present in the ArgoCD namespace")

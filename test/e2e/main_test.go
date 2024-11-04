@@ -11,7 +11,8 @@ import (
 	"os"
 	"testing"
 
-	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+	argoprojlabsv1beta1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
+	argoprojv1alpha1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
@@ -70,7 +71,9 @@ func registerSchemes(cfg *envconf.Config) error {
 		return err
 	} else if err = userv1.AddToScheme(scheme); err != nil {
 		return err
-	} else if err = appv1.AddToScheme(scheme); err != nil {
+	} else if err = argoprojv1alpha1.AddToScheme(scheme); err != nil {
+		return err
+	} else if err = argoprojlabsv1beta1.AddToScheme(scheme); err != nil {
 		return err
 	}
 

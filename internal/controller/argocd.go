@@ -10,6 +10,8 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -27,8 +29,13 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 	if paasns.Name != "argocd" {
 		return nil
 	}
+	paas, _, err := r.paasFromPaasNs(ctx, paasns)
+	if err != nil {
+		return err
+	}
 	logger := getLogger(ctx, paasns, "ArgoPermissions", "")
 
+	defaultPolicy := getConfig().ArgoPermissions.DefaultPolicy
 	policy := getConfig().ArgoPermissions.FromGroups(
 		paasns.Spec.Groups)
 	scopes := "[groups]"
@@ -44,8 +51,9 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 		},
 		Spec: argocd.ArgoCDSpec{
 			RBAC: argocd.ArgoCDRBACSpec{
-				Policy: &policy,
-				Scopes: &scopes,
+				DefaultPolicy: &defaultPolicy,
+				Policy:        &policy,
+				Scopes:        &scopes,
 			},
 		},
 	}
@@ -55,7 +63,12 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 		Name:      getConfig().ArgoPermissions.ResourceName,
 	}
 
-	err := r.Get(ctx, argoName, argo)
+	err = controllerutil.SetControllerReference(paas, argo, r.Scheme)
+	if err != nil {
+		return err
+	}
+
+	err = r.Get(ctx, argoName, argo)
 	if err != nil && errors.IsNotFound(err) {
 		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, argo, "creating ArgoCD instance")
 		return r.Create(ctx, argo)
@@ -65,16 +78,24 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 	}
 	patch := client.MergeFrom(argo.DeepCopy())
 	var oldPolicy string
+	var oldDefaultPolicy string
 	if argo.Spec.RBAC.Policy != nil {
 		oldPolicy = *argo.Spec.RBAC.Policy
 	}
+	if argo.Spec.RBAC.DefaultPolicy != nil {
+		oldDefaultPolicy = *argo.Spec.RBAC.DefaultPolicy
+	}
 	logger.Info(fmt.Sprintf("Setting ArgoCD permissions to %s", policy))
-	if oldPolicy == policy {
-		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, argo, "no policy changes")
+	if oldPolicy == policy && oldDefaultPolicy == defaultPolicy && paas.AmIOwner(argo.OwnerReferences) {
+		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, argo, "no changes")
 		return nil
 	}
 	argo.Spec.RBAC.Policy = &policy
 	argo.Spec.RBAC.Scopes = &scopes
+	argo.Spec.RBAC.DefaultPolicy = &defaultPolicy
+	if err = controllerutil.SetControllerReference(paas, argo, r.GetScheme()); err != nil {
+		return err
+	}
 	logger.Info("Updating ArgoCD object")
 	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, argo, "updating ArgoCD instance")
 	return r.Patch(ctx, argo, patch)
