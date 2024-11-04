@@ -43,7 +43,7 @@ func TestSecrets(t *testing.T) {
 			Assess("is created", assertSecretCreated).
 			Assess("is updated when value is updated", assertSecretValueUpdated).
 			Assess("is updated when key is updated", assertSecretKeyUpdated).
-			Assess("is not removed", assertSecretNotRemovedAfterRemovingFromPaas).
+			Assess("are removed", assertSecretRemovedAfterRemovingFromPaas).
 			Teardown(teardownPaasFn("sshpaas")).
 			Feature(),
 	)
@@ -157,51 +157,33 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	secrets := &corev1.SecretList{}
 	err = cfg.Client().Resources().List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
 	require.NoError(t, err)
-	assert.Len(t, secrets.Items, 4)
+	assert.Len(t, secrets.Items, 2)
 
 	// Assert each secret
-	secret1 := getOrFail(ctx, "paas-ssh-1deb30f1", "sshpaas-sso", &corev1.Secret{}, t, cfg)
-	secret2 := getOrFail(ctx, "paas-ssh-5c51424e", "sshpaas-sso", &corev1.Secret{}, t, cfg)
-	secret3 := getOrFail(ctx, "paas-ssh-6df19938", "sshpaas-sso", &corev1.Secret{}, t, cfg)
-	secret4 := getOrFail(ctx, "paas-ssh-c1e4bede", "sshpaas-sso", &corev1.Secret{}, t, cfg)
+	secret1 := getOrFail(ctx, "paas-ssh-6df19938", "sshpaas-sso", &corev1.Secret{}, t, cfg)
+	secret2 := getOrFail(ctx, "paas-ssh-c1e4bede", "sshpaas-sso", &corev1.Secret{}, t, cfg)
 
 	assert.NotEmpty(t, secret1)
 	assert.NotEmpty(t, secret2)
-	assert.NotEmpty(t, secret3)
-	assert.NotEmpty(t, secret4)
 
 	// The owner of the Secret is the Paas that created it
 	assert.Equal(t, paas.UID, secret1.OwnerReferences[0].UID)
 	assert.Equal(t, "repo-creds", secret1.Labels["argocd.argoproj.io/secret-type"])
 	assert.Equal(t, "git", string(secret1.Data["type"]))
-	assert.Equal(t, "ssh://git@scm/some-repo.git", string(secret1.Data["url"]))
+	assert.Equal(t, "ssh://git@scm/some-second-repo.git", string(secret1.Data["url"]))
 	assert.Equal(t, "updatet", string(secret1.Data["sshPrivateKey"]))
 
 	// The owner of the Secret is the Paas that created it
 	assert.Equal(t, paas.UID, secret2.OwnerReferences[0].UID)
 	assert.Equal(t, "repo-creds", secret2.Labels["argocd.argoproj.io/secret-type"])
 	assert.Equal(t, "git", string(secret2.Data["type"]))
-	assert.Equal(t, "ssh://git@scm/some-other-repo.git", string(secret2.Data["url"]))
+	assert.Equal(t, "ssh://git@scm/some-other-second-repo.git", string(secret2.Data["url"]))
 	assert.Equal(t, "updatet", string(secret2.Data["sshPrivateKey"]))
-
-	// The owner of the Secret is the Paas that created it
-	assert.Equal(t, paas.UID, secret3.OwnerReferences[0].UID)
-	assert.Equal(t, "repo-creds", secret3.Labels["argocd.argoproj.io/secret-type"])
-	assert.Equal(t, "git", string(secret3.Data["type"]))
-	assert.Equal(t, "ssh://git@scm/some-second-repo.git", string(secret3.Data["url"]))
-	assert.Equal(t, "updatet", string(secret3.Data["sshPrivateKey"]))
-
-	// The owner of the Secret is the Paas that created it
-	assert.Equal(t, paas.UID, secret4.OwnerReferences[0].UID)
-	assert.Equal(t, "repo-creds", secret4.Labels["argocd.argoproj.io/secret-type"])
-	assert.Equal(t, "git", string(secret4.Data["type"]))
-	assert.Equal(t, "ssh://git@scm/some-other-second-repo.git", string(secret4.Data["url"]))
-	assert.Equal(t, "updatet", string(secret4.Data["sshPrivateKey"]))
 
 	return ctx
 }
 
-func assertSecretNotRemovedAfterRemovingFromPaas(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+func assertSecretRemovedAfterRemovingFromPaas(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, "sshpaas", t, cfg)
 	paas.Spec.SshSecrets = nil
 	paas.Spec.Capabilities.SSO.SshSecrets = nil
@@ -219,40 +201,7 @@ func assertSecretNotRemovedAfterRemovingFromPaas(ctx context.Context, t *testing
 	secrets := &corev1.SecretList{}
 	err := cfg.Client().Resources().List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
 	require.NoError(t, err)
-	assert.Len(t, secrets.Items, 4)
-
-	// Assert each secret
-	secret1 := getOrFail(ctx, "paas-ssh-1deb30f1", "sshpaas-sso", &corev1.Secret{}, t, cfg)
-	assert.NotEmpty(t, secret1)
-	assert.Equal(t, paas.UID, secret1.OwnerReferences[0].UID)
-	assert.Equal(t, "repo-creds", secret1.Labels["argocd.argoproj.io/secret-type"])
-	assert.Equal(t, "git", string(secret1.Data["type"]))
-	assert.Equal(t, "ssh://git@scm/some-repo.git", string(secret1.Data["url"]))
-	assert.Equal(t, "updatet", string(secret1.Data["sshPrivateKey"]))
-
-	secret2 := getOrFail(ctx, "paas-ssh-5c51424e", "sshpaas-sso", &corev1.Secret{}, t, cfg)
-	assert.NotEmpty(t, secret2)
-	assert.Equal(t, paas.UID, secret2.OwnerReferences[0].UID)
-	assert.Equal(t, "repo-creds", secret2.Labels["argocd.argoproj.io/secret-type"])
-	assert.Equal(t, "git", string(secret2.Data["type"]))
-	assert.Equal(t, "ssh://git@scm/some-other-repo.git", string(secret2.Data["url"]))
-	assert.Equal(t, "updatet", string(secret2.Data["sshPrivateKey"]))
-
-	secret3 := getOrFail(ctx, "paas-ssh-6df19938", "sshpaas-sso", &corev1.Secret{}, t, cfg)
-	assert.NotEmpty(t, secret3)
-	assert.Equal(t, paas.UID, secret3.OwnerReferences[0].UID)
-	assert.Equal(t, "repo-creds", secret3.Labels["argocd.argoproj.io/secret-type"])
-	assert.Equal(t, "git", string(secret3.Data["type"]))
-	assert.Equal(t, "ssh://git@scm/some-second-repo.git", string(secret3.Data["url"]))
-	assert.Equal(t, "updatet", string(secret3.Data["sshPrivateKey"]))
-
-	secret4 := getOrFail(ctx, "paas-ssh-c1e4bede", "sshpaas-sso", &corev1.Secret{}, t, cfg)
-	assert.NotEmpty(t, secret4)
-	assert.Equal(t, paas.UID, secret4.OwnerReferences[0].UID)
-	assert.Equal(t, "repo-creds", secret4.Labels["argocd.argoproj.io/secret-type"])
-	assert.Equal(t, "git", string(secret4.Data["type"]))
-	assert.Equal(t, "ssh://git@scm/some-other-second-repo.git", string(secret4.Data["url"]))
-	assert.Equal(t, "updatet", string(secret4.Data["sshPrivateKey"]))
+	assert.Empty(t, secrets.Items)
 
 	return ctx
 }
