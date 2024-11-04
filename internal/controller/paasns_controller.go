@@ -10,6 +10,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -128,14 +131,22 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	paasns := &v1alpha1.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
 	logger := getLogger(ctx, paasns, "PaasNs", req.Name)
 	logger.Info("Reconciling the PaasNs object")
+	errResult := reconcile.Result{
+		Requeue:      true,
+		RequeueAfter: time.Second * 10,
+	}
+	okResult := reconcile.Result{
+		Requeue: false,
+	}
 
 	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
-		logger.Error(err, "could not get Paas from k8s")
-		return
+		logger.Error(err, "could not get PaasNs from k8s")
+		return errResult, err
 	}
 
 	if paasns == nil {
-		return
+		logger.Error(err, "nothing to do")
+		return okResult, nil
 	}
 
 	paasns.Status.Truncate()
@@ -149,28 +160,28 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	var paas *v1alpha1.Paas
 	if paas, err = r.GetPaas(ctx, paasns); err != nil || paas == nil {
 		// This cannot be resolved by itself, so we should not have this keep on reconciling
-		return ctrl.Result{}, nil
+		return okResult, nil
 	}
 
 	err = r.ReconcileNamespaces(ctx, paas, paasns)
 	if err != nil {
-		return ctrl.Result{}, err
+		return errResult, err
 	}
 
 	err = r.ReconcileRolebindings(ctx, paas, paasns, logger)
 	if err != nil {
-		return ctrl.Result{}, err
+		return errResult, err
 	}
 
 	err = r.ReconcileSecrets(ctx, paas, paasns, logger)
 	if err != nil {
-		return ctrl.Result{}, err
+		return errResult, err
 	}
 
 	err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas)
 	if err != nil {
 		logger.Error(err, "Reconciling Extra ClusterRoleBindings failed")
-		return ctrl.Result{}, fmt.Errorf("reconciling Extra ClusterRoleBindings failed")
+		return errResult, fmt.Errorf("reconciling Extra ClusterRoleBindings failed")
 	}
 
 	if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists {
@@ -179,17 +190,17 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 
 			// Create bootstrap Argo App
 			if err := r.EnsureArgoApp(ctx, paasns, paas); err != nil {
-				return ctrl.Result{}, err
+				return errResult, err
 			}
 
 			if err := r.EnsureArgoCD(ctx, paasns); err != nil {
-				return ctrl.Result{}, err
+				return errResult, err
 			}
 		}
 
 		logger.Info("Extending Applicationsets for Paas object")
 		if err := r.EnsureAppSetCap(ctx, paasns, paas); err != nil {
-			return ctrl.Result{}, err
+			return errResult, err
 		}
 	}
 
@@ -197,7 +208,7 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paasns, "succeeded")
 	logger.Info("PaasNs object successfully reconciled")
 
-	return ctrl.Result{}, nil
+	return okResult, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
