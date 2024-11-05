@@ -14,6 +14,8 @@ import (
 	"maps"
 	"strings"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/go-logr/logr"
 
@@ -41,10 +43,11 @@ func (r *PaasNSReconciler) EnsureSecret(
 		// Create the secret
 		if err = r.Create(ctx, secret); err != nil {
 			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, secret, err.Error())
+			return err
 		} else {
 			paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, secret, "succeeded")
+			return nil
 		}
-		return err
 	} else if err != nil {
 		// Error that isn't due to the secret not existing
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, secret, err.Error())
@@ -167,22 +170,88 @@ func (r *PaasNSReconciler) BackendSecrets(
 	return r.getSecrets(ctx, paas, paasns, secrets)
 }
 
+// deleteObsoleteSecrets deletes any secrets from the existingSecrets which is not listed in the desired secrets.
+func (r *PaasNSReconciler) deleteObsoleteSecrets(ctx context.Context, paas *v1alpha1.Paas, existingSecrets []*corev1.Secret, desiredSecrets []*corev1.Secret) error {
+	logger := getLogger(ctx, paas, "Secret", "test")
+	logger.Info("Deleting obsolete secrets")
+
+	// Delete secrets that are no longer needed
+	for _, existingSecret := range existingSecrets {
+		if !isSecretInDesiredSecrets(existingSecret, desiredSecrets) {
+			// Secret is not in the desired state, delete it
+			if err := r.Delete(ctx, existingSecret); err != nil {
+				logger.Error(err, "Failed to delete Secret", "Secret", existingSecret.Name)
+				return err
+			}
+			logger.Info("Deleted obsolete Secret", "Secret", existingSecret.Name)
+		}
+	}
+
+	return nil
+}
+
+// isSecretInDesiredSecrets checks if a given secret exists in the desiredSecrets slice by comparing names and namespaces.
+func isSecretInDesiredSecrets(secret *corev1.Secret, desiredSecrets []*corev1.Secret) bool {
+	for _, desiredSecret := range desiredSecrets {
+		if secret.Name == desiredSecret.Name && secret.Namespace == desiredSecret.Namespace {
+			return true
+		}
+	}
+	return false
+}
+
+// getExistingPaasSecrets retrieves all secrets owned by this Paas in it's enabled namespaces
+func (r *PaasNSReconciler) getExistingPaasSecrets(ctx context.Context, paas *v1alpha1.Paas, logger logr.Logger) ([]*corev1.Secret, error) {
+	var existingSecrets []*corev1.Secret
+	// Check in enabled namespaces, as secrets are to be removed when namespace is removed
+	enabledNs := paas.PrefixedAllEnabledNamespaces()
+	for ns := range enabledNs {
+		logger.Info("Listing obsolete secret in namespace: " + ns)
+		var secrets corev1.SecretList
+		opts := []client.ListOption{
+			client.InNamespace(ns),
+		}
+		err := r.List(ctx, &secrets, opts...)
+		if err != nil {
+			logger.Error(err, "Error listing existing secrets")
+			return []*corev1.Secret{}, err
+		}
+		logger.Info("Qty of existing secrets in ns: ", "ns", ns, "qty", len(secrets.Items))
+		for _, secret := range secrets.Items {
+			if paas.AmIOwner(secret.OwnerReferences) && strings.HasPrefix(secret.Name, "paas-ssh") {
+				logger.Info("Existing paas-ssh secret")
+				existingSecrets = append(existingSecrets, &secret)
+				continue
+			}
+			logger.Info("No existing paas-ssh secret")
+		}
+	}
+	logger.Info("Qty of existing secrets", "secrets", len(existingSecrets))
+	return existingSecrets, nil
+}
+
 func (r *PaasNSReconciler) ReconcileSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 	logger logr.Logger,
 ) error {
-	// Create argo ssh secrets
-	logger.Info("Creating Ssh secrets")
-	secrets := r.BackendSecrets(ctx, paasns, paas)
-	logger.Info("Ssh secrets to create", "number", len(secrets))
-	for _, secret := range secrets {
+	logger.Info("Reconciling Ssh Secrets")
+	desiredSecrets := r.BackendSecrets(ctx, paasns, paas)
+	existingSecrets, err := r.getExistingPaasSecrets(ctx, paas, logger)
+	if err != nil {
+		return err
+	}
+	err = r.deleteObsoleteSecrets(ctx, paas, existingSecrets, desiredSecrets)
+	if err != nil {
+		return err
+	}
+	for _, secret := range desiredSecrets {
 		if err := r.EnsureSecret(ctx, paasns, secret); err != nil {
-			logger.Error(err, "Failure while creating secret", "secret", secret)
+			logger.Error(err, "Failure while reconciling secret", "secret", secret)
 			return err
 		}
-		logger.Info("Ssh secret successfully created", "secret", secret)
+		logger.Info("Ssh secret successfully reconciled", "secret", secret)
 	}
 	return nil
 }
