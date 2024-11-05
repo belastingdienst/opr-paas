@@ -45,7 +45,7 @@ func createApp() *cobra.Command {
 		SilenceErrors:    true,
 		TraverseChildren: true,
 	}
-	rootCommand.Version = version.PAAS_VERSION
+	rootCommand.Version = version.PaasVersion
 
 	rootCommand.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug output")
 	rootCommand.AddCommand(

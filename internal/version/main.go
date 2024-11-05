@@ -6,6 +6,4 @@ See LICENSE.md for details.
 
 package version
 
-const (
-	PAAS_VERSION = "v0.0.0devel"
-)
+var PaasVersion = "v0.0.0devel"

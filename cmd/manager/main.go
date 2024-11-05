@@ -67,10 +67,10 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 	if getVersion {
-		fmt.Printf("opr-paas version %s", version.PAAS_VERSION)
+		fmt.Printf("opr-paas version %s", version.PaasVersion)
 		os.Exit(0)
 	} else {
-		setupLog.Info("opr-paas version", version.PAAS_VERSION)
+		setupLog.Info("opr-paas version", version.PaasVersion)
 	}
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
@@ -123,7 +123,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupLog.Info(fmt.Sprintf("starting manager version %s", version.PAAS_VERSION))
+	setupLog.Info(fmt.Sprintf("starting manager version %s", version.PaasVersion))
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
