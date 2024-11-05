@@ -35,8 +35,8 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 		return err
 	}
 
-	defaultPolicy := getConfig().ArgoPermissions.DefaultPolicy
-	policy := getConfig().ArgoPermissions.FromGroups(
+	defaultPolicy := getConfig().Spec.ArgoPermissions.DefaultPolicy
+	policy := getConfig().Spec.ArgoPermissions.FromGroups(
 		paasns.Spec.Groups)
 	scopes := "[groups]"
 
@@ -46,7 +46,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 			APIVersion: "argoproj.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      getConfig().ArgoPermissions.ResourceName,
+			Name:      getConfig().Spec.ArgoPermissions.ResourceName,
 			Namespace: paasns.NamespaceName(),
 		},
 		Spec: argocd.ArgoCDSpec{
@@ -60,7 +60,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 
 	argoName := types.NamespacedName{
 		Namespace: paasns.NamespaceName(),
-		Name:      getConfig().ArgoPermissions.ResourceName,
+		Name:      getConfig().Spec.ArgoPermissions.ResourceName,
 	}
 
 	err = controllerutil.SetControllerReference(paas, argo, r.Scheme)

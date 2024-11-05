@@ -206,14 +206,14 @@ func (r *PaasReconciler) ReconcileRolebindings(
 
 		// Guarantee use of value for current iteration when referencing
 		paasns := paasns
-		for _, roleList := range getConfig().RoleMappings {
+		for _, roleList := range getConfig().Spec.RoleMappings {
 			for _, role := range roleList {
 				roles[role] = []string{}
 			}
 		}
 		logger.Info().Any("Rolebindings map", roles).Msg("all roles")
 		for groupName, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
-			for _, mappedRole := range getConfig().RoleMappings.Roles(groupRoles) {
+			for _, mappedRole := range getConfig().Spec.RoleMappings.Roles(groupRoles) {
 				if role, exists := roles[mappedRole]; exists {
 					roles[mappedRole] = append(role, groupName)
 				} else {
@@ -252,7 +252,7 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 	// Creating a list of roles and the groups that should have them, for this namespace
 	roles := make(map[string][]string)
 	for groupName, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
-		for _, mappedRole := range getConfig().RoleMappings.Roles(groupRoles) {
+		for _, mappedRole := range getConfig().Spec.RoleMappings.Roles(groupRoles) {
 			if role, exists := roles[mappedRole]; exists {
 				roles[mappedRole] = append(role, groupName)
 			} else {

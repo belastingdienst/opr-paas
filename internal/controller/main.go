@@ -10,7 +10,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 
 	"github.com/google/uuid"
@@ -23,18 +23,22 @@ import (
 )
 
 var (
-	_cnf            *config.Config
-	_crypt          map[string]*crypt.Crypt
+	_cnf   *v1alpha1.PaasConfig
+	_crypt map[string]*crypt.Crypt
 	debugComponents []string
 )
 
-func getConfig() config.Config {
+func getConfig() v1alpha1.PaasConfig {
 	var err error
 	if _cnf == nil {
-		if _cnf, err = config.NewConfig(); err != nil {
+		if _cnf, err = v1alpha1.NewConfig(); err != nil {
 			panic(fmt.Sprintf(
 				"Could not read config: %s",
 				err.Error()))
+		}
+		if _cnf.Spec.Debug {
+			logrus.SetLevel(logrus.DebugLevel)
+			logrus.Debug("Enabling debug logging")
 		}
 	}
 	return *_cnf
@@ -47,7 +51,7 @@ func getRsa(paas string) *crypt.Crypt {
 	}
 	if c, exists := _crypt[paas]; exists {
 		return c
-	} else if c, err := crypt.NewCrypt(config.DecryptKeyPaths, "", paas); err != nil {
+	} else if c, err := crypt.NewCrypt(config.Spec.DecryptKeyPaths, "", paas); err != nil {
 		panic(fmt.Errorf("could not get a crypt: %w", err))
 	} else {
 		_crypt[paas] = c
