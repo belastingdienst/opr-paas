@@ -33,17 +33,17 @@ var (
 			"block":  "100Gi",
 		},
 	}
-	sum_cpu            int64   = 12000
-	sum_memory         int64   = 30 * GiB
-	min_cpu            int64   = 3000
-	min_memory         int64   = 6 * GiB
-	max_cpu            int64   = 6000
-	max_memory         int64   = 12 * GiB
-	largest_two_cpu    int64   = 9000
-	largest_two_memory int64   = 24 * GiB
-	ratio              float64 = 0.7
-	optimal_shared     int64   = 100 * GiB
-	optimal_block      int64   = 210 * GiB
+	sum_cpu            int64 = 12000
+	sum_memory         int64 = 30 * GiB
+	min_cpu            int64 = 3000
+	min_memory         int64 = 6 * GiB
+	max_cpu            int64 = 6000
+	max_memory         int64 = 12 * GiB
+	largest_two_cpu    int64 = 9000
+	largest_two_memory int64 = 24 * GiB
+	ratio              int64 = 70 // 70%
+	optimal_shared     int64 = 100 * GiB
+	optimal_block      int64 = 210 * GiB
 
 	minQuota = map[string]string{
 		"cpu": "10",

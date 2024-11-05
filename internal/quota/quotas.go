@@ -18,10 +18,10 @@ func (pq Quotas) QuotaWithDefaults(defaults map[string]string) (q Quotas) {
 	return q
 }
 
-func (pq Quotas) Resized(scale float64) (q Quotas) {
+func (pq Quotas) Resized(scale int64) (q Quotas) {
 	q = make(Quotas)
 	for key, value := range pq {
-		resized := value.AsApproximateFloat64() * scale
+		resized := value.AsApproximateFloat64() * (float64(scale) / 100)
 		q[corev1.ResourceName(key)] = *(resourcev1.NewQuantity(int64(resized), value.Format))
 	}
 	return q
