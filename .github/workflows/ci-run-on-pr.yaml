@@ -1,7 +1,7 @@
 name: CI run on PR
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [ opened, synchronize, reopened, ready_for_review ]
 
 env:
   # Golang version to use across CI steps
@@ -78,7 +78,7 @@ jobs:
         with:
           version: v1.60.3
           args: --verbose
-
+ 
   code-gen:
     name: Check generated code
     runs-on: ubuntu-22.04
@@ -109,7 +109,7 @@ jobs:
           go-version: ${{ env.GOLANG_VERSION }}
       - name: Test
         run: make test
-
+ 
   e2e-test:
     name: Run e2e tests
     runs-on: ubuntu-22.04
@@ -167,3 +167,62 @@ jobs:
           echo "Operator logs"
           cat /tmp/e2e-server.log
           exit "$exitcode"
+
+  e2e-test-with-built-image:
+    name: Run e2e tests against deployed image
+    runs-on: ubuntu-22.04
+    if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
+    needs:
+      - codechanges
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8410ad0602e1e429cee44a835ae9f77f654a6694 # v4.0.0
+      - name: Setup Golang
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+        # https://github.com/marketplace/actions/kubernetes-kind-cluster#example-workflow
+      - name: Kubernetes KinD Cluster
+        uses: container-tools/kind-action@0ad70e2299366b0e1552c7240f4e4567148f723e # v2.0.4
+      - name: Test kind setup successfully
+        run: |
+          kubectl cluster-info
+          kubectl version
+      - name: Build operator image
+        run: make docker-build
+      - name: Load operator image to KinD
+        run: kind load docker-image controller:latest
+      - name: Setup-e2e mocks in KinD
+        run: |
+          kustomize build test/e2e/manifests/gitops-operator | kubectl create -f -
+          kustomize build test/e2e/manifests/openshift | kubectl apply -f -
+          # Wait a bit as the paas-context files rely on the previous deployed mocks
+          sleep 10s
+          kustomize build test/e2e/manifests/paas-context | kubectl apply -f -
+      - name: Deploy operator
+        run: make deploy
+      - name: Wait for operator deployment to be ready
+        run: |
+          kubectl wait --for=condition=Available deployment/controller-manager -n paas --timeout=120s
+      - name: Copy test fixtures
+        run: |
+          mkdir -p /tmp/paas-e2e/secrets/priv && chmod 0700 /tmp/paas-e2e/secrets/priv
+          mkdir -p /tmp/paas-e2e/secrets/pub && chmod 0700 /tmp/paas-e2e/secrets/pub
+          cp -r ./test/e2e/fixtures/crypt/priv* /tmp/paas-e2e/secrets/priv
+          cp -r ./test/e2e/fixtures/crypt/pub/* /tmp/paas-e2e/secrets/pub
+      - name: Run E2E testsuite
+        timeout-minutes: 20
+        run: |
+          set -x
+          make test-e2e
+      - name: Retrieve operator deployment log on failure
+        run: kubectl logs deployment/controller-manager -n paas > /tmp/e2e-deployed-operator-logs-${{ github.run_id }}.log
+        if: ${{ failure() }}
+      - name: Upload operator deployment log on failure
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: e2e-deployed-operator-logs-${{ github.run_id }}.log
+          path: /tmp/e2e-deployed-operator-logs-${{ github.run_id }}.log
+        if: ${{ failure() }}
+      - name: Clean test fixtures
+        run: rm -rf /tmp/paas-e2e

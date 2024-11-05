@@ -52,6 +52,7 @@ func EnsureRoleBinding(
 	statusMessages *v1alpha1.PaasNsStatus,
 	rb *rbac.RoleBinding,
 ) error {
+	logger := getLogger(ctx, paas, "Rolebinding", rb.Name)
 	if len(rb.Subjects) < 1 {
 		return FinalizeRoleBinding(ctx, r, statusMessages, rb)
 	}
@@ -64,18 +65,22 @@ func EnsureRoleBinding(
 	err := r.Get(ctx, namespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Create the rolebinding
+		logger.Info("Creating RoleBinding", "Namespace", rb.Namespace, "Name", rb.Name, "roleRef", rb.RoleRef, "subject", rb.Subjects)
 		err = r.Create(ctx, rb)
 
 		if err != nil {
+			logger.Error(err, "Error creating rolebinding")
 			// Creating the rolebinding failed
 			statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
 			return err
 		} else {
+			logger.Info("Created rolebinding")
 			// Creating the rolebinding was successful and return
 			statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "succeeded")
 			return nil
 		}
 	} else if err != nil {
+		logger.Error(err, "Error getting rolebinding")
 		// Error that isn't due to the rolebinding not existing
 		statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 		return err

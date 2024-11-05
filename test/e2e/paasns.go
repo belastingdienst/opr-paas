@@ -21,7 +21,13 @@ func waitForPaasNSReconciliation(ctx context.Context, cfg *envconf.Config, paasn
 		})
 
 	if err := waitForDefaultOpts(ctx, waitCond); err != nil {
-		return fmt.Errorf("failed waiting for PaasNS %s to be reconciled: %w", paasns.GetName(), err)
+		paasnss := api.PaasNS{}
+		err = cfg.Client().Resources().Get(ctx, paasns.GetName(), paasns.Namespace, &paasnss)
+		if err != nil {
+			return fmt.Errorf("could not get paasns resource which is waited for: %w", err)
+		}
+
+		return fmt.Errorf("failed waiting for PaasNS %s to be reconciled: %w and has status block: %s", paasnss.GetName(), err, paasnss.Status)
 	}
 
 	return nil

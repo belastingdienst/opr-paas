@@ -104,7 +104,6 @@ rules:
   verbs:
   - create
   - delete
-  - escallate
   - get
   - list
   - patch
@@ -112,8 +111,6 @@ rules:
   - watch
 - apiGroups:
   - rbac.authorization.k8s.io
-  resourceNames:
-  - admin
   resources:
   - clusterroles
   verbs:
