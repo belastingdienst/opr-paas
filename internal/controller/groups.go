@@ -128,14 +128,14 @@ func (r *PaasReconciler) backendGroup(
 			Annotations: map[string]string{
 				"openshift.io/ldap.uid": group.Query,
 				"openshift.io/ldap.url": fmt.Sprintf("%s:%d",
-					getConfig().LDAP.Host,
-					getConfig().LDAP.Port,
+					getConfig().Spec.LDAP.Host,
+					getConfig().Spec.LDAP.Port,
 				),
 			},
 		},
 		Users: group.Users,
 	}
-	g.ObjectMeta.Labels["openshift.io/ldap.host"] = getConfig().LDAP.Host
+	g.ObjectMeta.Labels["openshift.io/ldap.host"] = getConfig().Spec.LDAP.Host
 
 	// If we would have multiple PaaS projects defining this group, and all are cleaned,
 	// the garbage collector would also clean this group...
