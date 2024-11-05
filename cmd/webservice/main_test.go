@@ -120,7 +120,7 @@ func Test_getRSA(t *testing.T) {
 
 func Test_version(t *testing.T) {
 	expected := gin.H{
-		"version": v.PAAS_VERSION,
+		"version": v.PaasVersion,
 	}
 
 	router := SetupRouter()

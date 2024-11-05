@@ -115,7 +115,7 @@ func v1CheckPaas(c *gin.Context) {
 // version returns the operator version this webservice is built for
 func version(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"version": _version.PAAS_VERSION,
+		"version": _version.PaasVersion,
 	})
 }
 
@@ -167,7 +167,7 @@ func SetupRouter() *gin.Engine {
 
 func main() {
 	log.Println("Starting API endpoint")
-	log.Printf("Version: %s", _version.PAAS_VERSION)
+	log.Printf("Version: %s", _version.PaasVersion)
 	gin.SetMode(gin.ReleaseMode)
 
 	router := SetupRouter()
