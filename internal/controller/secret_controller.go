@@ -238,8 +238,9 @@ func (r *PaasNSReconciler) ReconcileSecrets(
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 ) error {
+	ctx = setLogComponent(ctx, "secret")
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("Reconciling Ssh Secrets")
+	logger.Debug().Msg("Reconciling Ssh Secrets")
 	desiredSecrets := r.BackendSecrets(ctx, paasns, paas)
 	existingSecrets, err := r.getExistingPaasSecrets(ctx, paas)
 	if err != nil {

@@ -14,6 +14,7 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 
 	"github.com/go-logr/logr"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,8 +25,9 @@ import (
 )
 
 var (
-	_cnf   *config.Config
-	_crypt map[string]*crypt.Crypt
+	_cnf            *config.Config
+	_crypt          map[string]*crypt.Crypt
+	debugComponents []string
 )
 
 func getConfig() config.Config {
@@ -88,6 +90,30 @@ func setRequestLogger(ctx context.Context, obj client.Object, scheme *runtime.Sc
 		Any("object", req.NamespacedName).
 		Logger().
 		WithContext(ctx)
+}
+
+// SetComponentDebug configures which components will log debug messages regardless of global log level.
+func SetComponentDebug(components []string) {
+	debugComponents = components
+}
+
+// setLogComponent sets the component name for the logging context.
+func setLogComponent(ctx context.Context, name string) context.Context {
+	logger := log.Ctx(ctx)
+
+	var found bool
+	for _, c := range debugComponents {
+		if c == name {
+			found = true
+		}
+	}
+
+	if found && logger.GetLevel() > zerolog.DebugLevel {
+		ll := logger.Level(zerolog.DebugLevel)
+		logger = &ll
+	}
+
+	return logger.With().Str("component", name).Logger().WithContext(ctx)
 }
 
 // intersect finds the intersection of 2 lists of strings

@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -56,6 +57,7 @@ func main() {
 	var getVersion bool
 	var pretty bool
 	var debug bool
+	var componentDebugList string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&getVersion, "version", false, "Print version and quit")
@@ -63,18 +65,26 @@ func main() {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.BoolVar(&pretty, "pretty", false, "Pretty-print logging output")
-	flag.BoolVar(&debug, "debug", false, "Log debug messages")
+	flag.BoolVar(&debug, "debug", false, "Log all debug messages")
+	flag.StringVar(&componentDebugList, "component-debug", "", "Comma-separated list of components to log debug messages for.")
 
 	flag.Parse()
 
-	if debug {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	} else {
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	}
-
 	if pretty {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
+
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+
+	if debug {
+		if componentDebugList != "" {
+			log.Fatal().Msg("Cannot pass --debug and --component-debug simultaneously")
+		}
+	} else if componentDebugList != "" {
+		controller.SetComponentDebug(strings.Split(componentDebugList, ","))
+		log.Logger = log.Level(zerolog.InfoLevel)
+	} else {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
 
 	if getVersion {
