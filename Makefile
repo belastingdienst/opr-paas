@@ -225,12 +225,13 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 	$(KUSTOMIZE) build manifests/crds | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: deploy
-deploy: build-installer kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	$(KUBECTL) apply -f manifests/install.yaml
+deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	cd manifests/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build manifests/default | $(KUBECTL) apply -f -
 
 .PHONY: undeploy
 undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f manifests/install.yaml
+	$(KUSTOMIZE) build manifests/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
 ##@ Dependencies
 
