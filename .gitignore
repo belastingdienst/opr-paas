@@ -39,5 +39,4 @@ site/
 dist/
 
 # The install.yml file is not committed but generated and added to release artifacts
-manifests/install.yaml
 install.yaml
