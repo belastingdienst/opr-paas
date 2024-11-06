@@ -34,7 +34,7 @@ func CheckPaas(crypt *crypt.Crypt, paas *v1alpha1.Paas) error {
 		}
 	}
 
-	for capName, capability := range paas.Spec.Capabilities.AsMap() {
+	for capName, capability := range paas.Spec.Capabilities {
 		logrus.Debugf("capability name: %s", capability.CapabilityName())
 		for key, secret := range capability.GetSshSecrets() {
 			decrypted, err := crypt.Decrypt(secret)

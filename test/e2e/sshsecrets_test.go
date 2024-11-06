@@ -32,7 +32,7 @@ func TestSecrets(t *testing.T) {
 		Quota:      make(quota.Quotas),
 		SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
 		Capabilities: api.PaasCapabilities{
-			SSO: api.PaasSSO{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-other-repo.git": encrypted}},
+			"sso": api.PaasCapability{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-other-repo.git": encrypted}},
 		},
 	}
 
@@ -89,7 +89,9 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 
 	paas := getPaas(ctx, "sshpaas", t, cfg)
 	paas.Spec.SshSecrets = map[string]string{"ssh://git@scm/some-repo.git": encrypted}
-	paas.Spec.Capabilities.SSO.SshSecrets = map[string]string{"ssh://git@scm/some-other-repo.git": encrypted}
+	SSO := paas.Spec.Capabilities["sso"]
+	SSO.SshSecrets = map[string]string{"ssh://git@scm/some-other-repo.git": encrypted}
+	// paas.Spec.Capabilities["sso"] = SSO
 
 	if err := updatePaasSync(ctx, cfg, paas); err != nil {
 		t.Fatal(err)
@@ -141,7 +143,9 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 
 	paas := getPaas(ctx, "sshpaas", t, cfg)
 	paas.Spec.SshSecrets = map[string]string{"ssh://git@scm/some-second-repo.git": encrypted}
-	paas.Spec.Capabilities.SSO.SshSecrets = map[string]string{"ssh://git@scm/some-other-second-repo.git": encrypted}
+	SSO := paas.Spec.Capabilities["sso"]
+	SSO.SshSecrets = map[string]string{"ssh://git@scm/some-other-second-repo.git": encrypted}
+	// paas.Spec.Capabilities["sso"] = SSO
 
 	if err := updatePaasSync(ctx, cfg, paas); err != nil {
 		t.Fatal(err)
@@ -186,7 +190,9 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 func assertSecretRemovedAfterRemovingFromPaas(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, "sshpaas", t, cfg)
 	paas.Spec.SshSecrets = nil
-	paas.Spec.Capabilities.SSO.SshSecrets = nil
+	SSO := paas.Spec.Capabilities["sso"]
+	SSO.SshSecrets = nil
+	// paas.Spec.Capabilities["sso"] = SSO
 
 	if err := updatePaasSync(ctx, cfg, paas); err != nil {
 		t.Fatal(err)

@@ -23,10 +23,6 @@ import (
 func checkPaasFiles(privateKeyFiles string, files []string) error {
 	var errNum int
 
-	srcCrypt, err := crypt.NewCrypt([]string{privateKeyFiles}, "", "checkPaas")
-	if err != nil {
-		return err
-	}
 	for _, fileName := range files {
 		// Read paas from file
 		paas, _, err := readPaasFile(fileName)
@@ -88,7 +84,7 @@ func CheckPaas(crypt *crypt.Crypt, paas *v1alpha1.Paas, fileName string) error {
 		}
 	}
 
-	for capName, capability := range paas.Spec.Capabilities.AsMap() {
+	for capName, capability := range paas.Spec.Capabilities {
 		logrus.Debugf("capability name: %s", capability.CapabilityName())
 		for key, secret := range capability.GetSshSecrets() {
 			decrypted, err := crypt.Decrypt(secret)
