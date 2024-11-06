@@ -28,7 +28,7 @@ spec:
             - /manager
           args:
             - --leader-elect
-          image: ghcr.io/belastingdienst/opr-paas:latest
+          image: controller:latest
           imagePullPolicy: Always
           name: manager
           securityContext:
