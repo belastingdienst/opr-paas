@@ -91,7 +91,7 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 	paas.Spec.SshSecrets = map[string]string{"ssh://git@scm/some-repo.git": encrypted}
 	SSO := paas.Spec.Capabilities["sso"]
 	SSO.SshSecrets = map[string]string{"ssh://git@scm/some-other-repo.git": encrypted}
-	// paas.Spec.Capabilities["sso"] = SSO
+	paas.Spec.Capabilities["sso"] = SSO
 
 	if err := updatePaasSync(ctx, cfg, paas); err != nil {
 		t.Fatal(err)
@@ -145,7 +145,7 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	paas.Spec.SshSecrets = map[string]string{"ssh://git@scm/some-second-repo.git": encrypted}
 	SSO := paas.Spec.Capabilities["sso"]
 	SSO.SshSecrets = map[string]string{"ssh://git@scm/some-other-second-repo.git": encrypted}
-	// paas.Spec.Capabilities["sso"] = SSO
+	paas.Spec.Capabilities["sso"] = SSO
 
 	if err := updatePaasSync(ctx, cfg, paas); err != nil {
 		t.Fatal(err)
@@ -192,7 +192,7 @@ func assertSecretRemovedAfterRemovingFromPaas(ctx context.Context, t *testing.T,
 	paas.Spec.SshSecrets = nil
 	SSO := paas.Spec.Capabilities["sso"]
 	SSO.SshSecrets = nil
-	// paas.Spec.Capabilities["sso"] = SSO
+	paas.Spec.Capabilities["sso"] = SSO
 
 	if err := updatePaasSync(ctx, cfg, paas); err != nil {
 		t.Fatal(err)
