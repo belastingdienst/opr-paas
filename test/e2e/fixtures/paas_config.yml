@@ -46,7 +46,7 @@ capabilities:
     extra_permissions:
       roles:
         - monitoring-edit
-        - self-provisioner
+        - alert-routing-edit
       serviceaccounts:
         - pipeline
   sso:

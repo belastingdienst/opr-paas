@@ -4,3 +4,4 @@ kind: Kustomization
 
 resources:
   - cm_opr-paas.yaml
+  - example-keys.yaml

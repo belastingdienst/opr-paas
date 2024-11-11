@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: controller-manager
-  namespace: paas
+  namespace: paas-system
   labels:
     control-plane: controller-manager
     app.kubernetes.io/name: deployment
@@ -29,7 +29,7 @@ spec:
           args:
             - --leader-elect
           image: controller:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           name: manager
           securityContext:
             allowPrivilegeEscalation: false
@@ -58,10 +58,16 @@ spec:
           volumeMounts:
             - name: paas-config
               mountPath: /etc/paas
+            - name: example-keys
+              mountPath: /secrets/paas
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
         - name: paas-config
           configMap:
             name: config
+            defaultMode: 420
+        - name: example-keys
+          secret:
+            secretName: example-keys
             defaultMode: 420

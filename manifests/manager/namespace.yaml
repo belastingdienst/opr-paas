@@ -9,4 +9,4 @@ metadata:
     app.kubernetes.io/created-by: opr-paas
     app.kubernetes.io/part-of: opr-paas
     app.kubernetes.io/managed-by: kustomize
-  name: paas
+  name: paas-system
