@@ -78,7 +78,7 @@ jobs:
         with:
           version: v1.60.3
           args: --verbose
- 
+
   code-gen:
     name: Check generated code
     runs-on: ubuntu-22.04
@@ -159,14 +159,14 @@ jobs:
         timeout-minutes: 20
         run: |
           set -x
-          set +e
           make test-e2e
-          exitcode=$(echo $?)
           killall goreman run stop-all || echo "trouble killing goreman"
-          sleep 30
-          echo "Operator logs"
-          cat /tmp/e2e-server.log
-          exit "$exitcode"
+      - name: Upload operator deployment log on failure
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: e2e-operator-logs-${{ github.run_id }}.log
+          path: /tmp/e2e-server.log
+        if: ${{ failure() }}
 
   e2e-test-with-built-image:
     name: Run e2e tests against deployed image
