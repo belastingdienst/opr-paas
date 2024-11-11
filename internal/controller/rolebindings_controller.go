@@ -52,6 +52,7 @@ func EnsureRoleBinding(
 	statusMessages *v1alpha1.PaasNsStatus,
 	rb *rbac.RoleBinding,
 ) error {
+	logger := getLogger(ctx, paas, "Rolebinding", rb.Name)
 	if len(rb.Subjects) < 1 {
 		return FinalizeRoleBinding(ctx, r, statusMessages, rb)
 	}
@@ -64,25 +65,30 @@ func EnsureRoleBinding(
 	err := r.Get(ctx, namespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Create the rolebinding
+		logger.Info("Creating RoleBinding", "Namespace", rb.Namespace, "Name", rb.Name, "roleRef", rb.RoleRef, "subject", rb.Subjects)
 		err = r.Create(ctx, rb)
 
 		if err != nil {
 			// Creating the rolebinding failed
+			logger.Error(err, "Error creating rolebinding")
 			statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
 			return err
 		} else {
 			// Creating the rolebinding was successful and return
+			logger.Info("Created rolebinding")
 			statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
+		logger.Error(err, "Error getting rolebinding")
 		statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 		return err
 	}
 	var changed bool
 	if !paas.AmIOwner(found.OwnerReferences) {
 		if err = controllerutil.SetControllerReference(paas, found, r.GetScheme()); err != nil {
+			logger.Error(err, "Error setting rolebinding owner")
 			return err
 		}
 		changed = true
@@ -92,11 +98,13 @@ func EnsureRoleBinding(
 		changed = true
 	}
 	if changed {
-		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating resource")
+		logger.Info("Updating RoleBinding", "Namespace", rb.Namespace, "Name", rb.Name, "roleRef", rb.RoleRef, "subject", rb.Subjects)
 		if err = r.Update(ctx, found); err != nil {
+			logger.Error(err, "Error updating rolebinding")
 			statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, rb, err.Error())
 			return err
 		}
+		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updated")
 	} else {
 		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "not needed")
 	}
