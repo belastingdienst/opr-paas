@@ -72,7 +72,7 @@ func (r *PaasNSReconciler) backendArgoApp(
 	logger.Info(fmt.Sprintf("Defining %s Argo Application", appName))
 
 	namespace := paasns.NamespaceName()
-	argoConfig := paas.Spec.Capabilities.ArgoCD
+	argoConfig := paas.Spec.Capabilities["argocd"]
 	argoConfig.SetDefaults()
 	app := &argo.Application{
 		TypeMeta: metav1.TypeMeta{

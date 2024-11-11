@@ -29,7 +29,7 @@ func TestCapabilitySSO(t *testing.T) {
 		Requestor: "paas-user",
 		Quota:     make(quota.Quotas),
 		Capabilities: api.PaasCapabilities{
-			SSO: api.PaasSSO{Enabled: true},
+			"sso": api.PaasCapability{Enabled: true},
 		},
 	}
 
@@ -57,7 +57,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Equal(t, paasWithCapabilitySSO, namespace.Name)
 
 	// SSO should be enabled
-	assert.True(t, paas.Spec.Capabilities.SSO.Enabled)
+	assert.True(t, paas.Spec.Capabilities.IsCap("sso"))
 
 	// ApplicationSet exist
 	assert.NotEmpty(t, applicationSet)

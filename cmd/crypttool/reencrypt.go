@@ -77,7 +77,7 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 			logrus.Infof("successfully reencrypted %s.spec.sshSecrets[%s] in file %s", paasName, key, fileName)
 		}
 
-		for capName, cap := range paas.Spec.Capabilities.AsMap() {
+		for capName, cap := range paas.Spec.Capabilities {
 			for key, secret := range cap.GetSshSecrets() {
 				reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 				if err != nil {

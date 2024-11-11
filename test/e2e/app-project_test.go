@@ -28,7 +28,7 @@ func TestAppProject(t *testing.T) {
 		Requestor: "paas-user",
 		Quota:     make(quota.Quotas),
 		Capabilities: api.PaasCapabilities{
-			SSO: api.PaasSSO{Enabled: true},
+			"sso": api.PaasCapability{Enabled: true},
 		},
 	}
 
@@ -56,7 +56,7 @@ func assertAppProjectCreated(ctx context.Context, t *testing.T, cfg *envconf.Con
 	assert.Equal(t, simplePaas, namespace.Name)
 
 	// SSO should be enabled
-	assert.True(t, paas.Spec.Capabilities.SSO.Enabled)
+	assert.True(t, paas.Spec.Capabilities["sso"].Enabled)
 
 	// ApplicationSet exist
 	assert.NotEmpty(t, applicationSet)

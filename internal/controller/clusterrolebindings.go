@@ -164,7 +164,7 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 	paas *v1alpha1.Paas,
 ) (err error) {
 	var crb *rbac.ClusterRoleBinding
-	cap, capExists := paas.Spec.Capabilities.AsMap()[paasns.Name]
+	cap, capExists := paas.Spec.Capabilities[paasns.Name]
 	capConfig, capConfigExists := getConfig().Capabilities[paasns.Name]
 	if !(capConfigExists || capExists) {
 		return
