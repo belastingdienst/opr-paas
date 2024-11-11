@@ -60,7 +60,11 @@ func waitForPaasReconciliation(ctx context.Context, cfg *envconf.Config, paas *a
 		})
 
 	if err := waitForDefaultOpts(ctx, waitCond); err != nil {
-		return fmt.Errorf("failed waiting for Paas %s to be reconciled: %w", paas.GetName(), err)
+		err = cfg.Client().Resources().Get(ctx, paas.GetName(), paas.Namespace, paas)
+		if err != nil {
+			return fmt.Errorf("could not get paas resource which was waited for: %w", err)
+		}
+		return fmt.Errorf("failed waiting for Paas %s to be reconciled: %w and has status block: %v", paas.GetName(), err, paas.Status)
 	}
 
 	return nil
