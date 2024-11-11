@@ -138,11 +138,6 @@ setup-e2e: kustomize ## Setup test environment in the K8s cluster specified in ~
 	$(KUSTOMIZE) build test/e2e/manifests/paas-context | kubectl apply -f -
 	# Apply opr-paas crds
 	$(KUSTOMIZE) build manifests/crds | kubectl apply -f -
-	# Create namespace as desired in RBAC
-	kubectl create namespace paas
-	# TODO determine if needed as we don't run the opr in cluster
-	# Apply opr-paas rbac
-	$(KUSTOMIZE) build manifests/rbac | kubectl apply -f -
 
 # Starts operator for e2e tests with fixtures
 .PHONY: start-e2e
