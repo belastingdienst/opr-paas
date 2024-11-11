@@ -9,6 +9,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -58,6 +59,7 @@ func main() {
 	var pretty bool
 	var debug bool
 	var componentDebugList string
+	var splitLogOutput bool
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&getVersion, "version", false, "Print version and quit")
@@ -67,25 +69,10 @@ func main() {
 	flag.BoolVar(&pretty, "pretty", false, "Pretty-print logging output")
 	flag.BoolVar(&debug, "debug", false, "Log all debug messages")
 	flag.StringVar(&componentDebugList, "component-debug", "", "Comma-separated list of components to log debug messages for.")
+	flag.BoolVar(&splitLogOutput, "split-log-output", false, "Send error logs to stderr, and the rest to stdout.")
 
 	flag.Parse()
-
-	if pretty {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	}
-
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
-
-	if debug {
-		if componentDebugList != "" {
-			log.Fatal().Msg("Cannot pass --debug and --component-debug simultaneously")
-		}
-	} else if componentDebugList != "" {
-		controller.SetComponentDebug(strings.Split(componentDebugList, ","))
-		log.Logger = log.Level(zerolog.InfoLevel)
-	} else {
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	}
+	configureLogging(pretty, debug, componentDebugList, splitLogOutput)
 
 	if getVersion {
 		fmt.Printf("opr-paas version %s", version.PaasVersion)
@@ -93,8 +80,6 @@ func main() {
 	} else {
 		log.Info().Str("version", version.PaasVersion).Msg("opr-paas version")
 	}
-
-	ctrl.SetLogger(zerologr.New(&log.Logger))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -143,4 +128,58 @@ func main() {
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		log.Fatal().Err(err).Msg("problem running manager")
 	}
+}
+
+func configureLogging(pretty bool, debug bool, componentDebugList string, splitLogOutput bool) {
+	var output io.Writer = os.Stderr
+
+	if splitLogOutput {
+		var errout io.Writer = os.Stderr
+		var infout io.Writer = os.Stdout
+
+		if pretty {
+			errout = zerolog.ConsoleWriter{Out: errout}
+			infout = zerolog.ConsoleWriter{Out: infout}
+		}
+
+		errw := zerolog.FilteredLevelWriter{
+			Writer: zerolog.LevelWriterAdapter{Writer: errout},
+			Level:  zerolog.ErrorLevel,
+		}
+		infw := infoLevelWriter{infout}
+		output = zerolog.MultiLevelWriter(&errw, infw)
+	} else if pretty {
+		output = zerolog.ConsoleWriter{Out: output}
+	}
+
+	log.Logger = log.Output(output)
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+
+	if debug {
+		if componentDebugList != "" {
+			log.Fatal().Msg("Cannot pass --debug and --component-debug simultaneously")
+		}
+	} else if componentDebugList != "" {
+		controller.SetComponentDebug(strings.Split(componentDebugList, ","))
+		log.Logger = log.Level(zerolog.InfoLevel)
+	} else {
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	}
+
+	ctrl.SetLogger(zerologr.New(&log.Logger))
+}
+
+type infoLevelWriter struct {
+	io.Writer
+}
+
+func (w infoLevelWriter) Write(p []byte) (int, error) {
+	return w.Writer.Write(p)
+}
+
+func (w infoLevelWriter) WriteLevel(level zerolog.Level, p []byte) (int, error) {
+	if level <= zerolog.InfoLevel {
+		return w.Writer.Write(p)
+	}
+	return len(p), nil
 }
