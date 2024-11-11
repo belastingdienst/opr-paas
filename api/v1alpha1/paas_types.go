@@ -216,6 +216,38 @@ func (pc PaasCapabilities) IsCap(name string) bool {
 	return true
 }
 
+func (pc PaasCapabilities) GetCapability(capability string) (cap PaasCapability, err error) {
+	if cap, exists := pc[capability]; !exists {
+		return cap, fmt.Errorf("Capability %s does not exist", capability)
+	} else {
+		return cap, nil
+	}
+}
+
+func (pc PaasCapabilities) AddCapSshSecret(capability string, key string, value string) (err error) {
+	if cap, err := pc.GetCapability(capability); err != nil {
+		return err
+	} else {
+		if cap.SshSecrets == nil {
+			cap.SshSecrets = map[string]string{key: value}
+		} else {
+			cap.SshSecrets[key] = value
+		}
+		pc[capability] = cap
+	}
+	return nil
+}
+
+func (pc PaasCapabilities) ResetCapSshSecret(capability string) (err error) {
+	if cap, err := pc.GetCapability(capability); err != nil {
+		return err
+	} else {
+		cap.SshSecrets = nil
+		pc[capability] = cap
+	}
+	return nil
+}
+
 type PaasCapability struct {
 	// Do we want an ArgoCD namespace, default false
 	Enabled bool `json:"enabled,omitempty"`
