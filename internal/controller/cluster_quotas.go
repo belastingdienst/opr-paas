@@ -118,7 +118,7 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 ) (quotas []*quotav1.ClusterResourceQuota, err error) {
 	config := getConfig()
 	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
-	for name, cap := range paas.Spec.Capabilities.AsMap() {
+	for name, cap := range paas.Spec.Capabilities {
 		if capConfig, exists := config.Capabilities[name]; !exists {
 			return nil, fmt.Errorf("a capability is requested, but not configured")
 		} else if cap.IsEnabled() {
@@ -142,7 +142,7 @@ func (r *PaasReconciler) BackendEnabledQuotaStatus(
 	config := getConfig()
 	quotas = make(PaasQuotas)
 	quotas["default"] = paas.Spec.Quota
-	for name, cap := range paas.Spec.Capabilities.AsMap() {
+	for name, cap := range paas.Spec.Capabilities {
 		if capConfig, exists := config.Capabilities[name]; !exists {
 			return nil, fmt.Errorf("a capability is requested, but not configured")
 		} else if cap.IsEnabled() {
@@ -160,7 +160,7 @@ func (r *PaasReconciler) BackendUnneededQuotas(
 	paas *v1alpha1.Paas,
 ) (quotas []string) {
 	config := getConfig()
-	for name, cap := range paas.Spec.Capabilities.AsMap() {
+	for name, cap := range paas.Spec.Capabilities {
 		if capConfig, exists := config.Capabilities[name]; !exists {
 			quotas = append(quotas, fmt.Sprintf("%s-%s", paas.Name, name))
 		} else if !cap.IsEnabled() || capConfig.QuotaSettings.Clusterwide {
@@ -210,7 +210,7 @@ func (r *PaasReconciler) FinalizeClusterQuotas(ctx context.Context, paas *v1alph
 	suffixes := []string{
 		"",
 	}
-	for name := range paas.Spec.Capabilities.AsMap() {
+	for name := range paas.Spec.Capabilities {
 		suffixes = append(suffixes, fmt.Sprintf("-%s", name))
 	}
 

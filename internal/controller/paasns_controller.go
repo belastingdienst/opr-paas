@@ -184,7 +184,7 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 		return errResult, fmt.Errorf("reconciling Extra ClusterRoleBindings failed")
 	}
 
-	if _, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists {
+	if _, exists := paas.Spec.Capabilities[paasns.Name]; exists {
 		if paasns.Name == "argocd" {
 			logger.Info("Creating Argo App for client bootstrapping")
 
@@ -344,7 +344,7 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 		err = fmt.Errorf("cannot remove paas from capability ApplicationSet belonging to PaaS %s: %s", paasns.Spec.Paas, err.Error())
 		return err
 	}
-	if _, isCapability := paas.Spec.Capabilities.AsMap()[paasns.Name]; isCapability {
+	if _, isCapability := paas.Spec.Capabilities[paasns.Name]; isCapability {
 		logger.Info("PaasNs is a capability, also finalizing Cluster Resource Quota")
 		if err := r.FinalizeClusterQuota(ctx, paasns); err != nil {
 			logger.Error(err, fmt.Sprintf("Failure while finalizing quota %s", paasns.Name))

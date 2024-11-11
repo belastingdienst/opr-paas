@@ -160,7 +160,7 @@ func (r *PaasNSReconciler) BackendSecrets(
 	maps.Copy(secrets, paasns.Spec.SshSecrets)
 
 	// From the Paas Resource capability chapter (if applicable)
-	if cap, exists := paas.Spec.Capabilities.AsMap()[paasns.Name]; exists && cap.IsEnabled() {
+	if cap, exists := paas.Spec.Capabilities[paasns.Name]; exists && cap.IsEnabled() {
 		maps.Copy(secrets, cap.GetSshSecrets())
 	}
 

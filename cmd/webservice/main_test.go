@@ -211,7 +211,7 @@ func Test_v1CheckPaas(t *testing.T) {
 			Spec: v1alpha1.PaasSpec{
 				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
 				Capabilities: v1alpha1.PaasCapabilities{
-					SSO: v1alpha1.PaasSSO{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted}},
+					"sso": v1alpha1.PaasCapability{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted}},
 				},
 			},
 		},
@@ -241,7 +241,7 @@ func Test_v1CheckPaas(t *testing.T) {
 			Spec: v1alpha1.PaasSpec{
 				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
 				Capabilities: v1alpha1.PaasCapabilities{
-					SSO: v1alpha1.PaasSSO{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted}},
+					"sso": v1alpha1.PaasCapability{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted}},
 				},
 			},
 		},

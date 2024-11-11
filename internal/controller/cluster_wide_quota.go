@@ -53,7 +53,7 @@ func (r *PaasReconciler) FetchAllPaasCapabilityResources(
 			err = fmt.Errorf("Error occurring while retrieving the PaaS %s", getErr.Error())
 			return
 		}
-		if paasCap, exists := paas.Spec.Capabilities.AsMap()[capabilityName]; !exists {
+		if paasCap, exists := paas.Spec.Capabilities[capabilityName]; !exists {
 			resources.Append(paas_quota.NewQuota(defaults))
 		} else {
 			resources.Append(paasCap.Quotas().QuotaWithDefaults(defaults))
@@ -128,7 +128,7 @@ func ClusterWideCapabilityName(quotaName string) (capabilityName string, err err
 }
 
 func (r *PaasReconciler) FinalizeClusterWideQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
-	for capabilityName, capability := range paas.Spec.Capabilities.AsMap() {
+	for capabilityName, capability := range paas.Spec.Capabilities {
 		if capability.IsEnabled() {
 			err := r.removeFromClusterWideQuota(ctx, paas, capabilityName)
 			if err != nil && errors.IsNotFound(err) {
@@ -141,7 +141,7 @@ func (r *PaasReconciler) FinalizeClusterWideQuotas(ctx context.Context, paas *v1
 }
 
 func (r *PaasReconciler) ReconcileClusterWideQuota(ctx context.Context, paas *v1alpha1.Paas) error {
-	for capabilityName, capability := range paas.Spec.Capabilities.AsMap() {
+	for capabilityName, capability := range paas.Spec.Capabilities {
 		if capability.IsEnabled() {
 			err := r.addToClusterWideQuota(ctx, paas, capabilityName)
 			if err != nil && errors.IsNotFound(err) {
