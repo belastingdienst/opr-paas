@@ -125,8 +125,8 @@ type PaasGroup struct {
 	Roles []string `json:"roles,omitempty"`
 }
 
-func (g PaasGroup) Name(defName string) string {
-	if name := strings.Split(g.Query, ",")[0]; len(name) == 0 {
+func (pg PaasGroup) Name(defName string) string {
+	if name := strings.Split(pg.Query, ",")[0]; len(name) == 0 {
 		return defName
 	} else if strings.Contains(name, "=") {
 		return strings.Split(name, "=")[1]
@@ -137,45 +137,45 @@ func (g PaasGroup) Name(defName string) string {
 
 type PaasGroups map[string]PaasGroup
 
-func (gs PaasGroups) Filtered(groups []string) PaasGroups {
+func (pgs PaasGroups) Filtered(groups []string) PaasGroups {
 	filtered := make(PaasGroups)
 	if len(groups) == 0 {
-		return gs
+		return pgs
 	}
 	for _, groupName := range groups {
-		if group, exists := gs[groupName]; exists {
+		if group, exists := pgs[groupName]; exists {
 			filtered[groupName] = group
 		}
 	}
 	return filtered
 }
 
-func (gs PaasGroups) Roles() map[string][]string {
+func (pgs PaasGroups) Roles() map[string][]string {
 	roles := make(map[string][]string)
-	for groupName, group := range gs {
+	for groupName, group := range pgs {
 		roles[groupName] = group.Roles
 	}
 	return roles
 }
 
-func (g PaasGroups) Key2Name(key string) string {
-	if group, exists := g[key]; !exists {
+func (pgs PaasGroups) Key2Name(key string) string {
+	if group, exists := pgs[key]; !exists {
 		return ""
 	} else {
 		return group.Name(key)
 	}
 }
 
-func (gs PaasGroups) Names() (groups []string) {
-	for name, group := range gs {
+func (pgs PaasGroups) Names() (groups []string) {
+	for name, group := range pgs {
 		groups = append(groups, group.Name(name))
 	}
 	return groups
 }
 
-func (gs PaasGroups) LdapQueries() []string {
+func (pgs PaasGroups) LdapQueries() []string {
 	var queries []string
-	for _, group := range gs {
+	for _, group := range pgs {
 		if group.Query != "" {
 			queries = append(queries, group.Query)
 		}
@@ -188,44 +188,44 @@ func (pgs PaasGroups) Keys() (groups []string) {
 }
 
 func (pgs PaasGroups) AsGroups() groups.Groups {
-	gs := groups.NewGroups()
-	gs.AddFromStrings(pgs.LdapQueries())
-	return *gs
+	newGroups := groups.NewGroups()
+	newGroups.AddFromStrings(pgs.LdapQueries())
+	return *newGroups
 }
 
 // see config/samples/_v1alpha1_paas.yaml for example of CR
 
 type PaasCapabilities map[string]PaasCapability
 
-func (pc PaasCapabilities) AsPrefixedMap(prefix string) PaasCapabilities {
+func (pcs PaasCapabilities) AsPrefixedMap(prefix string) PaasCapabilities {
 	if prefix == "" {
-		return pc
+		return pcs
 	}
 	caps := make(PaasCapabilities)
-	for name, cap := range pc {
+	for name, cap := range pcs {
 		caps[fmt.Sprintf("%s-%s", prefix, name)] = cap
 	}
 	return caps
 }
 
-func (pc PaasCapabilities) IsCap(name string) bool {
-	if cap, exists := pc[name]; !exists || !cap.IsEnabled() {
+func (pcs PaasCapabilities) IsCap(name string) bool {
+	if cap, exists := pcs[name]; !exists || !cap.IsEnabled() {
 		return false
 	}
 
 	return true
 }
 
-func (pc PaasCapabilities) GetCapability(capability string) (cap PaasCapability, err error) {
-	if cap, exists := pc[capability]; !exists {
+func (pcs PaasCapabilities) GetCapability(capability string) (cap PaasCapability, err error) {
+	if cap, exists := pcs[capability]; !exists {
 		return cap, fmt.Errorf("Capability %s does not exist", capability)
 	} else {
 		return cap, nil
 	}
 }
 
-func (pc PaasCapabilities) AddCapSshSecret(capability string, key string, value string) (err error) {
-	if cap, err := pc.GetCapability(capability); err != nil {
+func (pcs PaasCapabilities) AddCapSshSecret(capability string, key string, value string) (err error) {
+	if cap, err := pcs.GetCapability(capability); err != nil {
 		return err
 	} else {
 		if cap.SshSecrets == nil {
@@ -233,17 +233,17 @@ func (pc PaasCapabilities) AddCapSshSecret(capability string, key string, value 
 		} else {
 			cap.SshSecrets[key] = value
 		}
-		pc[capability] = cap
+		pcs[capability] = cap
 	}
 	return nil
 }
 
-func (pc PaasCapabilities) ResetCapSshSecret(capability string) (err error) {
-	if cap, err := pc.GetCapability(capability); err != nil {
+func (pcs PaasCapabilities) ResetCapSshSecret(capability string) (err error) {
+	if cap, err := pcs.GetCapability(capability); err != nil {
 		return err
 	} else {
 		cap.SshSecrets = nil
-		pc[capability] = cap
+		pcs[capability] = cap
 	}
 	return nil
 }
@@ -268,37 +268,37 @@ type PaasCapability struct {
 	ExtraPermissions bool `json:"extra_permissions,omitempty"`
 }
 
-func (pa *PaasCapability) WithExtraPermissions() bool {
-	return pa.Enabled && pa.ExtraPermissions
+func (pc *PaasCapability) WithExtraPermissions() bool {
+	return pc.Enabled && pc.ExtraPermissions
 }
 
-func (pa *PaasCapability) IsEnabled() bool {
-	return pa.Enabled
+func (pc *PaasCapability) IsEnabled() bool {
+	return pc.Enabled
 }
 
-func (pa *PaasCapability) CapabilityName() string {
+func (pc *PaasCapability) CapabilityName() string {
 	return "argocd"
 }
 
-func (pa *PaasCapability) SetDefaults() {
-	if pa.GitPath == "" {
-		pa.GitPath = "."
+func (pc *PaasCapability) SetDefaults() {
+	if pc.GitPath == "" {
+		pc.GitPath = "."
 	}
-	if pa.GitRevision == "" {
-		pa.GitRevision = "master"
+	if pc.GitRevision == "" {
+		pc.GitRevision = "master"
 	}
 }
 
-func (pa PaasCapability) Quotas() (pq paas_quota.Quotas) {
-	return pa.Quota
+func (pc PaasCapability) Quotas() (pq paas_quota.Quotas) {
+	return pc.Quota
 }
 
-func (pa PaasCapability) GetSshSecrets() map[string]string {
-	return pa.SshSecrets
+func (pc PaasCapability) GetSshSecrets() map[string]string {
+	return pc.SshSecrets
 }
 
-func (pa *PaasCapability) SetSshSecret(key string, value string) {
-	pa.SshSecrets[key] = value
+func (pc *PaasCapability) SetSshSecret(key string, value string) {
+	pc.SshSecrets[key] = value
 }
 
 // PaasStatus defines the observed state of Paas
