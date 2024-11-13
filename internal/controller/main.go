@@ -12,15 +12,21 @@ import (
 
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
+
 	"github.com/go-logr/logr"
-	"github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
-	_cnf   *config.Config
-	_crypt map[string]*crypt.Crypt
+	_cnf            *config.Config
+	_crypt          map[string]*crypt.Crypt
+	debugComponents []string
 )
 
 func getConfig() config.Config {
@@ -30,10 +36,6 @@ func getConfig() config.Config {
 			panic(fmt.Sprintf(
 				"Could not read config: %s",
 				err.Error()))
-		}
-		if _cnf.Debug {
-			logrus.SetLevel(logrus.DebugLevel)
-			logrus.Debug("Enabling debug logging")
 		}
 	}
 	return *_cnf
@@ -65,7 +67,48 @@ func getLogger(
 		fields = append(fields, "Name", name)
 	}
 
-	return log.FromContext(ctx).WithValues(fields...)
+	return ctrllog.FromContext(ctx).WithValues(fields...)
+}
+
+// setRequestLogger derives a context with a `zerolog` logger configured for a specific controller.
+// To be called once per reconciler. All functions within the reconciliation request context can access the logger with `log.Ctx()`.
+func setRequestLogger(ctx context.Context, obj client.Object, scheme *runtime.Scheme, req ctrl.Request) context.Context {
+	gvk, err := apiutil.GVKForObject(obj, scheme)
+	if err != nil {
+		log.Err(err).Msg("failed to retrieve controller group-version-kind")
+
+		return log.Logger.WithContext(ctx)
+	}
+
+	return log.With().
+		Any("controller", gvk).
+		Any("object", req.NamespacedName).
+		Logger().
+		WithContext(ctx)
+}
+
+// SetComponentDebug configures which components will log debug messages regardless of global log level.
+func SetComponentDebug(components []string) {
+	debugComponents = components
+}
+
+// setLogComponent sets the component name for the logging context.
+func setLogComponent(ctx context.Context, name string) context.Context {
+	logger := log.Ctx(ctx)
+
+	var found bool
+	for _, c := range debugComponents {
+		if c == name {
+			found = true
+		}
+	}
+
+	if found && logger.GetLevel() > zerolog.DebugLevel {
+		ll := logger.Level(zerolog.DebugLevel)
+		logger = &ll
+	}
+
+	return logger.With().Str("component", name).Logger().WithContext(ctx)
 }
 
 // intersect finds the intersection of 2 lists of strings

@@ -11,8 +11,9 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/go-logr/logr"
 
+	"github.com/go-logr/logr"
+	"github.com/rs/zerolog/log"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -232,7 +233,6 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
-	logger logr.Logger,
 ) error {
 	// Creating a list of roles and the groups that should have them, for this namespace
 	roles := make(map[string][]string)
@@ -245,10 +245,15 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 			}
 		}
 	}
-	logger.Info("Creating paas RoleBindings for PAASNS object", "Rolebindings map", roles)
+	log.Ctx(ctx).Info().
+		Any("Rolebindings map", roles).
+		Msg("creating paas RoleBindings for PAASNS object")
 	for roleName, groupKeys := range roles {
 		rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
-		logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
+		log.Ctx(ctx).Info().
+			Str("role", roleName).
+			Strs("groups", groupKeys).
+			Msg("creating Rolebinding")
 		rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
 		if err := EnsureRoleBinding(ctx, r, paas, &paasns.Status, rb); err != nil {
 			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
