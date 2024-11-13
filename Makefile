@@ -112,7 +112,8 @@ vet: ## Run go vet against code.
 
 .PHONY: test
 test: ## Run tests.
-	go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
+	mkdir -p /tmp/coverage/unittests/
+	go test $$(go list ./... | grep -v /e2e) -cover -args -test.gocoverdir=/tmp/coverage/unittests
 
 .PHONY: test-e2e
 test-e2e:
@@ -148,6 +149,8 @@ start-e2e:
 	mkdir -p /tmp/paas-e2e/secrets/pub && chmod 0700 /tmp/paas-e2e/secrets/pub
 	cp -r ./test/e2e/fixtures/crypt/priv* /tmp/paas-e2e/secrets/priv
 	cp -r ./test/e2e/fixtures/crypt/pub/* /tmp/paas-e2e/secrets/pub
+	# create folder to hold go coverage result
+	mkdir -p /tmp/coverage/paas
 	PAAS_CONFIG=./test/e2e/fixtures/paas_config.yml \
 		goreman -f $(PAAS_PROCFILE) start
 	rm -rf /tmp/paas-e2e
