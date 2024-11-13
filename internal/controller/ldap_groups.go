@@ -70,16 +70,9 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info().Msg("creating whitelist configmap")
 		// Create the ConfigMap
-		if err = r.ensureLdapGroupsConfigMap(ctx, gs.AsString()); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, cm, err.Error())
-		} else {
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, cm, "succeeded")
-		}
-		return err
+		return r.ensureLdapGroupsConfigMap(ctx, gs.AsString())
 	} else if err != nil {
 		logger.Err(err).Msg("could not retrieve whitelist configmap")
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, cm, err.Error())
-		// Error that isn't due to the group not existing
 		return err
 	} else if whitelist, exists := cm.Data[whitelistKeyName]; !exists {
 		logger.Info().Msg("adding whitelist.txt to whitelist configmap")
@@ -90,21 +83,14 @@ func (r *PaasReconciler) EnsureLdapGroups(
 		whitelistGroups.AddFromString(whitelist)
 		logger.Info().Msgf("adding extra groups to whitelist: %v", gs)
 		if changed := whitelistGroups.Add(&gs); !changed {
-			// fmt.Printf("configured: %d, combined: %d", l1, l2)
 			logger.Info().Msg("no new info in whitelist")
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, cm, "no changes")
 			return nil
 		}
 		logger.Info().Msg("adding to whitelist configmap")
 		cm.Data[whitelistKeyName] = whitelistGroups.AsString()
 	}
 	logger.Info().Msgf("updating whitelist configmap: %v", cm)
-	if err = r.Update(ctx, cm); err != nil {
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, cm, err.Error())
-	} else {
-		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, cm, "succeeded")
-	}
-	return err
+	return r.Update(ctx, cm)
 }
 
 // ensureLdapGroup ensures Group presence
@@ -143,7 +129,6 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 				isChanged = true
 			}
 		}
-		// fmt.Printf("configured: %d, combined: %d", l1, l2)
 		if !isChanged {
 			return nil
 		}

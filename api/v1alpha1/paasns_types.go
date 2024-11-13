@@ -16,9 +16,9 @@ import (
 const (
 	// TypeReadyPaasNs represents the status of the PaasNs reconciliation
 	TypeReadyPaasNs = "Ready"
-	// TypeHasErrorsPaasNs represents the status used when the custom resource reconciliation holds errors.
+	// TypeHasErrorsPaasNs represents the status used when the PaasNs reconciliation holds errors.
 	TypeHasErrorsPaasNs = "HasErrors"
-	// TypeDegradedPaasNs represents the status used when the custom resource is deleted and the finalizer operations are yet to occur.
+	// TypeDegradedPaasNs represents the status used when the PaasNs is deleted and the finalizer operations are yet to occur.
 	TypeDegradedPaasNs = "Degraded"
 )
 

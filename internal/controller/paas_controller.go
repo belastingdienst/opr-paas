@@ -13,11 +13,12 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	"github.com/rs/zerolog/log"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -70,18 +71,23 @@ func (r *PaasReconciler) GetPaas(
 	ctx context.Context,
 	req ctrl.Request,
 ) (paas *v1alpha1.Paas, err error) {
-	paas = &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
+	paas = &v1alpha1.Paas{}
 	ctx = setLogComponent(ctx, "paas")
 	logger := log.Ctx(ctx)
-	err = r.Get(ctx, req.NamespacedName, paas)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			// Something fishy is going on
-			// Maybe someone cleaned the finalizers and then removed the Paas project?
-			logger.Info().Msg(req.NamespacedName.Name + " is already gone")
-			return nil, nil
-			// return ctrl.Result{}, fmt.Errorf("Paas object %s already gone", req.NamespacedName)
-		}
+	if err = r.Get(ctx, req.NamespacedName, paas); err != nil {
+		return nil, client.IgnoreNotFound(err)
+	}
+
+	// Started reconciling, reset status
+	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{Type: v1alpha1.TypeReadyPaas, Status: metav1.ConditionUnknown, ObservedGeneration: paas.Generation, Reason: "Reconciling", Message: "Starting reconciliation"})
+	meta.RemoveStatusCondition(&paas.Status.Conditions, v1alpha1.TypeHasErrorsPaas)
+	if err = r.Status().Update(ctx, paas); err != nil {
+		logger.Err(err).Msg("failed to update Paas status")
+		return nil, err
+	}
+
+	if err := r.Get(ctx, req.NamespacedName, paas); err != nil {
+		logger.Err(err).Msg("failed to re-fetch Paas")
 		return nil, err
 	}
 
@@ -90,23 +96,58 @@ func (r *PaasReconciler) GetPaas(
 	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
 	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
 		logger.Error().Msg("no config found")
-		paas.Status.Truncate()
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusReconcile, paas, "please reach out to your system administrator as there is no Paasconfig available to reconcile against.")
-		err := r.Status().Update(ctx, paas)
+		err = r.setErrorCondition(ctx, paas, fmt.Errorf("please reach out to your system administrator as there is no Paasconfig available to reconcile against."))
 		if err != nil {
+			logger.Err(err).Msg("failed to update Paas status")
 			return nil, err
 		}
 		return nil, fmt.Errorf("no config found")
 	}
 
+	// Add finalizer for this CR
+	if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
+		logger.Info().Msg("paas has no finalizer yet")
+		if ok := controllerutil.AddFinalizer(paas, paasFinalizer); !ok {
+			logger.Err(err).Msg("failed to add finalizer")
+			return nil, fmt.Errorf("failed to add finalizer")
+		}
+		if err := r.Update(ctx, paas); err != nil {
+			logger.Err(err).Msg("error updating Paas")
+			return nil, err
+		}
+		logger.Info().Msg("added finalizer to Paas")
+	}
+
 	if paas.GetDeletionTimestamp() != nil {
-		logger.Info().Msg("pAAS object marked for deletion")
+		logger.Info().Msg("paas marked for deletion")
 		if controllerutil.ContainsFinalizer(paas, paasFinalizer) {
 			logger.Info().Msg("finalizing Paas")
+			// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
+			meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{
+				Type:   v1alpha1.TypeDegradedPaas,
+				Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: paas.Generation,
+				Message: fmt.Sprintf("Performing finalizer operations for Paas: %s ", paas.Name),
+			})
+
+			if err := r.Status().Update(ctx, paas); err != nil {
+				logger.Err(err).Msg("Failed to update Paas status")
+				return nil, err
+			}
 			// Run finalization logic for paasFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
 			if err := r.finalizePaas(ctx, paas); err != nil {
+				return nil, err
+			}
+
+			meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{
+				Type:   v1alpha1.TypeDegradedPaas,
+				Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: paas.Generation,
+				Message: fmt.Sprintf("Finalizer operations for Paas %s name were successfully accomplished", paas.Name),
+			})
+
+			if err := r.Status().Update(ctx, paas); err != nil {
+				logger.Err(err).Msg("Failed to update Paas status")
 				return nil, err
 			}
 
@@ -120,20 +161,6 @@ func (r *PaasReconciler) GetPaas(
 			logger.Info().Msg("finalization finished")
 		}
 		return nil, nil
-	}
-
-	// Add finalizer for this CR
-	logger.Info().Msg("adding finalizer for Paas object")
-	if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
-		logger.Info().Msg("paas object has no finalizer yet")
-		controllerutil.AddFinalizer(paas, paasFinalizer)
-		logger.Info().Msg("added finalizer for Paas object")
-		if err := r.Update(ctx, paas); err != nil {
-			logger.Info().Msg("error updating Paas object")
-			logger.Info().Msgf("%v", paas)
-			return nil, err
-		}
-		logger.Info().Msg("updated Paas object")
 	}
 
 	return paas, nil
@@ -161,42 +188,109 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		}
 		logger.Err(err).Msg("could not get Paas from k8s")
 		return errResult, err
-	} else if paas == nil {
-		logger.Err(err).Msg("nothing to do")
+	}
+
+	if paas == nil {
+		// r.GetPaas handled all logic and returned a nil object
 		return okResult, nil
 	}
 
 	paas.Status.Truncate()
-	defer func() {
-		logger.Info().
-			Int("messages", len(paas.Status.Messages)).
-			Any("quotas", paas.Status.Quota).
-			Msg("updating Paas status")
-		if err = r.Status().Update(ctx, paas); err != nil {
-			logger.Err(err).Msg("updating Paas status failed")
-		}
-	}()
 
 	if err := r.ReconcileQuotas(ctx, paas); err != nil {
+		err = r.setErrorCondition(ctx, paas, err)
+		if err != nil {
+			logger.Err(err).Msg("failed to update Paas status")
+			return errResult, err
+		}
 		return errResult, err
 	} else if err = r.ReconcileClusterWideQuota(ctx, paas); err != nil {
+		err = r.setErrorCondition(ctx, paas, err)
+		if err != nil {
+			logger.Err(err).Msg("failed to update Paas status")
+			return errResult, err
+		}
 		return errResult, err
 	} else if err = r.ReconcilePaasNss(ctx, paas); err != nil {
+		err = r.setErrorCondition(ctx, paas, err)
+		if err != nil {
+			logger.Err(err).Msg("failed to update Paas status")
+			return errResult, err
+		}
 		return errResult, err
 	} else if err = r.EnsureAppProject(ctx, paas); err != nil {
+		err = r.setErrorCondition(ctx, paas, err)
+		if err != nil {
+			logger.Err(err).Msg("failed to update Paas status")
+			return errResult, err
+		}
 		return errResult, err
 	} else if err = r.ReconcileGroups(ctx, paas); err != nil {
+		err = r.setErrorCondition(ctx, paas, err)
+		if err != nil {
+			logger.Err(err).Msg("failed to update Paas status")
+			return errResult, err
+		}
 		return errResult, err
 	} else if err = r.EnsureLdapGroups(ctx, paas); err != nil {
+		err = r.setErrorCondition(ctx, paas, err)
+		if err != nil {
+			logger.Err(err).Msg("failed to update Paas status")
+			return errResult, err
+		}
 		return errResult, err
 	} else if err = r.ReconcileRolebindings(ctx, paas); err != nil {
+		err = r.setErrorCondition(ctx, paas, err)
+		if err != nil {
+			logger.Err(err).Msg("failed to update Paas status")
+			return errResult, err
+		}
 		return errResult, err
 	}
 
-	logger.Info().Msg("updating Paas object status")
-	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paas, "succeeded")
-	logger.Info().Msg("paas object successfully reconciled")
+	// Reconciling succeeded, set appropriate Condition
+	err = r.setSuccesfullCondition(ctx, paas)
+	if err != nil {
+		logger.Err(err).Msg("failed to update Paas status")
+		return errResult, err
+	}
 	return okResult, nil
+}
+
+func (r *PaasReconciler) setSuccesfullCondition(ctx context.Context, paas *v1alpha1.Paas) error {
+	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{
+		Type:   v1alpha1.TypeReadyPaas,
+		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: paas.Generation,
+		Message: fmt.Sprintf("Reconciled (%s) successfully", paas.Name),
+	})
+	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{
+		Type:   v1alpha1.TypeHasErrorsPaas,
+		Status: metav1.ConditionFalse, Reason: "Reconciling", ObservedGeneration: paas.Generation,
+		Message: fmt.Sprintf("Reconciled (%s) successfully", paas.Name),
+	})
+
+	if err := r.Status().Update(ctx, paas); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *PaasReconciler) setErrorCondition(ctx context.Context, paas *v1alpha1.Paas, err error) error {
+	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{
+		Type:   v1alpha1.TypeReadyPaas,
+		Status: metav1.ConditionFalse, Reason: "ReconcilingError", ObservedGeneration: paas.Generation,
+		Message: fmt.Sprintf("Reconciling (%s) failed", paas.Name),
+	})
+	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{
+		Type:   v1alpha1.TypeHasErrorsPaas,
+		Status: metav1.ConditionTrue, Reason: "ReconcilingError", ObservedGeneration: paas.Generation,
+		Message: err.Error(),
+	})
+
+	if err := r.Status().Update(ctx, paas); err != nil {
+		return err
+	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

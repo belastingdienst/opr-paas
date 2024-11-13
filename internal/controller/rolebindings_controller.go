@@ -49,12 +49,11 @@ func EnsureRoleBinding(
 	ctx context.Context,
 	r Reconciler,
 	paas *v1alpha1.Paas,
-	statusMessages *v1alpha1.PaasNsStatus,
 	rb *rbac.RoleBinding,
 ) error {
 	logger := log.Ctx(ctx)
 	if len(rb.Subjects) < 1 {
-		return FinalizeRoleBinding(ctx, r, statusMessages, rb)
+		return FinalizeRoleBinding(ctx, r, rb)
 	}
 	namespacedName := types.NamespacedName{
 		Name:      rb.Name,
@@ -165,7 +164,6 @@ func backendRoleBinding(
 func FinalizeRoleBinding(
 	ctx context.Context,
 	r Reconciler,
-	statusMessages *v1alpha1.PaasNsStatus,
 	rb *rbac.RoleBinding,
 ) error {
 	namespacedName := types.NamespacedName{
@@ -214,19 +212,16 @@ func (r *PaasReconciler) ReconcileRolebindings(
 		}
 		logger.Info().Any("Rolebindings map", roles).Msg("creating paas RoleBindings for PAASNS object")
 		for roleName, groupKeys := range roles {
-			statusMessages := v1alpha1.PaasNsStatus{}
 			rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
 			logger.Info().
 				Str("role", roleName).
 				Strs("groups", groupKeys).
 				Msg("creating Rolebinding")
 			rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
-			if err := EnsureRoleBinding(ctx, r, paas, &statusMessages, rb); err != nil {
+			if err := EnsureRoleBinding(ctx, r, paas, rb); err != nil {
 				err = fmt.Errorf("failure while creating/updating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
-				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 				return err
 			}
-			paas.Status.AddMessages(statusMessages.GetMessages())
 		}
 	}
 	return nil
@@ -261,7 +256,7 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 			Strs("groups", groupKeys).
 			Msg("creating Rolebinding")
 		rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
-		if err := EnsureRoleBinding(ctx, r, paas, &paasns.Status, rb); err != nil {
+		if err := EnsureRoleBinding(ctx, r, paas, rb); err != nil {
 			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
 			return err
 		}

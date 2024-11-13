@@ -177,32 +177,27 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 
 	err := r.Get(ctx, types.NamespacedName{Name: quotaName}, quota)
 	if err != nil && !errors.IsNotFound(err) {
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, err.Error())
 		return err
 	}
 	exists = err == nil
 
 	if !paas.AmIOwner(quota.OwnerReferences) {
 		if err := controllerutil.SetOwnerReference(paas, quota, r.Scheme); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
+			return err
 		}
 	}
 	if err := r.UpdateClusterWideQuotaResources(ctx, quota); err != nil {
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
 		return err
 	}
 	if exists {
 		if err = r.Update(ctx, quota); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
 			return err
 		}
 	} else {
 		if err = r.Create(ctx, quota); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, quota, err.Error())
 			return err
 		}
 	}
-	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, quota, "succeeded")
 	return nil
 }
 
@@ -223,37 +218,27 @@ func (r *PaasReconciler) removeFromClusterWideQuota(ctx context.Context, paas *v
 	if err != nil && errors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, err.Error())
 		return err
 	} else if !capConfig.QuotaSettings.Clusterwide {
 		err := r.Delete(ctx, quota)
 		if err != nil {
-			if !errors.IsNotFound(err) {
-				paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, quota, err.Error())
-			}
 			return err
 		}
-		return err
+		return nil
 	} else if quota == nil {
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, "unexpectedly quota is nil")
 		return fmt.Errorf("unexpectedly quota %s is nil", quotaName)
 	}
 	quota.OwnerReferences = paas.WithoutMe(quota.OwnerReferences)
 	if len(quota.OwnerReferences) < 1 {
 		if err = r.Delete(ctx, quota); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, quota, err.Error())
 			return err
 		}
-		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusDelete, quota, "succeeded")
 		return nil
 	}
 	if err := r.UpdateClusterWideQuotaResources(ctx, quota); err != nil {
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
 		return err
 	} else if err = r.Update(ctx, quota); err != nil {
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
 		return err
 	}
-	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, quota, "succeeded")
 	return nil
 }
