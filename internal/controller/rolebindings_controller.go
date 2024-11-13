@@ -76,18 +76,15 @@ func EnsureRoleBinding(
 		if err != nil {
 			// Creating the rolebinding failed
 			logger.Err(err).Msg("error creating rolebinding")
-			statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
 			return err
 		} else {
 			// Creating the rolebinding was successful and return
 			logger.Info().Msg("created rolebinding")
-			statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
 		logger.Err(err).Msg("error getting rolebinding")
-		statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 		return err
 	}
 	var changed bool
@@ -111,12 +108,8 @@ func EnsureRoleBinding(
 			Msg("updating RoleBinding")
 		if err = r.Update(ctx, found); err != nil {
 			logger.Err(err).Msg("error updating rolebinding")
-			statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, rb, err.Error())
 			return err
 		}
-		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updated")
-	} else {
-		statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "not needed")
 	}
 	return err
 }
@@ -186,10 +179,8 @@ func FinalizeRoleBinding(
 		return nil
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
-		statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 		return err
 	} else {
-		statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, rb, "Succeeded")
 		return r.Delete(ctx, rb)
 	}
 }
@@ -272,7 +263,6 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 		rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
 		if err := EnsureRoleBinding(ctx, r, paas, &paasns.Status, rb); err != nil {
 			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
-			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
 			return err
 		}
 	}

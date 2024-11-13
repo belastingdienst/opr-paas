@@ -162,8 +162,7 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
 	if err != nil {
-		// Applicationset does not exixt
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, appSet, err.Error())
+		// Applicationset does not exist
 		return err
 	}
 	patch := client.MergeFrom(appSet.DeepCopy())
@@ -177,7 +176,6 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 			paasns.Spec.Paas: entryFromPaas(paas),
 		}
 	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, appSet, err.Error())
 		return err
 	} else {
 		entry := entryFromPaas(paas)
@@ -185,16 +183,11 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 	}
 	// log.Info(fmt.Sprintf("entries: %s", entries.AsString()))
 	if json, err := entries.AsJSON(); err != nil {
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, appSet, err.Error())
 		return err
 	} else {
-		// log.Info(fmt.Sprintf("json: %v", json))
-		// log.Info(fmt.Sprintf("json: %v", listGen))
-		// log.Info(fmt.Sprintf("json: %v", listGen.List))
 		listGen.List.Elements = json
 	}
 
-	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, appSet, "succeeded")
 	appSet.Spec.Generators = clearGenerators(appSet.Spec.Generators)
 	return r.Patch(ctx, appSet, patch)
 }

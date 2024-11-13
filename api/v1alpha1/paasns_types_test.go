@@ -7,7 +7,6 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
-	"fmt"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -205,82 +204,4 @@ func TestPaasNsStatus_Truncate(t *testing.T) {
 	ps.Truncate()
 	assert.NotNil(t, ps.Messages)
 	assert.Empty(t, ps.Messages)
-}
-
-func TestPaasNsStatus_AddMessage(t *testing.T) {
-	pns := &PaasNS{
-		TypeMeta:   metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{},
-		Spec:       PaasNSSpec{},
-		Status:     PaasNsStatus{},
-	}
-	ps := PaasNsStatus{
-		Messages: []string{},
-	}
-
-	err := fmt.Errorf("Test message 1")
-	ps.AddMessage(PaasStatusInfo, PaasStatusFind, pns, err.Error())
-
-	assert.NotNil(t, ps.Messages)
-	assert.Len(t, ps.Messages, 1)
-	assert.Equal(t, "INFO: find for / (/, Kind=) Test message 1", ps.Messages[0])
-
-	err = fmt.Errorf("Test message 2")
-	ps.AddMessage(PaasStatusWarning, PaasStatusFind, pns, err.Error())
-
-	assert.NotNil(t, ps.Messages)
-	assert.Len(t, ps.Messages, 2)
-	assert.Equal(t, "INFO: find for / (/, Kind=) Test message 1", ps.Messages[0])
-	assert.Equal(t, "WARNING: find for / (/, Kind=) Test message 2", ps.Messages[1])
-}
-
-func TestPaasNsStatus_GetMessages(t *testing.T) {
-	pns := &PaasNS{
-		TypeMeta:   metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{},
-		Spec:       PaasNSSpec{},
-		Status:     PaasNsStatus{},
-	}
-	ps := PaasNsStatus{
-		Messages: []string{},
-	}
-
-	err := fmt.Errorf("Test message 1")
-	ps.AddMessage(PaasStatusInfo, PaasStatusFind, pns, err.Error())
-
-	assert.NotNil(t, ps.Messages)
-	assert.Len(t, ps.Messages, 1)
-	assert.Equal(t, "INFO: find for / (/, Kind=) Test message 1", ps.Messages[0])
-
-	output := ps.GetMessages()
-	assert.NotNil(t, output)
-	assert.IsType(t, []string{}, output)
-	assert.Len(t, output, 1)
-	assert.Equal(t, "INFO: find for / (/, Kind=) Test message 1", output[0])
-}
-
-func TestPaasNsStatus_AddMessages(t *testing.T) {
-	ps := PaasNsStatus{
-		Messages: []string{
-			"Message 1",
-			"Message 2",
-		},
-	}
-
-	msg := []string{
-		"Added Message 1",
-		"Added Message 2",
-	}
-
-	assert.NotNil(t, ps.Messages)
-	assert.Len(t, ps.Messages, 2)
-	assert.Equal(t, "Message 1", ps.Messages[0])
-
-	ps.AddMessages(msg)
-
-	assert.NotNil(t, ps.Messages)
-	assert.IsType(t, []string{}, ps.Messages)
-	assert.Len(t, ps.Messages, 4)
-	assert.Equal(t, "Message 1", ps.Messages[0])
-	assert.Equal(t, "Added Message 1", ps.Messages[2])
 }
