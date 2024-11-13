@@ -247,13 +247,13 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 	}
 	log.Ctx(ctx).Info().
 		Any("Rolebindings map", roles).
-		Msg("Creating paas RoleBindings for PAASNS object")
+		Msg("creating paas RoleBindings for PAASNS object")
 	for roleName, groupKeys := range roles {
 		rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
 		log.Ctx(ctx).Info().
 			Str("role", roleName).
 			Strs("groups", groupKeys).
-			Msg("Creating Rolebinding")
+			Msg("creating Rolebinding")
 		rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
 		if err := EnsureRoleBinding(ctx, r, paas, &paasns.Status, rb); err != nil {
 			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())

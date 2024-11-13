@@ -206,30 +206,30 @@ func (r *PaasNSReconciler) getExistingPaasSecrets(ctx context.Context, paas *v1a
 	// Check in enabled namespaces, as secrets are to be removed when namespace is removed
 	enabledNs := paas.PrefixedAllEnabledNamespaces()
 	for ns := range enabledNs {
-		logger.Info().Msgf("Listing obsolete secret in namespace: %s", ns)
+		logger.Info().Msgf("listing obsolete secret in namespace: %s", ns)
 		var secrets corev1.SecretList
 		opts := []client.ListOption{
 			client.InNamespace(ns),
 		}
 		err := r.List(ctx, &secrets, opts...)
 		if err != nil {
-			logger.Err(err).Msg("Error listing existing secrets")
+			logger.Err(err).Msg("error listing existing secrets")
 			return []*corev1.Secret{}, err
 		}
 		logger.Info().
 			Str("ns", ns).
 			Int("qty", len(secrets.Items)).
-			Msgf("Qty of existing secrets in ns")
+			Msgf("qty of existing secrets in ns")
 		for _, secret := range secrets.Items {
 			if paas.AmIOwner(secret.OwnerReferences) && strings.HasPrefix(secret.Name, "paas-ssh") {
-				logger.Info().Msg("Existing paas-ssh secret")
+				logger.Info().Msg("existing paas-ssh secret")
 				existingSecrets = append(existingSecrets, &secret)
 				continue
 			}
-			logger.Info().Msg("No existing paas-ssh secret")
+			logger.Info().Msg("no existing paas-ssh secret")
 		}
 	}
-	logger.Info().Int("secrets", len(existingSecrets)).Msg("Qty of existing secrets")
+	logger.Info().Int("secrets", len(existingSecrets)).Msg("qty of existing secrets")
 	return existingSecrets, nil
 }
 
@@ -240,7 +240,7 @@ func (r *PaasNSReconciler) ReconcileSecrets(
 ) error {
 	ctx = setLogComponent(ctx, "secret")
 	logger := log.Ctx(ctx)
-	logger.Debug().Msg("Reconciling Ssh Secrets")
+	logger.Debug().Msg("reconciling Ssh Secrets")
 	desiredSecrets := r.BackendSecrets(ctx, paasns, paas)
 	existingSecrets, err := r.getExistingPaasSecrets(ctx, paas)
 	if err != nil {
@@ -252,10 +252,10 @@ func (r *PaasNSReconciler) ReconcileSecrets(
 	}
 	for _, secret := range desiredSecrets {
 		if err := r.EnsureSecret(ctx, paasns, secret); err != nil {
-			logger.Err(err).Str("secret", secret.Name).Msg("Failure while reconciling secret")
+			logger.Err(err).Str("secret", secret.Name).Msg("failure while reconciling secret")
 			return err
 		}
-		logger.Info().Str("secret", secret.Name).Msg("Ssh secret successfully reconciled")
+		logger.Info().Str("secret", secret.Name).Msg("ssh secret successfully reconciled")
 	}
 	return nil
 }

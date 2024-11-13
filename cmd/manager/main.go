@@ -157,7 +157,7 @@ func configureLogging(pretty bool, debug bool, componentDebugList string, splitL
 
 	if debug {
 		if componentDebugList != "" {
-			log.Fatal().Msg("Cannot pass --debug and --component-debug simultaneously")
+			log.Fatal().Msg("cannot pass --debug and --component-debug simultaneously")
 		}
 	} else if componentDebugList != "" {
 		controller.SetComponentDebug(strings.Split(componentDebugList, ","))

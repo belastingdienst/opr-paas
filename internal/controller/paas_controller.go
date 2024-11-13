@@ -126,7 +126,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	paas := &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
 	ctx = setRequestLogger(ctx, paas, r.Scheme, req)
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("Reconciling the Paas object")
+	logger.Info().Msg("reconciling the Paas object")
 
 	errResult := reconcile.Result{
 		Requeue:      true,
@@ -149,9 +149,9 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		logger.Info().
 			Int("messages", len(paas.Status.Messages)).
 			Any("quotas", paas.Status.Quota).
-			Msg("Updating Paas status")
+			Msg("updating Paas status")
 		if err = r.Status().Update(ctx, paas); err != nil {
-			logger.Err(err).Msg("Updating Paas status failed")
+			logger.Err(err).Msg("updating Paas status failed")
 		}
 	}()
 
@@ -173,9 +173,9 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return errResult, err
 	}
 
-	logger.Info().Msg("Updating Paas object status")
+	logger.Info().Msg("updating Paas object status")
 	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paas, "succeeded")
-	logger.Info().Msg("Paas object successfully reconciled")
+	logger.Info().Msg("paas object successfully reconciled")
 	return okResult, nil
 }
 

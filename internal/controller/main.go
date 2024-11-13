@@ -80,7 +80,7 @@ func getLogger(
 func setRequestLogger(ctx context.Context, obj client.Object, scheme *runtime.Scheme, req ctrl.Request) context.Context {
 	gvk, err := apiutil.GVKForObject(obj, scheme)
 	if err != nil {
-		log.Err(err).Msg("Failed to retrieve controller group-version-kind")
+		log.Err(err).Msg("failed to retrieve controller group-version-kind")
 
 		return log.Logger.WithContext(ctx)
 	}

@@ -130,7 +130,7 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	paasns := &v1alpha1.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
 	ctx = setRequestLogger(ctx, paasns, r.Scheme, req)
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("Reconciling the PaasNs object")
+	logger.Info().Msg("reconciling the PaasNs object")
 
 	errResult := reconcile.Result{
 		Requeue:      true,
@@ -154,10 +154,10 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	defer func() {
 		logger.Info().
 			Int("messages", len(paasns.Status.Messages)).
-			Msg("Updating PaasNs status")
+			Msg("updating PaasNs status")
 
 		if err = r.Status().Update(ctx, paasns); err != nil {
-			logger.Err(err).Msg("Updating PaasNs status failed")
+			logger.Err(err).Msg("updating PaasNs status failed")
 		}
 	}()
 
@@ -184,13 +184,13 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 
 	err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas)
 	if err != nil {
-		logger.Err(err).Msg("Reconciling Extra ClusterRoleBindings failed")
+		logger.Err(err).Msg("reconciling Extra ClusterRoleBindings failed")
 		return errResult, fmt.Errorf("reconciling Extra ClusterRoleBindings failed")
 	}
 
 	if _, exists := paas.Spec.Capabilities[paasns.Name]; exists {
 		if paasns.Name == "argocd" {
-			logger.Info().Msg("Creating Argo App for client bootstrapping")
+			logger.Info().Msg("creating Argo App for client bootstrapping")
 
 			// Create bootstrap Argo App
 			if err := r.EnsureArgoApp(ctx, paasns, paas); err != nil {
@@ -202,13 +202,13 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 			}
 		}
 
-		logger.Info().Msg("Extending Applicationsets for Paas object")
+		logger.Info().Msg("extending Applicationsets for Paas object")
 		if err := r.EnsureAppSetCap(ctx, paasns, paas); err != nil {
 			return errResult, err
 		}
 	}
 
-	logger.Info().Msg("Updating PaasNs object status")
+	logger.Info().Msg("updating PaasNs object status")
 	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paasns, "succeeded")
 	logger.Info().Msg("PaasNs object successfully reconciled")
 
