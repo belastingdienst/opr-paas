@@ -16,7 +16,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,10 +36,6 @@ func getConfig() config.Config {
 			panic(fmt.Sprintf(
 				"Could not read config: %s",
 				err.Error()))
-		}
-		if _cnf.Debug {
-			logrus.SetLevel(logrus.DebugLevel)
-			logrus.Debug("Enabling debug logging")
 		}
 	}
 	return *_cnf
