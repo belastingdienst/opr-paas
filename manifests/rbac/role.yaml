@@ -19,6 +19,13 @@ rules:
   - update
   - watch
 - apiGroups:
+  - argoproj.io
+  resources:
+  - applicationsets
+  verbs:
+  - get
+  - patch
+- apiGroups:
   - ""
   resources:
   - configmaps
