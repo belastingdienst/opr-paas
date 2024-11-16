@@ -280,8 +280,6 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	} else {
 		listGen.List.Elements = json
 	}
-	
-        //+kubebuilder:rbac:groups=argoproj.io,resources=applicationsets,verbs=get;patch
 	return r.Patch(ctx, as, patch)
 }
 
