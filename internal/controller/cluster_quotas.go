@@ -13,8 +13,8 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
 
-	"github.com/go-logr/logr"
 	quotav1 "github.com/openshift/api/quota/v1"
+	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
@@ -77,8 +77,9 @@ func (r *PaasReconciler) backendQuota(
 	} else {
 		quotaName = fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, suffix)
 	}
-	logger := getLogger(ctx, paas, "Quota", quotaName)
-	logger.Info("Defining quota")
+	ctx = setLogComponent(ctx, "Quota")
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("Defining quota")
 	// matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	quota := &quotav1.ClusterResourceQuota{
 		TypeMeta: metav1.TypeMeta{
@@ -103,10 +104,10 @@ func (r *PaasReconciler) backendQuota(
 		},
 	}
 
-	logger.Info("Setting owner")
+	logger.Info().Msg("Setting owner")
 
 	if err := controllerutil.SetControllerReference(paas, quota, r.Scheme); err != nil {
-		logger.Info("Error setting owner: " + err.Error())
+		logger.Err(err).Msg("Error setting owner")
 	}
 
 	return quota
@@ -171,37 +172,39 @@ func (r *PaasReconciler) BackendUnneededQuotas(
 }
 
 func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha1.Paas, quotaName string) error {
-	logger := getLogger(ctx, paas, "Quota", quotaName)
-	logger.Info("Finalizing")
+	ctx = setLogComponent(ctx, "Quota")
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("Finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Name: quotaName,
 	}, obj); err != nil && errors.IsNotFound(err) {
-		logger.Info("Does not exist")
+		logger.Info().Msg("Does not exist")
 		return nil
 	} else if err != nil {
-		logger.Info("Error retrieving info: " + err.Error())
+		logger.Err(err).Msg("Error retrieving info")
 		return err
 	} else {
-		logger.Info("Deleting")
+		logger.Info().Msg("Deleting")
 		return r.Delete(ctx, obj)
 	}
 }
 
 func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1alpha1.PaasNS) error {
-	logger := getLogger(ctx, paasns, "Quota", paasns.NamespaceName())
-	logger.Info("Finalizing")
+	ctx = setLogComponent(ctx, "Quota")
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("Finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Name: paasns.NamespaceName(),
 	}, obj); err != nil && errors.IsNotFound(err) {
-		logger.Info("Does not exist")
+		logger.Info().Msg("Does not exist")
 		return nil
 	} else if err != nil {
-		logger.Info("Error retrieving info: " + err.Error())
+		logger.Err(err).Msg("Error retrieving info")
 		return err
 	} else {
-		logger.Info("Deleting")
+		logger.Info().Msg("Deleting")
 		return r.Delete(ctx, obj)
 	}
 }
@@ -227,17 +230,18 @@ func (r *PaasReconciler) FinalizeClusterQuotas(ctx context.Context, paas *v1alph
 func (r *PaasReconciler) ReconcileQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	logger logr.Logger,
 ) (err error) {
-	logger.Info("Creating quotas for PAAS object ")
+	ctx = setLogComponent(ctx, "Quota")
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("Creating quotas for PAAS object ")
 	// Create quotas if needed
 	if quotas, err := r.BackendEnabledQuotas(ctx, paas); err != nil {
-		logger.Error(err, "Failure while getting list of quotas")
+		logger.Err(err).Msg("Failure while getting list of quotas")
 	} else {
 		for _, q := range quotas {
-			logger.Info("Creating quota " + q.Name + " for PAAS object ")
+			logger.Info().Msg("Creating quota " + q.Name + " for PAAS object ")
 			if err := r.EnsureQuota(ctx, paas, q); err != nil {
-				logger.Error(err, fmt.Sprintf("Failure while creating quota %s", q.ObjectMeta.Name))
+				logger.Err(err).Msgf("Failure while creating quota %s", q.ObjectMeta.Name)
 				return err
 			}
 		}
@@ -246,9 +250,9 @@ func (r *PaasReconciler) ReconcileQuotas(
 		return err
 	} else {
 		for _, name := range r.BackendUnneededQuotas(ctx, paas) {
-			logger.Info("Cleaning quota " + name + " for PAAS object ")
+			logger.Info().Msg("Cleaning quota " + name + " for PAAS object ")
 			if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {
-				logger.Error(err, fmt.Sprintf("Failure while finalizing quota %s", name))
+				logger.Err(err).Msgf("Failure while finalizing quota %s", name)
 				return err
 			}
 		}

@@ -13,7 +13,6 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 
-	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -21,7 +20,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
@@ -55,20 +53,6 @@ func getRsa(paas string) *crypt.Crypt {
 		_crypt[paas] = c
 		return c
 	}
-}
-
-func getLogger(
-	ctx context.Context,
-	obj client.Object,
-	kind string,
-	name string,
-) logr.Logger {
-	fields := append(make([]interface{}, 0), obj.GetObjectKind().GroupVersionKind().Kind, obj.GetName(), "Kind", kind)
-	if name != "" {
-		fields = append(fields, "Name", name)
-	}
-
-	return ctrllog.FromContext(ctx).WithValues(fields...)
 }
 
 // setRequestLogger derives a context with a `zerolog` logger configured for a specific controller.

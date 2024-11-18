@@ -11,11 +11,12 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -86,8 +87,9 @@ func BackendNamespace(
 	quota string,
 	scheme *runtime.Scheme,
 ) (*corev1.Namespace, error) {
-	logger := getLogger(ctx, paas, "Namespace", name)
-	logger.Info(fmt.Sprintf("Defining %s Namespace", name))
+	setLogComponent(ctx, "Namespace")
+	logger := log.Ctx(ctx)
+	logger.Info().Msgf("Defining %s Namespace", name)
 	ns := &corev1.Namespace{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Namespace",
@@ -99,23 +101,23 @@ func BackendNamespace(
 		},
 		Spec: corev1.NamespaceSpec{},
 	}
-	logger.Info(fmt.Sprintf("Setting Quotagroup %s", quota))
+	logger.Info().Msgf("Setting Quotagroup %s", quota)
 	ns.ObjectMeta.Labels[getConfig().QuotaLabel] = quota
 
 	argoNameSpace := fmt.Sprintf("%s-argocd", paas.ManagedByPaas())
-	logger.Info("Setting managed_by_label")
+	logger.Info().Msg("Setting managed_by_label")
 	ns.ObjectMeta.Labels[getConfig().ManagedByLabel] = argoNameSpace
 
-	logger.Info("Setting requestor_label")
+	logger.Info().Msg("Setting requestor_label")
 	ns.ObjectMeta.Labels[getConfig().RequestorLabel] = paas.Spec.Requestor
 
-	logger.Info("Setting Owner", "PaaS", paas, "namespace", ns)
+	logger.Info().Str("PaaS", paas.Name).Str("namespace", ns.Name).Msg("Setting Owner")
 	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {
-		logger.Error(err, "SetControllerReference failure")
+		logger.Err(err).Msg("SetControllerReference failure")
 		return nil, err
 	}
 	for _, ref := range ns.OwnerReferences {
-		logger.Info("ownerReferences", "namespace", ns.Name, "reference", ref)
+		logger.Info().Str("namespace", ns.Name).Str("reference", ref.Name).Msg("ownerReferences")
 	}
 	return ns, nil
 }

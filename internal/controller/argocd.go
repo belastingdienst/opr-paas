@@ -8,17 +8,16 @@ package controller
 
 import (
 	"context"
-	"fmt"
-
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
+	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // ensureLdapGroup ensures Group presence
@@ -29,11 +28,12 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 	if paasns.Name != "argocd" {
 		return nil
 	}
+	ctx = setLogComponent(ctx, "ArgoPermissions")
+	logger := log.Ctx(ctx)
 	paas, _, err := r.paasFromPaasNs(ctx, paasns)
 	if err != nil {
 		return err
 	}
-	logger := getLogger(ctx, paasns, "ArgoPermissions", "")
 
 	defaultPolicy := getConfig().ArgoPermissions.DefaultPolicy
 	policy := getConfig().ArgoPermissions.FromGroups(
@@ -85,7 +85,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 	if argo.Spec.RBAC.DefaultPolicy != nil {
 		oldDefaultPolicy = *argo.Spec.RBAC.DefaultPolicy
 	}
-	logger.Info(fmt.Sprintf("Setting ArgoCD permissions to %s", policy))
+	logger.Info().Msgf("Setting ArgoCD permissions to %s", policy)
 	if oldPolicy == policy && oldDefaultPolicy == defaultPolicy && paas.AmIOwner(argo.OwnerReferences) {
 		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, argo, "no changes")
 		return nil
@@ -96,7 +96,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 	if err = controllerutil.SetControllerReference(paas, argo, r.GetScheme()); err != nil {
 		return err
 	}
-	logger.Info("Updating ArgoCD object")
+	logger.Info().Msg("Updating ArgoCD object")
 	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, argo, "updating ArgoCD instance")
 	return r.Patch(ctx, argo, patch)
 }

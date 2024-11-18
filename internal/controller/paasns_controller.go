@@ -14,6 +14,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
+	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -50,8 +51,9 @@ func (pr PaasNSReconciler) GetScheme() *runtime.Scheme {
 
 func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paasns *v1alpha1.PaasNS, err error) {
 	paasns = &v1alpha1.PaasNS{}
-	logger := getLogger(ctx, paasns, paasns.Kind, req.Name)
-	logger.Info("Reconciling PaasNs")
+	ctx = setLogComponent(ctx, "PaasNS")
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("Reconciling PaasNs")
 
 	if err = r.Get(ctx, req.NamespacedName, paasns); err != nil {
 		return nil, client.IgnoreNotFound(err)
@@ -63,16 +65,16 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 			return nil, fmt.Errorf("failed to add finalizer")
 		}
 		if err := r.Update(ctx, paasns); err != nil {
-			logger.Error(err, "Error updating PaasNs")
+			logger.Err(err).Msg("Error updating PaasNs")
 			return nil, err
 		}
-		logger.Info("Added finalizer to PaasNs")
+		logger.Info().Msg("Added finalizer to PaasNs")
 	}
 
 	if paasns.GetDeletionTimestamp() != nil {
-		logger.Info("PaasNS object marked for deletion")
+		logger.Info().Msg("PaasNS object marked for deletion")
 		if controllerutil.ContainsFinalizer(paasns, paasNsFinalizer) {
-			logger.Info("Finalizing PaasNs")
+			logger.Info().Msg("Finalizing PaasNs")
 			// Run finalization logic for paasNsFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
@@ -80,13 +82,13 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 				return nil, err
 			}
 
-			logger.Info("Removing finalizer")
+			logger.Info().Msg("Removing finalizer")
 			// Remove paasNsFinalizer. Once all finalizers have been removed, the object will be deleted.
 			controllerutil.RemoveFinalizer(paasns, paasNsFinalizer)
 			if err := r.Update(ctx, paasns); err != nil {
 				return nil, err
 			}
-			logger.Info("Finalization finished")
+			logger.Info().Msg("Finalization finished")
 		}
 		return nil, nil
 	}
@@ -279,10 +281,11 @@ func (r *PaasReconciler) pnsFromNs(ctx context.Context, ns string) map[string]v1
 }
 
 func (r *PaasNSReconciler) paasFromPaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, namespaces map[string]int, err error) {
-	logger := getLogger(ctx, paasns, "PaasNs", "paasFromPaasNs")
+	ctx = setLogComponent(ctx, "PaasNS")
+	logger := log.Ctx(ctx)
 	paas = &v1alpha1.Paas{}
 	if err := r.Get(ctx, types.NamespacedName{Name: paasns.Spec.Paas}, paas); err != nil {
-		logger.Error(err, "cannot get Paas")
+		logger.Err(err).Msg("cannot get Paas")
 		return nil, namespaces, err
 	}
 	if paasns.Namespace == paas.Name {
@@ -310,20 +313,21 @@ func (r *PaasNSReconciler) paasFromPaasNs(ctx context.Context, paasns *v1alpha1.
 }
 
 func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) error {
-	logger := getLogger(ctx, paasns, "PaasNs", "finalizePaasNs")
+	ctx = setLogComponent(ctx, "PaasNS")
+	logger := log.Ctx(ctx)
 
 	paas, nss, err := r.paasFromPaasNs(ctx, paasns)
 	if err != nil {
 		err = fmt.Errorf("cannot find PaaS %s: %s", paasns.Spec.Paas, err.Error())
-		logger.Info(err.Error())
+		logger.Info().Msg(err.Error())
 		return nil
 	} else if nss[paasns.NamespaceName()] > 1 {
 		err = fmt.Errorf("this is not the only paasns managing this namespace, silently removing this paasns")
-		logger.Info(err.Error())
+		logger.Info().Msg(err.Error())
 		return nil
 	}
 
-	logger.Info("Inside PaasNs finalizer")
+	logger.Info().Msg("Inside PaasNs finalizer")
 	if err := r.FinalizeNamespace(ctx, paasns, paas); err != nil {
 		err = fmt.Errorf("cannot remove namespace belonging to PaaS %s: %s", paasns.Spec.Paas, err.Error())
 		return err
@@ -332,12 +336,12 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 		return err
 	}
 	if _, isCapability := paas.Spec.Capabilities[paasns.Name]; isCapability {
-		logger.Info("PaasNs is a capability, also finalizing Cluster Resource Quota")
+		logger.Info().Msg("PaasNs is a capability, also finalizing Cluster Resource Quota")
 		if err := r.FinalizeClusterQuota(ctx, paasns); err != nil {
-			logger.Error(err, fmt.Sprintf("Failure while finalizing quota %s", paasns.Name))
+			logger.Err(err).Msg(fmt.Sprintf("Failure while finalizing quota %s", paasns.Name))
 			return err
 		}
 	}
-	logger.Info("PaasNs successfully finalized")
+	logger.Info().Msg("PaasNs successfully finalized")
 	return nil
 }

@@ -12,7 +12,6 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
-	"github.com/go-logr/logr"
 	"github.com/rs/zerolog/log"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -53,7 +52,7 @@ func EnsureRoleBinding(
 	statusMessages *v1alpha1.PaasNsStatus,
 	rb *rbac.RoleBinding,
 ) error {
-	logger := getLogger(ctx, paas, "Rolebinding", rb.Name)
+	logger := log.Ctx(ctx)
 	if len(rb.Subjects) < 1 {
 		return FinalizeRoleBinding(ctx, r, statusMessages, rb)
 	}
@@ -66,30 +65,35 @@ func EnsureRoleBinding(
 	err := r.Get(ctx, namespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Create the rolebinding
-		logger.Info("Creating RoleBinding", "Namespace", rb.Namespace, "Name", rb.Name, "roleRef", rb.RoleRef, "subject", rb.Subjects)
+		logger.Info().
+			Str("Namespace", rb.Namespace).
+			Str("Name", rb.Name).
+			Str("roleRef", rb.RoleRef.Name).
+			Any("subject", rb.Subjects).
+			Msg("Creating RoleBinding")
 		err = r.Create(ctx, rb)
 
 		if err != nil {
 			// Creating the rolebinding failed
-			logger.Error(err, "Error creating rolebinding")
+			logger.Err(err).Msg("Error creating rolebinding")
 			statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, rb, err.Error())
 			return err
 		} else {
 			// Creating the rolebinding was successful and return
-			logger.Info("Created rolebinding")
+			logger.Info().Msg("Created rolebinding")
 			statusMessages.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, rb, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
-		logger.Error(err, "Error getting rolebinding")
+		logger.Err(err).Msg("Error getting rolebinding")
 		statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, rb, err.Error())
 		return err
 	}
 	var changed bool
 	if !paas.AmIOwner(found.OwnerReferences) {
 		if err = controllerutil.SetControllerReference(paas, found, r.GetScheme()); err != nil {
-			logger.Error(err, "Error setting rolebinding owner")
+			logger.Err(err).Msg("Error setting rolebinding owner")
 			return err
 		}
 		changed = true
@@ -99,9 +103,14 @@ func EnsureRoleBinding(
 		changed = true
 	}
 	if changed {
-		logger.Info("Updating RoleBinding", "Namespace", rb.Namespace, "Name", rb.Name, "roleRef", rb.RoleRef, "subject", rb.Subjects)
+		logger.Info().
+			Str("Namespace", rb.Namespace).
+			Str("Name", rb.Name).
+			Str("roleRef", rb.RoleRef.Name).
+			Any("subject", rb.Subjects).
+			Msg("Updating RoleBinding")
 		if err = r.Update(ctx, found); err != nil {
-			logger.Error(err, "Error updating rolebinding")
+			logger.Err(err).Msg("Error updating rolebinding")
 			statusMessages.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, rb, err.Error())
 			return err
 		}
@@ -121,8 +130,8 @@ func backendRoleBinding(
 	role string,
 	groups []string,
 ) (*rbac.RoleBinding, error) {
-	logger := getLogger(ctx, paas, "RoleBinding", name.String())
-	logger.Info(fmt.Sprintf("Defining %s RoleBinding", name))
+	logger := log.Ctx(ctx)
+	logger.Info().Msgf("Defining %s RoleBinding", name)
 
 	subjects := []rbac.Subject{}
 	for _, g := range groups {
@@ -151,7 +160,7 @@ func backendRoleBinding(
 			Name:     role,
 		},
 	}
-	logger.Info("Setting Owner")
+	logger.Info().Msg("Setting Owner")
 	if err := controllerutil.SetControllerReference(paas, rb, r.GetScheme()); err != nil {
 		return rb, err
 	}
@@ -189,8 +198,9 @@ func FinalizeRoleBinding(
 func (r *PaasReconciler) ReconcileRolebindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	logger logr.Logger,
 ) error {
+	ctx = setLogComponent(ctx, "RoleBinding")
+	logger := log.Ctx(ctx)
 	for _, paasns := range r.pnsFromNs(ctx, paas.ObjectMeta.Name) {
 		roles := make(map[string][]string)
 
@@ -201,7 +211,7 @@ func (r *PaasReconciler) ReconcileRolebindings(
 				roles[role] = []string{}
 			}
 		}
-		logger.Info("All roles", "Rolebindings map", roles)
+		logger.Info().Any("Rolebindings map", roles).Msg("All roles")
 		for groupName, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
 			for _, mappedRole := range getConfig().RoleMappings.Roles(groupRoles) {
 				if role, exists := roles[mappedRole]; exists {
@@ -211,11 +221,14 @@ func (r *PaasReconciler) ReconcileRolebindings(
 				}
 			}
 		}
-		logger.Info("Creating paas RoleBindings for PAASNS object", "Rolebindings map", roles)
+		logger.Info().Any("Rolebindings map", roles).Msg("Creating paas RoleBindings for PAASNS object")
 		for roleName, groupKeys := range roles {
 			statusMessages := v1alpha1.PaasNsStatus{}
 			rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
-			logger.Info("Creating Rolebinding", "role", roleName, "groups", groupKeys)
+			logger.Info().
+				Str("role", roleName).
+				Strs("groups", groupKeys).
+				Msg("Creating Rolebinding")
 			rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
 			if err := EnsureRoleBinding(ctx, r, paas, &statusMessages, rb); err != nil {
 				err = fmt.Errorf("failure while creating/updating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
@@ -234,6 +247,8 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 ) error {
+	ctx = setLogComponent(ctx, "RoleBinding")
+	logger := log.Ctx(ctx)
 	// Creating a list of roles and the groups that should have them, for this namespace
 	roles := make(map[string][]string)
 	for groupName, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
@@ -245,12 +260,12 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 			}
 		}
 	}
-	log.Ctx(ctx).Info().
+	logger.Info().
 		Any("Rolebindings map", roles).
 		Msg("creating paas RoleBindings for PAASNS object")
 	for roleName, groupKeys := range roles {
 		rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
-		log.Ctx(ctx).Info().
+		logger.Info().
 			Str("role", roleName).
 			Strs("groups", groupKeys).
 			Msg("creating Rolebinding")
