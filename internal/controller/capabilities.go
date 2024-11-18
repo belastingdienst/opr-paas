@@ -280,6 +280,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	} else {
 		listGen.List.Elements = json
 	}
+	
 	return r.Patch(ctx, as, patch)
 }
 
