@@ -127,7 +127,7 @@ func (r *PaasNSReconciler) getSecrets(
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 	encryptedSecrets map[string]string,
-) (secrets []*corev1.Secret) {
+) (secrets []*corev1.Secret, err error) {
 	for url, encryptedSecretData := range encryptedSecrets {
 		namespacedName := types.NamespacedName{
 			Namespace: paasns.NamespaceName(),
@@ -136,23 +136,25 @@ func (r *PaasNSReconciler) getSecrets(
 		secret, err := r.backendSecret(ctx, paas, paasns, namespacedName, url)
 		if err != nil {
 			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
+			return nil, err
 		}
 		if decrypted, err := getRsa(paasns.Spec.Paas).Decrypt(encryptedSecretData); err != nil {
 			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
+			return nil, fmt.Errorf("failed to decrypt secret %s: %s", secret, err.Error())
 		} else {
 			paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusParse, secret, "Defining generic secret")
 			secret.Data["sshPrivateKey"] = decrypted
 			secrets = append(secrets, secret)
 		}
 	}
-	return secrets
+	return
 }
 
 func (r *PaasNSReconciler) BackendSecrets(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
-) []*corev1.Secret {
+) ([]*corev1.Secret, error) {
 	secrets := make(map[string]string)
 
 	// From the PaasNS resource
@@ -241,7 +243,10 @@ func (r *PaasNSReconciler) ReconcileSecrets(
 	ctx = setLogComponent(ctx, "secret")
 	logger := log.Ctx(ctx)
 	logger.Debug().Msg("reconciling Ssh Secrets")
-	desiredSecrets := r.BackendSecrets(ctx, paasns, paas)
+	desiredSecrets, err := r.BackendSecrets(ctx, paasns, paas)
+	if err != nil {
+		return err
+	}
 	existingSecrets, err := r.getExistingPaasSecrets(ctx, paas)
 	if err != nil {
 		return err
