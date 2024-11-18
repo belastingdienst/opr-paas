@@ -8,11 +8,11 @@ metadata:
     app.kubernetes.io/created-by: opr-paas
     app.kubernetes.io/part-of: opr-paas
     app.kubernetes.io/managed-by: kustomize
-  name: paas-manager-rolebinding
+  name: manager-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: paas-manager-role
+  name: manager-role
 subjects:
 - kind: ServiceAccount
   name: controller-manager
