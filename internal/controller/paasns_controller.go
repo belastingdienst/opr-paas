@@ -179,6 +179,10 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 
 	err = r.ReconcileSecrets(ctx, paas, paasns)
 	if err != nil {
+		// error related to decrypting secret. User error, must not retry reconciliation
+		if strings.Contains(err.Error(), "failed to decrypt secret") {
+			return okResult, nil
+		}
 		return errResult, err
 	}
 
