@@ -28,13 +28,13 @@ jobs:
       - uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275 # v45.0.1
         id: filter
         with:
-          # Any file which is not under docs/ or is not a markdown file is counted as a backend file
+          # Any file which is not under docs/, examples/, or is not a markdown file is counted as a backend file
           files_yaml: |
             backend:
-              - go.mod
-              - go.sum
-              - '**.go'
-              - '.github/workflows/ci-build.yaml'
+              - '!**.md'
+              - '!**/*.md'
+              - '!docs/**'
+              - '!examples/**'
   
   check-go:
     name: Ensure Go modules synchronicity
