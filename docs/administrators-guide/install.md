@@ -14,7 +14,7 @@ Deploy the operator using the following command:
 kubectl apply -f https://github.com/belastingdienst/opr-paas/releases/latest/download/install.yaml
 ```
 
-This will install the operator using the install.yaml that was generated for the
+This will install the operator using the `install.yaml` that was generated for the
 latest release. It will create:
 
 - a namespace called `paas-system`;
@@ -25,6 +25,6 @@ latest release. It will create:
   operator config by setting `resourcesNames` in your role.yaml**
 - a viewer & an editor cluster role for Paas and PaasNs resources;
 - a configmap with all operator configuration options;
-- a deployment running the operator and a deployment running an encryption service;
+- a deployment running the operator;
 
 Feel free to change config as required.
