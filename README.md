@@ -2,19 +2,19 @@
 
 ## Goal
 
-The PaaS operator delivers an opinionated 'Project as a Service' implementation where
-development teams can request a 'Project as a Service' by defining a PaaS resource.
+The Paas operator delivers an opinionated 'Project as a Service' implementation where
+development teams can request a 'Project as a Service' by defining a Paas resource.
 
-A PaaS resource is used by the operator as an input to create namespaces limited
+A Paas resource is used by the operator as an input to create namespaces limited
 by Cluster Resource Quota's, granting groups permissions and (together with a clusterwide
 ArgoCD) creating capabilities such as:
 
-- a PaaS specific deployment of ArgoCD (continuous deployment);
+- a Paas specific deployment of ArgoCD (continuous deployment);
 - Tekton (continuous integration);
 - Grafana (observability); and
 - KeyCloak (Application level Single Sign On);
 
-A PaaS is all a team needs to hit the ground running.
+A Paas is all a team needs to hit the ground running.
 
 ## Quickstart
 
@@ -27,12 +27,12 @@ kubectl apply -f https://github.com/belastingdienst/opr-paas/releases/latest/dow
 This will install the latest release and create:
 
 - a namespace called `paas-system`;
-- 2 CRDs (`PaaS` and `PaasNs`);
+- 2 CRDs (`Paas` and `PaasNs`);
 - a service account, role, role binding, cluster role and cluster role binding for
   all permissions required by the operator;
-- a viewer & an editor cluster role for PaaS and PaasNs resources;
+- a viewer & an editor cluster role for Paas and PaasNs resources;
 - a configmap with all operator configuration options;
-- a deployment running the operator and a deployment running an encryption service;
+- a deployment running the operator;
 
 Feel free to change config as required.
 
