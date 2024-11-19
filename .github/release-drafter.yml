@@ -41,6 +41,7 @@ version-resolver:
     labels:
       - 'minor'
       - 'refactor'
+      - 'enhancement'
   patch:
     labels:
       - 'patch'
