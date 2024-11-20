@@ -89,7 +89,7 @@ func BackendNamespace(
 ) (*corev1.Namespace, error) {
 	setLogComponent(ctx, "Namespace")
 	logger := log.Ctx(ctx)
-	logger.Info().Msgf("Defining %s Namespace", name)
+	logger.Info().Msgf("defining %s Namespace", name)
 	ns := &corev1.Namespace{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Namespace",
@@ -101,19 +101,19 @@ func BackendNamespace(
 		},
 		Spec: corev1.NamespaceSpec{},
 	}
-	logger.Info().Msgf("Setting Quotagroup %s", quota)
+	logger.Info().Msgf("setting Quotagroup %s", quota)
 	ns.ObjectMeta.Labels[getConfig().QuotaLabel] = quota
 
 	argoNameSpace := fmt.Sprintf("%s-argocd", paas.ManagedByPaas())
-	logger.Info().Msg("Setting managed_by_label")
+	logger.Info().Msg("setting managed_by_label")
 	ns.ObjectMeta.Labels[getConfig().ManagedByLabel] = argoNameSpace
 
-	logger.Info().Msg("Setting requestor_label")
+	logger.Info().Msg("setting requestor_label")
 	ns.ObjectMeta.Labels[getConfig().RequestorLabel] = paas.Spec.Requestor
 
-	logger.Info().Str("PaaS", paas.Name).Str("namespace", ns.Name).Msg("Setting Owner")
+	logger.Info().Str("PaaS", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
 	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {
-		logger.Err(err).Msg("SetControllerReference failure")
+		logger.Err(err).Msg("setControllerReference failure")
 		return nil, err
 	}
 	for _, ref := range ns.OwnerReferences {

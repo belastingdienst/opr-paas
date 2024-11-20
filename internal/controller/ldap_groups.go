@@ -50,7 +50,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 ) error {
 	ctx = setLogComponent(ctx, "LdapGroup")
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("Creating ldap groups for PAAS object ")
+	logger.Info().Msg("creating ldap groups for PAAS object ")
 	// See if group already exists and create if it doesn't
 	namespacedName := getConfig().Whitelist
 	cm := &corev1.ConfigMap{
@@ -66,7 +66,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	err := r.Get(ctx, namespacedName, cm)
 	gs := paas.Spec.Groups.AsGroups()
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info().Msg("Creating whitelist configmap")
+		logger.Info().Msg("creating whitelist configmap")
 		// Create the ConfigMap
 		if err = r.ensureLdapGroupsConfigMap(ctx, gs.AsString()); err != nil {
 			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, cm, err.Error())
@@ -75,28 +75,28 @@ func (r *PaasReconciler) EnsureLdapGroups(
 		}
 		return err
 	} else if err != nil {
-		logger.Err(err).Msg("Could not retrieve whitelist configmap")
+		logger.Err(err).Msg("could not retrieve whitelist configmap")
 		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, cm, err.Error())
 		// Error that isn't due to the group not existing
 		return err
 	} else if whitelist, exists := cm.Data[whitelistKeyName]; !exists {
-		logger.Info().Msg("Adding whitelist.txt to whitelist configmap")
+		logger.Info().Msg("adding whitelist.txt to whitelist configmap")
 		cm.Data[whitelistKeyName] = gs.AsString()
 	} else {
-		logger.Info().Msgf("Reading group queries from whitelist %v", cm)
+		logger.Info().Msgf("reading group queries from whitelist %v", cm)
 		whitelistGroups := groups.NewGroups()
 		whitelistGroups.AddFromString(whitelist)
-		logger.Info().Msgf("Adding extra groups to whitelist: %v", gs)
+		logger.Info().Msgf("adding extra groups to whitelist: %v", gs)
 		if changed := whitelistGroups.Add(&gs); !changed {
 			// fmt.Printf("configured: %d, combined: %d", l1, l2)
-			logger.Info().Msg("No new info in whitelist")
+			logger.Info().Msg("no new info in whitelist")
 			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, cm, "no changes")
 			return nil
 		}
-		logger.Info().Msg("Adding to whitelist configmap")
+		logger.Info().Msg("adding to whitelist configmap")
 		cm.Data[whitelistKeyName] = whitelistGroups.AsString()
 	}
-	logger.Info().Msgf("Updating whitelist configmap: %v", cm)
+	logger.Info().Msgf("updating whitelist configmap: %v", cm)
 	if err = r.Update(ctx, cm); err != nil {
 		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, cm, err.Error())
 	} else {
@@ -135,9 +135,9 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		for _, query := range cleanedLdapQueries {
 			g := groups.NewGroup(query)
 			if g.Key == "" {
-				logger.Info().Str("query", query).Msg("Could not get key")
+				logger.Info().Str("query", query).Msg("could not get key")
 			} else if gs.DeleteByKey(g.Key) {
-				logger.Info().Msgf("LdapGroup %s removed", g.Key)
+				logger.Info().Msgf("ldapGroup %s removed", g.Key)
 				isChanged = true
 			}
 		}

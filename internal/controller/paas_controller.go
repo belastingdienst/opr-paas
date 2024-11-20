@@ -81,9 +81,9 @@ func (r *PaasReconciler) GetPaas(
 		}
 		return nil, err
 	} else if paas.GetDeletionTimestamp() != nil {
-		logger.Info().Msg("PAAS object marked for deletion")
+		logger.Info().Msg("pAAS object marked for deletion")
 		if controllerutil.ContainsFinalizer(paas, paasFinalizer) {
-			logger.Info().Msg("Finalizing PaaS")
+			logger.Info().Msg("finalizing PaaS")
 			// Run finalization logic for paasFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
@@ -91,30 +91,30 @@ func (r *PaasReconciler) GetPaas(
 				return nil, err
 			}
 
-			logger.Info().Msg("Removing finalizer")
+			logger.Info().Msg("removing finalizer")
 			// Remove paasFinalizer. Once all finalizers have been
 			// removed, the object will be deleted.
 			controllerutil.RemoveFinalizer(paas, paasFinalizer)
 			if err := r.Update(ctx, paas); err != nil {
 				return nil, err
 			}
-			logger.Info().Msg("Finalization finished")
+			logger.Info().Msg("finalization finished")
 		}
 		return nil, nil
 	}
 
 	// Add finalizer for this CR
-	logger.Info().Msg("Adding finalizer for Paas object")
+	logger.Info().Msg("adding finalizer for Paas object")
 	if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
-		logger.Info().Msg("Paas object has no finalizer yet")
+		logger.Info().Msg("paas object has no finalizer yet")
 		controllerutil.AddFinalizer(paas, paasFinalizer)
-		logger.Info().Msg("Added finalizer for Paas object")
+		logger.Info().Msg("added finalizer for Paas object")
 		if err := r.Update(ctx, paas); err != nil {
-			logger.Info().Msg("Error updating Paas object")
+			logger.Info().Msg("error updating Paas object")
 			logger.Info().Msgf("%v", paas)
 			return nil, err
 		}
-		logger.Info().Msg("Updated Paas object")
+		logger.Info().Msg("updated Paas object")
 	}
 
 	return paas, nil
@@ -191,34 +191,34 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *v1alpha1.Paas) error {
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("Inside PaaS finalizer")
+	logger.Info().Msg("inside PaaS finalizer")
 	if err := r.FinalizeAppSetCaps(ctx, paas); err != nil {
-		logger.Err(err).Msg("AppSet finalizer error")
+		logger.Err(err).Msg("appSet finalizer error")
 		return err
 	} else if err = r.FinalizeAppProject(ctx, paas); err != nil {
-		logger.Err(err).Msg("AppProject finalizer error")
+		logger.Err(err).Msg("appProject finalizer error")
 		return err
 	} else if err = r.FinalizeClusterQuotas(ctx, paas); err != nil {
-		logger.Err(err).Msg("Quota finalizer error")
+		logger.Err(err).Msg("quota finalizer error")
 		return err
 	} else if cleanedLdapQueries, err := r.FinalizeGroups(ctx, paas); err != nil {
 		// The whole idea is that groups (which are resources)
 		// can also be ldapGroups (lines in a field in a configmap)
 		// ldapGroups are only cleaned if the corresponding group is also cleaned
-		logger.Err(err).Msg("Group finalizer error")
+		logger.Err(err).Msg("group finalizer error")
 		if ldapErr := r.FinalizeLdapGroups(ctx, cleanedLdapQueries); ldapErr != nil {
-			logger.Err(ldapErr).Msg("And ldapGroup finalizer error")
+			logger.Err(ldapErr).Msg("and ldapGroup finalizer error")
 		}
 		return err
 	} else if err = r.FinalizeLdapGroups(ctx, cleanedLdapQueries); err != nil {
-		logger.Err(err).Msg("LdapGroup finalizer error")
+		logger.Err(err).Msg("ldapGroup finalizer error")
 		return err
 	} else if err = r.FinalizeExtraClusterRoleBindings(ctx, paas); err != nil {
-		logger.Err(err).Msg("Extra ClusterRoleBindings finalizer error")
+		logger.Err(err).Msg("extra ClusterRoleBindings finalizer error")
 		return err
 	} else if err = r.FinalizeClusterWideQuotas(ctx, paas); err != nil {
 		return err
 	}
-	logger.Info().Msg("PaaS successfully finalized")
+	logger.Info().Msg("paaS successfully finalized")
 	return nil
 }

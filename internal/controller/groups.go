@@ -64,7 +64,7 @@ func (r *PaasReconciler) EnsureGroup(
 		Name: group.Name,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info().Msg("Creating the group")
+		logger.Info().Msg("creating the group")
 		// Create the group
 		if err = r.Create(ctx, group); err != nil {
 			// creating the group failed
@@ -77,30 +77,30 @@ func (r *PaasReconciler) EnsureGroup(
 		}
 	} else if err != nil {
 		// Error that isn't due to the group not existing
-		logger.Err(err).Msg("Could not retrieve info on the group")
+		logger.Err(err).Msg("could not retrieve info on the group")
 		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, group, err.Error())
 		return err
 	}
-	logger.Info().Msg("Updating the group")
+	logger.Info().Msg("updating the group")
 	// All of this is to make the list of users a unique
 	// combined list of users that where and now should be added
 	found.Users = uniqueUsers(found.Users, group.Users)
 	found.Annotations = mergeStringMap(found.Annotations, group.Annotations)
 	if !paas.AmIOwner(found.OwnerReferences) {
-		logger.Info().Msg("Setting owner reference")
+		logger.Info().Msg("setting owner reference")
 		if err := controllerutil.SetOwnerReference(paas, found, r.Scheme); err != nil {
-			logger.Err(err).Msg("Error while setting owner reference")
+			logger.Err(err).Msg("error while setting owner reference")
 		}
 	} else {
-		logger.Info().Msg("Already owner")
+		logger.Info().Msg("already owner")
 	}
 	if err = r.Update(ctx, found); err != nil {
 		// Updating the group failed
-		logger.Err(err).Msg("Updating the group failed")
+		logger.Err(err).Msg("updating the group failed")
 		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, group, err.Error())
 		return err
 	} else {
-		logger.Info().Msg("Group updated")
+		logger.Info().Msg("group updated")
 		// Updating the group was successful
 		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, group, "succeeded")
 		return nil
@@ -115,7 +115,7 @@ func (r *PaasReconciler) backendGroup(
 	group v1alpha1.PaasGroup,
 ) (*userv1.Group, error) {
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("Defining group")
+	logger.Info().Msg("defining group")
 
 	g := &userv1.Group{
 		TypeMeta: metav1.TypeMeta{
@@ -152,7 +152,7 @@ func (r *PaasReconciler) BackendGroups(
 	logger := log.Ctx(ctx)
 	for key, group := range paas.Spec.Groups {
 		groupName := paas.Spec.Groups.Key2Name(key)
-		logger.Info().Msg("Groupname is " + groupName)
+		logger.Info().Msg("groupname is " + groupName)
 		beGroup, _ := r.backendGroup(ctx, paas, groupName, group)
 		groups = append(groups, beGroup)
 	}
@@ -170,22 +170,22 @@ func (r *PaasReconciler) finalizeGroup(
 	if err := r.Get(ctx, types.NamespacedName{
 		Name: groupName,
 	}, obj); err != nil && errors.IsNotFound(err) {
-		logger.Info().Msg("Group does not exist")
+		logger.Info().Msg("group does not exist")
 		return false, nil
 	} else if err != nil {
-		logger.Info().Msg("Group not deleted. error: " + err.Error())
+		logger.Info().Msg("group not deleted. error: " + err.Error())
 		return false, err
 	} else if !paas.AmIOwner(obj.OwnerReferences) {
-		logger.Info().Msg("Paas is not an owner")
+		logger.Info().Msg("paas is not an owner")
 		return false, nil
 	} else {
-		logger.Info().Msg("Removing PaaS finalizer " + groupName)
+		logger.Info().Msg("removing PaaS finalizer " + groupName)
 		obj.OwnerReferences = paas.WithoutMe(obj.OwnerReferences)
 		if len(obj.OwnerReferences) == 0 {
-			logger.Info().Msg("Deleting " + groupName)
+			logger.Info().Msg("deleting " + groupName)
 			return true, r.Delete(ctx, obj)
 		} else {
-			logger.Info().Msg("Not last reference, skipping deletion for " + groupName)
+			logger.Info().Msg("not last reference, skipping deletion for " + groupName)
 			return false, r.Update(ctx, obj)
 		}
 	}
@@ -212,10 +212,10 @@ func (r *PaasReconciler) ReconcileGroups(
 ) error {
 	ctx = setLogComponent(ctx, "Group")
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("Creating groups for PAAS object ")
+	logger.Info().Msg("creating groups for PAAS object ")
 	for _, group := range r.BackendGroups(ctx, paas) {
 		if err := r.EnsureGroup(ctx, paas, group); err != nil {
-			logger.Err(err).Msgf("Failure while creating group %s", group.ObjectMeta.Name)
+			logger.Err(err).Msgf("failure while creating group %s", group.ObjectMeta.Name)
 			return err
 		}
 	}

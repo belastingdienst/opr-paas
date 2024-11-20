@@ -47,17 +47,17 @@ func (r *PaasNSReconciler) EnsureArgoApp(
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusAction(v1alpha1.PaasStatusInfo), argoApp, err.Error())
 		return err
 	} else if err := r.Get(ctx, namespacedName, found); err == nil {
-		logger.Info().Msg("Argo Application already exists, updating")
+		logger.Info().Msg("argo Application already exists, updating")
 		patch := client.MergeFrom(found.DeepCopy())
 		found.Spec = argoApp.Spec
 		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, found, "succeeded")
 		return r.Patch(ctx, found, patch)
 	} else if !errors.IsNotFound(err) {
-		logger.Err(err).Msg("Could not retrieve info of Argo Application")
+		logger.Err(err).Msg("could not retrieve info of Argo Application")
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusAction(v1alpha1.PaasStatusInfo), argoApp, err.Error())
 		return err
 	} else {
-		logger.Info().Msg("Creating Argo Application")
+		logger.Info().Msg("creating Argo Application")
 		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, argoApp, "succeeded")
 		return r.Create(ctx, argoApp)
 	}
@@ -70,7 +70,7 @@ func (r *PaasNSReconciler) backendArgoApp(
 	paas *v1alpha1.Paas,
 ) (*argo.Application, error) {
 	logger := log.Ctx(ctx)
-	logger.Info().Msgf("Defining %s Argo Application", appName)
+	logger.Info().Msgf("defining %s Argo Application", appName)
 
 	namespace := paasns.NamespaceName()
 	argoConfig := paas.Spec.Capabilities["argocd"]
@@ -113,7 +113,7 @@ func (r *PaasNSReconciler) backendArgoApp(
 		},
 	}
 
-	logger.Info().Msg("Setting Owner")
+	logger.Info().Msg("setting Owner")
 	if err := controllerutil.SetControllerReference(paas, app, r.Scheme); err != nil {
 		return app, err
 	}
@@ -129,16 +129,16 @@ func (r *PaasNSReconciler) FinalizeArgoApp(
 		Name:      appName,
 	}
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("Finalizing")
+	logger.Info().Msg("finalizing")
 	obj := &argo.Application{}
 	if err := r.Get(ctx, namespacedName, obj); err != nil && errors.IsNotFound(err) {
-		logger.Info().Msg("Does not exist")
+		logger.Info().Msg("does not exist")
 		return nil
 	} else if err != nil {
-		logger.Err(err).Msg("Error retrieving info")
+		logger.Err(err).Msg("error retrieving info")
 		return err
 	} else {
-		logger.Info().Msg("Deleting")
+		logger.Info().Msg("deleting")
 		return r.Delete(ctx, obj)
 	}
 }

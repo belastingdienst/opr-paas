@@ -25,7 +25,7 @@ func (r *PaasReconciler) EnsureAppProject(
 	paas *v1alpha1.Paas,
 ) error {
 	ctx = setLogComponent(ctx, "AppProject")
-	log.Ctx(ctx).Info().Msg("Creating Argo Project")
+	log.Ctx(ctx).Info().Msg("creating Argo Project")
 	project, err := r.BackendAppProject(ctx, paas)
 	if err != nil {
 		return err
@@ -67,19 +67,19 @@ func (r *PaasReconciler) EnsureAppProject(
 // FinalizeAppProject finalizes AppProject
 func (r *PaasReconciler) FinalizeAppProject(ctx context.Context, paas *v1alpha1.Paas) error {
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("Finalizing App Project")
+	logger.Info().Msg("finalizing App Project")
 	appProject := &argo.AppProject{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Name:      paas.Name,
 		Namespace: getConfig().AppSetNamespace,
 	}, appProject); err != nil && errors.IsNotFound(err) {
-		logger.Info().Msg("App Project already deleted")
+		logger.Info().Msg("app Project already deleted")
 		return nil
 	} else if err != nil {
-		logger.Err(err).Msg("Error retrieving App Project")
+		logger.Err(err).Msg("error retrieving App Project")
 		return err
 	} else {
-		logger.Info().Msg("Deleting App Project")
+		logger.Info().Msg("deleting App Project")
 		return r.Delete(ctx, appProject)
 	}
 }
@@ -91,7 +91,7 @@ func (r *PaasReconciler) BackendAppProject(
 ) (*argo.AppProject, error) {
 	name := paas.Name
 	logger := log.Ctx(ctx)
-	logger.Info().Msgf("Defining %s AppProject", name)
+	logger.Info().Msgf("defining %s AppProject", name)
 	p := &argo.AppProject{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "AppProject",
@@ -119,7 +119,7 @@ func (r *PaasReconciler) BackendAppProject(
 		},
 	}
 
-	logger.Info().Msg("Setting Owner")
+	logger.Info().Msg("setting Owner")
 	if err := controllerutil.SetControllerReference(paas, p, r.Scheme); err != nil {
 		return nil, err
 	}

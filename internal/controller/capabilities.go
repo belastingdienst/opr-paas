@@ -156,7 +156,7 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 		},
 	}
 	ctx = setLogComponent(ctx, "AppSet")
-	log.Ctx(ctx).Info().Msgf("Reconciling %s Applicationset %s", paasns.Name, namespacedName.String())
+	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset %s", paasns.Name, namespacedName.String())
 	err = r.Get(ctx, namespacedName, appSet)
 	// groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
@@ -221,7 +221,7 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 	as := &appv1.ApplicationSet{}
 	asNamespacedName := getConfig().CapabilityK8sName(paasns.Name)
 	ctx = setLogComponent(ctx, "AppSet")
-	log.Ctx(ctx).Info().Msgf("Reconciling %s Applicationset", paasns.Name)
+	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset", paasns.Name)
 	err := r.Get(ctx, asNamespacedName, as)
 	// groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
@@ -257,7 +257,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	as := &appv1.ApplicationSet{}
 	asNamespacedName := getConfig().CapabilityK8sName(capability)
 	ctx = setLogComponent(ctx, "AppSet")
-	log.Ctx(ctx).Info().Msgf("Reconciling %s Applicationset", capability)
+	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset", capability)
 	err := r.Get(ctx, asNamespacedName, as)
 	// groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries

@@ -55,13 +55,13 @@ func updateClusterRoleBinding(
 ) (err error) {
 	logger := log.Ctx(ctx)
 	if len(crb.Subjects) == 0 && crb.ResourceVersion != "" {
-		logger.Info().Msgf("Cleaning empty ClusterRoleBinding %s", crb.Name)
+		logger.Info().Msgf("cleaning empty ClusterRoleBinding %s", crb.Name)
 		return r.Delete(ctx, crb)
 	} else if len(crb.Subjects) != 0 && crb.ResourceVersion == "" {
-		logger.Info().Msgf("Creating new ClusterRoleBinding %s", crb.Name)
+		logger.Info().Msgf("creating new ClusterRoleBinding %s", crb.Name)
 		return r.Create(ctx, crb)
 	} else if len(crb.Subjects) != 0 {
-		logger.Info().Msgf("Updating existing ClusterRoleBinding %s", crb.Name)
+		logger.Info().Msgf("updating existing ClusterRoleBinding %s", crb.Name)
 		return r.Update(ctx, crb)
 	}
 	return nil
@@ -222,7 +222,7 @@ func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 			logger.Info().Msg("no changes")
 			continue
 		}
-		logger.Info().Msgf("Updating rolebinding %s after cleaning SA's for '%s'", roleName, nsRe)
+		logger.Info().Msgf("updating rolebinding %s after cleaning SA's for '%s'", roleName, nsRe)
 		if err := updateClusterRoleBinding(r.Client, ctx, paas, crb); err != nil {
 			return err
 		}

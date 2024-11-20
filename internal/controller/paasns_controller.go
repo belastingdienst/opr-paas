@@ -53,7 +53,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 	paasns = &v1alpha1.PaasNS{}
 	ctx = setLogComponent(ctx, "PaasNS")
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("Reconciling PaasNs")
+	logger.Info().Msg("reconciling PaasNs")
 
 	if err = r.Get(ctx, req.NamespacedName, paasns); err != nil {
 		return nil, client.IgnoreNotFound(err)
@@ -65,16 +65,16 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 			return nil, fmt.Errorf("failed to add finalizer")
 		}
 		if err := r.Update(ctx, paasns); err != nil {
-			logger.Err(err).Msg("Error updating PaasNs")
+			logger.Err(err).Msg("error updating PaasNs")
 			return nil, err
 		}
-		logger.Info().Msg("Added finalizer to PaasNs")
+		logger.Info().Msg("added finalizer to PaasNs")
 	}
 
 	if paasns.GetDeletionTimestamp() != nil {
-		logger.Info().Msg("PaasNS object marked for deletion")
+		logger.Info().Msg("paasNS object marked for deletion")
 		if controllerutil.ContainsFinalizer(paasns, paasNsFinalizer) {
-			logger.Info().Msg("Finalizing PaasNs")
+			logger.Info().Msg("finalizing PaasNs")
 			// Run finalization logic for paasNsFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
@@ -82,13 +82,13 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 				return nil, err
 			}
 
-			logger.Info().Msg("Removing finalizer")
+			logger.Info().Msg("removing finalizer")
 			// Remove paasNsFinalizer. Once all finalizers have been removed, the object will be deleted.
 			controllerutil.RemoveFinalizer(paasns, paasNsFinalizer)
 			if err := r.Update(ctx, paasns); err != nil {
 				return nil, err
 			}
-			logger.Info().Msg("Finalization finished")
+			logger.Info().Msg("finalization finished")
 		}
 		return nil, nil
 	}
@@ -202,7 +202,7 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 
 	logger.Info().Msg("updating PaasNs object status")
 	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paasns, "succeeded")
-	logger.Info().Msg("PaasNs object successfully reconciled")
+	logger.Info().Msg("paasNs object successfully reconciled")
 
 	return okResult, nil
 }
@@ -327,7 +327,7 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 		return nil
 	}
 
-	logger.Info().Msg("Inside PaasNs finalizer")
+	logger.Info().Msg("inside PaasNs finalizer")
 	if err := r.FinalizeNamespace(ctx, paasns, paas); err != nil {
 		err = fmt.Errorf("cannot remove namespace belonging to PaaS %s: %s", paasns.Spec.Paas, err.Error())
 		return err
@@ -336,12 +336,12 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 		return err
 	}
 	if _, isCapability := paas.Spec.Capabilities[paasns.Name]; isCapability {
-		logger.Info().Msg("PaasNs is a capability, also finalizing Cluster Resource Quota")
+		logger.Info().Msg("paasNs is a capability, also finalizing Cluster Resource Quota")
 		if err := r.FinalizeClusterQuota(ctx, paasns); err != nil {
 			logger.Err(err).Msg(fmt.Sprintf("Failure while finalizing quota %s", paasns.Name))
 			return err
 		}
 	}
-	logger.Info().Msg("PaasNs successfully finalized")
+	logger.Info().Msg("paasNs successfully finalized")
 	return nil
 }

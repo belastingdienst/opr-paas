@@ -85,7 +85,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 	if argo.Spec.RBAC.DefaultPolicy != nil {
 		oldDefaultPolicy = *argo.Spec.RBAC.DefaultPolicy
 	}
-	logger.Info().Msgf("Setting ArgoCD permissions to %s", policy)
+	logger.Info().Msgf("setting ArgoCD permissions to %s", policy)
 	if oldPolicy == policy && oldDefaultPolicy == defaultPolicy && paas.AmIOwner(argo.OwnerReferences) {
 		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, argo, "no changes")
 		return nil
@@ -96,7 +96,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 	if err = controllerutil.SetControllerReference(paas, argo, r.GetScheme()); err != nil {
 		return err
 	}
-	logger.Info().Msg("Updating ArgoCD object")
+	logger.Info().Msg("updating ArgoCD object")
 	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, argo, "updating ArgoCD instance")
 	return r.Patch(ctx, argo, patch)
 }
