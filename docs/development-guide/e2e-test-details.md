@@ -96,15 +96,15 @@ Post scenarios: reset environment to clean slate.
 What we test: CRQ CRUD
 
 !!! Note
-    The `spec.quota` does not fall under not cluster wide quotas, hence a separate
-    set of test scenarios.
+The `spec.quota` does not fall under not cluster wide quotas, hence a separate
+set of test scenarios.
 
 1. Ensure the correct CRQ is created for a `Paas`.<br/><br/>
    **Given** a minimal `Paas` exists,<br/>
    **when** someone adds a quota to `spec.quota` for the `Paas` configuration,<br/>
    **then** a CRQ with the name of the `Paas` must be created,<br/>
    **and** `clusterquotagroup=` followed by the `Paas` name should have been applied
-           as label selector on the CRQ,<br/>
+   as label selector on the CRQ,<br/>
    **and** the size of the created CRQ equals the size as specified in the `spec.quota`.
 
 2. The `spec.quota` for a `Paas` is updated.<br/><br/>
@@ -167,16 +167,16 @@ Scenarios:
    **when** said `Paas` is removed,<br/>
 
 !!! note
-   *There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation.*
+_There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation._
 
-   *Determine what that baseline currently is.*
+_Determine what that baseline currently is._
 
 Post scenarios: reset environment to clean slate.
 
 ## Groups => Query
 
 What we test: managing users and group memberships through an LDAP query specified
-              in the `Paas` configuration.
+in the `Paas` configuration.
 
 Scenarios:
 
@@ -191,7 +191,6 @@ Scenarios:
    **and** the query was added to the whitelist,<br/>
    **and** the rolebinding on the namespace points to the group, to the specified role,<br/>
    **and** the rolebinding was not applied to the default `Paas` namespace (name of the `Paas`).
-   
 2. Updating the `Paas`, adding a group with a role other than default.<br/><br/>
    **Given** an existing, minimal `Paas` with a single namespace,<br/>
    **when** another query is added to said `Paas` (compared to step scenario 1),<br/>
@@ -209,22 +208,18 @@ Scenarios:
    **when** said `Paas` is removed,<br/>
 
 !!! note
-   *There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation.*
+_There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation._
 
-   *Determine what that baseline currently is.*
+_Determine what that baseline currently is._
 
 Post scenarios: reset environment to clean slate.
 
 !!! note
-    TODO, there a known issue regarding groups. Good regression test to model the following steps:
-      1. Create `Paas` with query;
-      2. Update `Paas` from step 1, remove query and add users to the group;
-      3. Group is not removed from whitelist;
-      4. Sync fails because the required `ldap.uid` doesn't match the groupname. (We don't fully test sync.)
+TODO, there a known issue regarding groups. Good regression test to model the following steps: 1. Create `Paas` with query; 2. Update `Paas` from step 1, remove query and add users to the group; 3. Group is not removed from whitelist; 4. Sync fails because the required `ldap.uid` doesn't match the groupname. (We don't fully test sync.)
 
 ## Secrets
 
-*The capabilities are also used to test clusterwide quotas*
+_The capabilities are also used to test clusterwide quotas_
 
 ### Capability ArgoCD
 
@@ -242,20 +237,21 @@ Scenarios:
    **and** the ArgoCD Application and quota conform to the points below.
 
    ArgoCD Application points:
-      1. Assess gitUrl, path etc. exist in spec;
-      2. Assess RBAC .. determine how;
-      3. Assess Secrets exist in namespace and in argo...?
-      4. Assess Exclude appset is included in spec as ignoreDiff;
-    
-    Quota points:
-      1. Assess a quota with the name `paasnaam-argocd` was created;
-      2. Assess that the `quota_label` label was used as selector on the quota;
-      3. Assess that the quota selector was set in such a manner so that only the `paasnaam-sso` namespace is selected;
-      4. Assess that the size of the quota equals the size of the default quota specified in the paas_config;
-   
+
+   1. Assess gitUrl, path etc. exist in spec;
+   2. Assess RBAC .. determine how;
+   3. Assess Secrets exist in namespace and in argo...?
+   4. Assess Exclude appset is included in spec as ignoreDiff;
+
+   Quota points:
+
+   1. Assess a quota with the name `paasnaam-argocd` was created;
+   2. Assess that the `quota_label` label was used as selector on the quota;
+   3. Assess that the quota selector was set in such a manner so that only the `paasnaam-sso` namespace is selected;
+   4. Assess that the size of the quota equals the size of the default quota specified in the paas_config;
+
    !!! Note
-       TODO Assess default_permissions;
-        1. Rolebindings to service account etc. (TODO: can these RBs be created without the existence of a ServiceAccount?)
+   TODO Assess default_permissions; 1. Rolebindings to service account etc. (TODO: can these RBs be created without the existence of a ServiceAccount?)
 
 Post scenarios: reset environment to clean slate.
 
@@ -263,11 +259,9 @@ Post scenarios: reset environment to clean slate.
 
 Check Quota
 
-
 ### Capability Grafana
 
 Check Quota
-
 
 ### Capability SSO
 
@@ -284,9 +278,10 @@ Scenarios:
    **and** the quota conforms to the points below.
 
    Quota points:
-      1. Assess that the `quota_label` label was used as selector on the quota;
-      2. Assess that the quota selector was set in such a manner so that only the `paasnaam-sso` namespace is selected;
-      3. Assess that the size of the quota equals the size of the default quota specified in the paas_config;
+
+   1. Assess that the `quota_label` label was used as selector on the quota;
+   2. Assess that the quota selector was set in such a manner so that only the `paasnaam-sso` namespace is selected;
+   3. Assess that the size of the quota equals the size of the default quota specified in the paas_config;
 
 2. The `Paas` from scenario 1 is removed.<br/><br/>
    **Given** a the `Paas` remaining from scenario 1 above,<br/>
@@ -296,3 +291,13 @@ Scenarios:
    **then** the associated list entry in the `ApplicationSet` should have been removed.
 
 Post scenarios: reset environment to clean slate.
+
+### Configurable capabilities
+
+What we test: adding a new capability with configuration
+
+Scenarios:
+
+1. Add config for a new cap4 and check that it works as expecten when included in a Paas
+2. Add cap5 in a Paas and check that it does not work when not yet defined in config
+
