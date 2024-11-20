@@ -13,7 +13,6 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
-	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -124,9 +123,7 @@ func (r *PaasReconciler) GetPaas(
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
 func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	paas := &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
-	ctx = setRequestLogger(ctx, paas, r.Scheme, req)
-	logger := log.Ctx(ctx)
-	logger.Info().Msg("reconciling the Paas object")
+	ctx, logger := setRequestLogger(ctx, paas, r.Scheme, req)
 
 	errResult := reconcile.Result{
 		Requeue:      true,
