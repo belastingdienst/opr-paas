@@ -77,7 +77,7 @@ func (r *PaasReconciler) backendQuota(
 	} else {
 		quotaName = fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, suffix)
 	}
-	ctx = setLogComponent(ctx, "Quota")
+	ctx = setLogComponent(ctx, "quota")
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("defining quota")
 	// matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
@@ -172,7 +172,7 @@ func (r *PaasReconciler) BackendUnneededQuotas(
 }
 
 func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha1.Paas, quotaName string) error {
-	ctx = setLogComponent(ctx, "Quota")
+	ctx = setLogComponent(ctx, "quota")
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
@@ -191,7 +191,7 @@ func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha
 }
 
 func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1alpha1.PaasNS) error {
-	ctx = setLogComponent(ctx, "Quota")
+	ctx = setLogComponent(ctx, "quota")
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
@@ -231,7 +231,7 @@ func (r *PaasReconciler) ReconcileQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (err error) {
-	ctx = setLogComponent(ctx, "Quota")
+	ctx = setLogComponent(ctx, "quota")
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("creating quotas for PAAS object ")
 	// Create quotas if needed

@@ -199,7 +199,7 @@ func (r *PaasReconciler) ReconcileRolebindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "RoleBinding")
+	ctx = setLogComponent(ctx, "rolebinding")
 	logger := log.Ctx(ctx)
 	for _, paasns := range r.pnsFromNs(ctx, paas.ObjectMeta.Name) {
 		roles := make(map[string][]string)
@@ -247,7 +247,7 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 ) error {
-	ctx = setLogComponent(ctx, "RoleBinding")
+	ctx = setLogComponent(ctx, "rolebinding")
 	logger := log.Ctx(ctx)
 	// Creating a list of roles and the groups that should have them, for this namespace
 	roles := make(map[string][]string)

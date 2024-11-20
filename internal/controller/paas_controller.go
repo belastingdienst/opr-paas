@@ -68,7 +68,7 @@ func (r *PaasReconciler) GetPaas(
 	req ctrl.Request,
 ) (paas *v1alpha1.Paas, err error) {
 	paas = &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
-	ctx = setLogComponent(ctx, "PaaS")
+	ctx = setLogComponent(ctx, "paas")
 	logger := log.Ctx(ctx)
 	err = r.Get(ctx, req.NamespacedName, paas)
 	if err != nil {

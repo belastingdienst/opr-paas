@@ -48,7 +48,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "LdapGroup")
+	ctx = setLogComponent(ctx, "ldapgroup")
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("creating ldap groups for PAAS object ")
 	// See if group already exists and create if it doesn't
@@ -110,7 +110,7 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 	ctx context.Context,
 	cleanedLdapQueries []string,
 ) error {
-	ctx = setLogComponent(ctx, "LdapGroup")
+	ctx = setLogComponent(ctx, "ldapgroup")
 	logger := log.Ctx(ctx)
 	// See if group already exists and create if it doesn't
 	cm := &corev1.ConfigMap{}

@@ -87,7 +87,7 @@ func BackendNamespace(
 	quota string,
 	scheme *runtime.Scheme,
 ) (*corev1.Namespace, error) {
-	setLogComponent(ctx, "Namespace")
+	setLogComponent(ctx, "namespace")
 	logger := log.Ctx(ctx)
 	logger.Info().Msgf("defining %s Namespace", name)
 	ns := &corev1.Namespace{

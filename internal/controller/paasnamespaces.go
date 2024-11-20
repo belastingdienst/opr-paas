@@ -125,7 +125,7 @@ func (r *PaasReconciler) ReconcilePaasNss(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "PaasNS")
+	ctx = setLogComponent(ctx, "paasns")
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("creating default namespace to hold PaasNs resources for PAAS object")
 	if ns, err := BackendNamespace(ctx, paas, paas.Name, paas.Name, r.Scheme); err != nil {

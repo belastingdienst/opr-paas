@@ -51,7 +51,7 @@ func (pr PaasNSReconciler) GetScheme() *runtime.Scheme {
 
 func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paasns *v1alpha1.PaasNS, err error) {
 	paasns = &v1alpha1.PaasNS{}
-	ctx = setLogComponent(ctx, "PaasNS")
+	ctx = setLogComponent(ctx, "paasns")
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("reconciling PaasNs")
 
@@ -281,7 +281,7 @@ func (r *PaasReconciler) pnsFromNs(ctx context.Context, ns string) map[string]v1
 }
 
 func (r *PaasNSReconciler) paasFromPaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, namespaces map[string]int, err error) {
-	ctx = setLogComponent(ctx, "PaasNS")
+	ctx = setLogComponent(ctx, "paasns")
 	logger := log.Ctx(ctx)
 	paas = &v1alpha1.Paas{}
 	if err := r.Get(ctx, types.NamespacedName{Name: paasns.Spec.Paas}, paas); err != nil {
@@ -313,7 +313,7 @@ func (r *PaasNSReconciler) paasFromPaasNs(ctx context.Context, paasns *v1alpha1.
 }
 
 func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) error {
-	ctx = setLogComponent(ctx, "PaasNS")
+	ctx = setLogComponent(ctx, "paasns")
 	logger := log.Ctx(ctx)
 
 	paas, nss, err := r.paasFromPaasNs(ctx, paasns)

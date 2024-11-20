@@ -28,7 +28,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 	if paasns.Name != "argocd" {
 		return nil
 	}
-	ctx = setLogComponent(ctx, "ArgoPermissions")
+	ctx = setLogComponent(ctx, "argopermissions")
 	logger := log.Ctx(ctx)
 	paas, _, err := r.paasFromPaasNs(ctx, paasns)
 	if err != nil {

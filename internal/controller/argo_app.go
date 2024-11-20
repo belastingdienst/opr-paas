@@ -34,7 +34,7 @@ func (r *PaasNSReconciler) EnsureArgoApp(
 		return nil
 	}
 
-	ctx = setLogComponent(ctx, "ArgoApp")
+	ctx = setLogComponent(ctx, "argoapp")
 	logger := log.Ctx(ctx)
 	namespacedName := types.NamespacedName{
 		Namespace: paasns.NamespaceName(),

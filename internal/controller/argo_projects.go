@@ -24,7 +24,7 @@ func (r *PaasReconciler) EnsureAppProject(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "AppProject")
+	ctx = setLogComponent(ctx, "appproject")
 	log.Ctx(ctx).Info().Msg("creating Argo Project")
 	project, err := r.BackendAppProject(ctx, paas)
 	if err != nil {

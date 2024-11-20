@@ -195,7 +195,7 @@ func (r *PaasReconciler) FinalizeGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (cleaned []string, err error) {
-	ctx = setLogComponent(ctx, "Group")
+	ctx = setLogComponent(ctx, "group")
 	for key, group := range paas.Spec.Groups {
 		if isCleaned, err := r.finalizeGroup(ctx, paas, paas.Spec.Groups.Key2Name(key)); err != nil {
 			return cleaned, err
@@ -210,7 +210,7 @@ func (r *PaasReconciler) ReconcileGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "Group")
+	ctx = setLogComponent(ctx, "group")
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("creating groups for PAAS object ")
 	for _, group := range r.BackendGroups(ctx, paas) {

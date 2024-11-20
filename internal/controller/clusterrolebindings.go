@@ -171,7 +171,7 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 		return
 	}
 
-	ctx = setLogComponent(ctx, "ClusterRoleBinding")
+	ctx = setLogComponent(ctx, "clusterrolebinding")
 
 	permissions := capConfig.ExtraPermissions.AsConfigRolesSas(cap.WithExtraPermissions())
 	permissions.Merge(capConfig.DefaultPermissions.AsConfigRolesSas(true))
@@ -200,7 +200,7 @@ func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (err error) {
-	ctx = setLogComponent(ctx, "ClusterRoleBinding")
+	ctx = setLogComponent(ctx, "clusterrolebinding")
 	logger := log.Ctx(ctx)
 	var capRoles []string
 	for _, capConfig := range getConfig().Capabilities {
