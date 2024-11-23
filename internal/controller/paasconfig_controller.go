@@ -151,7 +151,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 				logger.Err(err).Msg("failed to update PaasConfig status")
 				return errResult, nil
 			}
-			// don't reconcile this one again as that won't change anything.. I guess.
+			// don't reconcile this one again as that won't change anything.
 			return ctrl.Result{}, nil
 		}
 	}
@@ -169,6 +169,10 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	logger.Info().Msg("configuration has changed")
+	// TODO(portly-halicore-76) is this the correct place and time to change?
+	if !reflect.DeepEqual(config.Spec.DecryptKeysSecret, GetConfig().DecryptKeysSecret) {
+		resetCrypts()
+	}
 	// Update the shared configuration store
 	SetConfig(*config)
 	logger.Debug().Msg("set active PaasConfig successfully")

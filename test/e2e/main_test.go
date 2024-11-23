@@ -152,8 +152,11 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 				},
 			},
 		},
-		Debug:           false,
-		DecryptKeyPaths: []string{"/tmp/paas-e2e/secrets/priv"},
+		Debug: false,
+		DecryptKeysSecret: v1alpha1.NamespacedName{
+			Name:      "example-keys",
+			Namespace: "paas-system",
+		},
 		LDAP: v1alpha1.ConfigLdap{
 			Host: "my-ldap-host",
 			Port: 13,
@@ -201,6 +204,7 @@ func TestMain(m *testing.M) {
 	// Global setup
 	testenv.Setup(
 		func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+			// Nasty, required fields (according to CRD) are filled with an 'empty' value, which allows creation.
 			paasconfig := &v1alpha1.PaasConfig{}
 			*paasconfig = examplePaasConfig
 

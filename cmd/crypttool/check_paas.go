@@ -31,7 +31,7 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 		}
 
 		paasName := paas.ObjectMeta.Name
-		srcCrypt, err := crypt.NewCrypt([]string{privateKeyFiles}, "", paasName)
+		srcCrypt, err := crypt.NewCryptFromFiles([]string{privateKeyFiles}, "", paasName)
 		if err != nil {
 			return err
 		}
