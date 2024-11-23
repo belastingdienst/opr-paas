@@ -13,7 +13,7 @@ import (
 )
 
 func encrypt(publicKey string, paasName string, data []byte) error {
-	if c, err := NewCrypt([]string{}, publicKey, paasName); err != nil {
+	if c, err := NewCryptFromFiles([]string{}, publicKey, paasName); err != nil {
 		return err
 	} else if encrypted, err := c.Encrypt(data); err != nil {
 		return fmt.Errorf("failed to encrypt: %w", err)
@@ -27,7 +27,7 @@ func DecryptFromStdin(privateKeys []string, paasName string) error {
 	if data, err := io.ReadAll(os.Stdin); err != nil {
 		return err
 	} else {
-		if c, err := NewCrypt(privateKeys, "", paasName); err != nil {
+		if c, err := NewCryptFromFiles(privateKeys, "", paasName); err != nil {
 			return err
 		} else if encrypted, err := c.Decrypt(string(data)); err != nil {
 			return fmt.Errorf("failed to decrypt: %w", err)

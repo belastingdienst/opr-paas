@@ -53,12 +53,12 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 		}
 
 		paasName := paas.ObjectMeta.Name
-		srcCrypt, err := crypt.NewCrypt([]string{privateKeyFiles}, "", paasName)
+		srcCrypt, err := crypt.NewCryptFromFiles([]string{privateKeyFiles}, "", paasName)
 		if err != nil {
 			return err
 		}
 
-		dstCrypt, err := crypt.NewCrypt([]string{}, publicKeyFile, paasName)
+		dstCrypt, err := crypt.NewCryptFromFiles([]string{}, publicKeyFile, paasName)
 		if err != nil {
 			return err
 		}

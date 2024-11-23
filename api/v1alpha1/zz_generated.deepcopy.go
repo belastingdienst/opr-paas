@@ -433,6 +433,7 @@ func (in *PaasConfigSpec) DeepCopyInto(out *PaasConfigSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	out.DecryptKeysSecret = in.DecryptKeysSecret
 	if in.Capabilities != nil {
 		in, out := &in.Capabilities, &out.Capabilities
 		*out = make(ConfigCapabilities, len(*in))

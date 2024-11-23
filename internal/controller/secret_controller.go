@@ -14,6 +14,8 @@ import (
 	"maps"
 	"strings"
 
+	"github.com/belastingdienst/opr-paas/internal/crypt"
+
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	"github.com/rs/zerolog/log"
@@ -115,12 +117,34 @@ func (r *PaasNSReconciler) backendSecret(
 	return s, nil
 }
 
+// getSecrets returns a list of Secrets which are desired based on the Paas(Ns) spec
 func (r *PaasNSReconciler) getSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 	encryptedSecrets map[string]string,
 ) (secrets []*corev1.Secret, err error) {
+	// Only do something when secrets are required
+	if len(encryptedSecrets) > 0 {
+		return nil, nil
+	}
+	// Get the configured decryptSecret
+	decryptSecret := &corev1.Secret{}
+	err = r.Get(ctx, types.NamespacedName{Name: GetConfig().DecryptKeysSecret.Name, Namespace: GetConfig().DecryptKeysSecret.Namespace}, decryptSecret)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to get decryptSecret from kubernetes, contact system administrator: %w", err)
+	}
+	// If the generation is changed, the secret has changed, reset Crypts.
+	if decryptSecret.Generation != currentDecryptSecretGeneration {
+		resetCrypts()
+	}
+
+	var rsa *crypt.Crypt
+	rsa, err = getRsa(paas.Name, *decryptSecret)
+	if err != nil {
+		return nil, err
+	}
+
 	for url, encryptedSecretData := range encryptedSecrets {
 		namespacedName := types.NamespacedName{
 			Namespace: paasns.NamespaceName(),
@@ -130,16 +154,18 @@ func (r *PaasNSReconciler) getSecrets(
 		if err != nil {
 			return nil, err
 		}
-		if decrypted, err := getRsa(paasns.Spec.Paas).Decrypt(encryptedSecretData); err != nil {
+		if decrypted, err := rsa.Decrypt(encryptedSecretData); err != nil {
 			return nil, fmt.Errorf("failed to decrypt secret %s: %s", secret, err.Error())
 		} else {
 			secret.Data["sshPrivateKey"] = decrypted
 			secrets = append(secrets, secret)
 		}
 	}
-	return
+	return secrets, nil
 }
 
+// BackendSecrets returns a list of kubernetes Secrets which are desired based on the Paas(Ns) spec.
+// It returns an error when the secrets cannot be determined.
 func (r *PaasNSReconciler) BackendSecrets(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,

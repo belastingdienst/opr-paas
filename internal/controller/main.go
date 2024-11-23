@@ -8,8 +8,13 @@ package controller
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"sync"
+
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
@@ -30,37 +35,66 @@ type PaasConfigStore struct {
 }
 
 var (
-	_cnf            = &PaasConfigStore{}
-	_crypt          map[string]*crypt.Crypt
-	debugComponents []string
+	cnf = &PaasConfigStore{}
+	// crypts contains a maps of crypt against a Paas name
+	crypts                         map[string]*crypt.Crypt
+	currentDecryptSecretGeneration int64
+	decryptSecretPrivateKeys       []rsa.PrivateKey
+	debugComponents                []string
 )
 
 // GetConfig retrieves the current configuration
 func GetConfig() v1alpha1.PaasConfigSpec {
-	_cnf.mutex.RLock()
-	defer _cnf.mutex.RUnlock()
-	return _cnf.currentConfig
+	cnf.mutex.RLock()
+	defer cnf.mutex.RUnlock()
+	return cnf.currentConfig
 }
 
 // SetConfig updates the current configuration
 func SetConfig(newConfig v1alpha1.PaasConfig) {
-	_cnf.mutex.Lock()
-	defer _cnf.mutex.Unlock()
-	_cnf.currentConfig = newConfig.Spec
+	cnf.mutex.Lock()
+	defer cnf.mutex.Unlock()
+	cnf.currentConfig = newConfig.Spec
 }
 
-func getRsa(paas string) *crypt.Crypt {
-	config := GetConfig()
-	if _crypt == nil {
-		_crypt = make(map[string]*crypt.Crypt)
+// resetCrypts removes all crypts, decryptSecretPrivateKeys and resets the currentDecryptSecretGeneration
+func resetCrypts() {
+	crypts = nil
+	decryptSecretPrivateKeys = nil
+	currentDecryptSecretGeneration = 0
+}
+
+// getRsa returns a crypt.Crypt for a specified paasName
+func getRsa(paasName string, secret v1.Secret) (*crypt.Crypt, error) {
+	if crypts == nil {
+		crypts = make(map[string]*crypt.Crypt)
 	}
-	if c, exists := _crypt[paas]; exists {
-		return c
-	} else if c, err := crypt.NewCrypt(config.DecryptKeyPaths, "", paas); err != nil {
-		panic(fmt.Errorf("could not get a crypt: %w", err))
+	// Load secrets
+	// If one error occurs, all is invalid
+	if decryptSecretPrivateKeys == nil {
+		tmpKeys := make([]rsa.PrivateKey, 0)
+		for _, value := range secret.Data {
+			if privateKeyBlock, _ := pem.Decode(secret.Data[string(value)]); privateKeyBlock == nil {
+				return nil, fmt.Errorf("cannot decode private key")
+			} else if privateKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes); err != nil {
+				return nil, fmt.Errorf("private key invalid: %w", err)
+			} else {
+				tmpKeys = append(tmpKeys, *privateKey)
+			}
+		}
+		decryptSecretPrivateKeys = tmpKeys
+		currentDecryptSecretGeneration = secret.Generation
+	}
+
+	if c, exists := crypts[paasName]; exists {
+		return c, nil
 	} else {
-		_crypt[paas] = c
-		return c
+		if c, err := crypt.NewCryptFromKeys(decryptSecretPrivateKeys, "", paasName); err != nil {
+			return nil, err
+		} else {
+			crypts[paasName] = c
+			return c, nil
+		}
 	}
 }
 

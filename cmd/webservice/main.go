@@ -43,7 +43,7 @@ func getRsa(paas string) *crypt.Crypt {
 		return c
 	}
 
-	c, err := crypt.NewCrypt([]string{config.PrivateKeyPath}, config.PublicKeyPath, paas)
+	c, err := crypt.NewCryptFromFiles([]string{config.PrivateKeyPath}, config.PublicKeyPath, paas)
 	if err != nil {
 		panic(fmt.Errorf("unable to create a crypt: %w", err))
 	}

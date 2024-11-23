@@ -53,6 +53,10 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Required
 	DecryptKeyPaths []string `json:"decryptKeyPaths"`
 
+	// DecryptKeysSecretName is a reference to the secret containing the DecryptKeys
+	// +kubebuilder:validation:Required
+	DecryptKeysSecret NamespacedName `json:"decryptKeySecret"`
+
 	// Enable debug information generation or not
 	// +kubebuilder:default:=false
 	// +kubebuilder:validation:Optional
