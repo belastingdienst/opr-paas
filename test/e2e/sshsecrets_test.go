@@ -18,7 +18,7 @@ import (
 )
 
 func TestSecrets(t *testing.T) {
-	c, err := crypt.NewCrypt([]string{"/tmp/paas-e2e/secrets/priv"}, "/tmp/paas-e2e/secrets/pub/publicKey0", "sshpaas")
+	c, err := crypt.NewCryptFromFiles([]string{"/tmp/paas-e2e/secrets/priv"}, "/tmp/paas-e2e/secrets/pub/publicKey0", "sshpaas")
 	if err != nil {
 		panic(fmt.Errorf("unable to create a crypt: %w", err))
 	}
@@ -82,7 +82,7 @@ func assertSecretCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 }
 
 func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	c, err := crypt.NewCrypt([]string{"/tmp/paas-e2e/secrets/priv"}, "/tmp/paas-e2e/secrets/pub/publicKey0", "sshpaas")
+	c, err := crypt.NewCryptFromFiles([]string{"/tmp/paas-e2e/secrets/priv"}, "/tmp/paas-e2e/secrets/pub/publicKey0", "sshpaas")
 	if err != nil {
 		panic(fmt.Errorf("unable to create a crypt: %w", err))
 	}
@@ -138,7 +138,7 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 }
 
 func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	c, err := crypt.NewCrypt([]string{"/tmp/paas-e2e/secrets/priv"}, "/tmp/paas-e2e/secrets/pub/publicKey0", "sshpaas")
+	c, err := crypt.NewCryptFromFiles([]string{"/tmp/paas-e2e/secrets/priv"}, "/tmp/paas-e2e/secrets/pub/publicKey0", "sshpaas")
 	if err != nil {
 		panic(fmt.Errorf("unable to create a crypt: %w", err))
 	}
