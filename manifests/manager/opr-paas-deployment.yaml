@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: paas-controller-manager
+  name: controller-manager
   namespace: paas-system
   labels:
     control-plane: paas-controller-manager
