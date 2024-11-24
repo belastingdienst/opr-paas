@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
+  name: paas-controller-manager
   namespace: paas-system
   labels:
     control-plane: paas-controller-manager
@@ -60,7 +60,7 @@ spec:
               mountPath: /etc/paas
             - name: example-keys
               mountPath: /secrets/paas
-      serviceAccountName: controller-manager
+      serviceAccountName: paas-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
         - name: paas-config
