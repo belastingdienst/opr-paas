@@ -15,5 +15,5 @@ roleRef:
   name: paas-manager-role
 subjects:
 - kind: ServiceAccount
-  name: controller-manager
+  name: paas-controller-manager
   namespace: paas-system

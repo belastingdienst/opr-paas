@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/created-by: opr-paas
     app.kubernetes.io/part-of: opr-paas
     app.kubernetes.io/managed-by: kustomize
-  name: leader-election-role
+  name: paas-leader-election-role
 rules:
 - apiGroups:
   - coordination.k8s.io
