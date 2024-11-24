@@ -3,7 +3,7 @@ kind: RoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: rolebinding
-    app.kubernetes.io/instance: leader-election-rolebinding
+    app.kubernetes.io/instance: paas-leader-election-rolebinding
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: opr-paas
     app.kubernetes.io/part-of: opr-paas
