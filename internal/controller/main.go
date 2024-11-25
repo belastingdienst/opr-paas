@@ -9,9 +9,11 @@ package controller
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
+	"github.com/go-logr/logr"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -22,30 +24,38 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
+// ConfigStore is a thread-safe store for the current PaasConfig
+type PaasConfigStore struct {
+	currentConfig v1alpha1.PaasConfig
+	mutex         sync.RWMutex
+}
+
 var (
-	_cnf   *v1alpha1.PaasConfig
+	_cnf   = &PaasConfigStore{}
 	_crypt map[string]*crypt.Crypt
 	debugComponents []string
 )
 
-func getConfig() v1alpha1.PaasConfig {
-	var err error
-	if _cnf == nil {
-		if _cnf, err = v1alpha1.NewConfig(); err != nil {
-			panic(fmt.Sprintf(
-				"Could not read config: %s",
-				err.Error()))
-		}
-		if _cnf.Spec.Debug {
-			logrus.SetLevel(logrus.DebugLevel)
-			logrus.Debug("Enabling debug logging")
-		}
-	}
-	return *_cnf
+// func initConfig() {
+// 	_cnf = &v1alpha1.PaasConfig{}
+// }
+
+// GetConfig retrieves the current configuration
+func GetConfig() v1alpha1.PaasConfig {
+	_cnf.mutex.RLock()
+	defer _cnf.mutex.RUnlock()
+	return _cnf.currentConfig
+}
+
+// SetConfig updates the current configuration
+func SetConfig(newConfig v1alpha1.PaasConfig) {
+	_cnf.mutex.Lock()
+	defer _cnf.mutex.Unlock()
+	_cnf.currentConfig = newConfig
 }
 
 func getRsa(paas string) *crypt.Crypt {
-	config := getConfig()
+	config := GetConfig()
 	if _crypt == nil {
 		_crypt = make(map[string]*crypt.Crypt)
 	}

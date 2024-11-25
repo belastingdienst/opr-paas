@@ -161,7 +161,7 @@ func (r *PaasNSReconciler) ReconcileNamespaces(
 ) (err error) {
 	nsName := paasns.NamespaceName()
 	var nsQuota string
-	if config, exists := getConfig().Spec.Capabilities[paasns.Name]; !exists {
+	if config, exists := GetConfig().Spec.Capabilities[paasns.Name]; !exists {
 		nsQuota = paas.Name
 	} else if !config.QuotaSettings.Clusterwide {
 		nsQuota = nsName

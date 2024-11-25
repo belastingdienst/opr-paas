@@ -304,6 +304,14 @@ func NewConfig() (config *PaasConfig, err error) {
 	return config, nil
 }
 
+// Set updates the configuration values in a thread-safe way
+func (pc *PaasConfig) Set(logLevel string, interval int) {
+	// pc.mutex.Lock()
+	// defer pc.mutex.Unlock()
+	// pc.LogLevel = logLevel
+	// pc.Interval = interval
+}
+
 // TODO use Verfiy in Reconciler
 func (config PaasConfig) Verify() error {
 	var multierror []string
@@ -334,4 +342,20 @@ func (config PaasConfig) CapabilityK8sName(capability string) (as types.Namespac
 type PaasConfigStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 	Messages []string `json:"messages,omitempty"`
+}
+
+// +kubebuilder:object:root=true
+// PaasConfigList contains a list of PaasConfig
+type PaasConfigList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=1
+	// +kubebuilder:validation:Required
+	Items []PaasConfig `json:"items"`
+}
+
+func init() {
+	SchemeBuilder.Register(&PaasConfig{}, &PaasConfigList{})
 }

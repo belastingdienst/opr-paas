@@ -94,7 +94,7 @@ func (r *PaasReconciler) backendQuota(
 			Selector: quotav1.ClusterResourceQuotaSelector{
 				LabelSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						getConfig().Spec.QuotaLabel: quotaName,
+						GetConfig().Spec.QuotaLabel: quotaName,
 					},
 				},
 			},
@@ -117,7 +117,7 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (quotas []*quotav1.ClusterResourceQuota, err error) {
-	config := getConfig()
+	config := GetConfig()
 	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
 	for name, cap := range paas.Spec.Capabilities {
 		if capConfig, exists := config.Spec.Capabilities[name]; !exists {
@@ -140,7 +140,7 @@ type PaasQuotas map[string]paas_quota.Quotas
 func (r *PaasReconciler) BackendEnabledQuotaStatus(
 	paas *v1alpha1.Paas,
 ) (quotas PaasQuotas, err error) {
-	config := getConfig()
+	config := GetConfig()
 	quotas = make(PaasQuotas)
 	quotas["default"] = paas.Spec.Quota
 	for name, cap := range paas.Spec.Capabilities {
@@ -160,7 +160,7 @@ func (r *PaasReconciler) BackendUnneededQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (quotas []string) {
-	config := getConfig()
+	config := GetConfig()
 	for name, cap := range paas.Spec.Capabilities {
 		if capConfig, exists := config.Spec.Capabilities[name]; !exists {
 			quotas = append(quotas, fmt.Sprintf("%s-%s", paas.Name, name))

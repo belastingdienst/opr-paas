@@ -68,7 +68,7 @@ func (r *PaasReconciler) UpdateClusterWideQuotaResources(
 	var allPaasResources paas_quota.QuotaLists
 	if capabilityName, err := ClusterWideCapabilityName(quota.ObjectMeta.Name); err != nil {
 		return err
-	} else if config, exists := getConfig().Spec.Capabilities[capabilityName]; !exists {
+	} else if config, exists := GetConfig().Spec.Capabilities[capabilityName]; !exists {
 		return fmt.Errorf("missing capability config for %s", capabilityName)
 	} else if !config.QuotaSettings.Clusterwide {
 		return fmt.Errorf("running UpdateClusterWideQuota for non-clusterwide quota %s", quota.ObjectMeta.Name)
@@ -102,7 +102,7 @@ func backendClusterWideQuota(
 			Selector: quotav1.ClusterResourceQuotaSelector{
 				LabelSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						getConfig().Spec.QuotaLabel: quotaName,
+						GetConfig().Spec.QuotaLabel: quotaName,
 					},
 				},
 			},
@@ -166,7 +166,7 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 	var quota *quotav1.ClusterResourceQuota
 	var exists bool
 	quotaName := ClusterWideQuotaName(capabilityName)
-	if config, exists := getConfig().Spec.Capabilities[capabilityName]; !exists {
+	if config, exists := GetConfig().Spec.Capabilities[capabilityName]; !exists {
 		return fmt.Errorf("capability %s does not seem to exist in configuration", capabilityName)
 	} else if !config.QuotaSettings.Clusterwide {
 		return nil
@@ -211,7 +211,7 @@ func (r *PaasReconciler) removeFromClusterWideQuota(ctx context.Context, paas *v
 	quotaName := fmt.Sprintf("%s%s", cwqPrefix, capabilityName)
 	var capConfig v1alpha1.ConfigCapability
 	var exists bool
-	if capConfig, exists = getConfig().Spec.Capabilities[capabilityName]; !exists {
+	if capConfig, exists = GetConfig().Spec.Capabilities[capabilityName]; !exists {
 		return fmt.Errorf("capability %s does not seem to exist", quotaName)
 	} else {
 		quota = backendClusterWideQuota(quotaName,
