@@ -60,6 +60,32 @@ rules:
 - apiGroups:
   - cpet.belastingdienst.nl
   resources:
+  - paasconfig
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cpet.belastingdienst.nl
+  resources:
+  - paasconfig/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - cpet.belastingdienst.nl
+  resources:
+  - paasconfig/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - cpet.belastingdienst.nl
+  resources:
   - paasns
   verbs:
   - create

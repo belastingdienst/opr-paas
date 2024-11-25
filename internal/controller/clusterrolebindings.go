@@ -165,7 +165,7 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 ) (err error) {
 	var crb *rbac.ClusterRoleBinding
 	cap, capExists := paas.Spec.Capabilities.AsMap()[paasns.Name]
-	capConfig, capConfigExists := getConfig().Spec.Capabilities[paasns.Name]
+	capConfig, capConfigExists := GetConfig().Spec.Capabilities[paasns.Name]
 	if !(capConfigExists || capExists) {
 		return
 	}
@@ -201,7 +201,7 @@ func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 ) (err error) {
 	logger := getLogger(ctx, paas, "ClusterRoleBinding", "finalize")
 	var capRoles []string
-	for _, capConfig := range getConfig().Spec.Capabilities {
+	for _, capConfig := range GetConfig().Spec.Capabilities {
 		capRoles = append(capRoles, capConfig.ExtraPermissions.Roles()...)
 		capRoles = append(capRoles, capConfig.DefaultPermissions.Roles()...)
 	}

@@ -75,7 +75,7 @@ func (r *PaasReconciler) BackendAppProject(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: getConfig().Spec.AppSetNamespace,
+			Namespace: GetConfig().Spec.AppSetNamespace,
 			Labels:    paas.ClonedLabels(),
 		},
 		Spec: argo.AppProjectSpec{

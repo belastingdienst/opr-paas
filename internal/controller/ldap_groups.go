@@ -27,7 +27,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 	groups string,
 ) error {
 	// Create the ConfigMap
-	wlConfigMap := getConfig().Spec.Whitelist
+	wlConfigMap := GetConfig().Spec.Whitelist
 	return r.Create(ctx, &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -51,7 +51,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	logger := getLogger(ctx, paas, "LdapGroup", "")
 	logger.Info("Creating ldap groups for PAAS object ")
 	// See if group already exists and create if it doesn't
-	namespacedName := getConfig().Spec.Whitelist
+	namespacedName := GetConfig().Spec.Whitelist
 	cm := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Configmap",
@@ -113,7 +113,7 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 	logger := getLogger(ctx, paas, "LdapGroup", "")
 	// See if group already exists and create if it doesn't
 	cm := &corev1.ConfigMap{}
-	wlConfigMap := getConfig().Spec.Whitelist
+	wlConfigMap := GetConfig().Spec.Whitelist
 	err := r.Get(ctx, wlConfigMap, cm)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info("whitelist configmap does not exist")

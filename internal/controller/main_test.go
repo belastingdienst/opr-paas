@@ -30,7 +30,7 @@ func TestMain_getLogger(t *testing.T) {
 
 func TestMain_getConfig(t *testing.T) {
 	os.Setenv("PAAS_CONFIG", "../../test/manifests/config/paas_config.yml")
-	assert.NotNil(t, getConfig(), "some-ns")
+	assert.NotNil(t, GetConfig(), "some-ns")
 }
 
 func TestMain_intersection(t *testing.T) {

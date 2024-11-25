@@ -29,7 +29,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 	}
 	logger := getLogger(ctx, paasns, "ArgoPermissions", "")
 
-	policy := getConfig().Spec.ArgoPermissions.FromGroups(
+	policy := GetConfig().Spec.ArgoPermissions.FromGroups(
 		paasns.Spec.Groups)
 	scopes := "[groups]"
 
@@ -39,7 +39,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 			APIVersion: "argoproj.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      getConfig().Spec.ArgoPermissions.ResourceName,
+			Name:      GetConfig().Spec.ArgoPermissions.ResourceName,
 			Namespace: paasns.NamespaceName(),
 		},
 		Spec: argocd.ArgoCDSpec{
@@ -52,7 +52,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 
 	argoName := types.NamespacedName{
 		Namespace: paasns.NamespaceName(),
-		Name:      getConfig().Spec.ArgoPermissions.ResourceName,
+		Name:      GetConfig().Spec.ArgoPermissions.ResourceName,
 	}
 
 	err := r.Get(ctx, argoName, argo)
