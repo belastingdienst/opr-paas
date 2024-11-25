@@ -8,11 +8,11 @@ package controller
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
+	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -34,7 +34,8 @@ func (r *PaasNSReconciler) EnsureArgoApp(
 		return nil
 	}
 
-	logger := getLogger(ctx, paasns, "ArgoApp", appName)
+	ctx = setLogComponent(ctx, "argoapp")
+	logger := log.Ctx(ctx)
 	namespacedName := types.NamespacedName{
 		Namespace: paasns.NamespaceName(),
 		Name:      appName,
@@ -46,17 +47,17 @@ func (r *PaasNSReconciler) EnsureArgoApp(
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusAction(v1alpha1.PaasStatusInfo), argoApp, err.Error())
 		return err
 	} else if err := r.Get(ctx, namespacedName, found); err == nil {
-		logger.Info("Argo Application already exists, updating")
+		logger.Info().Msg("argo Application already exists, updating")
 		patch := client.MergeFrom(found.DeepCopy())
 		found.Spec = argoApp.Spec
 		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, found, "succeeded")
 		return r.Patch(ctx, found, patch)
 	} else if !errors.IsNotFound(err) {
-		logger.Error(err, "Could not retrieve info of Argo Application")
+		logger.Err(err).Msg("could not retrieve info of Argo Application")
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusAction(v1alpha1.PaasStatusInfo), argoApp, err.Error())
 		return err
 	} else {
-		logger.Info("Creating Argo Application")
+		logger.Info().Msg("creating Argo Application")
 		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, argoApp, "succeeded")
 		return r.Create(ctx, argoApp)
 	}
@@ -68,8 +69,8 @@ func (r *PaasNSReconciler) backendArgoApp(
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) (*argo.Application, error) {
-	logger := getLogger(ctx, paasns, "ArgoApp", appName)
-	logger.Info(fmt.Sprintf("Defining %s Argo Application", appName))
+	logger := log.Ctx(ctx)
+	logger.Info().Msgf("defining %s Argo Application", appName)
 
 	namespace := paasns.NamespaceName()
 	argoConfig := paas.Spec.Capabilities["argocd"]
@@ -112,7 +113,7 @@ func (r *PaasNSReconciler) backendArgoApp(
 		},
 	}
 
-	logger.Info("Setting Owner")
+	logger.Info().Msg("setting Owner")
 	if err := controllerutil.SetControllerReference(paas, app, r.Scheme); err != nil {
 		return app, err
 	}
@@ -127,17 +128,17 @@ func (r *PaasNSReconciler) FinalizeArgoApp(
 		Namespace: paasns.NamespaceName(),
 		Name:      appName,
 	}
-	logger := getLogger(ctx, paasns, "Application", namespacedName.String())
-	logger.Info("Finalizing")
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("finalizing")
 	obj := &argo.Application{}
 	if err := r.Get(ctx, namespacedName, obj); err != nil && errors.IsNotFound(err) {
-		logger.Info("Does not exist")
+		logger.Info().Msg("does not exist")
 		return nil
 	} else if err != nil {
-		logger.Info("Error retrieving info: " + err.Error())
+		logger.Err(err).Msg("error retrieving info")
 		return err
 	} else {
-		logger.Info("Deleting")
+		logger.Info().Msg("deleting")
 		return r.Delete(ctx, obj)
 	}
 }

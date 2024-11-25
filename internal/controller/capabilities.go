@@ -14,6 +14,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+	"github.com/rs/zerolog/log"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -154,8 +155,8 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 			Namespace: namespacedName.Namespace,
 		},
 	}
-	logger := getLogger(ctx, paasns, "AppSet", namespacedName.String())
-	logger.Info(fmt.Sprintf("Reconciling %s Applicationset %s", paasns.Name, namespacedName.String()))
+	ctx = setLogComponent(ctx, "appset")
+	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset %s", paasns.Name, namespacedName.String())
 	err = r.Get(ctx, namespacedName, appSet)
 	// groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
@@ -219,8 +220,8 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
 	asNamespacedName := getConfig().CapabilityK8sName(paasns.Name)
-	logger := getLogger(ctx, paasns, "AppSet", asNamespacedName.String())
-	logger.Info(fmt.Sprintf("Reconciling %s Applicationset", paasns.Name))
+	ctx = setLogComponent(ctx, "appset")
+	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset", paasns.Name)
 	err := r.Get(ctx, asNamespacedName, as)
 	// groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries
@@ -255,8 +256,8 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
 	asNamespacedName := getConfig().CapabilityK8sName(capability)
-	logger := getLogger(ctx, paas, "AppSet", asNamespacedName.String())
-	logger.Info(fmt.Sprintf("Reconciling %s Applicationset", capability))
+	ctx = setLogComponent(ctx, "appset")
+	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset", capability)
 	err := r.Get(ctx, asNamespacedName, as)
 	// groups := NewGroups().AddFromStrings(paas.Spec.LdapGroups)
 	var entries Entries

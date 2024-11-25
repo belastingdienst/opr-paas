@@ -92,8 +92,8 @@ func (r *PaasNSReconciler) backendSecret(
 	*corev1.Secret,
 	error,
 ) {
-	logger := getLogger(ctx, paasns, "Secret", namespacedName.String())
-	logger.Info("Defining Secret")
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("defining Secret")
 
 	s := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
@@ -113,7 +113,7 @@ func (r *PaasNSReconciler) backendSecret(
 
 	s.Labels["argocd.argoproj.io/secret-type"] = "repo-creds"
 
-	logger.Info("Setting Owner")
+	logger.Info().Msg("setting Owner")
 
 	err := controllerutil.SetControllerReference(paas, s, r.Scheme)
 	if err != nil {
@@ -173,18 +173,18 @@ func (r *PaasNSReconciler) BackendSecrets(
 
 // deleteObsoleteSecrets deletes any secrets from the existingSecrets which is not listed in the desired secrets.
 func (r *PaasNSReconciler) deleteObsoleteSecrets(ctx context.Context, paas *v1alpha1.Paas, existingSecrets []*corev1.Secret, desiredSecrets []*corev1.Secret) error {
-	logger := getLogger(ctx, paas, "Secret", "test")
-	logger.Info("Deleting obsolete secrets")
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("deleting obsolete secrets")
 
 	// Delete secrets that are no longer needed
 	for _, existingSecret := range existingSecrets {
 		if !isSecretInDesiredSecrets(existingSecret, desiredSecrets) {
 			// Secret is not in the desired state, delete it
 			if err := r.Delete(ctx, existingSecret); err != nil {
-				logger.Error(err, "Failed to delete Secret", "Secret", existingSecret.Name)
+				logger.Err(err).Str("Secret", existingSecret.Name).Msg("failed to delete Secret")
 				return err
 			}
-			logger.Info("Deleted obsolete Secret", "Secret", existingSecret.Name)
+			logger.Info().Str("Secret", existingSecret.Name).Msg("deleted obsolete Secret")
 		}
 	}
 
