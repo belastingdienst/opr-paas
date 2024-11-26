@@ -32,7 +32,8 @@ func TestSecrets(t *testing.T) {
 		Quota:      make(quota.Quotas),
 		SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
 		Capabilities: api.PaasCapabilities{
-			"sso": api.PaasCapability{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-other-repo.git": encrypted}},
+			"sso":    api.PaasCapability{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-other-repo.git": encrypted}},
+			"tekton": api.PaasCapability{Enabled: true, SshSecrets: map[string]string{}},
 		},
 	}
 
