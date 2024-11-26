@@ -8,16 +8,15 @@ package controller
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+
+	"github.com/rs/zerolog/log"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, name string,
@@ -39,13 +38,13 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 			SshSecrets: secrets,
 		},
 	}
-	logger := getLogger(ctx, paas, pns.Kind, name)
-	logger.Info("Defining")
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("defining")
 	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate,
 		pns, "Setting requestor_label")
 	pns.ObjectMeta.Labels[getConfig().RequestorLabel] = paas.Spec.Requestor
 
-	logger.Info("Setting Owner")
+	logger.Info().Msg("setting Owner")
 
 	if err := controllerutil.SetControllerReference(paas, pns, r.Scheme); err != nil {
 		return pns, err
@@ -54,8 +53,8 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 }
 
 func (r *PaasReconciler) ensurePaasNs(ctx context.Context, paas *v1alpha1.Paas, pns *v1alpha1.PaasNS) error {
-	logger := getLogger(ctx, paas, pns.Kind, pns.Name)
-	logger.Info("Ensuring")
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("ensuring")
 
 	// See if namespace exists and create if it doesn't
 	found := &v1alpha1.PaasNS{}
@@ -88,13 +87,13 @@ func (r *PaasReconciler) ensurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 	found.Spec.Groups = pns.Spec.Groups
 	found.Spec.SshSecrets = pns.Spec.SshSecrets
 	found.ObjectMeta.Labels = pns.ObjectMeta.Labels
-	logger.Info("Updating PaasNs", "PaasNs", pns)
+	logger.Info().Str("PaasNs", pns.Name).Msg("updating PaasNs")
 	return r.Update(ctx, found)
 }
 
 func (r *PaasReconciler) FinalizePaasNss(ctx context.Context, paas *v1alpha1.Paas) error {
-	logger := getLogger(ctx, paas, "Namespace", "")
-	logger.Info("Finalizing")
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("finalizing")
 
 	enabledNs := paas.AllEnabledNamespaces()
 
@@ -109,12 +108,12 @@ func (r *PaasReconciler) FinalizePaasNss(ctx context.Context, paas *v1alpha1.Paa
 		pns := pns
 
 		if !paas.AmIOwner(pns.OwnerReferences) {
-			// logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "I am not owner")
+			// logger.Info().Msg("skipping finalization", "Namespace", ns.Name, "Reason", "I am not owner")
 		} else if _, isEnabled := enabledNs[pns.Name]; isEnabled {
-			// logger.Info("Skipping finalization", "Namespace", ns.Name, "Reason", "Should be there")
+			// logger.Info().Msg("skipping finalization", "Namespace", ns.Name, "Reason", "Should be there")
 		} else if err := r.Delete(ctx, &pns); err != nil {
 			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, &pns, err.Error())
-			// logger.Error(err, "Could not delete ns", "Namespace", ns.Name)
+			// logger.Err(err).Msg("could not delete ns", "Namespace", ns.Name)
 		} else {
 			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusDelete, &pns, "succeeded")
 		}
@@ -125,32 +124,33 @@ func (r *PaasReconciler) FinalizePaasNss(ctx context.Context, paas *v1alpha1.Paa
 func (r *PaasReconciler) ReconcilePaasNss(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	logger logr.Logger,
 ) error {
-	logger.Info("Creating default namespace to hold PaasNs resources for PAAS object")
+	ctx = setLogComponent(ctx, "paasns")
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("creating default namespace to hold PaasNs resources for PAAS object")
 	if ns, err := BackendNamespace(ctx, paas, paas.Name, paas.Name, r.Scheme); err != nil {
-		logger.Error(err, fmt.Sprintf("Failure while defining namespace %s", paas.Name))
+		logger.Err(err).Msgf("failure while defining namespace %s", paas.Name)
 		return err
 	} else if err = EnsureNamespace(r.Client, ctx, paas.Status.AddMessage, paas, ns, r.Scheme); err != nil {
-		logger.Error(err, fmt.Sprintf("Failure while creating namespace %s", paas.Name))
+		logger.Err(err).Msgf("failure while creating namespace %s", paas.Name)
 		return err
 	} else {
-		logger.Info("Creating PaasNs resources for PAAS object")
+		logger.Info().Msg("creating PaasNs resources for PAAS object")
 		for nsName := range paas.AllEnabledNamespaces() {
 			pns, err := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Names(), paas.GetNsSshSecrets(nsName))
 			if err != nil {
-				logger.Error(err, fmt.Sprintf("Failure while creating PaasNs %s",
-					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace}))
+				logger.Err(err).Msgf("failure while creating PaasNs %s",
+					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace})
 				return err
 			}
 			if err = r.ensurePaasNs(ctx, paas, pns); err != nil {
-				logger.Error(err, fmt.Sprintf("Failure while creating PaasNs %s",
-					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace}))
+				logger.Err(err).Msgf("failure while creating PaasNs %s",
+					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace})
 				return err
 			}
 		}
 	}
-	logger.Info("Cleaning obsolete namespaces ")
+	logger.Info().Msg("cleaning obsolete namespaces ")
 	if err := r.FinalizePaasNss(ctx, paas); err != nil {
 		return err
 	}

@@ -305,7 +305,7 @@ func (pc *PaasCapability) SetSshSecret(key string, value string) {
 type PaasStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 	Messages []string                     `json:"messages,omitempty"`
-	Quota    map[string]paas_quota.Quotas `json:"quotas"`
+	Quota    map[string]paas_quota.Quotas `json:"quotas,omitempty"`
 }
 
 func (ps *PaasStatus) Truncate() {

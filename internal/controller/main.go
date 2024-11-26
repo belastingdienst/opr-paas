@@ -13,14 +13,13 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 
-	"github.com/go-logr/logr"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
-	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 var (
@@ -56,35 +55,24 @@ func getRsa(paas string) *crypt.Crypt {
 	}
 }
 
-func getLogger(
-	ctx context.Context,
-	obj client.Object,
-	kind string,
-	name string,
-) logr.Logger {
-	fields := append(make([]interface{}, 0), obj.GetObjectKind().GroupVersionKind().Kind, obj.GetName(), "Kind", kind)
-	if name != "" {
-		fields = append(fields, "Name", name)
-	}
-
-	return ctrllog.FromContext(ctx).WithValues(fields...)
-}
-
 // setRequestLogger derives a context with a `zerolog` logger configured for a specific controller.
 // To be called once per reconciler. All functions within the reconciliation request context can access the logger with `log.Ctx()`.
-func setRequestLogger(ctx context.Context, obj client.Object, scheme *runtime.Scheme, req ctrl.Request) context.Context {
+func setRequestLogger(ctx context.Context, obj client.Object, scheme *runtime.Scheme, req ctrl.Request) (context.Context, *zerolog.Logger) {
 	gvk, err := apiutil.GVKForObject(obj, scheme)
 	if err != nil {
 		log.Err(err).Msg("failed to retrieve controller group-version-kind")
 
-		return log.Logger.WithContext(ctx)
+		return log.Logger.WithContext(ctx), &log.Logger
 	}
 
-	return log.With().
+	logger := log.With().
 		Any("controller", gvk).
 		Any("object", req.NamespacedName).
-		Logger().
-		WithContext(ctx)
+		Str("reconcileID", uuid.NewString()).
+		Logger()
+	logger.Info().Msg("starting reconciliation")
+
+	return logger.WithContext(ctx), &logger
 }
 
 // SetComponentDebug configures which components will log debug messages regardless of global log level.
