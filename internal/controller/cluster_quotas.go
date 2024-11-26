@@ -233,10 +233,11 @@ func (r *PaasReconciler) ReconcileQuotas(
 ) (err error) {
 	ctx = setLogComponent(ctx, "quota")
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("creating quotas for PAAS object ")
+	logger.Info().Msg("creating quotas for Paas")
 	// Create quotas if needed
 	if quotas, err := r.BackendEnabledQuotas(ctx, paas); err != nil {
-		logger.Err(err).Msg("failure while getting list of quotas")
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, paas, err.Error())
+		return err
 	} else {
 		for _, q := range quotas {
 			logger.Info().Msg("creating quota " + q.Name + " for PAAS object ")
