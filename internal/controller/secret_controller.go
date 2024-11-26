@@ -172,7 +172,7 @@ func (r *PaasNSReconciler) BackendSecrets(
 }
 
 // deleteObsoleteSecrets deletes any secrets from the existingSecrets which is not listed in the desired secrets.
-func (r *PaasNSReconciler) deleteObsoleteSecrets(ctx context.Context, paas *v1alpha1.Paas, existingSecrets []*corev1.Secret, desiredSecrets []*corev1.Secret) error {
+func (r *PaasNSReconciler) deleteObsoleteSecrets(ctx context.Context, existingSecrets []*corev1.Secret, desiredSecrets []*corev1.Secret) error {
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("deleting obsolete secrets")
 
@@ -249,7 +249,7 @@ func (r *PaasNSReconciler) ReconcileSecrets(
 	if err != nil {
 		return err
 	}
-	err = r.deleteObsoleteSecrets(ctx, paas, existingSecrets, desiredSecrets)
+	err = r.deleteObsoleteSecrets(ctx, existingSecrets, desiredSecrets)
 	if err != nil {
 		return err
 	}
