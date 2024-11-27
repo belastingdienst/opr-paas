@@ -45,7 +45,7 @@ type PaasConfigSpec struct {
 	// TODO description
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:deprecatedversion:warning="This field is deprecated and will be removed in future versions."
-	Whitelist types.NamespacedName `json:"whitelist,omitempty"`
+	Whitelist NamespacedName `json:"whitelist,omitempty"`
 
 	// TODO description
 	// +kubebuilder:validation:Optional
@@ -82,6 +82,13 @@ type PaasConfigSpec struct {
 	// Grant permissions to all groups according to config in configmap and role selected per group in paas.
 	// +kubebuilder:validation:Optional
 	RoleMappings ConfigRoleMappings `json:"rolemappings,omitempty"`
+}
+
+type NamespacedName struct {
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+	// +kubebuilder:validation:Required
+	Namespace string `json:"namespace"`
 }
 
 type ConfigRoleMappings map[string][]string
