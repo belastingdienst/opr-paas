@@ -20,16 +20,13 @@ capabilities:
         requests.storage: '0'
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
     extra_permissions:
-      roles:
+      argo-service-argocd-application-controller:
         - admin
-      serviceaccounts:
-        - argo-service-argocd-application-controller
     default_permissions:
-      roles:
+      argo-service-argocd-application-controller:
         - monitoring-edit
-      serviceaccounts:
-        - argo-service-applicationset-controller
-        - argo-service-argocd-application-controller
+      argo-service-applicationset-controller:
+        - monitoring-edit
   tekton:
     applicationset: tektonas
     quotas:
@@ -49,16 +46,12 @@ capabilities:
         requests.storage: '100Gi'
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
     extra_permissions:
-      roles:
+      pipeline:
         - admin
-      serviceaccounts:
-        - pipeline
     default_permissions:
-      roles:
+      pipeline:
         - view
         - alert-routing-edit
-      serviceaccounts:
-        - pipeline
   sso:
     applicationset: ssoas
     quotas:

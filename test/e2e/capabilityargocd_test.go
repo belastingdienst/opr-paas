@@ -4,10 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
-
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/quota"
+	"github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -111,18 +110,11 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	return ctx
 }
 
-/*
-Default_permissions points:
-
-1. Assess that a clusterrolebinding for `paas-monitoring-edit` is created
-2. Assess that the `paas-monitoring-edit` clusterrolebinding contains the `argo-service-applicationset-controller` service account
-3. Assess that the `paas-monitoring-edit` clusterrolebinding contains the `argo-service-argocd-application-controller` service account
-*/
 func assertArgoCRB(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	argo_role_binding := getOrFail(ctx, "paas-monitoring-edit", "", &rbac.ClusterRoleBinding{}, t, cfg)
+	default_role_binding := getOrFail(ctx, "paas-monitoring-edit", "", &rbac.ClusterRoleBinding{}, t, cfg)
 
-	subjects := argo_role_binding.Subjects
-	assert.Len(t, subjects, 2, "ClusterRoleBinding contains one subject")
+	subjects := default_role_binding.Subjects
+	assert.Len(t, subjects, 2, "ClusterRoleBinding contains two subjects")
 	var subjectNames []string
 	for _, subject := range subjects {
 		assert.Equal(t, "ServiceAccount", subject.Kind, "Subject is of type ServiceAccount")
@@ -130,6 +122,12 @@ func assertArgoCRB(ctx context.Context, t *testing.T, cfg *envconf.Config) conte
 		subjectNames = append(subjectNames, subject.Name)
 	}
 	assert.Contains(t, subjectNames, "argo-service-applicationset-controller", "ClusterRoleBinding contains")
-	assert.Contains(t, subjectNames, "argo-service-argocd-applicationset-controller", "ClusterRoleBinding contains")
+	assert.Contains(t, subjectNames, "argo-service-argocd-application-controller", "ClusterRoleBinding contains")
+
+	extra_role_binding := getOrFail(ctx, "paas-admin", "", &rbac.ClusterRoleBinding{}, t, cfg)
+	assert.Len(t, extra_role_binding.Subjects, 1, "ClusterRoleBinding contains one subject")
+	assert.Equal(t, paasArgoNs, extra_role_binding.Subjects[0].Namespace, "Subject is from correct namespace")
+	assert.Equal(t, "argo-service-argocd-application-controller", extra_role_binding.Subjects[0].Name, "Subject is as defined in capability extra_permissions")
+
 	return ctx
 }

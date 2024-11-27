@@ -31,8 +31,7 @@ func TestCapabilityTekton(t *testing.T) {
 		Quota:     make(quota.Quotas),
 		Capabilities: api.PaasCapabilities{
 			"tekton": api.PaasCapability{
-				Enabled:          true,
-				ExtraPermissions: false,
+				Enabled: true,
 			},
 		},
 	}
@@ -42,8 +41,8 @@ func TestCapabilityTekton(t *testing.T) {
 		features.New("Capability Tekton").
 			Setup(createPaasFn(paasWithCapabilityTekton, paasSpec)).
 			Assess("is created", assertCapTektonCreated).
-			Assess("is deleted when PaaS is deleted", assertCapTektonDeleted).
 			Assess("has ClusterRoleBindings", assertTektonCRB).
+			Assess("is deleted when PaaS is deleted", assertCapTektonDeleted).
 			Teardown(teardownPaasFn(paasWithCapabilityTekton)).
 			Feature(),
 	)
@@ -51,6 +50,9 @@ func TestCapabilityTekton(t *testing.T) {
 
 func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapabilityTekton, t, cfg)
+	tpaasns := getOrFail(ctx, "tekton", paasWithCapabilityTekton, &api.PaasNS{}, t, cfg)
+	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, tpaasns), "Tekton PaasNS reconciliation succeeds")
+
 	namespace := getOrFail(ctx, paasWithCapabilityTekton, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
 	applicationSet := getOrFail(ctx, TektonApplicationSet, asTektonNamespace, &argo.ApplicationSet{}, t, cfg)
 	TektonQuota := getOrFail(ctx, paasTektonCRQ, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
@@ -120,15 +122,9 @@ func assertCapTektonDeleted(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	return ctx
 }
 
-/*
-1.  Assess that a rolebinding for `monitoring-edit` is created
-2.  Assess that the `monitoring-edit` rolebinding contains the `tekton` service account
-3.  Assess that a rolebinding for `alert-routing-edit` is created
-4.  Assess that the `alert-routing-edit` rolebinding contains the `tekton` service account
-*/
 func assertTektonCRB(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	for _, crbName := range []string{"paas-view", "paas-alert-routing-edit"} {
-		argo_role_binding := getOrFail(ctx, crbName, paasTektonNs, &rbac.ClusterRoleBinding{}, t, cfg)
+		argo_role_binding := getOrFail(ctx, crbName, "", &rbac.ClusterRoleBinding{}, t, cfg)
 		subjects := argo_role_binding.Subjects
 		assert.Len(t, subjects, 1, "ClusterRoleBinding %s contains one subject", crbName)
 		subject := subjects[0]
