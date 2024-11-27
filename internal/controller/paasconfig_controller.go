@@ -23,7 +23,7 @@ import (
 
 const paasconfigFinalizer = "paasconfig.cpet.belastingdienst.nl/finalizer"
 
-// PaasReconciler reconciles a Paas object
+// PaasConfigReconciler reconciles a PaasConfig object
 type PaasConfigReconciler struct {
 	client.Client
 	Scheme            *runtime.Scheme
