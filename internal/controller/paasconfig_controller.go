@@ -85,7 +85,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	if err := config.Verify(); err != nil {
 		pcr.Log.Info("invalid PaasConfig, not updating", "PaasConfig", err.Error())
-		return ctrl.Result{}, err
+		return ctrl.Result{}, nil
 	}
 
 	// Update the shared configuration store
