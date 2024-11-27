@@ -68,7 +68,7 @@ type PaasConfigSpec struct {
 	// Name of the label used to define who is the contact for this resource
 	// +kubebuilder:default:=requestor
 	// +kubebuilder:validation:Optional
-	RequestorLabel string `json:"requestor_labe,omitempty"`
+	RequestorLabel string `json:"requestor_label,omitempty"`
 
 	// Name of the label used to define by whom the resource is managed.
 	// +kubebuilder:default:=argocd.argoproj.io/managed-by

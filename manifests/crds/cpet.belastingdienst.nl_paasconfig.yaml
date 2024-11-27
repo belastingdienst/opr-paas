@@ -166,7 +166,7 @@ spec:
                 default: clusterquotagroup
                 description: Label which is added to clusterquotas
                 type: string
-              requestor_labe:
+              requestor_label:
                 default: requestor
                 description: Name of the label used to define who is the contact for
                   this resource
