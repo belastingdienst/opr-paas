@@ -135,6 +135,9 @@ Paas:
 */
 
 type ConfigArgoPermissions struct {
+	// The optional default policy which is set in the ArgoCD instance
+	// +kubebuilder:validation:Optional
+	DefaultPolicy string `json:"default_policy,omitempty"`
 	// The name of the ArgoCD instance to apply ArgoPermissions to
 	// +kubebuilder:validation:Required
 	ResourceName string `json:"resource_name"`

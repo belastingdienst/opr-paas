@@ -45,6 +45,10 @@ spec:
               argopermissions:
                 description: Permissions to set for ArgoCD instance
                 properties:
+                  default_policy:
+                    description: The optional default policy which is set in the ArgoCD
+                      instance
+                    type: string
                   header:
                     description: The header value to set in ArgoPermissions
                     type: string

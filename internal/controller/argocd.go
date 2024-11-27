@@ -36,7 +36,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 	}
 
 	defaultPolicy := GetConfig().Spec.ArgoPermissions.DefaultPolicy
-	policy := GetConfig().Spec.ArgoPermissions.FromGroups(
+	policy := GetConfig().Spec.ArgoPermissions.FromGroups(paasns.Spec.Groups)
 	scopes := "[groups]"
 
 	argo := &argocd.ArgoCD{

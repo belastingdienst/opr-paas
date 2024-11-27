@@ -13,7 +13,6 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
-	"github.com/go-logr/logr"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -31,8 +30,8 @@ type PaasConfigStore struct {
 }
 
 var (
-	_cnf   = &PaasConfigStore{}
-	_crypt map[string]*crypt.Crypt
+	_cnf            = &PaasConfigStore{}
+	_crypt          map[string]*crypt.Crypt
 	debugComponents []string
 )
 

@@ -71,7 +71,7 @@ func (r *PaasReconciler) FinalizeAppProject(ctx context.Context, paas *v1alpha1.
 	appProject := &argo.AppProject{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Name:      paas.Name,
-		Namespace: getConfig().AppSetNamespace,
+		Namespace: GetConfig().Spec.AppSetNamespace,
 	}, appProject); err != nil && errors.IsNotFound(err) {
 		logger.Info().Msg("app Project already deleted")
 		return nil
