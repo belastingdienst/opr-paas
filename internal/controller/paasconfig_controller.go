@@ -13,7 +13,6 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -62,6 +61,12 @@ func (r *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	pcr.Log.Info("reconciling PaasConfig")
 
+	// Fetch the singleton PaasConfig instance
+	var config v1alpha1.PaasConfig
+	if err := pcr.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, &config); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
 	// Fetch all instances of PaasConfig
 	var configList v1alpha1.PaasConfigList
 	if err := pcr.List(ctx, &configList, &client.ListOptions{}); err != nil {
@@ -73,17 +78,6 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		pcr.Log.Error(fmt.Errorf("singleton violation"), "more than one PaasConfig instance found")
 		// TODO delete extra PaasConfig instances or just log the error and skip reconciliation?
 		return ctrl.Result{}, nil
-	}
-
-	// Fetch the singleton PaasConfig instance
-	var config v1alpha1.PaasConfig
-	// TODO use hardcoded namespacedname or something else?
-	if err := pcr.Get(ctx, types.NamespacedName{Name: "paas-system"}, &config); err != nil {
-		if errors.IsNotFound(err) {
-			// TODO PaasConfig instance not found, create a default one?
-			return ctrl.Result{}, nil
-		}
-		return ctrl.Result{}, err
 	}
 
 	// Don't need to check if configuration has changed because we use predicate
