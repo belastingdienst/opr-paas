@@ -25,6 +25,8 @@ through a combination of CRD spec level validation and custom verification check
 For details on the layout of a PaasConfig resource, please see the [development-guide's api section](../development-guide/00_api.md#paasconfig)
 and more specifically the [section on PaasConfigSpec](../development-guide/00_api.md#paasconfigspec).
 
+Alternatively, if you prefer, you could use [doc.crds.dev](https://doc.crds.dev/github.com/belastingdienst/opr-paas).
+
 For an example, see below.
 
 Example PaasConfig
