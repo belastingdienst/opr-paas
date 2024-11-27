@@ -16,6 +16,16 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+// Definitions to manage status conditions
+const (
+	// TypeActivePaasConfig represents whether this is the PaasConfig being used by the Paas operator
+	TypeActivePaasConfig = "Active"
+	// TypeHasErrorsPaasConfig represents the status used when the custom resource reconciliation holds errors.
+	TypeHasErrorsPaasConfig = "HasErrors"
+	// TypeDegradedPaasConfig represents the status used when the custom resource is deleted and the finalizer operations are yet to occur.
+	TypeDegradedPaasConfig = "Degraded"
+)
+
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=paasconfig,scope=Cluster
@@ -341,8 +351,8 @@ func (config PaasConfig) CapabilityK8sName(capability string) (as types.Namespac
 }
 
 type PaasConfigStatus struct {
-	// Important: Run "make" to regenerate code after modifying this file
-	Messages []string `json:"messages,omitempty"`
+	// Conditions of this resource
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 // +kubebuilder:object:root=true
