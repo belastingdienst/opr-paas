@@ -17,7 +17,6 @@ data:
       resource_name: argo-service
       role: admin
       header: g, system:cluster-admins, role:admin
-      retries: 10
     managed_by_label: argocd.argoproj.io/managed-by
     requestor_label: requestor
     decryptKeyPaths:
