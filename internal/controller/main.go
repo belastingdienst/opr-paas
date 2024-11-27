@@ -35,10 +35,6 @@ var (
 	debugComponents []string
 )
 
-// func initConfig() {
-// 	_cnf = &v1alpha1.PaasConfig{}
-// }
-
 // GetConfig retrieves the current configuration
 func GetConfig() v1alpha1.PaasConfig {
 	_cnf.mutex.RLock()

@@ -8,10 +8,8 @@ package v1alpha1
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
-	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -116,38 +114,11 @@ func (crm ConfigRoleMappings) Roles(roleMaps []string) []string {
 	return mappedRoles
 }
 
-/*
-      rolemappings:
-        edit:
-          - alert-routing-edit
-          - monitoring-edit
-          - edit
-          - neuvector
-        read:
-          - read
-        admin:
-          - admin
-	  /*
-
-/*
-Feature for rolemappings:
-Grant permissions to all groups according to config in configmap and role selected per group in paas.
-Paas:
-  groups:
-    aug_cpet:
-      query: >-
-        CN=aug_cpet,OU=ANNA_managed,OU=AUGGroepen,OU=UID,DC=ont,DC=belastingdienst,DC=nl
-      role: admin
-    aug_cpet_clusteradmin:
-      query: >-
-        CN=aug_cpet_clusteradmin,OU=ANNA_managed,OU=AUGGroepen,OU=UID,DC=ont,DC=belastingdienst,DC=nl
-      role: readonly
-*/
-
 type ConfigArgoPermissions struct {
 	// The optional default policy which is set in the ArgoCD instance
 	// +kubebuilder:validation:Optional
 	DefaultPolicy string `json:"default_policy,omitempty"`
+
 	// The name of the ArgoCD instance to apply ArgoPermissions to
 	// +kubebuilder:validation:Required
 	ResourceName string `json:"resource_name"`
@@ -294,40 +265,39 @@ func (ccp ConfigCapPerm) ServiceAccounts() []string {
 	return sas
 }
 
-const (
-	envConfName     = "PAAS_CONFIG"
-	defaultConfFile = "/etc/paas/config.yaml"
-)
+// const (
+// 	envConfName     = "PAAS_CONFIG"
+// 	defaultConfFile = "/etc/paas/config.yaml"
+// )
 
 // TODO Remove unused code, give this a place somewhere else in the operator..
-func NewConfig() (config *PaasConfig, err error) {
-	// This only parsed as yaml, nothing else
-	// #nosec
-	configFile := os.Getenv(envConfName)
-	if configFile == "" {
-		configFile = defaultConfFile
-	}
-	config = &PaasConfig{}
+// func NewConfig() (config *PaasConfig, err error) {
+// 	// This only parsed as yaml, nothing else
+// 	// #nosec
+// 	configFile := os.Getenv(envConfName)
+// 	if configFile == "" {
+// 		configFile = defaultConfFile
+// 	}
+// 	config = &PaasConfig{}
 
-	if yamlConfig, err := os.ReadFile(configFile); err != nil {
-		return nil, err
-	} else if err = yaml.Unmarshal(yamlConfig, config); err != nil {
-		return nil, err
-	} else if err = config.Verify(); err != nil {
-		return nil, err
-	}
-	return config, nil
-}
+// 	if yamlConfig, err := os.ReadFile(configFile); err != nil {
+// 		return nil, err
+// 	} else if err = yaml.Unmarshal(yamlConfig, config); err != nil {
+// 		return nil, err
+// 	} else if err = config.Verify(); err != nil {
+// 		return nil, err
+// 	}
+// 	return config, nil
+// }
 
 // Set updates the configuration values in a thread-safe way
-func (pc *PaasConfig) Set(logLevel string, interval int) {
-	// pc.mutex.Lock()
-	// defer pc.mutex.Unlock()
-	// pc.LogLevel = logLevel
-	// pc.Interval = interval
-}
+// func (pc *PaasConfig) Set(logLevel string, interval int) {
+// 	// pc.mutex.Lock()
+// 	// defer pc.mutex.Unlock()
+// 	// pc.LogLevel = logLevel
+// 	// pc.Interval = interval
+// }
 
-// TODO use Verfiy in Reconciler
 func (config PaasConfig) Verify() error {
 	var multierror []string
 	multierror = append(multierror, config.Spec.Capabilities.Verify()...)

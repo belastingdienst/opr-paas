@@ -9,7 +9,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/rs/zerolog/log"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -28,10 +27,8 @@ const paasconfigFinalizer = "paasconfig.cpet.belastingdienst.nl/finalizer"
 // PaasConfigReconciler reconciles a PaasConfig object
 type PaasConfigReconciler struct {
 	client.Client
-	Scheme            *runtime.Scheme
-	Log               logr.Logger
-	currentPaasConfig v1alpha1.PaasConfigSpec
-	configMutex       sync.Mutex // For thread-safe updates
+	Scheme *runtime.Scheme
+	Log    logr.Logger
 }
 
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paasconfig,verbs=get;list;watch;create;update;patch;delete
@@ -57,12 +54,7 @@ func (r *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-// func (pr PaasConfigReconciler) GetScheme() *runtime.Scheme {
-// 	return pr.Scheme
-// }
-
 func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-
 	ctx = setLogComponent(ctx, "paasconfig")
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("reconciling PaasConfig")
@@ -99,7 +91,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	// Enforce singleton pattern
 	if len(configList.Items) > 1 {
 		pcr.Log.Error(fmt.Errorf("singleton violation"), "more than one PaasConfig instance found")
-		// TODO delete extra PaasConfig instances or just log the error and skip reconciliation?
+		// TODO(hikarukin) delete extra PaasConfig instances or just log the error and skip reconciliation?
 		// status unknown
 		return ctrl.Result{}, nil
 	}
@@ -121,7 +113,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	// Apply the new configuration dynamically
 	pcr.applyConfiguration(_cnf.currentConfig)
 
-	// Paas & PaasNs reconcilation is triggered by a Watch on PaasConfig
+	// Paas & PaasNs reconciliation is triggered by a Watch on PaasConfig
 
 	return ctrl.Result{}, nil
 }

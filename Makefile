@@ -162,8 +162,8 @@ run-operator:
 	killall goreman || true
 	mkdir -p /tmp/paas-e2e/secrets/priv && chmod 0700 /tmp/paas-e2e/secrets/priv
 	cp -r ./test/e2e/fixtures/crypt/priv* /tmp/paas-e2e/secrets/priv
-	PAAS_CONFIG=./test/e2e/fixtures/paas_config.yml \
-		goreman -f $(PAAS_PROCFILE) start
+	kubectl apply -f ./test/e2e/fixtures/PaasConfig.yml
+	goreman -f $(PAAS_PROCFILE) start
 	rm -rf /tmp/paas-e2e
 
 ##@ Build
