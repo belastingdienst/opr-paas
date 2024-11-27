@@ -9,7 +9,6 @@ spec:
     role: admin
     header: |
       g, system:cluster-admins, role:admin
-    retries: 10
   capabilities:
     argocd:
       applicationset: argoas
@@ -104,6 +103,6 @@ spec:
     viewer:
       - view
   whitelist:
-    # namespace: wlns
-    # name: wlname
+    namespace: wlns
+    name: wlname
   exclude_appset_name: whatever

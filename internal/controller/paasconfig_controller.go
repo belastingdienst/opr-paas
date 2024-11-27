@@ -81,7 +81,12 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Don't need to check if configuration has changed because we use predicate
-	pcr.Log.Info("configuration has changed, updating operator settings")
+	pcr.Log.Info("configuration has changed, verifying and updating operator settings")
+
+	if err := config.Verify(); err != nil {
+		pcr.Log.Info("invalid PaasConfig, not updating", "PaasConfig", err.Error())
+		return ctrl.Result{}, err
+	}
 
 	// Update the shared configuration store
 	SetConfig(config)
