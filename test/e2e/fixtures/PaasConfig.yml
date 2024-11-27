@@ -6,6 +6,7 @@ spec:
   applicationset_namespace: asns
   argopermissions:
     resource_name: argocd
+    default_policy: "role:tester"
     role: admin
     header: |
       g, system:cluster-admins, role:admin

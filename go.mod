@@ -5,7 +5,7 @@ go 1.22.3
 toolchain go1.23.0
 
 require (
-	github.com/go-logr/logr v1.4.2 // indirect
+	github.com/go-logr/logr v1.4.2
 	github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible
 	github.com/stretchr/testify v1.9.0
 	k8s.io/api v0.31.1
