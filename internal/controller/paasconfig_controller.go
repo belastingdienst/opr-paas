@@ -95,6 +95,8 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	// Apply the new configuration dynamically
 	pcr.applyConfiguration(_cnf.currentConfig)
 
+	// Paas & PaasNs reconcilation is triggered by a Watch on PaasConfig
+
 	return ctrl.Result{}, nil
 }
 
