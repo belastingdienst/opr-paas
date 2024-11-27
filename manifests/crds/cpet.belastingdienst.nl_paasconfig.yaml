@@ -39,24 +39,21 @@ spec:
             properties:
               applicationset_namespace:
                 default: argocd
-                description: TODO description
+                description: Namespace in which ArgoCD applicationSets will be found
+                  for managing capabilities
                 type: string
               argopermissions:
-                description: TODO description
+                description: Permissions to set for ArgoCD instance
                 properties:
                   header:
-                    description: TODO description
+                    description: The header value to set in ArgoPermissions
                     type: string
                   resource_name:
-                    description: TODO description
+                    description: The name of the ArgoCD instance to apply ArgoPermissions
+                      to
                     type: string
-                  retries:
-                    default: 2
-                    description: TODO description
-                    minimum: 2
-                    type: integer
                   role:
-                    description: TODO description
+                    description: The name of the role to add to Groups set in ArgoPermissions
                     type: string
                 required:
                 - header
@@ -67,45 +64,49 @@ spec:
                 additionalProperties:
                   properties:
                     applicationset:
-                      description: TODO description
+                      description: Name of the ArgoCD ApplicationSet which manages
+                        this capability
                       type: string
                     default_permissions:
                       additionalProperties:
                         items:
                           type: string
                         type: array
-                      description: TODO description
+                      description: Default permissions set for this capability
                       type: object
                     extra_permissions:
                       additionalProperties:
                         items:
                           type: string
                         type: array
-                      description: TODO description
+                      description: Extra permissions set for this capability
                       type: object
                     quotas:
-                      description: TODO description
+                      description: Quota settings for this capability
                       properties:
                         clusterwide:
-                          description: TODO description
+                          description: Is this a clusterwide quota or not
                           type: boolean
                         defaults:
                           additionalProperties:
                             type: string
-                          description: TODO description
+                          description: The default quota which the enabled capability
+                            gets
                           type: object
                         max:
                           additionalProperties:
                             type: string
-                          description: TODO description
+                          description: The maximum quota which the capability gets
                           type: object
                         min:
                           additionalProperties:
                             type: string
-                          description: TODO description
+                          description: The minimum quota which the enabled capability
+                            gets
                           type: object
                         ratio:
-                          description: TODO description
+                          description: The ratio of the requested quota which will
+                            be applied to the total quota
                           format: int64
                           type: integer
                       required:
@@ -128,16 +129,18 @@ spec:
                 description: Enable debug information generation or not
                 type: boolean
               decryptKeyPaths:
-                description: TODO description
+                description: Paths where the manager can find the decryptKeys to decrypt
+                  Paas'es
                 items:
                   type: string
                 minItems: 1
                 type: array
               exclude_appset_name:
-                description: TODO Description
+                description: Name of an ApplicationSet to be set as ignored in the
+                  ArgoCD bootstrap Application
                 type: string
               ldap:
-                description: TODO description
+                description: LDAP configuration for the operator to add to Groups
                 properties:
                   host:
                     description: LDAP server hostname
@@ -157,7 +160,7 @@ spec:
                 type: string
               quota_label:
                 default: clusterquotagroup
-                description: TODO description
+                description: Label which is added to clusterquotas
                 type: string
               requestor_labe:
                 default: requestor
@@ -173,7 +176,8 @@ spec:
                   configmap and role selected per group in paas.
                 type: object
               whitelist:
-                description: TODO description
+                description: A reference to a configmap containing a whitelist of
+                  LDAP groups to be synced using LDAP sync
                 properties:
                   name:
                     type: string
@@ -187,6 +191,7 @@ spec:
             - capabilities
             - decryptKeyPaths
             - exclude_appset_name
+            - whitelist
             type: object
           status:
             properties:

@@ -41,7 +41,6 @@ The `argopermissions` level has the following underlying fields:
 | ------------------------ | ------ | ----------- |
 | header                   | string |             |
 | resource_name            | string |             |
-| retries                  | uint   |             |
 | role                     | string |             |
 
 ### Map entry fields `capabilities` level
@@ -95,7 +94,6 @@ data:
         g, system:cluster-admins, role:admin
         g, something_clusteradmin, role:admin
         g, something, role:admin
-      retries: 10
     managed_by_label: argocd.argoproj.io/managed-by
     requestor_label: level-one-support
     decryptKeyPaths:

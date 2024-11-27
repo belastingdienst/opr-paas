@@ -28,7 +28,7 @@ type PaasConfig struct {
 }
 
 type PaasConfigSpec struct {
-	// TODO description
+	// Paths where the manager can find the decryptKeys to decrypt Paas'es
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:Required
 	DecryptKeyPaths []string `json:"decryptKeyPaths"`
@@ -42,25 +42,25 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Required
 	Capabilities ConfigCapabilities `json:"capabilities"`
 
-	// TODO description
-	// +kubebuilder:validation:Optional
+	// A reference to a configmap containing a whitelist of LDAP groups to be synced using LDAP sync
+	// +kubebuilder:validation:Required
 	// +kubebuilder:deprecatedversion:warning="This field is deprecated and will be removed in future versions."
-	Whitelist NamespacedName `json:"whitelist,omitempty"`
+	Whitelist NamespacedName `json:"whitelist"`
 
-	// TODO description
+	// LDAP configuration for the operator to add to Groups
 	// +kubebuilder:validation:Optional
 	LDAP ConfigLdap `json:"ldap,omitempty"`
 
-	// TODO description
-	// +kubebuilder:validation:Optional
+	// Permissions to set for ArgoCD instance
+	// +kubebuilder:validation:Required
 	ArgoPermissions ConfigArgoPermissions `json:"argopermissions,omitempty"`
 
-	// TODO description
+	// Namespace in which ArgoCD applicationSets will be found for managing capabilities
 	// +kubebuilder:default:=argocd
-	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Required
 	AppSetNamespace string `json:"applicationset_namespace,omitempty"`
 
-	// TODO description
+	// Label which is added to clusterquotas
 	// +kubebuilder:default:=clusterquotagroup
 	// +kubebuilder:validation:Optional
 	QuotaLabel string `json:"quota_label,omitempty"`
@@ -75,7 +75,7 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	ManagedByLabel string `json:"managed_by_label,omitempty"`
 
-	// TODO Description
+	// Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
 	// +kubebuilder:validation:Required
 	ExcludeAppSetName string `json:"exclude_appset_name"`
 
@@ -135,23 +135,17 @@ Paas:
 */
 
 type ConfigArgoPermissions struct {
-	// TODO description
+	// The name of the ArgoCD instance to apply ArgoPermissions to
 	// +kubebuilder:validation:Required
 	ResourceName string `json:"resource_name"`
 
-	// TODO description
+	// The name of the role to add to Groups set in ArgoPermissions
 	// +kubebuilder:validation:Required
 	Role string `json:"role"`
 
-	// TODO description
+	// The header value to set in ArgoPermissions
 	// +kubebuilder:validation:Required
 	Header string `json:"header"`
-
-	// TODO description
-	// +kubebuilder:validation:Optional
-	// +kubebuilder:default:=2
-	// +kubebuilder:validation:Minimum=2
-	Retries uint `json:"retries,omitempty"`
 }
 
 func (ap ConfigArgoPermissions) FromGroups(groups []string) string {
@@ -193,41 +187,41 @@ func (caps ConfigCapabilities) Verify() []string {
 }
 
 type ConfigCapability struct {
-	// TODO description
+	// Name of the ArgoCD ApplicationSet which manages this capability
 	// +kubebuilder:validation:Required
 	AppSet string `json:"applicationset"`
 
-	// TODO description
+	// Quota settings for this capability
 	// +kubebuilder:validation:Required
 	QuotaSettings ConfigQuotaSettings `json:"quotas"`
 
-	// TODO description
+	// Extra permissions set for this capability
 	// +kubebuilder:validation:Required
 	ExtraPermissions ConfigCapPerm `json:"extra_permissions"`
 
-	// TODO description
+	// Default permissions set for this capability
 	// +kubebuilder:validation:Required
 	DefaultPermissions ConfigCapPerm `json:"default_permissions"`
 }
 
 type ConfigQuotaSettings struct {
-	// TODO description
+	// Is this a clusterwide quota or not
 	// +kubebuilder:validation:Required
 	Clusterwide bool `json:"clusterwide"`
 
-	// TODO description
+	// The ratio of the requested quota which will be applied to the total quota
 	// +kubebuilder:validation:Required
 	Ratio int64 `json:"ratio"`
 
-	// TODO description
+	// The default quota which the enabled capability gets
 	// +kubebuilder:validation:Required
 	DefQuota ConfigDefaultQuotaSpec `json:"defaults"`
 
-	// TODO description
+	// The minimum quota which the enabled capability gets
 	// +kubebuilder:validation:Required
 	MinQuotas ConfigDefaultQuotaSpec `json:"min"`
 
-	// TODO description
+	// The maximum quota which the capability gets
 	// +kubebuilder:validation:Required
 	MaxQuotas ConfigDefaultQuotaSpec `json:"max"`
 }
@@ -292,6 +286,7 @@ const (
 	defaultConfFile = "/etc/paas/config.yaml"
 )
 
+// TODO Remove unused code, give this a place somewhere else in the operator..
 func NewConfig() (config *PaasConfig, err error) {
 	// This only parsed as yaml, nothing else
 	// #nosec
@@ -322,10 +317,6 @@ func (pc *PaasConfig) Set(logLevel string, interval int) {
 // TODO use Verfiy in Reconciler
 func (config PaasConfig) Verify() error {
 	var multierror []string
-	if config.Spec.Whitelist.Name == "" || config.Spec.Whitelist.Namespace == "" {
-		multierror = append(multierror,
-			"missing whitelist.name and/or whitelist.namespace")
-	}
 	multierror = append(multierror, config.Spec.Capabilities.Verify()...)
 	if len(multierror) > 0 {
 		return fmt.Errorf("invalid config:\n%s",

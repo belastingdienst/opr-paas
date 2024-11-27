@@ -6,7 +6,6 @@ argopermissions:
   role: admin
   header: |
     g, system:cluster-admins, role:admin
-  retries: 10
 capabilities:
   argocd:
     applicationset: argoas
