@@ -6,7 +6,7 @@ metadata:
   labels:
     control-plane: paas-controller-manager
     app.kubernetes.io/name: deployment
-    app.kubernetes.io/instance: controller-manager
+    app.kubernetes.io/instance: paas-controller-manager
     app.kubernetes.io/component: manager
     app.kubernetes.io/created-by: opr-paas
     app.kubernetes.io/part-of: opr-paas
