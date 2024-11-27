@@ -8,12 +8,24 @@ date: 2024-08-21
 
 # Introduction
 
+We have a bunch of end-to-end tests that can be used by you to verify whether the
+operator still works as expected after you made any code changes. These tests are
+also part of our continues integration pipeline on Github.
+
+## Prerequisites
+
+Ensure you have a vanilla Kubernetes or OpenShift cluster running. We can heartily
+recommend using [kind](https://kind.sigs.k8s.io).
+
+!!! example
+    ```kind create cluster``` 
+
 ## Running the tests
 
-1. Have a vanilla kubernetes or OpenShift cluster running
-2. In case of a vanilla kubernetes cluster, run: `make setup-e2e` to apply mocks etc. needed to run the operator.
-3. Start the operator by calling: `make start-e2e`
-4. Run the e2e tests by calling: `make test-e2e`
+1. In case of a vanilla kubernetes cluster, run: `make setup-e2e` <br/>
+  This will apply mocks, etc. needed to run the operator.
+2. Start the operator: `make start-e2e`
+3. Finally, run the actual e2e tests: `make test-e2e`
 
 ## Design considerations
 
@@ -42,6 +54,6 @@ test setup (`main_test.go`) and deleted afterward. If you would like to use an
 existing namespace, set the environment variable: `PAAS_E2E_NS` to the namespace
 name.
 
-!!! Note
-    The tests do not create the namespace for you in case it happens to be missing,
-    so make sure to create it or be prepared to enjoy the error message.
+!!! Info
+    The tests do not create the custom namespace for you in case it happens to
+    be missing, so make sure to create it or be prepared to enjoy the error message.

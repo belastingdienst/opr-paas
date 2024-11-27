@@ -96,8 +96,8 @@ Post scenarios: reset environment to clean slate.
 What we test: CRQ CRUD
 
 !!! Note
-The `spec.quota` does not fall under not cluster wide quotas, hence a separate
-set of test scenarios.
+    The `spec.quota` does not fall under not cluster wide quotas, hence a separate
+    set of test scenarios.
 
 1. Ensure the correct CRQ is created for a `Paas`.<br/><br/>
    **Given** a minimal `Paas` exists,<br/>
@@ -127,7 +127,7 @@ What we test: cluster wide quota CRUD
 
 Scenarios:
 
-TODO
+**TODO**
 
 Post scenarios: reset environment to clean slate.
 
@@ -167,9 +167,9 @@ Scenarios:
    **when** said `Paas` is removed,<br/>
 
 !!! note
-_There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation._
-
-_Determine what that baseline currently is._
+    _There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation._
+    
+    _Determine what that baseline currently is._
 
 Post scenarios: reset environment to clean slate.
 
@@ -208,14 +208,20 @@ Scenarios:
    **when** said `Paas` is removed,<br/>
 
 !!! note
-_There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation._
-
-_Determine what that baseline currently is._
+    _There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation._
+    
+    _Determine what that baseline currently is._
 
 Post scenarios: reset environment to clean slate.
 
 !!! note
-TODO, there a known issue regarding groups. Good regression test to model the following steps: 1. Create `Paas` with query; 2. Update `Paas` from step 1, remove query and add users to the group; 3. Group is not removed from whitelist; 4. Sync fails because the required `ldap.uid` doesn't match the groupname. (We don't fully test sync.)
+    TODO, there a known issue regarding groups. Good regression test to model the
+    following steps:
+    1. Create `Paas` with query;
+    2. Update `Paas` from step 1, remove query and add users to the group;
+    3. Group is not removed from whitelist;
+    4. Sync fails because the required `ldap.uid` doesn't match the groupname.
+    (We don't fully test sync.)
 
 ## Secrets
 
@@ -250,8 +256,10 @@ Scenarios:
    3. Assess that the quota selector was set in such a manner so that only the `paasnaam-sso` namespace is selected;
    4. Assess that the size of the quota equals the size of the default quota specified in the paas_config;
 
-   !!! Note
-   TODO Assess default_permissions; 1. Rolebindings to service account etc. (TODO: can these RBs be created without the existence of a ServiceAccount?)
+!!! Note
+    TODO Assess default_permissions;
+    1. Rolebindings to service account etc.
+    (TODO: can these RBs be created without the existence of a ServiceAccount?)
 
 Post scenarios: reset environment to clean slate.
 

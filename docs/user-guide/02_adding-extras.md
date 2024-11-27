@@ -15,17 +15,18 @@ the private key that was deployed with the Paas operator.
 SSH Secrets can be either defined on the generic `spec` level or underneath the
 `argocd` capability.
 
-Example:
-```yaml
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: tst-tst
-spec:
-  sshSecrets:
-    'ssh://git@my-git-host/my-git-repo.git': >-
-      2wkeKe...g==
-```
+!!! example
+
+    ```yaml
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: Paas
+    metadata:
+      name: tst-tst
+    spec:
+      sshSecrets:
+        'ssh://git@my-git-host/my-git-repo.git': >-
+          2wkeKe...g==
+    ```
 
 ## Groups and Users
 
@@ -36,23 +37,24 @@ When both an LDAP query and a list of users is defined, the users from the list
 are added in addition to the users from the LDAP group. If the user from the list
 was already added through the LDAP group, the user is simply ignored.
 
-Example:
-```yaml
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: tst-tst
-spec:
-  groups:
-    example_group:
-      query: >-
-        CN=example_group,OU=example,OU=UID,DC=example,DC=nl
-      users:
-        - jdsmith
-    second_example_group:
-      users:
-        - jdsmith
-```
+!!! example
+
+    ```yaml
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: Paas
+    metadata:
+      name: tst-tst
+    spec:
+      groups:
+        example_group:
+          query: >-
+            CN=example_group,OU=example,OU=UID,DC=example,DC=nl
+          users:
+            - jdsmith
+        second_example_group:
+          users:
+            - jdsmith
+    ```
 
 ## Paas Quota
 
@@ -63,59 +65,61 @@ ignored if cluster wide resource quotas are configured by the administrators.
     Please note these will never overrule the maximum values configured by the
     administrators.
 
-Example:
-```yaml
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: tst-tst
-spec:
-  quota:
-    limits.cpu: '40'
-    limits.memory: 64Gi
-    requests.cpu: '20'
-    requests.memory: 32Gi
-    requests.storage: 200Gi
-```
+!!! example
+
+    ```yaml
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: Paas
+    metadata:
+      name: tst-tst
+    spec:
+      quota:
+        limits.cpu: '40'
+        limits.memory: 64Gi
+        requests.cpu: '20'
+        requests.memory: 32Gi
+        requests.storage: 200Gi
+    ```
 
 ## Capabilities
 
 It is possible to easily add certain capabilities to your Paas through the yaml
 configuration. For each capability you are also able to request a certain quota.
 
-Example:
-```yaml
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: tst-tst
-spec:
-  capabilities:
-    argocd:
-      enabled: true
-      gitPath: environments/production
-      gitRevision: main
-      gitUrl: >-
-        ssh://git@git.example.nl/example/example-repo.git
-    grafana:
-      enabled: true
-    sso:
-      enabled: true
-      quota:
-        limits.cpu: '5'
-        limits.memory: 8Gi
-        requests.cpu: '2'
-        requests.memory: 2Gi
-        requests.storage: 100Gi
-    tekton:
-      enabled: true
-      quota:
-        limits.cpu: '32'
-        limits.memory: 32Gi
-        requests.cpu: '16'
-        requests.memory: 16Gi
-        requests.storage: 40Gi
-```
+!!! example
+
+    ```yaml
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: Paas
+    metadata:
+      name: tst-tst
+    spec:
+      capabilities:
+        argocd:
+          enabled: true
+          gitPath: environments/production
+          gitRevision: main
+          gitUrl: >-
+            ssh://git@git.example.nl/example/example-repo.git
+        grafana:
+          enabled: true
+        sso:
+          enabled: true
+          quota:
+            limits.cpu: '5'
+            limits.memory: 8Gi
+            requests.cpu: '2'
+            requests.memory: 2Gi
+            requests.storage: 100Gi
+        tekton:
+          enabled: true
+          quota:
+            limits.cpu: '32'
+            limits.memory: 32Gi
+            requests.cpu: '16'
+            requests.memory: 16Gi
+            requests.storage: 40Gi
+    ```
 
 ## Adding extra application namespaces
 
@@ -125,17 +129,18 @@ team member's personal test.
 
 These namespaces count towards the global quota requested by the Paas.
 
-Example:
-```yaml
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: tst-tst
-spec:
-  namespaces:
-    - mark
-    - tst
-    - acceptance
-    - prod
-    - joel
-```
+!!! example
+
+    ```yaml
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: Paas
+    metadata:
+      name: tst-tst
+    spec:
+      namespaces:
+        - mark
+        - tst
+        - acceptance
+        - prod
+        - joel
+    ```

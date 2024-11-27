@@ -36,49 +36,58 @@ Configuring authorization is done by:
 
 The Paas Operator ConfigMap (managed by cluster admins) can be configured as follows:
 
-```yaml
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: opr-paas-config
-  namespace: paas-system
-data:
-  config.yaml: |
-    ...
-    argopermissions:
-      resource_name: argo-service
-      # Every group in every Paas will have `admin` permissions in the ArgoCD
-      # belonging to this Paas
-      role: admin
-      # All users in the `cluster-admins` group will have admin permissions on
-      # every ArgoCD belonging to a Paas
-      header: |
-        g, system:cluster-admins, role:admin
-    rolemappings:
-      # All groups defined in a Paas without any roles will have the `default`
-      # functional role which maps to the OpenShift ClusterRole called view
-      default:
-        - view
-      # All groups defined in a Paas with the `edit` functional role will have a
-      # RoleBinding for the ClusterRoles `edit`, `alert-routing-edit`, and
-      # `monitoring-edit`
-      edit:
-        - edit
-        - alert-routing-edit
-        - monitoring-edit
-      # All groups defined in a Paas with the `view` functional role will have a
-      # RoleBinding for the ClusterRoles `view`.
-      readonly:
-        - view
-      # All groups defined in a Paas with the `admin` functional role will have
-      # a RoleBinding for the ClusterRoles `admin`, `alert-routing-edit`, and
-      # `monitoring-edit`
-      admin:
-        - admin
-        - alert-routing-edit
-        - monitoring-edit
-    ...
-```
+!!! example
+
+    ```yaml
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: PaasConfig
+    metadata:
+      name: opr-paas-config
+    spec:
+      argopermissions:
+        resource_name: argo-service
+        role: admin
+        header: |
+          g, system:cluster-admins, role:admin
+      rolemappings:
+        # All groups defined in a Paas without any roles will have the `default`
+        # functional role which maps to the OpenShift ClusterRole called view
+        default:
+          - view
+        # All groups defined in a Paas with the `edit` functional role will have a
+        # RoleBinding for the ClusterRoles `edit`, `alert-routing-edit`, and
+        # `monitoring-edit`
+        edit:
+          - edit
+          - alert-routing-edit
+          - monitoring-edit
+        # All groups defined in a Paas with the `view` functional role will have a
+        # RoleBinding for the ClusterRoles `view`
+        readonly:
+          - view
+        # All groups defined in a Paas with the `admin` functional role will have
+        # a RoleBinding for the ClusterRoles `admin`, `alert-routing-edit`, and
+        # `monitoring-edit`
+        admin:
+          - admin
+          - alert-routing-edit
+          - monitoring-edit
+      # Required fields with placeholder values
+      capabilities:
+        example-capability:
+          applicationset: example-appset
+          default_permissions: {}
+          extra_permissions: {}
+          quotas:
+            clusterwide: false
+            defaults: {}
+            min: {}
+            max: {}
+            ratio: 0
+      decryptKeyPaths:
+        - /path/to/decrypt/key
+      exclude_appset_name: placeholder-appset-name
+    ```
 
 !!! Note
     Groups that only have view defined will have the same permissions as groups
@@ -88,46 +97,48 @@ data:
 
 Devops engineers could create a Paas with the following definition:
 
-```yaml
----
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: my-paas
-spec:
-  requestor: my-team
-  groups:
-    # An OpenShift group called `us` is created, and `me` and `you` are added to this group.
-    # `us` group has default permissions
-    us:
-      users:
-        - me
-        - you
-      roles:
-        - admin
-        - edit
-        - view
-    # An OpenShift group called `them` is created, and `friend` is added to this group.
-    them:
-      users:
-        - friend
-      # `them` group has view permissions
-      roles:
-        - view
-  capabilities:
-    # For all capability namespaces (e.a. my-paas-argocd), there will be RoleBindings
-    # for `admin`, `edit`, `alert-routing-edit`, and `monitoring-edit`
-    argocd:
-      enabled: true
-  # For all user namespaces (my-paas-cicd, my-paas-test, and my-paas-prod), there
-  # will be RoleBindings for `admin`, `edit`, `alert-routing-edit`, and `monitoring-edit`
-  namespaces:
-    - cicd
-    - test
-    - prod
-  quota:
-    limits.cpu: "40"
-```
+!!! example
+
+    ```yaml
+    ---
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: Paas
+    metadata:
+      name: my-paas
+    spec:
+      requestor: my-team
+      groups:
+        # An OpenShift group called `us` is created, and `me` and `you` are added to this group.
+        # `us` group has default permissions
+        us:
+          users:
+            - me
+            - you
+          roles:
+            - admin
+            - edit
+            - view
+        # An OpenShift group called `them` is created, and `friend` is added to this group.
+        them:
+          users:
+            - friend
+          # `them` group has view permissions
+          roles:
+            - view
+      capabilities:
+        # For all capability namespaces (e.a. my-paas-argocd), there will be RoleBindings
+        # for `admin`, `edit`, `alert-routing-edit`, and `monitoring-edit`
+        argocd:
+          enabled: true
+      # For all user namespaces (my-paas-cicd, my-paas-test, and my-paas-prod), there
+      # will be RoleBindings for `admin`, `edit`, `alert-routing-edit`, and `monitoring-edit`
+      namespaces:
+        - cicd
+        - test
+        - prod
+      quota:
+        limits.cpu: "40"
+    ```
 
 With this example (combined with the operator config example), the following would apply:
 
@@ -146,21 +157,23 @@ With this example (combined with the operator config example), the following wou
 
 DevOps engineers could additionally create a PaasNs with the following definition:
 
-```yaml
----
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: PaasNs
-metadata:
-  # The name of the resulting namespace would be my-paas-adminonly ([paas name]-[paasns name])
-  name: adminonly
-  namespace: my-paas-argocd
-spec:
-  Paas: my-paas
-  # The namespace would only contain RoleBindings for the `us` group, which drills
-  # down to the `admin`, `edit`, `view`, `alert-routing-edit`, and `monitoring-edit` ClusterRoles.
-  groups:
-    - us
-```
+!!! example
+
+    ```yaml
+    ---
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: PaasNs
+    metadata:
+      # The name of the resulting namespace would be my-paas-adminonly ([paas name]-[paasns name])
+      name: adminonly
+      namespace: my-paas-argocd
+    spec:
+      Paas: my-paas
+      # The namespace would only contain RoleBindings for the `us` group, which drills
+      # down to the `admin`, `edit`, `view`, `alert-routing-edit`, and `monitoring-edit` ClusterRoles.
+      groups:
+        - us
+    ```
 
 ## Caveats
 
