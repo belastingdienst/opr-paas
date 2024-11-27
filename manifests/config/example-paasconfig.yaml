@@ -1,0 +1,103 @@
+apiVersion: cpet.belastingdienst.nl/v1alpha1
+kind: PaasConfig
+metadata:
+  name: paas-config
+spec:
+  debug: false
+  whitelist:
+    namespace: kube-system
+    name: whitelist
+  ldap:
+    host: my-ldap.mydomain.org
+    port: 636
+  argopermissions:
+    resource_name: argo-service
+    role: admin
+    header: g, system:cluster-admins, role:admin
+  managed_by_label: argocd.argoproj.io/managed-by
+  requestor_label: requestor
+  decryptKeyPaths:
+    - /secrets/paas
+  applicationset_namespace: argocd
+  exclude_appset_name: bb-gen
+  quota_label: clusterquotagroup
+  rolemappings:
+    default:
+      - admin
+    editor:
+      - edit
+    viewer:
+      - view
+    administrator:
+      - admin
+  capabilities:
+    argocd:
+      applicationset: paas-argocd
+      default_permissions:
+        argocd-argocd-application-controller:
+          - monitoring-edit
+          - alert-routing-edit
+      extra_permissions: {}
+      quotas:
+        clusterwide: false
+        defaults:
+          limits.cpu: "8"
+          limits.memory: 8Gi
+          requests.cpu: "4"
+          requests.memory: 5Gi
+          requests.storage: "5Gi"
+          thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+        min: {}
+        max: {}
+        ratio: 0
+    grafana:
+      applicationset: paas-grafana
+      default_permissions: {}
+      extra_permissions: {}
+      quotas:
+        clusterwide: false
+        defaults:
+          limits.cpu: "2"
+          limits.memory: 3Gi
+          requests.cpu: "1"
+          requests.memory: 1Gi
+          requests.storage: "2Gi"
+          thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+        min: {}
+        max: {}
+        ratio: 0
+    tekton:
+      applicationset: paas-tekton
+      default_permissions:
+        pipeline:
+          - monitoring-edit
+          - alert-routing-edit
+      extra_permissions: {}
+      quotas:
+        clusterwide: true
+        defaults:
+          limits.cpu: "5"
+          limits.memory: 8Gi
+          requests.cpu: "1"
+          requests.memory: 2Gi
+          requests.storage: "100Gi"
+          thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+        min: {}
+        max: {}
+        ratio: 10
+    sso:
+      applicationset: paas-sso
+      default_permissions: {}
+      extra_permissions: {}
+      quotas:
+        clusterwide: false
+        defaults:
+          limits.cpu: "4"
+          limits.memory: 4Gi
+          requests.cpu: "2"
+          requests.memory: 2Gi
+          requests.storage: "5Gi"
+          thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+        min: {}
+        max: {}
+        ratio: 0
