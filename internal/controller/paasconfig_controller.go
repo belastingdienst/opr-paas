@@ -152,6 +152,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Enforce singleton pattern
+	// TODO(portly-halicore-76) errrrrr does this work?? as we've just set the condition to unknown for the current reconciliation
 	for _, existingConfig := range configList.Items {
 		if meta.IsStatusConditionPresentAndEqual(existingConfig.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) == true && existingConfig.ObjectMeta.Name != config.Name {
 			// There is already another config which is the active one so we don't allow adding a new one
