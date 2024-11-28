@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
-// ConfigStore is a thread-safe store for the current PaasConfig
+// PaasConfigStore is a thread-safe store for the current PaasConfig
 type PaasConfigStore struct {
 	currentConfig v1alpha1.PaasConfig
 	mutex         sync.RWMutex

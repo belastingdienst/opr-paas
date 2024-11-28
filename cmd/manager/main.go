@@ -106,7 +106,6 @@ func main() {
 	if err = (&controller.PaasConfigReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-		Log:    ctrl.Log.WithName("controllers").WithName("PaasConfig"),
 	}).SetupWithManager(mgr); err != nil {
 		log.Fatal().Err(err).Str("controller", "PaasConfig").Msg("unable to create controller")
 	}
