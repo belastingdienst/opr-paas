@@ -12,13 +12,14 @@ spec:
   capabilities:
     argocd:
       applicationset: argoas
-      default_permissions: {}
-      extra_permissions:
-        roles:
+      default_permissions:
+        argo-service-argocd-application-controller:
           - monitoring-edit
-        serviceaccounts:
-          - argo-service-applicationset-controller
-          - argo-service-argocd-application-controller
+        argo-service-applicationset-controller:
+          - monitoring-edit
+      extra_permissions:
+        argo-service-argocd-application-controller:
+          - admin
       quotas:
         clusterwide: false
         defaults:
@@ -33,13 +34,13 @@ spec:
         ratio: 0
     tekton:
       applicationset: tektonas
-      default_permissions: {}
+      default_permissions:
+        pipeline:
+          - view
+          - alert-routing-edit
       extra_permissions:
-        roles:
-          - monitoring-edit
-          - self-provisioner
-        serviceaccounts:
-          - pipeline
+        pipeline:
+          - admin
       quotas:
         clusterwide: true
         defaults:
