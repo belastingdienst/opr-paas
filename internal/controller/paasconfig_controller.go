@@ -169,11 +169,12 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		// stating in practice the previous generation is the active config.
 		return errResult, err
 	}
-
 	// Update the shared configuration store
+	// TODO() determine whether the active config is set or updated
 	SetConfig(*config)
+	logger.Info().Msg("set active PaasConfig successfully")
+
 	// TODO(portly-halicy-core) is there other config which need to be updated explicitly? If so, call this logic.
-	logger.Info().Msg("updated active PaasConfig successfully")
 
 	// Reconciling succeeded, set appropriate Condition
 	err := pcr.setSuccesfullCondition(ctx, config)

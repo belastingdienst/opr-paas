@@ -134,6 +134,9 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		Requeue: false,
 	}
 
+	//TODO(portly-halicore-76) do check if Config is set, else return and Requeue after say... minutes / hours ...
+	// as reconciling and finalizing without config, causes operator in meh state.
+
 	if paas, err = r.GetPaas(ctx, req); err != nil {
 		logger.Err(err).Msg("could not get Paas from k8s")
 		return errResult, err
