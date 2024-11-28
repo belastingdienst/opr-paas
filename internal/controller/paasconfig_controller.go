@@ -140,7 +140,6 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
-	// TODO(portly-halicore-76) filter all Config for one active at most.
 	configList := &v1alpha1.PaasConfigList{}
 	if err := pcr.List(ctx, configList); err != nil {
 		logger.Err(err).Msg("error listing PaasConfigs")
@@ -152,12 +151,20 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return errResult, err
 	}
 
-	// TODO merge this with config.Verify err step
 	// Enforce singleton pattern
-	if len(configList.Items) > 1 {
-		logger.Err(fmt.Errorf("singleton violation")).Msg("more than one PaasConfig instance found")
-		// status unknown
-		return errResult, nil
+	for _, existingConfig := range configList.Items {
+		if meta.IsStatusConditionPresentAndEqual(existingConfig.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) == true && existingConfig.ObjectMeta.Name != config.Name {
+			// There is already another config which is the active one so we don't allow adding a new one
+			singletonErr := fmt.Errorf("paasConfig singleton violation")
+			logger.Err(singletonErr).Msg("more than one PaasConfig instance found")
+			err := pcr.setErrorCondition(ctx, config, singletonErr)
+			if err != nil {
+				logger.Err(err).Msg("failed to update PaasConfig status")
+				return errResult, err
+			}
+			// don't reconcile this one again as that won't change anything.. I guess.
+			return ctrl.Result{}, nil
+		}
 	}
 
 	// Don't need to check if configuration has changed because we use predicate
@@ -210,7 +217,7 @@ func (pcr *PaasConfigReconciler) setErrorCondition(ctx context.Context, config *
 		Message: fmt.Sprintf("Reconciling (%s) failed", config.Name),
 	})
 	meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{
-		Type:   v1alpha1.TypeDegradedPaasConfig,
+		Type:   v1alpha1.TypeHasErrorsPaasConfig,
 		Status: metav1.ConditionTrue, Reason: "ReconcilingError", ObservedGeneration: config.Generation,
 		Message: err.Error(),
 	})
