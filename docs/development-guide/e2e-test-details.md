@@ -238,12 +238,6 @@ Scenarios:
 
     ArgoCD Application points:
 
-        Quota points:
-          1. Assess a quota with the name `paasnaam-argocd` was created;
-          2. Assess that the `quota_label` label was used as selector on the quota;
-          3. Assess that the quota selector was set in such a manner so that only the `paasnaam-sso` namespace is selected;
-          4. Assess that the size of the quota equals the size of the default quota specified in the paas_config;
-
     1. Assess gitUrl, path etc. exist in spec;
     2. Assess RBAC .. determine how;
     3. Assess Secrets exist in namespace and in argo...?
