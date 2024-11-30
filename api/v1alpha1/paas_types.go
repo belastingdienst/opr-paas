@@ -281,7 +281,6 @@ type PaasCapability struct {
 	ExtraPermissions bool `json:"extra_permissions,omitempty"`
 }
 
-// TODO: Write unit tests !!!
 func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomField) (fields map[string]string, issues []error) {
 	// TODO: remove argocd specific fields
 	fields = map[string]string{
@@ -290,16 +289,22 @@ func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomFiel
 		"git_path":     pc.GitPath,
 	}
 	for key, value := range pc.CustomFields {
-		fields[key] = value
+		if _, exists := fieldConfig[key]; !exists {
+			issues = append(issues, fmt.Errorf("Custom field %s is not configured in capability config", key))
+		} else {
+			fields[key] = value
+		}
 	}
 	for key, fieldConf := range fieldConfig {
 		if value, exists := fields[key]; exists {
-			if matched, err := regexp.Match(value, []byte(fieldConf.Validation)); err != nil {
+			if matched, err := regexp.Match(fieldConf.Validation, []byte(value)); err != nil {
 				issues = append(issues, fmt.Errorf("Could not validate value %s: %w", value, err))
 			} else if !matched {
 				issues = append(issues, fmt.Errorf("Invalid value %s (does not match %s)", value, fieldConf.Validation))
 			}
 		} else if fieldConf.Required {
+			issues = append(issues, fmt.Errorf("Value %s is required", value))
+		} else {
 			fields[key] = fieldConf.Default
 		}
 	}

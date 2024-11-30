@@ -26,21 +26,24 @@ const (
 	paasArgoGitUrl      = "ssh://git@scm/some-repo.git"
 	paasArgoGitPath     = "foo/"
 	paasArgoGitRevision = "main"
+	paasRequestor       = "paas-requestor"
 	// String `dummysecret` encrypted with fixtures/crypt/pub/publicKey0
 	paasArgoSecret = "mPNADW4KlAYmiBSXfgyoP6G0h/8prFQNH7VBFXB3xiZ8wij2sRIgKekVUC3N9cHk73wkuewoH2fyM0BH2P1xKvSP4v4wwzq+fJC6qxx+d/lucrfnBHWCpsAr646OVYyoH8Er6PpBrPxM+OXCjVsXhd/8CGA32VzcUKSrAWBVWTgXpJ4/X/9gez865AmZkfFf2WBImYgs5Q/rH/mPP1jxl3WP10g51FLi4XG1qn2XdLRzBKXRKluh+PvMRYgqZ8QKl2Yd2HWj1SkzXrtayB7197r0fQ6t4cwpn8mqy30GQhsw6NEPSkcYakukOX2PYeRIVCwmMl3uEe9X1y7fesQVBMnq1loQJRpd7kBUj6EErnKNZ9Qa8tOXYLMME2tzsaYWz+rxhczCaMv9r55EGBENRB0K6VMY4jfC4NKkcVwgZm182/Z1wzOnPbhSKAoaSYUXVrsNfjuzlvQGJmaNF4onDgJdVpqJxkEH98E3q+NMlSYhIzZDph1RDjHmUm2aoAhx2W9zle+LsOWHLgogPHRwY+N7NRII5SBEnw99miCAQVqHnpEk0uITzny0G5AuoS9aKmVhbUNNR1TgZ6u2dFjrkbnZB0GKilJhVENM+oE8Fbq7Q4Qa9wtk/GK1myPNvY7ARbw1tfvbcpJT/NtKnEKsho/OVzfHn15W3niNVpXrZgs=" //nolint:gosec
 )
 
 func TestCapabilityArgoCD(t *testing.T) {
 	paasSpec := api.PaasSpec{
-		Requestor: "paas-requestor",
+		Requestor: paasRequestor,
 		Quota:     quota.Quota{},
 		Capabilities: api.PaasCapabilities{
 			"argocd": api.PaasCapability{
+				CustomFields: map[string]string{
+					"git_revision": paasArgoGitRevision,
+				},
 				Enabled:          true,
 				SshSecrets:       map[string]string{paasArgoGitUrl: paasArgoSecret},
 				GitUrl:           paasArgoGitUrl,
 				GitPath:          paasArgoGitPath,
-				GitRevision:      paasArgoGitRevision,
 				ExtraPermissions: true,
 			},
 		},
@@ -71,11 +74,11 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 
 	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
 	assert.Equal(t, map[string]string{
-		"git_path":     "foo/",
-		"git_revision": "main",
-		"git_url":      "ssh://git@scm/some-repo.git",
+		"git_path":     paasArgoGitPath,
+		"git_revision": paasArgoGitRevision,
+		"git_url":      paasArgoGitUrl,
 		"paas":         paasWithArgo,
-		"requestor":    "paas-requestor",
+		"requestor":    paasRequestor,
 		"service":      "paas",
 		"subservice":   "capability",
 	}, entries[0], "ApplicationSet List generator contains the correct parameters")
@@ -144,10 +147,13 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	// Assert AppSet entry unchanged
 	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
 	assert.Equal(t, map[string]string{
-		"paas":       paasWithArgo,
-		"requestor":  "paas-requestor",
-		"service":    "paas",
-		"subservice": "capability",
+		"paas":         paasWithArgo,
+		"requestor":    "paas-requestor",
+		"service":      "paas",
+		"subservice":   "capability",
+		"git_path":     "foo/",
+		"git_revision": "main",
+		"git_url":      "ssh://git@scm/some-repo.git",
 	}, entries[0], "ApplicationSet List generator contains the correct parameters")
 
 	assert.NotNil(t, getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")

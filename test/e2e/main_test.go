@@ -73,15 +73,15 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 					Ratio:     0,
 				},
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
-					"git_url": v1alpha1.ConfigCustomField{
+					"git_url": {
 						Required: true,
 						// in yaml you need escaped slashes: '^ssh:\/\/git@scm\/[a-zA-Z0-9-.\/]*.git$'
 						Validation: "^ssh://git@scm/[a-zA-Z0-9-./]*.git$",
 					},
-					"git_revision": v1alpha1.ConfigCustomField{
+					"git_revision": {
 						Default: "main",
 					},
-					"git_path": v1alpha1.ConfigCustomField{
+					"git_path": {
 						Default: ".",
 						// in yaml you need escaped slashes: '^[a-zA-Z0-9.\/]*$'
 						Validation: "^[a-zA-Z0-9./]*$",
