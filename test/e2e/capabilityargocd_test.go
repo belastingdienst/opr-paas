@@ -71,10 +71,13 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 
 	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
 	assert.Equal(t, map[string]string{
-		"paas":       paasWithArgo,
-		"requestor":  "paas-requestor",
-		"service":    "paas",
-		"subservice": "capability",
+		"git_path":     "foo/",
+		"git_revision": "main",
+		"git_url":      "ssh://git@scm/some-repo.git",
+		"paas":         paasWithArgo,
+		"requestor":    "paas-requestor",
+		"service":      "paas",
+		"subservice":   "capability",
 	}, entries[0], "ApplicationSet List generator contains the correct parameters")
 
 	assert.NotNil(t, getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")
