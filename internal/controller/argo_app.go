@@ -95,7 +95,7 @@ func (r *PaasNSReconciler) backendArgoApp(
 					Group:        "argoproj.io",
 					JSONPointers: []string{"/spec/generators"},
 					Kind:         "ApplicationSet",
-					Name:         GetConfig().Spec.ExcludeAppSetName,
+					Name:         GetConfig().ExcludeAppSetName,
 				},
 			},
 			Project: "default",

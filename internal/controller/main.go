@@ -25,7 +25,7 @@ import (
 
 // PaasConfigStore is a thread-safe store for the current PaasConfig
 type PaasConfigStore struct {
-	currentConfig v1alpha1.PaasConfig
+	currentConfig v1alpha1.PaasConfigSpec
 	mutex         sync.RWMutex
 }
 
@@ -36,7 +36,7 @@ var (
 )
 
 // GetConfig retrieves the current configuration
-func GetConfig() v1alpha1.PaasConfig {
+func GetConfig() v1alpha1.PaasConfigSpec {
 	_cnf.mutex.RLock()
 	defer _cnf.mutex.RUnlock()
 	return _cnf.currentConfig
@@ -46,7 +46,7 @@ func GetConfig() v1alpha1.PaasConfig {
 func SetConfig(newConfig v1alpha1.PaasConfig) {
 	_cnf.mutex.Lock()
 	defer _cnf.mutex.Unlock()
-	_cnf.currentConfig = newConfig
+	_cnf.currentConfig = newConfig.Spec
 }
 
 func getRsa(paas string) *crypt.Crypt {
@@ -56,7 +56,7 @@ func getRsa(paas string) *crypt.Crypt {
 	}
 	if c, exists := _crypt[paas]; exists {
 		return c
-	} else if c, err := crypt.NewCrypt(config.Spec.DecryptKeyPaths, "", paas); err != nil {
+	} else if c, err := crypt.NewCrypt(config.DecryptKeyPaths, "", paas); err != nil {
 		panic(fmt.Errorf("could not get a crypt: %w", err))
 	} else {
 		_crypt[paas] = c

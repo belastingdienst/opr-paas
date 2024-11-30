@@ -9,6 +9,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -172,10 +173,21 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 	}
 
-	// Don't need to check if configuration has changed because we use predicate
-	// TODO(portly-halicy-core76) use deepCopy.equals previous current paasConfig as we can reconcile for other reasons.
+	// As there can be reasons why we reconcile again, we check if there is a diff in the desired state vs GetConfig()
+	if reflect.DeepEqual(config.Spec, GetConfig()) {
+		logger.Debug().Msg("Config already equals desired state")
+		// Reconciling succeeded, set appropriate Condition
+		err := pcr.setSuccesfullCondition(ctx, config)
+		if err != nil {
+			logger.Err(err).Msg("failed to update PaasConfig status")
+			return errResult, nil
+		}
+		return ctrl.Result{}, nil
+	}
+
 	logger.Info().Msg("configuration has changed, verifying and updating operator settings")
 
+	// TODO(portly-halicore-76 get rid of Verifies' last check entirely)
 	if err := config.Verify(); err != nil {
 		logger.Err(err).Msg("invalid PaasConfig, not updating")
 		// If it was active, let it be but state the error
@@ -183,16 +195,16 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return errResult, err
 	}
 	// Update the shared configuration store
-	// TODO(portly-halicy-core76) determine whether the active config is set or updated
+	// TODO(portly-halicore-76) determine whether the active config is set or updated
 	SetConfig(*config)
 	logger.Info().Msg("set active PaasConfig successfully")
 
-	// TODO(portly-halicy-core76) is there other config which need to be updated explicitly? If so, call this logic.
+	// TODO(portly-halicore-76) is there other config which need to be updated explicitly? If so, call this logic.
 
 	// Reconciling succeeded, set appropriate Condition
 	err := pcr.setSuccesfullCondition(ctx, config)
 	if err != nil {
-		logger.Err(err).Msg("failed to update PaasNs status")
+		logger.Err(err).Msg("failed to update PaasConfig status")
 		return errResult, nil
 	}
 	return ctrl.Result{}, nil

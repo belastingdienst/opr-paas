@@ -303,14 +303,14 @@ func (config PaasConfig) Verify() error {
 	return nil
 }
 
-func (config PaasConfig) CapabilityK8sName(capability string) (as types.NamespacedName) {
-	as.Namespace = config.Spec.AppSetNamespace
-	if cap, exists := config.Spec.Capabilities[capability]; exists {
+func (config PaasConfigSpec) CapabilityK8sName(capability string) (as types.NamespacedName) {
+	as.Namespace = config.AppSetNamespace
+	if cap, exists := config.Capabilities[capability]; exists {
 		as.Name = cap.AppSet
-		as.Namespace = config.Spec.AppSetNamespace
+		as.Namespace = config.AppSetNamespace
 	} else {
 		as.Name = fmt.Sprintf("paas-%s", capability)
-		as.Namespace = config.Spec.AppSetNamespace
+		as.Namespace = config.AppSetNamespace
 	}
 	return as
 }

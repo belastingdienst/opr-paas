@@ -102,14 +102,14 @@ func BackendNamespace(
 		Spec: corev1.NamespaceSpec{},
 	}
 	logger.Info().Msgf("setting Quotagroup %s", quota)
-	ns.ObjectMeta.Labels[GetConfig().Spec.QuotaLabel] = quota
+	ns.ObjectMeta.Labels[GetConfig().QuotaLabel] = quota
 
 	argoNameSpace := fmt.Sprintf("%s-argocd", paas.ManagedByPaas())
 	logger.Info().Msg("setting managed_by_label")
-	ns.ObjectMeta.Labels[GetConfig().Spec.ManagedByLabel] = argoNameSpace
+	ns.ObjectMeta.Labels[GetConfig().ManagedByLabel] = argoNameSpace
 
 	logger.Info().Msg("setting requestor_label")
-	ns.ObjectMeta.Labels[GetConfig().Spec.RequestorLabel] = paas.Spec.Requestor
+	ns.ObjectMeta.Labels[GetConfig().RequestorLabel] = paas.Spec.Requestor
 
 	logger.Info().Str("PaaS", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
 	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {
@@ -161,7 +161,7 @@ func (r *PaasNSReconciler) ReconcileNamespaces(
 ) (err error) {
 	nsName := paasns.NamespaceName()
 	var nsQuota string
-	if config, exists := GetConfig().Spec.Capabilities[paasns.Name]; !exists {
+	if config, exists := GetConfig().Capabilities[paasns.Name]; !exists {
 		nsQuota = paas.Name
 	} else if !config.QuotaSettings.Clusterwide {
 		nsQuota = nsName
