@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
@@ -71,6 +72,15 @@ func (r *PaasNSReconciler) backendArgoApp(
 	namespace := paasns.NamespaceName()
 	argoConfig := paas.Spec.Capabilities["argocd"]
 	argoConfig.SetDefaults()
+	fields, errs := argoConfig.CapExtraFields(GetConfig().Capabilities["argocd"].CustomFields)
+	if len(errs) > 0 {
+		for _, err := range errs {
+			if setErr := r.setErrorCondition(ctx, paasns, err); setErr != nil {
+				return nil, fmt.Errorf("while setting condition for %w, another error occurred: %w", err, setErr)
+			}
+		}
+		return nil, fmt.Errorf("%d errors while validating extra_fields", len(errs))
+	}
 	app := &argo.Application{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Application",
@@ -81,6 +91,7 @@ func (r *PaasNSReconciler) backendArgoApp(
 			Namespace: namespace,
 			Labels:    paasns.ClonedLabels(),
 		},
+
 		Spec: argo.ApplicationSpec{
 			Destination: argo.ApplicationDestination{
 				Server:    "https://kubernetes.default.svc",
@@ -96,9 +107,9 @@ func (r *PaasNSReconciler) backendArgoApp(
 			},
 			Project: "default",
 			Source: &argo.ApplicationSource{
-				RepoURL:        argoConfig.GitUrl,
-				Path:           argoConfig.GitPath,
-				TargetRevision: argoConfig.GitRevision,
+				RepoURL:        fields["git_url"],
+				Path:           fields["git_path"],
+				TargetRevision: fields["git_revision"],
 			},
 			SyncPolicy: &argo.SyncPolicy{
 				Automated: &argo.SyncPolicyAutomated{

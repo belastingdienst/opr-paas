@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/internal/groups"
@@ -267,15 +268,45 @@ type PaasCapability struct {
 	GitRevision string `json:"gitRevision,omitempty"`
 	// the path in the git repo that contains the Applications / Application Sets to be used by this capability
 	GitPath string `json:"gitPath,omitempty"`
+	// Custom fields to configure this specific Capability
+	CustomFields map[string]string `json:"custom_fields,omitempty"`
 	// This project has it's own ClusterResourceQuota settings
 	Quota paas_quota.Quota `json:"quota,omitempty"`
 	// You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
-	// You can enable extra permissions for the service accounts beloning to this capability
+	// You can enable extra permissions for the service accounts belonging to this capability
 	// Exact definitions is configured in Paas Configmap
 	// Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
 	ExtraPermissions bool `json:"extra_permissions,omitempty"`
+}
+
+// TODO: Write unit tests !!!
+func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomField) (fields map[string]string, issues []error) {
+	// TODO: remove argocd specific fields
+	fields = map[string]string{
+		"git_url":      pc.GitUrl,
+		"git_revision": pc.GitRevision,
+		"git_path":     pc.GitPath,
+	}
+	for key, value := range pc.CustomFields {
+		fields[key] = value
+	}
+	for key, fieldConf := range fieldConfig {
+		if value, exists := fields[key]; exists {
+			if matched, err := regexp.Match(value, []byte(fieldConf.Validation)); err != nil {
+				issues = append(issues, fmt.Errorf("Could not validate value %s: %w", value, err))
+			} else if !matched {
+				issues = append(issues, fmt.Errorf("Invalid value %s (does not match %s)", value, fieldConf.Validation))
+			}
+		} else if fieldConf.Required {
+			fields[key] = fieldConf.Default
+		}
+	}
+	if len(issues) > 0 {
+		return nil, issues
+	}
+	return fields, nil
 }
 
 func (pc *PaasCapability) WithExtraPermissions() bool {

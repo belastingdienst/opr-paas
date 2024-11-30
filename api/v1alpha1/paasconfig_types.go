@@ -190,6 +190,26 @@ type ConfigCapability struct {
 	// Default permissions set for this capability
 	// +kubebuilder:validation:Required
 	DefaultPermissions ConfigCapPerm `json:"default_permissions"`
+
+	// Settings to allow specific configuration specific to a capability
+	CustomFields map[string]ConfigCustomField `json:"custom_fields,omitempty"`
+}
+
+// TODO: When we move to PaasConfig, we can probably combine Required and Default fields
+// TODO: When we move to PaasConfig, we can verify Validation being a valid RE
+// TODO: When we move to PaasConfig, we can verify Default meeting Validation
+// TODO: When we move to PaasConfig, we can verify that Default and Required are not both set
+
+type ConfigCustomField struct {
+	// Regular expression for validating input, defaults to '', which means no validation.
+	Validation string `json:"validation"`
+	// Set a default when no value is specified, defaults to ''.
+	// Only applies when Required is false.
+	Default string `json:"default"`
+	// Define if the value must be specified in the PaaS.
+	// When set to true, and no value is set, PaasNs has error in status field, and capability is not built.
+	// When set to false, and no value is set, Default is used.
+	Required bool `json:"required"`
 }
 
 type ConfigQuotaSettings struct {
