@@ -75,17 +75,19 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	logger.Info().Msg("reconciling PaasConfig")
 
-	// Started reconciling, reset status
-	meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{Type: v1alpha1.TypeActivePaasConfig, Status: metav1.ConditionUnknown, ObservedGeneration: config.Generation, Reason: "Reconciling", Message: "Starting reconciliation"})
+	// If the status is not active = true, reset that status
+	if !meta.IsStatusConditionPresentAndEqual(config.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) {
+		meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{Type: v1alpha1.TypeActivePaasConfig, Status: metav1.ConditionUnknown, ObservedGeneration: config.Generation, Reason: "Reconciling", Message: "Starting reconciliation"})
+	}
 	meta.RemoveStatusCondition(&config.Status.Conditions, v1alpha1.TypeHasErrorsPaasConfig)
 	if err := pcr.Status().Update(ctx, config); err != nil {
 		logger.Err(err).Msg("Failed to update PaasConfig status")
-		return errResult, err
+		return errResult, nil
 	}
 
 	if err := pcr.Get(ctx, req.NamespacedName, config); err != nil {
 		logger.Err(err).Msg("Failed to re-fetch PaasConfig")
-		return errResult, err
+		return errResult, nil
 	}
 
 	// Add finalizer for this CR
@@ -95,7 +97,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 		if err := pcr.Update(ctx, config); err != nil {
 			logger.Err(err).Msg("error updating PaasConfig")
-			return errResult, err
+			return errResult, nil
 		}
 		logger.Info().Msg("added finalizer to PaasConfig")
 	}
@@ -112,10 +114,12 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 			if err := pcr.Status().Update(ctx, config); err != nil {
 				logger.Err(err).Msg("Failed to update PaasConfig status")
-				return errResult, err
+				return errResult, nil
 			}
-			// Reset Config
-			SetConfig(v1alpha1.PaasConfig{})
+			// Reset Config if this was the active config
+			if meta.IsStatusConditionPresentAndEqual(config.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) == true {
+				SetConfig(v1alpha1.PaasConfig{})
+			}
 
 			logger.Info().Msg("config reset successfully")
 			meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{
@@ -126,7 +130,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 			if err := pcr.Status().Update(ctx, config); err != nil {
 				logger.Err(err).Msg("Failed to update PaasConfig status")
-				return errResult, err
+				return errResult, nil
 			}
 
 			if ok := controllerutil.RemoveFinalizer(config, paasconfigFinalizer); !ok {
@@ -134,7 +138,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			}
 			if err := pcr.Update(ctx, config); err != nil {
 				logger.Err(err).Msg("error updating PaasConfig")
-				return errResult, err
+				return errResult, nil
 			}
 		}
 		return ctrl.Result{}, nil
@@ -146,9 +150,9 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		err := pcr.setErrorCondition(ctx, config, err)
 		if err != nil {
 			logger.Err(err).Msg("failed to update PaasConfig status")
-			return errResult, err
+			return errResult, nil
 		}
-		return errResult, err
+		return errResult, nil
 	}
 
 	// Enforce singleton pattern
@@ -161,7 +165,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			err := pcr.setErrorCondition(ctx, config, singletonErr)
 			if err != nil {
 				logger.Err(err).Msg("failed to update PaasConfig status")
-				return errResult, err
+				return errResult, nil
 			}
 			// don't reconcile this one again as that won't change anything.. I guess.
 			return ctrl.Result{}, nil
@@ -169,6 +173,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Don't need to check if configuration has changed because we use predicate
+	// TODO(portly-halicy-core76) use deepCopy.equals previous current paasConfig as we can reconcile for other reasons.
 	logger.Info().Msg("configuration has changed, verifying and updating operator settings")
 
 	if err := config.Verify(); err != nil {
@@ -178,17 +183,17 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return errResult, err
 	}
 	// Update the shared configuration store
-	// TODO() determine whether the active config is set or updated
+	// TODO(portly-halicy-core76) determine whether the active config is set or updated
 	SetConfig(*config)
 	logger.Info().Msg("set active PaasConfig successfully")
 
-	// TODO(portly-halicy-core) is there other config which need to be updated explicitly? If so, call this logic.
+	// TODO(portly-halicy-core76) is there other config which need to be updated explicitly? If so, call this logic.
 
 	// Reconciling succeeded, set appropriate Condition
 	err := pcr.setSuccesfullCondition(ctx, config)
 	if err != nil {
 		logger.Err(err).Msg("failed to update PaasNs status")
-		return errResult, err
+		return errResult, nil
 	}
 	return ctrl.Result{}, nil
 }

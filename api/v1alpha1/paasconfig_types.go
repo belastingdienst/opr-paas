@@ -154,17 +154,11 @@ type ConfigLdap struct {
 
 type ConfigCapabilities map[string]ConfigCapability
 
-// TODO use Verify in Reconciler
 func (caps ConfigCapabilities) Verify() []string {
 	var multierror []string
 	for key, cap := range caps {
 		if len(cap.QuotaSettings.DefQuota) == 0 {
 			multierror = append(multierror, fmt.Sprintf("missing capabilities.%s.defaultquotas elements", key))
-		}
-	}
-	for _, cap := range []string{"argocd", "tekton", "grafana", "sso"} {
-		if _, exists := caps[cap]; !exists {
-			multierror = append(multierror, fmt.Sprintf("missing capabilities.%s", cap))
 		}
 	}
 	return multierror
@@ -210,6 +204,7 @@ type ConfigQuotaSettings struct {
 	MaxQuotas ConfigDefaultQuotaSpec `json:"max"`
 }
 
+// TODO make this validatable
 type ConfigDefaultQuotaSpec map[string]string
 
 // This is a insoudeout representation of ConfigCapPerm, closer to rb representation
