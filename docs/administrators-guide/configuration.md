@@ -77,6 +77,15 @@ Example PaasConfig
             argocd-argocd-application-controller:
               - monitoring-edit
               - alert-routing-edit
+          custom_fields:
+            git_url:
+              validation: '^ssh:\/\/git@scm\/[a-zA-Z0-9-.\/]*.git$'
+              required: true
+            git_revision:
+              default: main
+            git_path:
+              default: '.'
+              validation: '^[a-zA-Z0-9.\/]*$'
           extra_permissions: {}
           quotas:
             clusterwide: false
