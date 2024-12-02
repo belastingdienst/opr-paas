@@ -77,6 +77,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	logger.Info().Msg("reconciling PaasConfig")
 
 	// If the status is not active = true, reset that status
+	// TODO still needed?
 	if !meta.IsStatusConditionPresentAndEqual(config.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) {
 		meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{Type: v1alpha1.TypeActivePaasConfig, Status: metav1.ConditionUnknown, ObservedGeneration: config.Generation, Reason: "Reconciling", Message: "Starting reconciliation"})
 	}
@@ -90,6 +91,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		logger.Err(err).Msg("Failed to re-fetch PaasConfig")
 		return errResult, nil
 	}
+	// TIlL here...
 
 	// Add finalizer for this CR
 	if !controllerutil.ContainsFinalizer(config, paasconfigFinalizer) {
@@ -158,6 +160,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	// Enforce singleton pattern
 	// TODO(portly-halicore-76) errrrrr does this work?? as we've just set the condition to unknown for the current reconciliation
+	// TODO(portly-halicore-76) move to admission webhook when available
 	for _, existingConfig := range configList.Items {
 		if meta.IsStatusConditionPresentAndEqual(existingConfig.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) == true && existingConfig.ObjectMeta.Name != config.Name {
 			// There is already another config which is the active one so we don't allow adding a new one

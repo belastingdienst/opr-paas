@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -136,6 +137,11 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 
 	//TODO(portly-halicore-76) do check if Config is set, else return and Requeue after say... minutes / hours ...
 	// as reconciling and finalizing without config, causes operator in meh state.
+	// this is only flacky when object is being removed, finalizers will not be removed
+	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
+		logger.Error().Msg("No config found")
+		return ctrl.Result{RequeueAfter: time.Minute * 5}, nil
+	}
 
 	if paas, err = r.GetPaas(ctx, req); err != nil {
 		logger.Err(err).Msg("could not get Paas from k8s")
