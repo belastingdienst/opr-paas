@@ -190,8 +190,8 @@ spec:
                 type: object
               whitelist:
                 description: |-
-                  A reference to a configmap containing a whitelist of LDAP groups to be synced using LDAP sync
                   Deprecated: Whitelist code will be removed from the operator to make it more generic
+                  A reference to a configmap containing a whitelist of LDAP groups to be synced using LDAP sync
                 properties:
                   name:
                     type: string
