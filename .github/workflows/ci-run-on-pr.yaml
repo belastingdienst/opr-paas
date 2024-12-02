@@ -164,7 +164,7 @@ jobs:
         timeout-minutes: 20
         run: |
           set -x
-          make test-e2e
+          env SECRETS_PATH=/tmp/paas-e2e/secrets/priv make test-e2e
           killall goreman run stop-all || echo "trouble killing goreman"
       - name: Upload e2e coverage report
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
@@ -224,7 +224,7 @@ jobs:
         timeout-minutes: 20
         run: |
           set -x
-          make test-e2e
+          env SECRETS_PATH=/secrets/paas make test-e2e
       - name: Retrieve operator deployment log on failure
         run: kubectl logs deployment/paas-controller-manager -n paas-system > /tmp/e2e-deployed-operator-logs-${{ github.run_id }}.log
         if: ${{ failure() }}
