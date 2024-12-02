@@ -72,6 +72,20 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 		logger.Info().Msg("added finalizer to PaasNs")
 	}
 
+	// TODO(portly-halicore-76) Move to admission webhook once available
+	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
+	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
+	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
+		logger.Error().Msg("no config found")
+		paasns.Status.Truncate()
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusReconcile, paasns, "please reach out to your system administrator as there is no Paasconfig available to reconcile against.")
+		err := r.Status().Update(ctx, paasns)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("no config found")
+	}
+
 	if paasns.GetDeletionTimestamp() != nil {
 		logger.Info().Msg("paasNS object marked for deletion")
 		if controllerutil.ContainsFinalizer(paasns, paasNsFinalizer) {
@@ -138,6 +152,11 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	}
 
 	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
+		// TODO(portly-halicore-76) move to admission webhook once available
+		// Don't requeue that often
+		if strings.Contains(err.Error(), "no config found") {
+			return ctrl.Result{RequeueAfter: time.Minute * 10}, nil
+		}
 		logger.Err(err).Msg("could not get PaasNs from k8s")
 		return errResult, err
 	}

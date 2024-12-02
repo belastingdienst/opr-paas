@@ -76,23 +76,6 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	logger.Info().Msg("reconciling PaasConfig")
 
-	// If the status is not active = true, reset that status
-	// TODO still needed?
-	if !meta.IsStatusConditionPresentAndEqual(config.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) {
-		meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{Type: v1alpha1.TypeActivePaasConfig, Status: metav1.ConditionUnknown, ObservedGeneration: config.Generation, Reason: "Reconciling", Message: "Starting reconciliation"})
-	}
-	meta.RemoveStatusCondition(&config.Status.Conditions, v1alpha1.TypeHasErrorsPaasConfig)
-	if err := pcr.Status().Update(ctx, config); err != nil {
-		logger.Err(err).Msg("Failed to update PaasConfig status")
-		return errResult, nil
-	}
-
-	if err := pcr.Get(ctx, req.NamespacedName, config); err != nil {
-		logger.Err(err).Msg("Failed to re-fetch PaasConfig")
-		return errResult, nil
-	}
-	// TIlL here...
-
 	// Add finalizer for this CR
 	if !controllerutil.ContainsFinalizer(config, paasconfigFinalizer) {
 		if ok := controllerutil.AddFinalizer(config, paasconfigFinalizer); !ok {
@@ -159,7 +142,6 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Enforce singleton pattern
-	// TODO(portly-halicore-76) errrrrr does this work?? as we've just set the condition to unknown for the current reconciliation
 	// TODO(portly-halicore-76) move to admission webhook when available
 	for _, existingConfig := range configList.Items {
 		if meta.IsStatusConditionPresentAndEqual(existingConfig.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) == true && existingConfig.ObjectMeta.Name != config.Name {
@@ -188,21 +170,10 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
-	logger.Info().Msg("configuration has changed, verifying and updating operator settings")
-
-	// TODO(portly-halicore-76 get rid of Verifies' last check entirely)
-	if err := config.Verify(); err != nil {
-		logger.Err(err).Msg("invalid PaasConfig, not updating")
-		// If it was active, let it be but state the error
-		// stating in practice the previous generation is the active config.
-		return errResult, err
-	}
+	logger.Info().Msg("configuration has changed")
 	// Update the shared configuration store
-	// TODO(portly-halicore-76) determine whether the active config is set or updated
 	SetConfig(*config)
-	logger.Info().Msg("set active PaasConfig successfully")
-
-	// TODO(portly-halicore-76) is there other config which need to be updated explicitly? If so, call this logic.
+	logger.Debug().Msg("set active PaasConfig successfully")
 
 	// Reconciling succeeded, set appropriate Condition
 	err := pcr.setSuccesfullCondition(ctx, config)

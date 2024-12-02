@@ -8,7 +8,9 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -81,7 +83,23 @@ func (r *PaasReconciler) GetPaas(
 			// return ctrl.Result{}, fmt.Errorf("PaaS object %s already gone", req.NamespacedName)
 		}
 		return nil, err
-	} else if paas.GetDeletionTimestamp() != nil {
+	}
+
+	// TODO(portly-halicore-76) Move to admission webhook once available
+	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
+	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
+	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
+		logger.Error().Msg("no config found")
+		paas.Status.Truncate()
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusReconcile, paas, "please reach out to your system administrator as there is no Paasconfig available to reconcile against.")
+		err := r.Status().Update(ctx, paas)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("no config found")
+	}
+
+	if paas.GetDeletionTimestamp() != nil {
 		logger.Info().Msg("pAAS object marked for deletion")
 		if controllerutil.ContainsFinalizer(paas, paasFinalizer) {
 			logger.Info().Msg("finalizing PaaS")
@@ -135,15 +153,12 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		Requeue: false,
 	}
 
-	//TODO(portly-halicore-76) do check if Config is set, else return and Requeue after say... minutes / hours ...
-	// as reconciling and finalizing without config, causes operator in meh state.
-	// this is only flacky when object is being removed, finalizers will not be removed
-	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
-		logger.Error().Msg("No config found")
-		return ctrl.Result{RequeueAfter: time.Minute * 5}, nil
-	}
-
 	if paas, err = r.GetPaas(ctx, req); err != nil {
+		// TODO(portly-halicore-76) move to admission webhook once available
+		// Don't requeue that often
+		if strings.Contains(err.Error(), "no config found") {
+			return ctrl.Result{RequeueAfter: time.Minute * 10}, nil
+		}
 		logger.Err(err).Msg("could not get Paas from k8s")
 		return errResult, err
 	} else if paas == nil {

@@ -154,16 +154,6 @@ type ConfigLdap struct {
 
 type ConfigCapabilities map[string]ConfigCapability
 
-func (caps ConfigCapabilities) Verify() []string {
-	var multierror []string
-	for key, cap := range caps {
-		if len(cap.QuotaSettings.DefQuota) == 0 {
-			multierror = append(multierror, fmt.Sprintf("missing capabilities.%s.defaultquotas elements", key))
-		}
-	}
-	return multierror
-}
-
 type ConfigCapability struct {
 	// Name of the ArgoCD ApplicationSet which manages this capability
 	// +kubebuilder:validation:Required
@@ -260,49 +250,6 @@ func (ccp ConfigCapPerm) ServiceAccounts() []string {
 	return sas
 }
 
-// const (
-// 	envConfName     = "PAAS_CONFIG"
-// 	defaultConfFile = "/etc/paas/config.yaml"
-// )
-
-// TODO Remove unused code, give this a place somewhere else in the operator..
-// func NewConfig() (config *PaasConfig, err error) {
-// 	// This only parsed as yaml, nothing else
-// 	// #nosec
-// 	configFile := os.Getenv(envConfName)
-// 	if configFile == "" {
-// 		configFile = defaultConfFile
-// 	}
-// 	config = &PaasConfig{}
-
-// 	if yamlConfig, err := os.ReadFile(configFile); err != nil {
-// 		return nil, err
-// 	} else if err = yaml.Unmarshal(yamlConfig, config); err != nil {
-// 		return nil, err
-// 	} else if err = config.Verify(); err != nil {
-// 		return nil, err
-// 	}
-// 	return config, nil
-// }
-
-// Set updates the configuration values in a thread-safe way
-// func (pc *PaasConfig) Set(logLevel string, interval int) {
-// 	// pc.mutex.Lock()
-// 	// defer pc.mutex.Unlock()
-// 	// pc.LogLevel = logLevel
-// 	// pc.Interval = interval
-// }
-
-func (config PaasConfig) Verify() error {
-	var multierror []string
-	multierror = append(multierror, config.Spec.Capabilities.Verify()...)
-	if len(multierror) > 0 {
-		return fmt.Errorf("invalid config:\n%s",
-			strings.Join(multierror, "\n"))
-	}
-	return nil
-}
-
 func (config PaasConfigSpec) CapabilityK8sName(capability string) (as types.NamespacedName) {
 	as.Namespace = config.AppSetNamespace
 	if cap, exists := config.Capabilities[capability]; exists {
@@ -325,11 +272,7 @@ type PaasConfigStatus struct {
 type PaasConfigList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:MaxItems=1
-	// +kubebuilder:validation:Required
-	Items []PaasConfig `json:"items"`
+	Items           []PaasConfig `json:"items"`
 }
 
 func init() {
