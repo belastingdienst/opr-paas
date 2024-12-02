@@ -139,8 +139,6 @@ setup-e2e: kustomize ## Setup test environment in the K8s cluster specified in ~
 	$(KUSTOMIZE) build test/e2e/manifests/paas-context | kubectl apply -f -
 	# Apply opr-paas crds
 	$(KUSTOMIZE) build manifests/crds | kubectl apply -f -
-	# TODO(portly-halicore-76) remove here, set config via e2e test code instead to keep it all managable via test code
-	kubectl apply -f manifests/config/example-paasconfig.yaml
 	# create folder to hold go coverage result
 	mkdir -p /tmp/coverage/paas
 
