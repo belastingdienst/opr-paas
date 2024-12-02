@@ -28,7 +28,7 @@ const (
 func TestCapabilityTekton(t *testing.T) {
 	paasSpec := api.PaasSpec{
 		Requestor: "paas-user",
-		Quota:     make(quota.Quotas),
+		Quota:     make(quota.Quota),
 		Capabilities: api.PaasCapabilities{
 			"tekton": api.PaasCapability{
 				Enabled: true,

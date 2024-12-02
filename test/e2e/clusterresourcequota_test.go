@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/quota"
+	corev1 "k8s.io/api/core/v1"
 
+	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	quotav1 "github.com/openshift/api/quota/v1"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -19,10 +19,10 @@ const paasWithQuota = "paas-with-quota"
 func TestClusterResourceQuota(t *testing.T) {
 	paasSpec := api.PaasSpec{
 		Requestor: "paas-user",
-		Quota: quota.NewQuota(map[string]string{
-			"cpu":    "200m",
-			"memory": "256Mi",
-		}),
+		Quota: map[corev1.ResourceName]resource.Quantity{
+			"cpu":    resource.MustParse("200m"),
+			"memory": resource.MustParse("256Mi"),
+		},
 	}
 
 	testenv.Test(
@@ -54,10 +54,10 @@ func assertCRQCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) co
 func assertCRQUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithQuota, t, cfg)
 
-	paas.Spec.Quota = quota.NewQuota(map[string]string{
-		"cpu":    "100m",
-		"memory": "128Mi",
-	})
+	paas.Spec.Quota = map[corev1.ResourceName]resource.Quantity{
+		"cpu":    resource.MustParse("100m"),
+		"memory": resource.MustParse("128Mi"),
+	}
 
 	if err := updatePaasSync(ctx, cfg, paas); err != nil {
 		t.Fatal(err)
