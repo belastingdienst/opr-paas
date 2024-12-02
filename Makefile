@@ -141,20 +141,8 @@ setup-e2e: kustomize ## Setup test environment in the K8s cluster specified in ~
 	$(KUSTOMIZE) build manifests/crds | kubectl apply -f -
 	# TODO(portly-halicore-76) remove here, set config via e2e test code instead to keep it all managable via test code
 	kubectl apply -f manifests/config/example-paasconfig.yaml
-
-# Starts operator for e2e tests with fixtures
-.PHONY: start-e2e
-start-e2e:
-	# Clean start
-	killall goreman || true
-	mkdir -p /tmp/paas-e2e/secrets/priv && chmod 0700 /tmp/paas-e2e/secrets/priv
-	mkdir -p /tmp/paas-e2e/secrets/pub && chmod 0700 /tmp/paas-e2e/secrets/pub
-	cp -r ./test/e2e/fixtures/crypt/priv* /tmp/paas-e2e/secrets/priv
-	cp -r ./test/e2e/fixtures/crypt/pub/* /tmp/paas-e2e/secrets/pub
 	# create folder to hold go coverage result
 	mkdir -p /tmp/coverage/paas
-	goreman -f $(PAAS_PROCFILE) start
-	rm -rf /tmp/paas-e2e
 
 # TODO this should be using other fixtures and has the same purpose as the: 'run' target.
 .PHONY: run-operator
@@ -162,8 +150,9 @@ run-operator:
 	# Clean start
 	killall goreman || true
 	mkdir -p /tmp/paas-e2e/secrets/priv && chmod 0700 /tmp/paas-e2e/secrets/priv
+	mkdir -p /tmp/paas-e2e/secrets/pub && chmod 0700 /tmp/paas-e2e/secrets/pub
 	cp -r ./test/e2e/fixtures/crypt/priv* /tmp/paas-e2e/secrets/priv
-	kubectl apply -f ./test/e2e/fixtures/PaasConfig.yml
+	cp -r ./test/e2e/fixtures/crypt/pub/* /tmp/paas-e2e/secrets/pub
 	goreman -f $(PAAS_PROCFILE) start
 	rm -rf /tmp/paas-e2e
 
