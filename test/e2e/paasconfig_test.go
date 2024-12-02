@@ -34,8 +34,7 @@ func assertPaasConfigIsActive(ctx context.Context, t *testing.T, cfg *envconf.Co
 	condition := fetchedPaasConfig.Status.Conditions[0]
 	assert.Equal(t, expectedStatus, condition.Status)
 
-	expectedStatus = "Active"
-	assert.Equal(t, expectedStatus, condition.Type)
+	assert.Equal(t, "Active", condition.Type)
 
 	return ctx
 }
