@@ -103,7 +103,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 				return errResult, nil
 			}
 			// Reset Config if this was the active config
-			if meta.IsStatusConditionPresentAndEqual(config.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) == true {
+			if meta.IsStatusConditionPresentAndEqual(config.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) {
 				SetConfig(v1alpha1.PaasConfig{})
 			}
 
@@ -144,7 +144,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	// Enforce singleton pattern
 	// TODO(portly-halicore-76) move to admission webhook when available
 	for _, existingConfig := range configList.Items {
-		if meta.IsStatusConditionPresentAndEqual(existingConfig.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) == true && existingConfig.ObjectMeta.Name != config.Name {
+		if meta.IsStatusConditionPresentAndEqual(existingConfig.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) && existingConfig.ObjectMeta.Name != config.Name {
 			// There is already another config which is the active one so we don't allow adding a new one
 			singletonErr := fmt.Errorf("paasConfig singleton violation")
 			logger.Err(singletonErr).Msg("more than one PaasConfig instance found")

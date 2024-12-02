@@ -143,7 +143,7 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 		Requeue: false,
 	}
 
-	//TODO(portly-halicore-76) do check if Config is set, else return and Requeue after say... minutes / hours ...
+	// TODO(portly-halicore-76) do check if Config is set, else return and Requeue after say... minutes / hours ...
 	// as reconciling and finalizing without config, causes operator in meh state.
 	// this is only flacky when object is being removed, finalizers will not be removed
 	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
