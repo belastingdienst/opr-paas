@@ -19,7 +19,7 @@ import (
 const (
 	// Interval for polling k8s to wait for resource changes
 	waitInterval = 1 * time.Second
-	waitTimeout  = 2 * time.Minute
+	waitTimeout  = 1 * time.Minute
 )
 
 // deleteResourceSync requests resource deletion and returns once k8s has successfully deleted it.

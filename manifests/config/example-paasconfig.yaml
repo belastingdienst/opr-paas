@@ -91,7 +91,7 @@ spec:
         ratio: 0
   debug: false
   decryptKeyPaths:
-    - /tmp/paas-e2e/secrets/priv
+    - /secrets/paas
   ldap:
     host: my-ldap-host
     port: 13
