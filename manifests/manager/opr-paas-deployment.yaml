@@ -57,7 +57,7 @@ spec:
               memory: 64Mi
           volumeMounts:
             - name: example-keys
-              mountPath: /secrets/paas
+              mountPath: /tmp/paas-e2e/secrets/priv
       serviceAccountName: paas-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
