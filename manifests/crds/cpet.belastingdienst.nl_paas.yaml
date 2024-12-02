@@ -43,7 +43,7 @@ spec:
                 additionalProperties:
                   properties:
                     enabled:
-                      description: Do we want an ArgoCD namespace, default false
+                      description: Do we want to use this capability, default false
                       type: boolean
                     extra_permissions:
                       description: |-
@@ -53,15 +53,15 @@ spec:
                       type: boolean
                     gitPath:
                       description: the path in the git repo that contains the Applications
-                        / Application Sets to be used by this ArgoCD
+                        / Application Sets to be used by this capability
                       type: string
                     gitRevision:
                       description: The revision of the git repo that contains the
-                        Applications / Application Sets to be used by this ArgoCD
+                        Applications / Application Sets to be used by this capability
                       type: string
                     gitUrl:
                       description: The URL that contains the Applications / Application
-                        Sets to be used by this ArgoCD
+                        Sets to be used by this capability
                       type: string
                     quota:
                       additionalProperties:
@@ -77,7 +77,7 @@ spec:
                       additionalProperties:
                         type: string
                       description: |-
-                        You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+                        You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket
                         They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
                       type: object
                   type: object

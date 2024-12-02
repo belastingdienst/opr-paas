@@ -248,18 +248,20 @@ func (pcs PaasCapabilities) ResetCapSshSecret(capability string) (err error) {
 	return nil
 }
 
+// TODO: Enabled is a leftover from old capability implementation. Remove with new API.
+
 type PaasCapability struct {
-	// Do we want an ArgoCD namespace, default false
+	// Do we want to use this capability, default false
 	Enabled bool `json:"enabled,omitempty"`
-	// The URL that contains the Applications / Application Sets to be used by this ArgoCD
+	// The URL that contains the Applications / Application Sets to be used by this capability
 	GitUrl string `json:"gitUrl,omitempty"`
-	// The revision of the git repo that contains the Applications / Application Sets to be used by this ArgoCD
+	// The revision of the git repo that contains the Applications / Application Sets to be used by this capability
 	GitRevision string `json:"gitRevision,omitempty"`
-	// the path in the git repo that contains the Applications / Application Sets to be used by this ArgoCD
+	// the path in the git repo that contains the Applications / Application Sets to be used by this capability
 	GitPath string `json:"gitPath,omitempty"`
 	// This project has it's own ClusterResourceQuota settings
 	Quota paas_quota.Quotas `json:"quota,omitempty"`
-	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
+	// You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
 	// You can enable extra permissions for the service accounts beloning to this capability
@@ -274,10 +276,6 @@ func (pc *PaasCapability) WithExtraPermissions() bool {
 
 func (pc *PaasCapability) IsEnabled() bool {
 	return pc.Enabled
-}
-
-func (pc *PaasCapability) CapabilityName() string {
-	return "argocd"
 }
 
 func (pc *PaasCapability) SetDefaults() {
