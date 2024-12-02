@@ -5,32 +5,24 @@ import (
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 )
 
-type Quotas map[corev1.ResourceName]resourcev1.Quantity
+type Quota map[corev1.ResourceName]resourcev1.Quantity
 
-//func (pq Quotas) QuotaWithDefaults(defaults map[string]string) (q Quotas) {
-//	q = make(Quotas)
-//	for key, value := range defaults {
-//		q[corev1.ResourceName(key)] = resourcev1.MustParse(value)
-//	}
-//	for key, value := range pq {
-//		q[key] = value
-//	}
-//	return q
-//}
+func (pq Quota) MergeWith(targetQuota map[corev1.ResourceName]resourcev1.Quantity) (q Quota) {
+	q = make(Quota)
+	for key, value := range targetQuota {
+		q[key] = value
+	}
+	for key, value := range pq {
+		q[key] = value
+	}
+	return q
+}
 
-func (pq Quotas) Resized(scale int64) (q Quotas) {
-	q = make(Quotas)
+func (pq Quota) Resized(scale int64) (q Quota) {
+	q = make(Quota)
 	for key, value := range pq {
 		resized := value.AsApproximateFloat64() * (float64(scale) / 100)
 		q[key] = *(resourcev1.NewQuantity(int64(resized), value.Format))
 	}
 	return q
 }
-
-//func NewQuota(defaults map[string]string) (q Quotas) {
-//	q = make(Quotas)
-//	for key, value := range defaults {
-//		q[corev1.ResourceName(key)] = resourcev1.MustParse(value)
-//	}
-//	return q
-//}

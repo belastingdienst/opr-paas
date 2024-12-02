@@ -21,7 +21,7 @@ import (
 )
 
 // map[paas][quotatype]value
-// type QuotaLists map[string]Quotas
+// type QuotaLists map[string]Quota
 type QuotaLists struct {
 	list map[v1.ResourceName][]resourcev1.Quantity
 }
@@ -32,7 +32,7 @@ func NewQuotaLists() QuotaLists {
 	}
 }
 
-func (pcr *QuotaLists) Append(quotas Quotas) {
+func (pcr *QuotaLists) Append(quotas Quota) {
 	for key, value := range quotas {
 		if values, exists := pcr.list[key]; exists {
 			pcr.list[key] = append(values, value)
@@ -42,8 +42,8 @@ func (pcr *QuotaLists) Append(quotas Quotas) {
 	}
 }
 
-func (pcr QuotaLists) Sum() Quotas {
-	quotaResources := make(Quotas)
+func (pcr QuotaLists) Sum() Quota {
+	quotaResources := make(Quota)
 	for key, values := range pcr.list {
 		var newValue resourcev1.Quantity
 		for _, value := range values {
@@ -54,8 +54,8 @@ func (pcr QuotaLists) Sum() Quotas {
 	return quotaResources
 }
 
-func (pcr QuotaLists) LargestTwo() Quotas {
-	quotaResources := make(Quotas)
+func (pcr QuotaLists) LargestTwo() Quota {
+	quotaResources := make(Quota)
 	for key, values := range pcr.list {
 		if len(values) == 1 {
 			quotaResources[key] = values[0]
@@ -69,8 +69,8 @@ func (pcr QuotaLists) LargestTwo() Quotas {
 	return quotaResources
 }
 
-func (pcr QuotaLists) Max() Quotas {
-	quotaResources := make(Quotas)
+func (pcr QuotaLists) Max() Quota {
+	quotaResources := make(Quota)
 	for key, values := range pcr.list {
 		if len(values) < 1 {
 			quotaResources[key] = resourcev1.MustParse("0")
@@ -82,8 +82,8 @@ func (pcr QuotaLists) Max() Quotas {
 	return quotaResources
 }
 
-func (pcr QuotaLists) Min() Quotas {
-	quotaResources := make(Quotas)
+func (pcr QuotaLists) Min() Quota {
+	quotaResources := make(Quota)
 	for key, values := range pcr.list {
 		if len(values) < 1 {
 			quotaResources[key] = resourcev1.MustParse("0")
@@ -95,7 +95,7 @@ func (pcr QuotaLists) Min() Quotas {
 	return quotaResources
 }
 
-func (pcr QuotaLists) OptimalValues(ratio int64, minQuotas Quotas, maxQuotas Quotas) Quotas {
+func (pcr QuotaLists) OptimalValues(ratio int64, minQuotas Quota, maxQuotas Quota) Quota {
 	// Calculate resources with 3 different approaches and select largest value
 	approaches := NewQuotaLists()
 	approaches.Append(pcr.Sum().Resized(ratio))

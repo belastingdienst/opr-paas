@@ -1,6 +1,7 @@
 package quota_test
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"testing"
 
 	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
@@ -15,22 +16,22 @@ const (
 )
 
 var (
-	testQuotas = []map[string]string{
+	testQuotas = []map[corev1.ResourceName]resource.Quantity{
 		{
-			"cpu":    "3",
-			"memory": "6Gi",
-			"block":  "100Gi",
-			"shared": "100Gi",
+			"cpu":    resource.MustParse("3"),
+			"memory": resource.MustParse("6Gi"),
+			"block":  resource.MustParse("100Gi"),
+			"shared": resource.MustParse("100Gi"),
 		},
 		{
-			"cpu":    "6",
-			"memory": "12Gi",
-			"block":  "100Gi",
+			"cpu":    resource.MustParse("6"),
+			"memory": resource.MustParse("12Gi"),
+			"block":  resource.MustParse("100Gi"),
 		},
 		{
-			"cpu":    "3",
-			"memory": "12Gi",
-			"block":  "100Gi",
+			"cpu":    resource.MustParse("3"),
+			"memory": resource.MustParse("12Gi"),
+			"block":  resource.MustParse("100Gi"),
 		},
 	}
 	sum_cpu            int64 = 12000
@@ -45,19 +46,19 @@ var (
 	optimal_shared     int64 = 100 * GiB
 	optimal_block      int64 = 210 * GiB
 
-	minQuota = map[string]string{
-		"cpu": "10",
+	minQuota = map[corev1.ResourceName]resource.Quantity{
+		"cpu": resource.MustParse("10"),
 	}
 
-	maxQuota = map[string]string{
-		"memory": "9Gi",
+	maxQuota = map[corev1.ResourceName]resource.Quantity{
+		"memory": resource.MustParse("9Gi"),
 	}
 )
 
 func TestPaasQuotaLists_Sum(t *testing.T) {
 	quotas := paas_quota.NewQuotaLists()
 	for _, vals := range testQuotas {
-		quotas.Append(paas_quota.NewQuota(vals))
+		quotas.Append(vals)
 	}
 	sum := quotas.Sum()
 	cpu, exists := sum["cpu"]
@@ -73,7 +74,7 @@ func TestPaasQuotaLists_Sum(t *testing.T) {
 func TestPaasQuotaLists_Min(t *testing.T) {
 	quotas := paas_quota.NewQuotaLists()
 	for _, vals := range testQuotas {
-		quotas.Append(paas_quota.NewQuota(vals))
+		quotas.Append(vals)
 	}
 	min := quotas.Min()
 	cpu, exists := min["cpu"]
@@ -89,7 +90,7 @@ func TestPaasQuotaLists_Min(t *testing.T) {
 func TestPaasQuotaLists_Max(t *testing.T) {
 	quotas := paas_quota.NewQuotaLists()
 	for _, vals := range testQuotas {
-		quotas.Append(paas_quota.NewQuota(vals))
+		quotas.Append(vals)
 	}
 	max := quotas.Max()
 	cpu, exists := max["cpu"]
@@ -105,7 +106,7 @@ func TestPaasQuotaLists_Max(t *testing.T) {
 func TestPaasQuotaLists_LargestTwo(t *testing.T) {
 	quotas := paas_quota.NewQuotaLists()
 	for _, vals := range testQuotas {
-		quotas.Append(paas_quota.NewQuota(vals))
+		quotas.Append(vals)
 	}
 	lt := quotas.LargestTwo()
 	cpu, exists := lt["cpu"]
@@ -121,10 +122,10 @@ func TestPaasQuotaLists_LargestTwo(t *testing.T) {
 func TestPaasQuotaLists_OptimalValues(t *testing.T) {
 	quotas := paas_quota.NewQuotaLists()
 	for _, vals := range testQuotas {
-		quotas.Append(paas_quota.NewQuota(vals))
+		quotas.Append(vals)
 	}
-	min := paas_quota.NewQuota(minQuota)
-	max := paas_quota.NewQuota(maxQuota)
+	min := minQuota
+	max := maxQuota
 	optimal := quotas.OptimalValues(
 		ratio,
 		min,

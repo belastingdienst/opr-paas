@@ -26,7 +26,7 @@ const (
 func TestAppProject(t *testing.T) {
 	paasSpec := api.PaasSpec{
 		Requestor: "paas-user",
-		Quota:     make(quota.Quotas),
+		Quota:     make(quota.Quota),
 		Capabilities: api.PaasCapabilities{
 			"sso": api.PaasCapability{Enabled: true},
 		},

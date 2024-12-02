@@ -29,7 +29,7 @@ const (
 func (r *PaasReconciler) FetchAllPaasCapabilityResources(
 	ctx context.Context,
 	quota *quotav1.ClusterResourceQuota,
-	defaults map[string]string,
+	defaults map[corev1.ResourceName]resourcev1.Quantity,
 ) (resources paas_quota.QuotaLists, err error) {
 	capabilityName, err := ClusterWideCapabilityName(quota.Name)
 	if err != nil {
@@ -53,9 +53,9 @@ func (r *PaasReconciler) FetchAllPaasCapabilityResources(
 			return
 		}
 		if paasCap, exists := paas.Spec.Capabilities[capabilityName]; !exists {
-			resources.Append(paas_quota.NewQuota(defaults))
+			resources.Append(defaults)
 		} else {
-			resources.Append(paasCap.Quotas().QuotaWithDefaults(defaults))
+			resources.Append(paasCap.Quotas().MergeWith(defaults))
 		}
 	}
 	return
@@ -77,8 +77,8 @@ func (r *PaasReconciler) UpdateClusterWideQuotaResources(
 	} else {
 		quota.Spec.Quota.Hard = corev1.ResourceList(allPaasResources.OptimalValues(
 			config.QuotaSettings.Ratio,
-			paas_quota.NewQuota(config.QuotaSettings.MinQuotas),
-			paas_quota.NewQuota(config.QuotaSettings.MaxQuotas),
+			config.QuotaSettings.MinQuotas,
+			config.QuotaSettings.MaxQuotas,
 		))
 		return nil
 	}
@@ -172,7 +172,7 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 		return nil
 	} else {
 		quota = backendClusterWideQuota(quotaName,
-			paas_quota.NewQuota(config.QuotaSettings.MinQuotas))
+			config.QuotaSettings.MinQuotas)
 	}
 
 	err := r.Get(ctx, types.NamespacedName{Name: quotaName}, quota)
@@ -215,7 +215,7 @@ func (r *PaasReconciler) removeFromClusterWideQuota(ctx context.Context, paas *v
 		return fmt.Errorf("capability %s does not seem to exist", quotaName)
 	} else {
 		quota = backendClusterWideQuota(quotaName,
-			paas_quota.NewQuota(capConfig.QuotaSettings.MinQuotas))
+			capConfig.QuotaSettings.MinQuotas)
 	}
 	err := r.Get(ctx, types.NamespacedName{
 		Name: quotaName,

@@ -334,7 +334,7 @@ func (in *PaasCapability) DeepCopyInto(out *PaasCapability) {
 	*out = *in
 	if in.Quota != nil {
 		in, out := &in.Quota, &out.Quota
-		*out = make(quota.Quotas, len(*in))
+		*out = make(quota.Quota, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val.DeepCopy()
 		}
@@ -688,7 +688,7 @@ func (in *PaasSpec) DeepCopyInto(out *PaasSpec) {
 	}
 	if in.Quota != nil {
 		in, out := &in.Quota, &out.Quota
-		*out = make(quota.Quotas, len(*in))
+		*out = make(quota.Quota, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val.DeepCopy()
 		}
@@ -727,7 +727,7 @@ func (in *PaasStatus) DeepCopyInto(out *PaasStatus) {
 	}
 	if in.Quota != nil {
 		in, out := &in.Quota, &out.Quota
-		*out = make(map[string]quota.Quotas, len(*in))
+		*out = make(map[string]quota.Quota, len(*in))
 		for key, val := range *in {
 			var outVal map[v1.ResourceName]resource.Quantity
 			if val == nil {
@@ -735,7 +735,7 @@ func (in *PaasStatus) DeepCopyInto(out *PaasStatus) {
 			} else {
 				inVal := (*in)[key]
 				in, out := &inVal, &outVal
-				*out = make(quota.Quotas, len(*in))
+				*out = make(quota.Quota, len(*in))
 				for key, val := range *in {
 					(*out)[key] = val.DeepCopy()
 				}

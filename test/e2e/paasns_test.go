@@ -2,11 +2,11 @@ package e2e
 
 import (
 	"context"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/quota"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -89,10 +89,10 @@ func assertPaasNSCreatedWithUnlinkedPaas(ctx context.Context, t *testing.T, cfg 
 			Name: "new-paas",
 		},
 		Spec: api.PaasSpec{
-			Quota: quota.NewQuota(map[string]string{
-				"cpu":    "2",
-				"memory": "2Gi",
-			}),
+			Quota: map[corev1.ResourceName]resource.Quantity{
+				"cpu":    resource.MustParse("2"),
+				"memory": resource.MustParse("2Gi"),
+			},
 		},
 	}
 
@@ -132,10 +132,10 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		},
 		Spec: api.PaasSpec{
 			Namespaces: []string{thisNamespace}, // define suffixes to use for namespace names
-			Quota: quota.NewQuota(map[string]string{
-				"cpu":    "2",
-				"memory": "2Gi",
-			}),
+			Quota: map[corev1.ResourceName]resource.Quantity{
+				"cpu":    resource.MustParse("2"),
+				"memory": resource.MustParse("2Gi"),
+			},
 		},
 	}
 

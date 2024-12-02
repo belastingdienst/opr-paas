@@ -125,7 +125,7 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 		} else if cap.IsEnabled() {
 			if !capConfig.QuotaSettings.Clusterwide {
 				defaults := capConfig.QuotaSettings.DefQuota
-				quotaValues := cap.Quotas().QuotaWithDefaults(
+				quotaValues := cap.Quotas().MergeWith(
 					defaults)
 				quotas = append(quotas,
 					r.backendQuota(ctx, paas, name, quotaValues))
@@ -135,7 +135,7 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 	return quotas, nil
 }
 
-type PaasQuotas map[string]paas_quota.Quotas
+type PaasQuotas map[string]paas_quota.Quota
 
 func (r *PaasReconciler) BackendEnabledQuotaStatus(
 	paas *v1alpha1.Paas,
@@ -148,7 +148,7 @@ func (r *PaasReconciler) BackendEnabledQuotaStatus(
 			return nil, fmt.Errorf("a capability is requested, but not configured")
 		} else if cap.IsEnabled() {
 			defaults := capConfig.QuotaSettings.DefQuota
-			quota := cap.Quotas().QuotaWithDefaults(
+			quota := cap.Quotas().MergeWith(
 				defaults)
 			quotas[name] = quota
 		}
