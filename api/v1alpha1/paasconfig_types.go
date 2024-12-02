@@ -50,15 +50,16 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Required
 	Capabilities ConfigCapabilities `json:"capabilities"`
 
+	// Deprecated: Whitelist code will be removed from the operator to make it more generic
 	// A reference to a configmap containing a whitelist of LDAP groups to be synced using LDAP sync
 	// +kubebuilder:validation:Required
-	// +kubebuilder:deprecatedversion:warning="This field is deprecated and will be removed in future versions."
 	Whitelist NamespacedName `json:"whitelist"`
 
 	// LDAP configuration for the operator to add to Groups
 	// +kubebuilder:validation:Optional
 	LDAP ConfigLdap `json:"ldap,omitempty"`
 
+	// Deprecated: ArgoCD specific code will be removed from the operator
 	// Permissions to set for ArgoCD instance
 	// +kubebuilder:validation:Required
 	ArgoPermissions ConfigArgoPermissions `json:"argopermissions,omitempty"`
@@ -83,6 +84,7 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	ManagedByLabel string `json:"managed_by_label,omitempty"`
 
+	// Deprecated: ArgoCD specific code will be removed from the operator
 	// Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
 	// +kubebuilder:validation:Required
 	ExcludeAppSetName string `json:"exclude_appset_name"`
@@ -114,24 +116,30 @@ func (crm ConfigRoleMappings) Roles(roleMaps []string) []string {
 	return mappedRoles
 }
 
+// Deprecated: ArgoCD specific code will be removed from the operator
 type ConfigArgoPermissions struct {
+	// Deprecated: ArgoCD specific code will be removed from the operator
 	// The optional default policy which is set in the ArgoCD instance
 	// +kubebuilder:validation:Optional
 	DefaultPolicy string `json:"default_policy,omitempty"`
 
+	// Deprecated: ArgoCD specific code will be removed from the operator
 	// The name of the ArgoCD instance to apply ArgoPermissions to
 	// +kubebuilder:validation:Required
 	ResourceName string `json:"resource_name"`
 
+	// Deprecated: ArgoCD specific code will be removed from the operator
 	// The name of the role to add to Groups set in ArgoPermissions
 	// +kubebuilder:validation:Required
 	Role string `json:"role"`
 
+	// Deprecated: ArgoCD specific code will be removed from the operator
 	// The header value to set in ArgoPermissions
 	// +kubebuilder:validation:Required
 	Header string `json:"header"`
 }
 
+// Deprecated: ArgoCD specific code will be removed from the operator
 func (ap ConfigArgoPermissions) FromGroups(groups []string) string {
 	permissions := []string{
 		strings.TrimSpace(ap.Header),

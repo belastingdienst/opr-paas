@@ -43,21 +43,29 @@ spec:
                   for managing capabilities
                 type: string
               argopermissions:
-                description: Permissions to set for ArgoCD instance
+                description: |-
+                  Deprecated: ArgoCD specific code will be removed from the operator
+                  Permissions to set for ArgoCD instance
                 properties:
                   default_policy:
-                    description: The optional default policy which is set in the ArgoCD
-                      instance
+                    description: |-
+                      Deprecated: ArgoCD specific code will be removed from the operator
+                      The optional default policy which is set in the ArgoCD instance
                     type: string
                   header:
-                    description: The header value to set in ArgoPermissions
+                    description: |-
+                      Deprecated: ArgoCD specific code will be removed from the operator
+                      The header value to set in ArgoPermissions
                     type: string
                   resource_name:
-                    description: The name of the ArgoCD instance to apply ArgoPermissions
-                      to
+                    description: |-
+                      Deprecated: ArgoCD specific code will be removed from the operator
+                      The name of the ArgoCD instance to apply ArgoPermissions to
                     type: string
                   role:
-                    description: The name of the role to add to Groups set in ArgoPermissions
+                    description: |-
+                      Deprecated: ArgoCD specific code will be removed from the operator
+                      The name of the role to add to Groups set in ArgoPermissions
                     type: string
                 required:
                 - header
@@ -140,8 +148,9 @@ spec:
                 minItems: 1
                 type: array
               exclude_appset_name:
-                description: Name of an ApplicationSet to be set as ignored in the
-                  ArgoCD bootstrap Application
+                description: |-
+                  Deprecated: ArgoCD specific code will be removed from the operator
+                  Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
                 type: string
               ldap:
                 description: LDAP configuration for the operator to add to Groups
@@ -180,8 +189,9 @@ spec:
                   configmap and role selected per group in paas.
                 type: object
               whitelist:
-                description: A reference to a configmap containing a whitelist of
-                  LDAP groups to be synced using LDAP sync
+                description: |-
+                  A reference to a configmap containing a whitelist of LDAP groups to be synced using LDAP sync
+                  Deprecated: Whitelist code will be removed from the operator to make it more generic
                 properties:
                   name:
                     type: string
