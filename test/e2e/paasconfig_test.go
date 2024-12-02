@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	v1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -20,6 +21,7 @@ func TestPaasConfig(t *testing.T) {
 		features.New("PaasConfig").
 			Assess("PaasConfig is Active", assertPaasConfigIsActive).
 			Assess("PaasConfig is Updated", assertPaasConfigIsUpdated).
+			Assess("PaasConfig Invalid Spec", assertPaasConfigInvalidSpec).
 			Feature(),
 	)
 }
@@ -64,6 +66,28 @@ func assertPaasConfigIsUpdated(ctx context.Context, t *testing.T, cfg *envconf.C
 
 	// Verify the changes
 	require.Equal(t, !originalDebug, updatedPaasConfig.Spec.Debug, "PaasConfig Debug flag did not update correctly")
+
+	return ctx
+}
+
+func assertPaasConfigInvalidSpec(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	// Define an invalid PaasConfig (e.g., missing required fields)
+	invalidPaasConfig := &v1alpha1.PaasConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "invalid-paas-config",
+		},
+		// Spec is intentionally invalid or incomplete
+	}
+
+	// Try to create the invalid PaasConfig
+	err := cfg.Client().Resources().Create(ctx, invalidPaasConfig)
+	require.Error(t, err, "Expected error when creating invalid PaasConfig")
+
+	// Verify that the invalid PaasConfig does not exist
+	var paasConfig v1alpha1.PaasConfig
+	err = cfg.Client().Resources().Get(ctx, "invalid-paas-config", "", &paasConfig)
+	require.Error(t, err, "Expected error when getting invalid PaasConfig")
+	require.True(t, apierrors.IsNotFound(err), "Expected NotFound error, got: %v", err)
 
 	return ctx
 }
