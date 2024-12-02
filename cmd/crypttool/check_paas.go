@@ -46,7 +46,7 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 		}
 
 		for capName, cap := range paas.Spec.Capabilities {
-			logrus.Debugf("cap name: %s", cap.CapabilityName())
+			logrus.Debugf("cap name: %s", capName)
 			for key, secret := range cap.GetSshSecrets() {
 				if decrypted, err := srcCrypt.Decrypt(secret); err != nil {
 					logrus.Errorf("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { error: %e }", fileName, capName, key, err)
@@ -85,7 +85,7 @@ func CheckPaas(crypt *crypt.Crypt, paas *v1alpha1.Paas, fileName string) error {
 	}
 
 	for capName, capability := range paas.Spec.Capabilities {
-		logrus.Debugf("capability name: %s", capability.CapabilityName())
+		logrus.Debugf("capability name: %s", capName)
 		for key, secret := range capability.GetSshSecrets() {
 			decrypted, err := crypt.Decrypt(secret)
 			if err != nil {
