@@ -18,11 +18,16 @@ A Paas is all a team needs to hit the ground running.
 
 ## Quickstart
 
-Deploy the operator using the following command:
+Deploy the operator using the following commands:
 
 ```
 kubectl apply -f https://github.com/belastingdienst/opr-paas/releases/latest/download/install.yaml
+kubectl apply -f https://raw.githubusercontent.com/belastingdienst/opr-paas/refs/heads/main/examples/resources/_v1alpha1_paasconfig.yaml
 ```
+
+The second command will load an example PaasConfig resource from the main branch
+to get you going. Feel free to replace this with your own or a release specific
+version instead.
 
 This will install the latest release and create:
 
