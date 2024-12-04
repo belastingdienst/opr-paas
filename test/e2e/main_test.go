@@ -219,7 +219,6 @@ func TestMain(m *testing.M) {
 				},
 			}
 
-			fmt.Printf("Attempting to delete PaasConfig resource in global teardown")
 			err := deleteResourceSync(ctx, cfg, paasConfig)
 			if err != nil {
 				return ctx, err
@@ -233,6 +232,7 @@ func TestMain(m *testing.M) {
 		fmt.Fprintf(os.Stderr, "Failed to register schemes: %v", err)
 		os.Exit(1)
 	}
+
 	// Run tests
 	os.Exit(testenv.Run(m))
 }
