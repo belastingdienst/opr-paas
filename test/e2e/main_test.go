@@ -36,11 +36,7 @@ import (
 
 var testenv env.Environment
 
-var examplePaasConfig v1alpha1.PaasConfig = v1alpha1.PaasConfig{
-	TypeMeta: metav1.TypeMeta{
-		APIVersion: "cpet.belastingdienst.nl/v1alpha1",
-		Kind:       "PaasConfig",
-	},
+var examplePaasConfig = v1alpha1.PaasConfig{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "paas-config",
 	},
@@ -207,11 +203,19 @@ func TestMain(m *testing.M) {
 			})
 
 			if err := waitForDefaultOpts(ctx, waitUntilPaasConfigExists); err != nil {
-				return ctx, err
+				return nil, err
 			}
 
 			return ctx, nil
 		})
+
+	if err := registerSchemes(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to register schemes: %v", err)
+		os.Exit(1)
+	}
+
+	// Run tests
+	exitCode := testenv.Run(m)
 
 	// Global teardown
 	testenv.Finish(
@@ -223,6 +227,7 @@ func TestMain(m *testing.M) {
 				},
 			}
 
+			fmt.Printf("Attempting to delete PaasConfig resource in global teardown")
 			err := deleteResourceSync(ctx, cfg, paasConfig)
 			if err != nil {
 				return ctx, err
@@ -232,13 +237,7 @@ func TestMain(m *testing.M) {
 		},
 	)
 
-	if err := registerSchemes(cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to register schemes: %v", err)
-		os.Exit(1)
-	}
-
-	// Run tests
-	os.Exit(testenv.Run(m))
+	os.Exit(exitCode)
 }
 
 func registerSchemes(cfg *envconf.Config) error {
