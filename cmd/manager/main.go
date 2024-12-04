@@ -103,6 +103,12 @@ func main() {
 		log.Fatal().Err(err).Msg("unable to start manager")
 	}
 
+	if err = (&controller.PaasConfigReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		log.Fatal().Err(err).Str("controller", "PaasConfig").Msg("unable to create controller")
+	}
 	if err = (&controller.PaasReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),

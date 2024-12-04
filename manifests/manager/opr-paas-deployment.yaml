@@ -56,17 +56,11 @@ spec:
               cpu: 10m
               memory: 64Mi
           volumeMounts:
-            - name: paas-config
-              mountPath: /etc/paas
             - name: example-keys
-              mountPath: /secrets/paas
+              mountPath: /tmp/paas-e2e/secrets/priv
       serviceAccountName: paas-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:
-        - name: paas-config
-          configMap:
-            name: config
-            defaultMode: 420
         - name: example-keys
           secret:
             secretName: example-keys

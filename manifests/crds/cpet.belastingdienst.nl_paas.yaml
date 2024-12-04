@@ -78,11 +78,11 @@ spec:
                         type: string
                       description: |-
                         You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket
-                        They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
+                        They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
                       type: object
                   type: object
                 description: Capabilities is a subset of capabilities that will be
-                  available in this PaaS Project
+                  available in this Paas Project
                 type: object
               groups:
                 additionalProperties:
@@ -105,7 +105,7 @@ spec:
                 type: string
               namespaces:
                 description: Namespaces can be used to define extra namespaces to
-                  be created as part of this PaaS project
+                  be created as part of this Paas project
                 items:
                   type: string
                 type: array
@@ -117,7 +117,7 @@ spec:
                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                   x-kubernetes-int-or-string: true
                 description: Quota defines the quotas which should be set on the cluster
-                  resource quota as used by this PaaS project
+                  resource quota as used by this Paas project
                 type: object
               requestor:
                 description: Requestor is an informational field which decides on
@@ -128,7 +128,7 @@ spec:
                   type: string
                 description: |-
                   You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
-                  They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
+                  They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
                 type: object
             required:
             - quota

@@ -45,106 +45,125 @@ Therefore it is designed a follows:
 
 In the Paas configuration the following could be configured:
 
-```yaml
----
-capabilities:
-  # Config for the argocd capability
-  argocd:
-    # for every paas with this capability enabled, the list generator in the
-    # paas-argocd ApplicationSet should be extended
-    applicationset: paas-argocd
-    # quota can be set in the Paas, but for these quotas there are defaults to
-    # apply when not set in the Paas.
-    defaultquotas:
-      limits.cpu: "7"
-      requests.cpu: "3"
-    # For all Paas's with the argocd capability enabled, by default also set
-    # these permissions for the specified service account
-    default_permissions:
-      argocd-argocd-application-controller:
-        - monitoring-edit
-        - alert-routing-edit
-  # Config for the grafana capability
-  grafana:
-    # for every Paas with this capability enabled, the list generator in the
-    # paas-grafana applicationset should be extended
-    applicationset: paas-grafana
-    # quota can be set in the paas, but for these quota's there are defaults to
-    # apply when not set in the Paas.
-    defaultquotas:
-      limits.cpu: "2"
-      requests.cpu: "1"
-```
+!!! example
+
+    ```yaml
+    spec:
+      capabilities:
+        # Config for the argocd capability
+        argocd:
+          # For every Paas with this capability enabled, the list generator in the
+          # paas-argocd ApplicationSet should be extended
+          applicationset: paas-argocd
+          # Quotas can be set in the Paas, but for these quotas there are defaults to
+          # apply when not set in the Paas.
+          quotas:
+            clusterwide: false
+            defaults:
+              limits.cpu: "7"
+              requests.cpu: "3"
+            min: {}
+            max: {}
+            ratio: 0
+          # For all Paas's with the argocd capability enabled, by default also set
+          # these permissions for the specified service account
+          default_permissions:
+            argocd-argocd-application-controller:
+              - monitoring-edit
+              - alert-routing-edit
+          extra_permissions: {}
+        # Config for the grafana capability
+        grafana:
+          # For every Paas with this capability enabled, the list generator in the
+          # paas-grafana ApplicationSet should be extended
+          applicationset: paas-grafana
+          # Quotas can be set in the Paas, but for these quotas there are defaults to
+          # apply when not set in the Paas.
+          quotas:
+            clusterwide: false
+            defaults:
+              limits.cpu: "2"
+              requests.cpu: "1"
+            min: {}
+            max: {}
+            ratio: 0
+          default_permissions: {}
+          extra_permissions: {}
+    ```
 
 ### Example ApplicationSet
 
 The ArgoCD Applicationset could look like this:
 
-```yaml
-apiversion: argoproj.io/v1alpha1
-kind: applicationset
-metadata:
-  # name of the applicationset, this can be used for Paas instances with the
-  # argocd capability enabled
-  name: paas-argocd
-  # Specify the namespace of a cluster wide ArgoCD. On OpenShift the openshift-gitops
-  # namespace is meant to have the only cluster wide ArgoCD.
-  namespace: openshift-gitops
-spec:
-  # This list can be empty, but is required in the definition.
-  # Note that the Paas operator will create and manage a list generator here. So
-  # when managing this applicationset with the cluster wide ArgoCD requires setting
-  # up resourceExclusions
-  generators: []
-  template:
+!!! example
+
+    ```yaml
+    apiversion: argoproj.io/v1alpha1
+    kind: applicationset
     metadata:
-      name: "{{paas}}-cpet-capability-argocd"
+      # name of the applicationset, this can be used for Paas instances with the
+      # argocd capability enabled
+      name: paas-argocd
+      # Specify the namespace of a cluster wide ArgoCD. On OpenShift the openshift-gitops
+      # namespace is meant to have the only cluster wide ArgoCD.
+      namespace: openshift-gitops
     spec:
-      destination:
-        namespace: "{{paas}}-argocd"
-        server: "https://kubernetes.default.svc"
-      project: "{{paas}}"
-      source:
-        kustomize:
-          commonlabels:
-            capability: argocd
-            clusterquotagroup: "{{requestor}}"
-            paas: "{{paas}}"
-            service: "{{service}}"
-            subservice: "{{subservice}}"
-        path: paas-capabilities/argocd
-        repourl: "ssh://git@github.com/belastingdienst/my-paas-capabilities.git"
-        targetrevision: master
-      syncpolicy:
-        automated:
-          selfheal: true
-```
+      # This list can be empty, but is required in the definition.
+      # Note that the Paas operator will create and manage a list generator here. So
+      # when managing this applicationset with the cluster wide ArgoCD requires setting
+      # up resourceExclusions
+      generators: []
+      template:
+        metadata:
+          name: "{{paas}}-cpet-capability-argocd"
+        spec:
+          destination:
+            namespace: "{{paas}}-argocd"
+            server: "https://kubernetes.default.svc"
+          project: "{{paas}}"
+          source:
+            kustomize:
+              commonlabels:
+                capability: argocd
+                clusterquotagroup: "{{requestor}}"
+                paas: "{{paas}}"
+                service: "{{service}}"
+                subservice: "{{subservice}}"
+            path: paas-capabilities/argocd
+            repourl: "ssh://git@github.com/belastingdienst/my-paas-capabilities.git"
+            targetrevision: master
+          syncpolicy:
+            automated:
+              selfheal: true
+    ```
 
 ### Example Paas
 
 This would mean that someone could create a Paas with a block like this:
 
-```yaml
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: my-paas
-spec:
-  capabilities:
-    argocd:
-      enabled: true
-      # Bootstrap application to point to the root folder
-      gitPath: .
-      # Bootstrap application to point to the main branch
-      gitRevision: main
-      # Bootstrap application to point to this repo
-      gitUrl: "ssh://git@github.com/belastingdienst/my-paas-repo.git"
-    grafana:
-      enabled: true
-      quota:
-        limits.cpu: "5"
-        limits.memory: "2Gi"
-```
+!!! example
+
+    ```yaml
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: Paas
+    metadata:
+      name: my-paas
+    spec:
+      capabilities:
+        argocd:
+          enabled: true
+          # Bootstrap application to point to the root folder
+          gitPath: .
+          # Bootstrap application to point to the main branch
+          gitRevision: main
+          # Bootstrap application to point to this repo
+          gitUrl: "ssh://git@github.com/belastingdienst/my-paas-repo.git"
+        grafana:
+          enabled: true
+          quota:
+            limits.cpu: "5"
+            limits.memory: "2Gi"
+    ```
 
 This would result in:
 

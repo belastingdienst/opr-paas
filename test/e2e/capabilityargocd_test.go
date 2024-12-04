@@ -33,7 +33,7 @@ const (
 func TestCapabilityArgoCD(t *testing.T) {
 	paasSpec := api.PaasSpec{
 		Requestor: "paas-requestor",
-		Quota:     quota.Quotas{},
+		Quota:     quota.Quota{},
 		Capabilities: api.PaasCapabilities{
 			"argocd": api.PaasCapability{
 				Enabled:          true,

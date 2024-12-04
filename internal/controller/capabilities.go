@@ -144,7 +144,7 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 		return nil
 	}
 	// See if AppSet exists raise error if it doesn't
-	namespacedName := getConfig().CapabilityK8sName(paasns.Name)
+	namespacedName := GetConfig().CapabilityK8sName(paasns.Name)
 	appSet := &appv1.ApplicationSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Applicationset",
@@ -219,7 +219,7 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := getConfig().CapabilityK8sName(paasns.Name)
+	asNamespacedName := GetConfig().CapabilityK8sName(paasns.Name)
 	ctx = setLogComponent(ctx, "appset")
 	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset", paasns.Name)
 	err := r.Get(ctx, asNamespacedName, as)
@@ -255,7 +255,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := getConfig().CapabilityK8sName(capability)
+	asNamespacedName := GetConfig().CapabilityK8sName(capability)
 	ctx = setLogComponent(ctx, "appset")
 	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset", capability)
 	err := r.Get(ctx, asNamespacedName, as)

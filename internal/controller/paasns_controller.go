@@ -9,6 +9,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -71,6 +72,20 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 		logger.Info().Msg("added finalizer to PaasNs")
 	}
 
+	// TODO(portly-halicore-76) Move to admission webhook once available
+	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
+	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
+	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
+		logger.Error().Msg("no config found")
+		paasns.Status.Truncate()
+		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusReconcile, paasns, "please reach out to your system administrator as there is no Paasconfig available to reconcile against.")
+		err := r.Status().Update(ctx, paasns)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("no config found")
+	}
+
 	if paasns.GetDeletionTimestamp() != nil {
 		logger.Info().Msg("paasNS object marked for deletion")
 		if controllerutil.ContainsFinalizer(paasns, paasNsFinalizer) {
@@ -99,7 +114,7 @@ func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS)
 	paas, _, err = r.paasFromPaasNs(ctx, paasns)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			err = fmt.Errorf("cannot find PaaS %s", paasns.Spec.Paas)
+			err = fmt.Errorf("cannot find Paas %s", paasns.Spec.Paas)
 			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		}
 		// This cannot be resolved by itself, so we should not have this keep on reconciling
@@ -128,7 +143,20 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 		Requeue: false,
 	}
 
+	// TODO(portly-halicore-76) do check if Config is set, else return and Requeue after say... minutes / hours ...
+	// as reconciling and finalizing without config, causes operator in meh state.
+	// this is only flacky when object is being removed, finalizers will not be removed
+	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
+		logger.Error().Msg("No config found")
+		return ctrl.Result{RequeueAfter: time.Minute * 5}, nil
+	}
+
 	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
+		// TODO(portly-halicore-76) move to admission webhook once available
+		// Don't requeue that often
+		if strings.Contains(err.Error(), "no config found") {
+			return ctrl.Result{RequeueAfter: time.Minute * 10}, nil
+		}
 		logger.Err(err).Msg("could not get PaasNs from k8s")
 		return errResult, err
 	}
@@ -246,7 +274,7 @@ func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]
 	return nss
 }
 
-// nsFromPaas accepts a PaaS and returns a list of all namespaces managed by this PaaS
+// nsFromPaas accepts a Paas and returns a list of all namespaces managed by this Paas
 // nsFromPaas uses nsFromNs which is recursive.
 func (r *PaasNSReconciler) nssFromPaas(ctx context.Context, paas *v1alpha1.Paas) map[string]int {
 	finalNss := make(map[string]int)
@@ -318,7 +346,7 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 
 	paas, nss, err := r.paasFromPaasNs(ctx, paasns)
 	if err != nil {
-		err = fmt.Errorf("cannot find PaaS %s: %s", paasns.Spec.Paas, err.Error())
+		err = fmt.Errorf("cannot find Paas %s: %s", paasns.Spec.Paas, err.Error())
 		logger.Info().Msg(err.Error())
 		return nil
 	} else if nss[paasns.NamespaceName()] > 1 {
@@ -329,10 +357,10 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 
 	logger.Info().Msg("inside PaasNs finalizer")
 	if err := r.FinalizeNamespace(ctx, paasns, paas); err != nil {
-		err = fmt.Errorf("cannot remove namespace belonging to PaaS %s: %s", paasns.Spec.Paas, err.Error())
+		err = fmt.Errorf("cannot remove namespace belonging to Paas %s: %s", paasns.Spec.Paas, err.Error())
 		return err
 	} else if err = r.finalizeAppSetCap(ctx, paasns); err != nil {
-		err = fmt.Errorf("cannot remove paas from capability ApplicationSet belonging to PaaS %s: %s", paasns.Spec.Paas, err.Error())
+		err = fmt.Errorf("cannot remove paas from capability ApplicationSet belonging to Paas %s: %s", paasns.Spec.Paas, err.Error())
 		return err
 	}
 	if _, isCapability := paas.Spec.Capabilities[paasns.Name]; isCapability {
