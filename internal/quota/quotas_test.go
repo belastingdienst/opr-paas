@@ -10,22 +10,22 @@ import (
 )
 
 func TestPaasQuotas_QuotaWithDefaults(t *testing.T) {
-	testQuotas := map[string]string{
-		"limits.cpu":      "3",
-		"limits.memory":   "6Gi",
-		"requests.cpu":    "800m",
-		"requests.memory": "4Gi",
+	testQuotas := map[corev1.ResourceName]resourcev1.Quantity{
+		"limits.cpu":      resourcev1.MustParse("3"),
+		"limits.memory":   resourcev1.MustParse("6Gi"),
+		"requests.cpu":    resourcev1.MustParse("800m"),
+		"requests.memory": resourcev1.MustParse("4Gi"),
 	}
-	defaultQuotas := map[string]string{
-		"limits.cpu":    "2",
-		"limits.memory": "5Gi",
-		"requests.cpu":  "700m",
+	defaultQuotas := map[corev1.ResourceName]resourcev1.Quantity{
+		"limits.cpu":    resourcev1.MustParse("2"),
+		"limits.memory": resourcev1.MustParse("5Gi"),
+		"requests.cpu":  resourcev1.MustParse("700m"),
 	}
-	quotas := make(paas_quota.Quotas)
+	quotas := make(paas_quota.Quota)
 	for key, value := range testQuotas {
-		quotas[corev1.ResourceName(key)] = resourcev1.MustParse(value)
+		quotas[key] = value
 	}
-	defaultedQuotas := quotas.QuotaWithDefaults(defaultQuotas)
+	defaultedQuotas := quotas.MergeWith(defaultQuotas)
 	for key, value := range defaultedQuotas {
 		if original, exists := quotas[key]; exists {
 			assert.Equal(t, original, value)

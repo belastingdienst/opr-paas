@@ -28,7 +28,7 @@ func TestGroupQuery(t *testing.T) {
 	paasSpec := api.PaasSpec{
 		Requestor:  "paas-user",
 		Namespaces: []string{paasGroupQueryNamespace},
-		Quota:      make(quota.Quotas),
+		Quota:      make(quota.Quota),
 		Groups:     api.PaasGroups{groupWithQueryName: api.PaasGroup{Query: groupQuery}},
 	}
 

@@ -137,7 +137,7 @@ func (r *PaasReconciler) backendGroup(
 	}
 	g.ObjectMeta.Labels["openshift.io/ldap.host"] = GetConfig().LDAP.Host
 
-	// If we would have multiple PaaS projects defining this group, and all are cleaned,
+	// If we had multiple PaaS projects defining this group, and all are cleaned,
 	// the garbage collector would also clean this group...
 	if err := controllerutil.SetOwnerReference(paas, g, r.Scheme); err != nil {
 		return g, err

@@ -10,6 +10,9 @@ import (
 	"fmt"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -191,19 +194,16 @@ type ConfigQuotaSettings struct {
 
 	// The default quota which the enabled capability gets
 	// +kubebuilder:validation:Required
-	DefQuota ConfigDefaultQuotaSpec `json:"defaults"`
+	DefQuota map[corev1.ResourceName]resourcev1.Quantity `json:"defaults"`
 
 	// The minimum quota which the enabled capability gets
 	// +kubebuilder:validation:Required
-	MinQuotas ConfigDefaultQuotaSpec `json:"min"`
+	MinQuotas map[corev1.ResourceName]resourcev1.Quantity `json:"min"`
 
 	// The maximum quota which the capability gets
 	// +kubebuilder:validation:Required
-	MaxQuotas ConfigDefaultQuotaSpec `json:"max"`
+	MaxQuotas map[corev1.ResourceName]resourcev1.Quantity `json:"max"`
 }
-
-// TODO make this validatable
-type ConfigDefaultQuotaSpec map[string]string
 
 // This is a insoudeout representation of ConfigCapPerm, closer to rb representation
 type ConfigRolesSas map[string]map[string]bool

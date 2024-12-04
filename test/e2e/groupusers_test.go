@@ -27,7 +27,7 @@ func TestGroupUsers(t *testing.T) {
 	paasSpec := api.PaasSpec{
 		Requestor:  "paas-user",
 		Namespaces: []string{"my-ns"},
-		Quota:      make(quota.Quotas),
+		Quota:      make(quota.Quota),
 		Groups:     groups,
 	}
 
