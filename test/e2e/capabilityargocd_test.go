@@ -51,6 +51,7 @@ func TestCapabilityArgoCD(t *testing.T) {
 		features.New("ArgoCD Capability").
 			Setup(createPaasFn(paasWithArgo, paasSpec)).
 			Assess("ArgoCD application is created", assertArgoCDCreated).
+			Assess("ArgoCD application is updated", assertArgoCDUpdated).
 			Assess("ArgoCD application has ClusterRoleBindings", assertArgoCRB).
 			Teardown(teardownPaasFn(paasWithArgo)).
 			Feature(),
@@ -106,6 +107,62 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		corev1.ResourceRequestsStorage:                            resource.MustParse("0"),
 		"thin.storageclass.storage.k8s.io/persistentvolumeclaims": resource.MustParse("0"),
 	}, crq.Spec.Quota.Hard, "Quota conforms to defaults from Paas config")
+
+	return ctx
+}
+
+func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	updatedRevision := "updatedRevision"
+	paas := getPaas(ctx, paasWithArgo, t, cfg)
+	paas.Spec.Capabilities = api.PaasCapabilities{
+		"argocd": api.PaasCapability{
+			Enabled:          true,
+			SshSecrets:       map[string]string{paasArgoGitUrl: paasArgoSecret},
+			GitUrl:           paasArgoGitUrl,
+			GitPath:          paasArgoGitPath,
+			GitRevision:      updatedRevision,
+			ExtraPermissions: true,
+		},
+	}
+
+	// As only the Paas spec is updated via the above change, we wait for that and
+	// know that no reconciliation of PaasNs takes place so no need to wait for that.
+	// check #185 for more details
+	if err := updatePaasSync(ctx, cfg, paas); err != nil {
+		t.Fatal(err)
+	}
+	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
+	entries, _ := getApplicationSetListEntries(argoAppSet)
+
+	// For now this still applies, later we move the git_.. properties to the appSet as well
+	// Assert AppSet entry unchanged
+	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
+	assert.Equal(t, map[string]string{
+		"paas":       paasWithArgo,
+		"requestor":  "paas-requestor",
+		"service":    "paas",
+		"subservice": "capability",
+	}, entries[0], "ApplicationSet List generator contains the correct parameters")
+
+	assert.NotNil(t, getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")
+
+	// Assert ArgoCD unchanged
+	argocd := getOrFail(ctx, "argocd", paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
+	assert.Equal(t, paas.UID, argocd.OwnerReferences[0].UID)
+	assert.Equal(t, "role:tester", *argocd.Spec.RBAC.DefaultPolicy)
+	assert.Equal(t, "g, system:cluster-admins, role:admin", *argocd.Spec.RBAC.Policy)
+	assert.Equal(t, "[groups]", *argocd.Spec.RBAC.Scopes)
+
+	// Assert Bootstrap is not updated as described in issue #185
+	applications := listOrFail(ctx, paasArgoNs, &argo.ApplicationList{}, t, cfg).Items
+	assert.Len(t, applications, 1, "An application is present in the ArgoCD namespace")
+	assert.Equal(t, "paas-bootstrap", applications[0].Name)
+	assert.Equal(t, argo.ApplicationSource{
+		RepoURL:        paasArgoGitUrl,
+		Path:           paasArgoGitPath,
+		TargetRevision: paasArgoGitRevision,
+	}, *applications[0].Spec.Source, "Application source matches Git properties from Paas")
+	assert.Equal(t, "whatever", applications[0].Spec.IgnoreDifferences[0].Name, "`exclude_appset_name` configuration is included in IgnoreDifferences")
 
 	return ctx
 }
