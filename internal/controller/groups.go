@@ -137,7 +137,7 @@ func (r *PaasReconciler) backendGroup(
 	}
 	g.ObjectMeta.Labels["openshift.io/ldap.host"] = GetConfig().LDAP.Host
 
-	// If we had multiple PaaS projects defining this group, and all are cleaned,
+	// If we had multiple Paas projects defining this group, and all are cleaned,
 	// the garbage collector would also clean this group...
 	if err := controllerutil.SetOwnerReference(paas, g, r.Scheme); err != nil {
 		return g, err
@@ -179,7 +179,7 @@ func (r *PaasReconciler) finalizeGroup(
 		logger.Info().Msg("paas is not an owner")
 		return false, nil
 	} else {
-		logger.Info().Msg("removing PaaS finalizer " + groupName)
+		logger.Info().Msg("removing Paas finalizer " + groupName)
 		obj.OwnerReferences = paas.WithoutMe(obj.OwnerReferences)
 		if len(obj.OwnerReferences) == 0 {
 			logger.Info().Msg("deleting " + groupName)

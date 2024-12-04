@@ -14,18 +14,20 @@ import (
 
 	argoprojlabsv1beta1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
 	argoprojv1alpha1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/klient/k8s"
 	"sigs.k8s.io/e2e-framework/klient/k8s/resources"
 	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
 	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
-	"sigs.k8s.io/e2e-framework/support/utils"
 
 	"sigs.k8s.io/e2e-framework/klient/conf"
 	"sigs.k8s.io/e2e-framework/pkg/env"
@@ -33,6 +35,138 @@ import (
 )
 
 var testenv env.Environment
+
+var examplePaasConfig v1alpha1.PaasConfig = v1alpha1.PaasConfig{
+	TypeMeta: metav1.TypeMeta{
+		APIVersion: "cpet.belastingdienst.nl/v1alpha1",
+		Kind:       "PaasConfig",
+	},
+	ObjectMeta: metav1.ObjectMeta{
+		Name: "paas-config",
+	},
+	Spec: v1alpha1.PaasConfigSpec{
+		AppSetNamespace: "asns",
+		ArgoPermissions: v1alpha1.ConfigArgoPermissions{
+			ResourceName:  "argocd",
+			DefaultPolicy: "role:tester",
+			Role:          "admin",
+			Header:        "g, system:cluster-admins, role:admin",
+		},
+		Capabilities: map[string]v1alpha1.ConfigCapability{
+			"argocd": {
+				AppSet: "argoas",
+				DefaultPermissions: map[string][]string{
+					"argo-service-argocd-application-controller": {"monitoring-edit"},
+					"argo-service-applicationset-controller":     {"monitoring-edit"},
+				},
+				ExtraPermissions: map[string][]string{
+					"argo-service-argocd-application-controller": {"admin"},
+				},
+				QuotaSettings: v1alpha1.ConfigQuotaSettings{
+					Clusterwide: false,
+					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+						corev1.ResourceLimitsCPU:       resource.MustParse("5"),
+						corev1.ResourceLimitsMemory:    resource.MustParse("4Gi"),
+						corev1.ResourceRequestsCPU:     resource.MustParse("1"),
+						corev1.ResourceRequestsMemory:  resource.MustParse("1Gi"),
+						corev1.ResourceRequestsStorage: resource.MustParse("0"),
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
+					},
+					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
+					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
+					Ratio:     0,
+				},
+			},
+			"tekton": {
+				AppSet: "tektonas",
+				DefaultPermissions: map[string][]string{
+					"pipeline": {"view", "alert-routing-edit"},
+				},
+				ExtraPermissions: map[string][]string{
+					"pipeline": {"admin"},
+				},
+				QuotaSettings: v1alpha1.ConfigQuotaSettings{
+					Clusterwide: true,
+					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+						corev1.ResourceLimitsCPU:       resource.MustParse("5"),
+						corev1.ResourceLimitsMemory:    resource.MustParse("8Gi"),
+						corev1.ResourceRequestsCPU:     resource.MustParse("1"),
+						corev1.ResourceRequestsMemory:  resource.MustParse("2Gi"),
+						corev1.ResourceRequestsStorage: resource.MustParse("100Gi"),
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
+					},
+					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{
+						corev1.ResourceLimitsCPU:    resource.MustParse("5"),
+						corev1.ResourceLimitsMemory: resource.MustParse("4Gi"),
+					},
+					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{
+						corev1.ResourceLimitsCPU:    resource.MustParse("1"),
+						corev1.ResourceLimitsMemory: resource.MustParse("1Gi"),
+					},
+					Ratio: 10,
+				},
+			},
+			"sso": {
+				AppSet:             "ssoas",
+				DefaultPermissions: map[string][]string{},
+				ExtraPermissions:   map[string][]string{},
+				QuotaSettings: v1alpha1.ConfigQuotaSettings{
+					Clusterwide: false,
+					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+						corev1.ResourceLimitsCPU:       resource.MustParse("1"),
+						corev1.ResourceLimitsMemory:    resource.MustParse("512Mi"),
+						corev1.ResourceRequestsCPU:     resource.MustParse("100m"),
+						corev1.ResourceRequestsMemory:  resource.MustParse("128Mi"),
+						corev1.ResourceRequestsStorage: resource.MustParse("0"),
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
+					},
+					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
+					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
+					Ratio:     0,
+				},
+			},
+			"grafana": {
+				AppSet:             "grafanaas",
+				DefaultPermissions: map[string][]string{},
+				ExtraPermissions:   map[string][]string{},
+				QuotaSettings: v1alpha1.ConfigQuotaSettings{
+					Clusterwide: false,
+					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+						corev1.ResourceLimitsCPU:       resource.MustParse("2"),
+						corev1.ResourceLimitsMemory:    resource.MustParse("2Gi"),
+						corev1.ResourceRequestsCPU:     resource.MustParse("500m"),
+						corev1.ResourceRequestsMemory:  resource.MustParse("512Mi"),
+						corev1.ResourceRequestsStorage: resource.MustParse("2Gi"),
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
+					},
+					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
+					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
+					Ratio:     0,
+				},
+			},
+		},
+		Debug:           false,
+		DecryptKeyPaths: []string{"/tmp/paas-e2e/secrets/priv"},
+		LDAP: v1alpha1.ConfigLdap{
+			Host: "my-ldap-host",
+			Port: 13,
+		},
+		ManagedByLabel: "argocd.argoproj.io/manby",
+		RequestorLabel: "o.lbl",
+		QuotaLabel:     "q.lbl",
+		RoleMappings: map[string][]string{
+			"default": {"admin"},
+			"viewer":  {"view"},
+		},
+		Whitelist: v1alpha1.NamespacedName{
+			Namespace: "wlns",
+			Name:      "wlname",
+		},
+		ExcludeAppSetName: "whatever",
+	},
+}
+
+// end examplePaasConfig
 
 func TestMain(m *testing.M) {
 	testenv = env.New()
@@ -56,20 +190,18 @@ func TestMain(m *testing.M) {
 		)
 	}
 
+	// Global setup
 	testenv.Setup(
 		func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-			// install PaasConfig instance
-			if p := utils.RunCommand(
-				fmt.Sprintf("kubectl apply -f %s", "../../manifests/config/example-paasconfig.yaml"),
-			); p.Err() != nil {
-				return ctx, p.Err()
+			paasconfig := &v1alpha1.PaasConfig{}
+			*paasconfig = examplePaasConfig
+
+			// Create PaasConfig resource for testing
+			err := cfg.Client().Resources().Create(ctx, paasconfig)
+			if err != nil {
+				return ctx, err
 			}
 
-			paasconfig := &v1alpha1.PaasConfig{
-				ObjectMeta: v1.ObjectMeta{
-					Name: "paas-config",
-				},
-			}
 			waitUntilPaasConfigExists := conditions.New(cfg.Client().Resources()).ResourceMatch(paasconfig, func(obj k8s.Object) bool {
 				return obj.(*api.PaasConfig).Name == paasconfig.Name
 			})
@@ -86,7 +218,30 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	os.Exit(testenv.Run(m))
+	// Run tests
+	exitCode := testenv.Run(m)
+
+	// Global teardown
+	testenv.Finish(
+		func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+			// Delete the PaasConfig resource
+			paasConfig := &v1alpha1.PaasConfig{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "paas-config",
+				},
+			}
+
+			fmt.Printf("Attempting to delete PaasConfig resource in global teardown")
+			err := deleteResourceSync(ctx, cfg, paasConfig)
+			if err != nil {
+				return ctx, err
+			}
+
+			return ctx, nil
+		},
+	)
+
+	os.Exit(exitCode)
 }
 
 func registerSchemes(cfg *envconf.Config) error {

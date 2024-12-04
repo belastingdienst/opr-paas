@@ -111,7 +111,7 @@ func BackendNamespace(
 	logger.Info().Msg("setting requestor_label")
 	ns.ObjectMeta.Labels[GetConfig().RequestorLabel] = paas.Spec.Requestor
 
-	logger.Info().Str("PaaS", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
+	logger.Info().Str("Paas", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
 	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {
 		logger.Err(err).Msg("setControllerReference failure")
 		return nil, err
@@ -142,7 +142,7 @@ func (r *PaasNSReconciler) FinalizeNamespace(
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
-		err = fmt.Errorf("cannot remove Namespace %s because PaaS %s is not the owner", found.Name, paas.Name)
+		err = fmt.Errorf("cannot remove Namespace %s because Paas %s is not the owner", found.Name, paas.Name)
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		return err
 	} else if err = r.Delete(ctx, found); err != nil {

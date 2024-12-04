@@ -74,8 +74,10 @@ func assertPaasNSCreatedWithoutPaas(ctx context.Context, t *testing.T, cfg *envc
 
 	// check that the paasns has been created but also contains an error status message
 	fetchedPaasNS, _ := pnsGetPaasNS(ctx, cfg, paasNsName, cfg.Namespace())
-	errMsg := fetchedPaasNS.Status.Messages[0]
-	assert.Contains(t, errMsg, "cannot find PaaS")
+	if assert.NotEmpty(t, fetchedPaasNS.Status.Messages, "messages should not be empty") {
+		errMsg := fetchedPaasNS.Status.Messages[0]
+		assert.Contains(t, errMsg, "cannot find Paas")
+	}
 
 	// cleanup
 	pnsDeletePaasNS(ctx, t, cfg, paasNs)

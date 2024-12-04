@@ -38,7 +38,7 @@ func TestCapabilitySSO(t *testing.T) {
 		features.New("Capability SSO").
 			Setup(createPaasFn(paasWithCapabilitySSO, paasSpec)).
 			Assess("is created", assertCapSSOCreated).
-			Assess("is deleted when PaaS is deleted", assertCapSSODeleted).
+			Assess("is deleted when Paas is deleted", assertCapSSODeleted).
 			Teardown(teardownPaasFn(paasWithCapabilitySSO)).
 			Feature(),
 	)
@@ -50,7 +50,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	applicationSet := getOrFail(ctx, ssoApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
 	ssoQuota := getOrFail(ctx, paasSSO, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
-	// ClusterResource is created with the same name as the PaaS
+	// ClusterResource is created with the same name as the Paas
 	assert.Equal(t, paasWithCapabilitySSO, paas.Name)
 
 	// Paas Namespace exist
@@ -80,7 +80,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	// Quota namespace name
 	assert.Equal(t, paasSSO, ssoQuota.Name)
 
-	// SSO quota size matches those passed in the PaaS spec
+	// SSO quota size matches those passed in the Paas spec
 	assert.Equal(t, resource.MustParse("100m"), ssoQuota.Spec.Quota.Hard[corev1.ResourceRequestsCPU])
 	assert.Equal(t, resource.MustParse("128Mi"), ssoQuota.Spec.Quota.Hard[corev1.ResourceRequestsMemory])
 

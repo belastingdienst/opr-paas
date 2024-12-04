@@ -42,7 +42,7 @@ func TestCapabilityTekton(t *testing.T) {
 			Setup(createPaasFn(paasWithCapabilityTekton, paasSpec)).
 			Assess("is created", assertCapTektonCreated).
 			Assess("has ClusterRoleBindings", assertTektonCRB).
-			Assess("is deleted when PaaS is deleted", assertCapTektonDeleted).
+			Assess("is deleted when Paas is deleted", assertCapTektonDeleted).
 			Teardown(teardownPaasFn(paasWithCapabilityTekton)).
 			Feature(),
 	)
@@ -57,7 +57,7 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	applicationSet := getOrFail(ctx, TektonApplicationSet, asTektonNamespace, &argo.ApplicationSet{}, t, cfg)
 	TektonQuota := getOrFail(ctx, paasTektonCRQ, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
-	// ClusterResource is created with the same name as the PaaS
+	// ClusterResource is created with the same name as the Paas
 	assert.Equal(t, paasWithCapabilityTekton, paas.Name)
 
 	// Paas Namespace exist

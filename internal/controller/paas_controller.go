@@ -77,10 +77,10 @@ func (r *PaasReconciler) GetPaas(
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Something fishy is going on
-			// Maybe someone cleaned the finalizers and then removed the PaaS project?
+			// Maybe someone cleaned the finalizers and then removed the Paas project?
 			logger.Info().Msg(req.NamespacedName.Name + " is already gone")
 			return nil, nil
-			// return ctrl.Result{}, fmt.Errorf("PaaS object %s already gone", req.NamespacedName)
+			// return ctrl.Result{}, fmt.Errorf("Paas object %s already gone", req.NamespacedName)
 		}
 		return nil, err
 	}
@@ -102,11 +102,11 @@ func (r *PaasReconciler) GetPaas(
 	if paas.GetDeletionTimestamp() != nil {
 		logger.Info().Msg("pAAS object marked for deletion")
 		if controllerutil.ContainsFinalizer(paas, paasFinalizer) {
-			logger.Info().Msg("finalizing PaaS")
+			logger.Info().Msg("finalizing Paas")
 			// Run finalization logic for paasFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
-			if err := r.finalizePaaS(ctx, paas); err != nil {
+			if err := r.finalizePaas(ctx, paas); err != nil {
 				return nil, err
 			}
 
@@ -213,9 +213,9 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *PaasReconciler) finalizePaaS(ctx context.Context, paas *v1alpha1.Paas) error {
+func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) error {
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("inside PaaS finalizer")
+	logger.Info().Msg("inside Paas finalizer")
 	if err := r.FinalizeAppSetCaps(ctx, paas); err != nil {
 		logger.Err(err).Msg("appSet finalizer error")
 		return err

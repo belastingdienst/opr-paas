@@ -46,10 +46,10 @@ func (r *PaasReconciler) FetchAllPaasCapabilityResources(
 		}
 		if getErr := r.Get(ctx, paasNamespacedName, paas); getErr != nil {
 			if errors.IsNotFound(getErr) {
-				// Quota referencing a missing PaaS, no problem.
+				// Quota referencing a missing Paas, no problem.
 				continue
 			}
-			err = fmt.Errorf("Error occurring while retrieving the PaaS %s", getErr.Error())
+			err = fmt.Errorf("Error occurring while retrieving the Paas %s", getErr.Error())
 			return
 		}
 		if paasCap, exists := paas.Spec.Capabilities[capabilityName]; !exists {
