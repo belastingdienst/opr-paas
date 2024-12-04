@@ -203,19 +203,11 @@ func TestMain(m *testing.M) {
 			})
 
 			if err := waitForDefaultOpts(ctx, waitUntilPaasConfigExists); err != nil {
-				return nil, err
+				return ctx, err
 			}
 
 			return ctx, nil
 		})
-
-	if err := registerSchemes(cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to register schemes: %v", err)
-		os.Exit(1)
-	}
-
-	// Run tests
-	exitCode := testenv.Run(m)
 
 	// Global teardown
 	testenv.Finish(
@@ -237,7 +229,12 @@ func TestMain(m *testing.M) {
 		},
 	)
 
-	os.Exit(exitCode)
+	if err := registerSchemes(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to register schemes: %v", err)
+		os.Exit(1)
+	}
+	// Run tests
+	os.Exit(testenv.Run(m))
 }
 
 func registerSchemes(cfg *envconf.Config) error {
