@@ -23,12 +23,20 @@ func getPaas(ctx context.Context, name string, t *testing.T, cfg *envconf.Config
 }
 
 // createPaasSync requests Paas creation and returns once it has reconciled.
-func createPaasSync(ctx context.Context, cfg *envconf.Config, paas *api.Paas) error {
+func createPaasSyncSuccess(ctx context.Context, cfg *envconf.Config, paas *api.Paas) error {
 	if err := cfg.Client().Resources().Create(ctx, paas); err != nil {
 		return fmt.Errorf("failed to create Paas %s: %w", paas.GetName(), err)
 	}
 
-	return waitForPaasReconciliation(ctx, cfg, paas, 0)
+	return waitForPaasSuccessReconciliation(ctx, cfg, paas, 0)
+}
+
+func createPaasSyncWithError(ctx context.Context, cfg *envconf.Config, paas *api.Paas, msg string) error {
+	if err := cfg.Client().Resources().Create(ctx, paas); err != nil {
+		return fmt.Errorf("failed to create Paas %s: %w", paas.GetName(), err)
+	}
+
+	return waitForPaasErrorReconciliation(ctx, cfg, paas, msg, 0)
 }
 
 // updatePaasSync requests an update to a Paas and returns once the Paas reports successful reconciliation.
@@ -38,7 +46,7 @@ func updatePaasSync(ctx context.Context, cfg *envconf.Config, paas *api.Paas) er
 		return fmt.Errorf("failed to update Paas %s: %w", paas.GetName(), err)
 	}
 
-	return waitForPaasReconciliation(ctx, cfg, paas, oldGeneration)
+	return waitForPaasSuccessReconciliation(ctx, cfg, paas, oldGeneration)
 }
 
 // deletePaasSync deletes the Paas with the associated name.
@@ -51,7 +59,7 @@ func deletePaasSync(ctx context.Context, name string, t *testing.T, cfg *envconf
 }
 
 // waitForPaasReconciliation polls a Paas resource, blocking until the Paas status reports successful reconciliation.
-func waitForPaasReconciliation(ctx context.Context, cfg *envconf.Config, paas *api.Paas, oldGeneration int64) error {
+func waitForPaasSuccessReconciliation(ctx context.Context, cfg *envconf.Config, paas *api.Paas, oldGeneration int64) error {
 	waitCond := conditions.New(cfg.Client().Resources()).
 		ResourceMatch(paas, func(object k8s.Object) bool {
 			conditionsMet := meta.IsStatusConditionPresentAndEqual(object.(*api.Paas).Status.Conditions, api.TypeReadyPaas, metav1.ConditionTrue)
@@ -59,6 +67,30 @@ func waitForPaasReconciliation(ctx context.Context, cfg *envconf.Config, paas *a
 				foundCondition := meta.FindStatusCondition(object.(*api.Paas).Status.Conditions, api.TypeReadyPaas)
 				versionMet := object.(*api.Paas).Generation != oldGeneration && object.(*api.Paas).Generation == foundCondition.ObservedGeneration
 				return conditionsMet && versionMet
+			}
+			return false
+		})
+
+	if err := waitForDefaultOpts(ctx, waitCond); err != nil {
+		err = cfg.Client().Resources().Get(ctx, paas.GetName(), paas.Namespace, paas)
+		if err != nil {
+			return fmt.Errorf("could not get paas resource which was waited for: %w", err)
+		}
+		return fmt.Errorf("failed waiting for Paas %s to be reconciled: %w and has status block: %v", paas.GetName(), err, paas.Status)
+	}
+
+	return nil
+}
+
+// waitForPaasReconciliation polls a Paas resource, blocking until the Paas status reports successful reconciliation.
+func waitForPaasErrorReconciliation(ctx context.Context, cfg *envconf.Config, paas *api.Paas, msg string, oldGeneration int64) error {
+	waitCond := conditions.New(cfg.Client().Resources()).
+		ResourceMatch(paas, func(object k8s.Object) bool {
+			conditionsMet := meta.IsStatusConditionPresentAndEqual(object.(*api.Paas).Status.Conditions, api.TypeHasErrorsPaas, metav1.ConditionTrue)
+			if conditionsMet {
+				foundCondition := meta.FindStatusCondition(object.(*api.Paas).Status.Conditions, api.TypeHasErrorsPaas)
+				versionMet := object.(*api.Paas).Generation != oldGeneration && object.(*api.Paas).Generation == foundCondition.ObservedGeneration
+				return conditionsMet && versionMet && foundCondition.Message == msg
 			}
 			return false
 		})
