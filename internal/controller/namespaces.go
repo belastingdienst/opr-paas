@@ -26,7 +26,6 @@ import (
 func EnsureNamespace(
 	r client.Client,
 	ctx context.Context,
-	addMessageFunc func(v1alpha1.PaasStatusLevel, v1alpha1.PaasStatusAction, client.Object, string),
 	paas *v1alpha1.Paas,
 	ns *corev1.Namespace,
 	scheme *runtime.Scheme,
@@ -39,19 +38,15 @@ func EnsureNamespace(
 	if err != nil && errors.IsNotFound(err) {
 		if err = r.Create(ctx, ns); err != nil {
 			// creating the namespace failed
-			addMessageFunc(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, ns, err.Error())
 			return err
 		} else {
 			// creating the namespace was successful
-			addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, ns, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
-		addMessageFunc(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, ns, err.Error())
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
-		addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
 		if err := controllerutil.SetControllerReference(paas, found, scheme); err != nil {
 			return err
 		}
@@ -59,13 +54,10 @@ func EnsureNamespace(
 	var changed bool
 	for key, value := range ns.ObjectMeta.Labels {
 		if orgValue, exists := found.ObjectMeta.Labels[key]; !exists {
-			addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, fmt.Sprintf("adding label '%s'='%s'", key, value))
 			// Not set yet
 		} else if orgValue != value {
-			addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, fmt.Sprintf("updating label '%s'='%s'", key, value))
 			// different
 		} else {
-			addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, fmt.Sprintf("skipping label '%s'='%s'", key, value))
 			// No action required
 			continue
 		}
@@ -73,7 +65,6 @@ func EnsureNamespace(
 		found.ObjectMeta.Labels[key] = value
 	}
 	if changed {
-		addMessageFunc(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating namespace")
 		return r.Update(ctx, found)
 	}
 	return nil
@@ -139,15 +130,12 @@ func (r *PaasNSReconciler) FinalizeNamespace(
 		return nil
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
 		err = fmt.Errorf("cannot remove Namespace %s because Paas %s is not the owner", found.Name, paas.Name)
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		return err
 	} else if err = r.Delete(ctx, found); err != nil {
 		// deleting the namespace failed
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, found, err.Error())
 		return err
 	} else {
 		return nil
@@ -171,11 +159,9 @@ func (r *PaasNSReconciler) ReconcileNamespaces(
 
 	var ns *corev1.Namespace
 	if ns, err = BackendNamespace(ctx, paas, nsName, nsQuota, r.Scheme); err != nil {
-		err = fmt.Errorf("failure while defining namespace %s: %s", nsName, err.Error())
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
-	} else if err = EnsureNamespace(r.Client, ctx, paasns.Status.AddMessage, paas, ns, r.Scheme); err != nil {
-		err = fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, ns, err.Error())
+		return fmt.Errorf("failure while defining namespace %s: %s", nsName, err.Error())
+	} else if err = EnsureNamespace(r.Client, ctx, paas, ns, r.Scheme); err != nil {
+		return fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
 	}
 	return
 }

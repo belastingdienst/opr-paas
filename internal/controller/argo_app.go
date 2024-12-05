@@ -44,21 +44,17 @@ func (r *PaasNSReconciler) EnsureArgoApp(
 	// See if argo application exists and create if it doesn't
 	found := &argo.Application{}
 	if argoApp, err := r.backendArgoApp(ctx, paasns, paas); err != nil {
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusAction(v1alpha1.PaasStatusInfo), argoApp, err.Error())
 		return err
 	} else if err := r.Get(ctx, namespacedName, found); err == nil {
 		logger.Info().Msg("argo Application already exists, updating")
 		patch := client.MergeFrom(found.DeepCopy())
 		found.Spec = argoApp.Spec
-		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, found, "succeeded")
 		return r.Patch(ctx, found, patch)
 	} else if !errors.IsNotFound(err) {
 		logger.Err(err).Msg("could not retrieve info of Argo Application")
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusAction(v1alpha1.PaasStatusInfo), argoApp, err.Error())
 		return err
 	} else {
 		logger.Info().Msg("creating Argo Application")
-		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, argoApp, "succeeded")
 		return r.Create(ctx, argoApp)
 	}
 }

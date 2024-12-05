@@ -28,7 +28,6 @@ import (
 // ensureSecret ensures Secret presence in given secret.
 func (r *PaasNSReconciler) EnsureSecret(
 	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
 	secret *corev1.Secret,
 ) error {
 	// See if secret exists and create if it doesn't
@@ -41,23 +40,17 @@ func (r *PaasNSReconciler) EnsureSecret(
 	if err != nil && errors.IsNotFound(err) {
 		// Create the secret
 		if err = r.Create(ctx, secret); err != nil {
-			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, secret, err.Error())
 			return err
-		} else {
-			paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, secret, "succeeded")
-			return nil
 		}
+		return nil
 	} else if err != nil {
 		// Error that isn't due to the secret not existing
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, secret, err.Error())
 		return err
 	} else {
 		if err = r.Update(ctx, secret); err != nil {
-			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, secret, err.Error())
-		} else {
-			paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, secret, "succeeded")
+			return err
 		}
-		return err
+		return nil
 	}
 }
 
@@ -135,14 +128,11 @@ func (r *PaasNSReconciler) getSecrets(
 		}
 		secret, err := r.backendSecret(ctx, paas, paasns, namespacedName, url)
 		if err != nil {
-			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
 			return nil, err
 		}
 		if decrypted, err := getRsa(paasns.Spec.Paas).Decrypt(encryptedSecretData); err != nil {
-			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusParse, secret, err.Error())
 			return nil, fmt.Errorf("failed to decrypt secret %s: %s", secret, err.Error())
 		} else {
-			paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusParse, secret, "Defining generic secret")
 			secret.Data["sshPrivateKey"] = decrypted
 			secrets = append(secrets, secret)
 		}
@@ -254,7 +244,7 @@ func (r *PaasNSReconciler) ReconcileSecrets(
 		return err
 	}
 	for _, secret := range desiredSecrets {
-		if err := r.EnsureSecret(ctx, paasns, secret); err != nil {
+		if err := r.EnsureSecret(ctx, secret); err != nil {
 			logger.Err(err).Str("secret", secret.Name).Msg("failure while reconciling secret")
 			return err
 		}

@@ -10,19 +10,20 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// Definitions to manage status conditions
+const (
+	// TypeReadyPaasNs represents the status of the PaasNs reconciliation
+	TypeReadyPaasNs = "Ready"
+	// TypeHasErrorsPaasNs represents the status used when the custom resource reconciliation holds errors.
+	TypeHasErrorsPaasNs = "HasErrors"
+	// TypeDegradedPaasNs represents the status used when the custom resource is deleted and the finalizer operations are yet to occur.
+	TypeDegradedPaasNs = "Degraded"
+)
 
 // PaasNSSpec defines the desired state of PaasNS
 type PaasNSSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of PaasNS. Edit paasns_types.go to remove/update
 	Paas       string            `json:"paas"`
 	Groups     []string          `json:"groups,omitempty"`
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
@@ -94,28 +95,17 @@ func init() {
 
 // PaasStatus defines the observed state of Paas
 type PaasNsStatus struct {
-	// Important: Run "make" to regenerate code after modifying this file
-	Messages []string `json:"messages,omitempty"`
+	// Deprecated: use paasns.status.conditions instead
+	Messages   []string           `json:"messages,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
+// Deprecated: use paasns.status.conditions instead
 func (ps *PaasNsStatus) Truncate() {
 	ps.Messages = []string{}
 }
 
-func (ps *PaasNsStatus) AddMessage(level PaasStatusLevel, action PaasStatusAction, obj client.Object, message string) {
-	namespacedName := types.NamespacedName{
-		Name:      obj.GetName(),
-		Namespace: obj.GetNamespace(),
-	}
-	ps.Messages = append(ps.Messages,
-		fmt.Sprintf("%s: %s for %s (%s) %s", level, action, namespacedName.String(), obj.GetObjectKind().GroupVersionKind().String(), message),
-	)
-}
-
+// Deprecated: use paasns.status.conditions instead
 func (ps *PaasNsStatus) GetMessages() []string {
 	return ps.Messages
-}
-
-func (ps *PaasNsStatus) AddMessages(msgs []string) {
-	ps.Messages = append(ps.Messages, msgs...)
 }

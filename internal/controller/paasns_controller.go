@@ -17,6 +17,11 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/api/errors"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -24,7 +29,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const paasNsFinalizer = "paasns.cpet.belastingdienst.nl/finalizer"
@@ -60,9 +64,24 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 		return nil, client.IgnoreNotFound(err)
 	}
 
+	// Started reconciling, reset status
+	meta.SetStatusCondition(&paasns.Status.Conditions, metav1.Condition{Type: v1alpha1.TypeReadyPaasNs, Status: metav1.ConditionUnknown, ObservedGeneration: paasns.Generation, Reason: "Reconciling", Message: "Starting reconciliation"})
+	meta.RemoveStatusCondition(&paasns.Status.Conditions, v1alpha1.TypeHasErrorsPaasNs)
+	if err = r.Status().Update(ctx, paasns); err != nil {
+		logger.Err(err).Msg("Failed to update PaasNs status")
+		return nil, err
+	}
+
+	if err := r.Get(ctx, req.NamespacedName, paasns); err != nil {
+		logger.Err(err).Msg("Failed to re-fetch PaasNs")
+		return nil, err
+	}
+
 	// Add finalizer for this CR
 	if !controllerutil.ContainsFinalizer(paasns, paasNsFinalizer) {
+		logger.Info().Msg("PaasNs object has no finalizer yet")
 		if ok := controllerutil.AddFinalizer(paasns, paasNsFinalizer); !ok {
+			logger.Err(err).Msg("failed to add finalizer")
 			return nil, fmt.Errorf("failed to add finalizer")
 		}
 		if err := r.Update(ctx, paasns); err != nil {
@@ -77,10 +96,9 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
 	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
 		logger.Error().Msg("no config found")
-		paasns.Status.Truncate()
-		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusReconcile, paasns, "please reach out to your system administrator as there is no Paasconfig available to reconcile against.")
-		err := r.Status().Update(ctx, paasns)
+		err = r.setErrorCondition(ctx, paasns, fmt.Errorf("please reach out to your system administrator as there is no Paasconfig available to reconcile against."))
 		if err != nil {
+			logger.Err(err).Msg("failed to update PaasNs status")
 			return nil, err
 		}
 		return nil, fmt.Errorf("no config found")
@@ -89,6 +107,18 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 	if paasns.GetDeletionTimestamp() != nil {
 		logger.Info().Msg("paasNS object marked for deletion")
 		if controllerutil.ContainsFinalizer(paasns, paasNsFinalizer) {
+			// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
+			meta.SetStatusCondition(&paasns.Status.Conditions, metav1.Condition{
+				Type:   v1alpha1.TypeDegradedPaasNs,
+				Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: paasns.Generation,
+				Message: fmt.Sprintf("Performing finalizer operations for PaasNs: %s ", paasns.Name),
+			})
+
+			if err := r.Status().Update(ctx, paasns); err != nil {
+				logger.Err(err).Msg("Failed to update PaasNs status")
+				return nil, err
+			}
+
 			logger.Info().Msg("finalizing PaasNs")
 			// Run finalization logic for paasNsFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
@@ -97,7 +127,18 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 				return nil, err
 			}
 
-			logger.Info().Msg("removing finalizer")
+			meta.SetStatusCondition(&paasns.Status.Conditions, metav1.Condition{
+				Type:   v1alpha1.TypeDegradedPaasNs,
+				Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: paasns.Generation,
+				Message: fmt.Sprintf("Finalizer operations for PaasNs %s name were successfully accomplished", paasns.Name),
+			})
+
+			if err := r.Status().Update(ctx, paasns); err != nil {
+				logger.Err(err).Msg("Failed to update PaasNs status")
+				return nil, err
+			}
+
+			logger.Info().Msg("Removing finalizer")
 			// Remove paasNsFinalizer. Once all finalizers have been removed, the object will be deleted.
 			controllerutil.RemoveFinalizer(paasns, paasNsFinalizer)
 			if err := r.Update(ctx, paasns); err != nil {
@@ -115,13 +156,11 @@ func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			err = fmt.Errorf("cannot find Paas %s", paasns.Spec.Paas)
-			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		}
 		// This cannot be resolved by itself, so we should not have this keep on reconciling
 		return nil, err
 	}
 	if !paas.AmIOwner(paasns.OwnerReferences) {
-		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, paas, "updating owner")
 		if err := controllerutil.SetControllerReference(paas, paasns, r.Scheme); err != nil {
 			return nil, err
 		}
@@ -143,14 +182,6 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 		Requeue: false,
 	}
 
-	// TODO(portly-halicore-76) do check if Config is set, else return and Requeue after say... minutes / hours ...
-	// as reconciling and finalizing without config, causes operator in meh state.
-	// this is only flacky when object is being removed, finalizers will not be removed
-	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
-		logger.Error().Msg("No config found")
-		return ctrl.Result{RequeueAfter: time.Minute * 5}, nil
-	}
-
 	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
 		// TODO(portly-halicore-76) move to admission webhook once available
 		// Don't requeue that often
@@ -167,29 +198,35 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	}
 
 	paasns.Status.Truncate()
-	defer func() {
-		logger.Info().
-			Int("messages", len(paasns.Status.Messages)).
-			Msg("updating PaasNs status")
-
-		if err = r.Status().Update(ctx, paasns); err != nil {
-			logger.Err(err).Msg("updating PaasNs status failed")
-		}
-	}()
 
 	var paas *v1alpha1.Paas
 	if paas, err = r.GetPaas(ctx, paasns); err != nil {
+		err = r.setErrorCondition(ctx, paasns, err)
+		if err != nil {
+			logger.Err(err).Msg("failed to update PaasNs status")
+			return errResult, err
+		}
 		// This cannot be resolved by itself, so we should not have this keep on reconciling
 		return okResult, nil
 	}
 
 	err = r.ReconcileNamespaces(ctx, paas, paasns)
 	if err != nil {
+		err = r.setErrorCondition(ctx, paasns, err)
+		if err != nil {
+			logger.Err(err).Msg("failed to update PaasNs status")
+			return errResult, err
+		}
 		return errResult, err
 	}
 
 	err = r.ReconcileRolebindings(ctx, paas, paasns)
 	if err != nil {
+		err = r.setErrorCondition(ctx, paasns, err)
+		if err != nil {
+			logger.Err(err).Msg("failed to update PaasNs status")
+			return errResult, err
+		}
 		return errResult, err
 	}
 
@@ -199,13 +236,23 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 		if strings.Contains(err.Error(), "failed to decrypt secret") {
 			return okResult, nil
 		}
+		err = r.setErrorCondition(ctx, paasns, err)
+		if err != nil {
+			logger.Err(err).Msg("failed to update PaasNs status")
+			return errResult, err
+		}
 		return errResult, err
 	}
 
 	err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas)
 	if err != nil {
 		logger.Err(err).Msg("reconciling Extra ClusterRoleBindings failed")
-		return errResult, fmt.Errorf("reconciling Extra ClusterRoleBindings failed")
+		err = r.setErrorCondition(ctx, paasns, err)
+		if err != nil {
+			logger.Err(err).Msg("failed to update PaasNs status")
+			return errResult, err
+		}
+		return errResult, err
 	}
 
 	if _, exists := paas.Spec.Capabilities[paasns.Name]; exists {
@@ -214,25 +261,79 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 
 			// Create bootstrap Argo App
 			if err := r.EnsureArgoApp(ctx, paasns, paas); err != nil {
+				err = r.setErrorCondition(ctx, paasns, err)
+				if err != nil {
+					logger.Err(err).Msg("failed to update PaasNs status")
+					return errResult, err
+				}
 				return errResult, err
 			}
 
 			if err := r.EnsureArgoCD(ctx, paasns); err != nil {
+				err = r.setErrorCondition(ctx, paasns, err)
+				if err != nil {
+					logger.Err(err).Msg("failed to update PaasNs status")
+					return errResult, err
+				}
 				return errResult, err
 			}
 		}
 
 		logger.Info().Msg("extending Applicationsets for Paas object")
 		if err := r.EnsureAppSetCap(ctx, paasns, paas); err != nil {
+			err = r.setErrorCondition(ctx, paasns, err)
+			if err != nil {
+				logger.Err(err).Msg("failed to update PaasNs status")
+				return errResult, err
+			}
 			return errResult, err
 		}
 	}
 
-	logger.Info().Msg("updating PaasNs object status")
-	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusReconcile, paasns, "succeeded")
-	logger.Info().Msg("paasNs object successfully reconciled")
+	// Reconciling succeeded, set appropriate Condition
+	err = r.setSuccesfullCondition(ctx, paasns)
+	if err != nil {
+		logger.Err(err).Msg("failed to update PaasNs status")
+		return errResult, err
+	}
 
 	return okResult, nil
+}
+
+func (r *PaasNSReconciler) setSuccesfullCondition(ctx context.Context, paasNs *v1alpha1.PaasNS) error {
+	meta.SetStatusCondition(&paasNs.Status.Conditions, metav1.Condition{
+		Type:   v1alpha1.TypeReadyPaasNs,
+		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: paasNs.Generation,
+		Message: fmt.Sprintf("Reconciled (%s) successfully", paasNs.Name),
+	})
+	meta.SetStatusCondition(&paasNs.Status.Conditions, metav1.Condition{
+		Type:   v1alpha1.TypeHasErrorsPaasNs,
+		Status: metav1.ConditionFalse, Reason: "Reconciling", ObservedGeneration: paasNs.Generation,
+		Message: fmt.Sprintf("Reconciled (%s) successfully", paasNs.Name),
+	})
+
+	if err := r.Status().Update(ctx, paasNs); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *PaasNSReconciler) setErrorCondition(ctx context.Context, paasNs *v1alpha1.PaasNS, err error) error {
+	meta.SetStatusCondition(&paasNs.Status.Conditions, metav1.Condition{
+		Type:   v1alpha1.TypeReadyPaasNs,
+		Status: metav1.ConditionFalse, Reason: "ReconcilingError", ObservedGeneration: paasNs.Generation,
+		Message: fmt.Sprintf("Reconciling (%s) failed", paasNs.Name),
+	})
+	meta.SetStatusCondition(&paasNs.Status.Conditions, metav1.Condition{
+		Type:   v1alpha1.TypeHasErrorsPaasNs,
+		Status: metav1.ConditionTrue, Reason: "ReconcilingError", ObservedGeneration: paasNs.Generation,
+		Message: err.Error(),
+	})
+
+	if err := r.Status().Update(ctx, paasNs); err != nil {
+		return err
+	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -334,7 +435,6 @@ func (r *PaasNSReconciler) paasFromPaasNs(ctx context.Context, paasns *v1alpha1.
 				paasns.Namespace,
 				paas.Name,
 				strings.Join(nss, ", "))
-			paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 			return nil, map[string]int{}, err
 		}
 	}

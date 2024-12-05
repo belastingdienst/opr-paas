@@ -69,10 +69,8 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 
 	err = r.Get(ctx, argoName, argo)
 	if err != nil && errors.IsNotFound(err) {
-		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, argo, "creating ArgoCD instance")
 		return r.Create(ctx, argo)
 	} else if err != nil {
-		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusFind, argo, err.Error())
 		return err
 	}
 	patch := client.MergeFrom(argo.DeepCopy())
@@ -86,7 +84,6 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 	}
 	logger.Info().Msgf("setting ArgoCD permissions to %s", policy)
 	if oldPolicy == policy && oldDefaultPolicy == defaultPolicy && paas.AmIOwner(argo.OwnerReferences) {
-		paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, argo, "no changes")
 		return nil
 	}
 	argo.Spec.RBAC.Policy = &policy
@@ -96,6 +93,5 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 		return err
 	}
 	logger.Info().Msg("updating ArgoCD object")
-	paasns.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, argo, "updating ArgoCD instance")
 	return r.Patch(ctx, argo, patch)
 }

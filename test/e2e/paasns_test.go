@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/api/meta"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -74,10 +76,10 @@ func assertPaasNSCreatedWithoutPaas(ctx context.Context, t *testing.T, cfg *envc
 
 	// check that the paasns has been created but also contains an error status message
 	fetchedPaasNS, _ := pnsGetPaasNS(ctx, cfg, paasNsName, cfg.Namespace())
-	if assert.NotEmpty(t, fetchedPaasNS.Status.Messages, "messages should not be empty") {
-		errMsg := fetchedPaasNS.Status.Messages[0]
-		assert.Contains(t, errMsg, "cannot find Paas")
-	}
+	assert.True(t, meta.IsStatusConditionPresentAndEqual(fetchedPaasNS.Status.Conditions, api.TypeReadyPaasNs, metav1.ConditionFalse))
+	assert.True(t, meta.IsStatusConditionPresentAndEqual(fetchedPaasNS.Status.Conditions, api.TypeHasErrorsPaasNs, metav1.ConditionTrue))
+	foundCondition := meta.FindStatusCondition(paasNs.Status.Conditions, api.TypeHasErrorsPaasNs)
+	assert.Contains(t, foundCondition.Message, "cannot find Paas a-paas")
 
 	// cleanup
 	pnsDeletePaasNS(ctx, t, cfg, paasNs)
@@ -113,8 +115,10 @@ func assertPaasNSCreatedWithUnlinkedPaas(ctx context.Context, t *testing.T, cfg 
 
 	// check that the paasns has been created but also contains an error status message
 	fetchedPaasNS, _ := pnsGetPaasNS(ctx, cfg, paasNsName, cfg.Namespace())
-	errMsg := fetchedPaasNS.Status.Messages[0]
-	assert.Contains(t, errMsg, "not in the list of namespaces")
+	assert.True(t, meta.IsStatusConditionPresentAndEqual(fetchedPaasNS.Status.Conditions, api.TypeReadyPaasNs, metav1.ConditionFalse))
+	assert.True(t, meta.IsStatusConditionPresentAndEqual(fetchedPaasNS.Status.Conditions, api.TypeHasErrorsPaasNs, metav1.ConditionTrue))
+	foundCondition := meta.FindStatusCondition(paasNs.Status.Conditions, api.TypeHasErrorsPaasNs)
+	assert.Contains(t, foundCondition.Message, "not in the list of namespaces")
 
 	// cleanup
 	deletePaasSync(ctx, "new-paas", t, cfg)
@@ -161,7 +165,10 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Equal(t, linkedPaas, thisPaas)
 
 	// check that there are no errors
-	assert.NotContains(t, fetchedPaasNS.Status.Messages, "ERROR")
+	assert.True(t, meta.IsStatusConditionPresentAndEqual(fetchedPaasNS.Status.Conditions, api.TypeReadyPaasNs, metav1.ConditionTrue))
+	assert.True(t, meta.IsStatusConditionPresentAndEqual(fetchedPaasNS.Status.Conditions, api.TypeHasErrorsPaasNs, metav1.ConditionFalse))
+	foundCondition := meta.FindStatusCondition(paasNs.Status.Conditions, api.TypeHasErrorsPaasNs)
+	assert.Equal(t, "Reconciled (a-paasns) successfully", foundCondition.Message)
 
 	// cleanup
 	deletePaasSync(ctx, thisPaas, t, cfg)

@@ -60,8 +60,11 @@ func TestCapabilityArgoCD(t *testing.T) {
 
 func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithArgo, t, cfg)
-	argopaasns := getOrFail(ctx, "argocd", paasWithArgo, &api.PaasNS{}, t, cfg)
-	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, argopaasns), "ArgoCD PaasNS reconciliation succeeds")
+	argopaasns := &api.PaasNS{ObjectMeta: metav1.ObjectMeta{
+		Name:      "argocd",
+		Namespace: paasWithArgo,
+	}}
+	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, argopaasns, 0), "ArgoCD PaasNS reconciliation succeeds")
 
 	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
 	entries, _ := getApplicationSetListEntries(argoAppSet)

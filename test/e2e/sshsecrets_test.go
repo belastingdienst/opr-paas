@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/quota"
@@ -54,8 +53,11 @@ func assertSecretCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	paas := getPaas(ctx, "sshpaas", t, cfg)
 	assert.NotNil(t, paas)
 	// Wait for namespace created by waiting for reconciliation of sso paasns
-	ssopaasns := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
-	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, ssopaasns), "SSO PaasNS reconciliation succeeds")
+	ssopaasns := &api.PaasNS{ObjectMeta: v1.ObjectMeta{
+		Name:      "sso",
+		Namespace: "sshpaas",
+	}}
+	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, ssopaasns, 0), "SSO PaasNS reconciliation succeeds")
 
 	// Assert secrets
 	secret1 := getOrFail(ctx, "paas-ssh-1deb30f1", "sshpaas-sso", &corev1.Secret{}, t, cfg)
@@ -96,15 +98,15 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 		t.Fatal(err)
 	}
 
+	oldSsoPaasNs := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
+
 	if err := updatePaasSync(ctx, cfg, paas); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for reconciliation of sso paasns
 	ssopaasns := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
-	// TODO (portly-halicore-76) wait better for this but how?
-	time.Sleep(10 * time.Second)
-	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, ssopaasns), "SSO PaasNS reconciliation succeeds")
+	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation), "SSO PaasNS reconciliation succeeds")
 
 	// List secrets in namespace to be sure
 	secrets := &corev1.SecretList{}
@@ -152,15 +154,15 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 		t.Fatal(err)
 	}
 
+	oldSsoPaasNs := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
+
 	if err := updatePaasSync(ctx, cfg, paas); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for reconciliation of sso paasns
 	ssopaasns := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
-	// TODO (portly-halicore-76) wait better for this but how?
-	time.Sleep(10 * time.Second)
-	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, ssopaasns), "SSO PaasNS reconciliation succeeds")
+	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation), "SSO PaasNS reconciliation succeeds")
 
 	// List secrets in namespace to be sure
 	secrets := &corev1.SecretList{}
@@ -199,15 +201,15 @@ func assertSecretRemovedAfterRemovingFromPaas(ctx context.Context, t *testing.T,
 		t.Fatal(err)
 	}
 
+	oldSsoPaasNs := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
+
 	if err := updatePaasSync(ctx, cfg, paas); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for reconciliation of sso paasns
 	ssopaasns := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
-	// TODO (portly-halicore-76) wait better for this but how?
-	time.Sleep(10 * time.Second)
-	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, ssopaasns), "SSO PaasNS reconciliation succeeds")
+	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation), "SSO PaasNS reconciliation succeeds")
 
 	secrets := &corev1.SecretList{}
 	err := cfg.Client().Resources().List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
