@@ -24,7 +24,7 @@ type PaasSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Capabilities is a subset of capabilities that will be available in this PaaS Project
+	// Capabilities is a subset of capabilities that will be available in this Paas Project
 	Capabilities PaasCapabilities `json:"capabilities,omitempty"`
 
 	// Requestor is an informational field which decides on the requestor (also application responable)
@@ -32,13 +32,13 @@ type PaasSpec struct {
 
 	Groups PaasGroups `json:"groups,omitempty"`
 
-	// Quota defines the quotas which should be set on the cluster resource quota as used by this PaaS project
-	Quota paas_quota.Quotas `json:"quota"`
+	// Quota defines the quotas which should be set on the cluster resource quota as used by this Paas project
+	Quota paas_quota.Quota `json:"quota"`
 
-	// Namespaces can be used to define extra namespaces to be created as part of this PaaS project
+	// Namespaces can be used to define extra namespaces to be created as part of this Paas project
 	Namespaces []string `json:"namespaces,omitempty"`
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
-	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
+	// They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
 
 	// Indicated by which 3rd party Paas's ArgoCD this Paas is managed
@@ -248,19 +248,21 @@ func (pcs PaasCapabilities) ResetCapSshSecret(capability string) (err error) {
 	return nil
 }
 
+// TODO: Enabled is a leftover from old capability implementation. Remove with new API.
+
 type PaasCapability struct {
-	// Do we want an ArgoCD namespace, default false
+	// Do we want to use this capability, default false
 	Enabled bool `json:"enabled,omitempty"`
-	// The URL that contains the Applications / Application Sets to be used by this ArgoCD
+	// The URL that contains the Applications / Application Sets to be used by this capability
 	GitUrl string `json:"gitUrl,omitempty"`
-	// The revision of the git repo that contains the Applications / Application Sets to be used by this ArgoCD
+	// The revision of the git repo that contains the Applications / Application Sets to be used by this capability
 	GitRevision string `json:"gitRevision,omitempty"`
-	// the path in the git repo that contains the Applications / Application Sets to be used by this ArgoCD
+	// the path in the git repo that contains the Applications / Application Sets to be used by this capability
 	GitPath string `json:"gitPath,omitempty"`
 	// This project has it's own ClusterResourceQuota settings
-	Quota paas_quota.Quotas `json:"quota,omitempty"`
-	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
-	// They must be encrypted with the public key corresponding to the private key deployed together with the PaaS operator
+	Quota paas_quota.Quota `json:"quota,omitempty"`
+	// You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket
+	// They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
 	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
 	// You can enable extra permissions for the service accounts beloning to this capability
 	// Exact definitions is configured in Paas Configmap
@@ -276,10 +278,6 @@ func (pc *PaasCapability) IsEnabled() bool {
 	return pc.Enabled
 }
 
-func (pc *PaasCapability) CapabilityName() string {
-	return "argocd"
-}
-
 func (pc *PaasCapability) SetDefaults() {
 	if pc.GitPath == "" {
 		pc.GitPath = "."
@@ -289,7 +287,7 @@ func (pc *PaasCapability) SetDefaults() {
 	}
 }
 
-func (pc PaasCapability) Quotas() (pq paas_quota.Quotas) {
+func (pc PaasCapability) Quotas() (pq paas_quota.Quota) {
 	return pc.Quota
 }
 
@@ -304,8 +302,8 @@ func (pc *PaasCapability) SetSshSecret(key string, value string) {
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
-	Messages []string                     `json:"messages,omitempty"`
-	Quota    map[string]paas_quota.Quotas `json:"quotas,omitempty"`
+	Messages []string                    `json:"messages,omitempty"`
+	Quota    map[string]paas_quota.Quota `json:"quotas,omitempty"`
 }
 
 func (ps *PaasStatus) Truncate() {

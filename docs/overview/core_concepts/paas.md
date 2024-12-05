@@ -36,29 +36,31 @@ Additionally the following optional settings can also be defined:
 
 ## Example Paas
 
-```yaml
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: my-paas
-spec:
-  capabilities:
-    # Enable argocd
-    argocd:
-      enabled: true
-      # Bootstrap application to point to the root folder
-      gitPath: .
-      # Bootstrap application to point to the main branch
-      gitRevision: main
-      # Bootstrap application to point to this repo
-      gitUrl: "ssh://git@github.com/belastingdienst/my-paas-repo.git"
-    # enable grafana
-    grafana:
-      enabled: true
-      quota:
-        limits.cpu: "5"
-        limits.memory: "2Gi"
-```
+!!! example
+
+    ```yaml
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: Paas
+    metadata:
+      name: my-paas
+    spec:
+      capabilities:
+        # Enable argocd
+        argocd:
+          enabled: true
+          # Bootstrap application to point to the root folder
+          gitPath: .
+          # Bootstrap application to point to the main branch
+          gitRevision: main
+          # Bootstrap application to point to this repo
+          gitUrl: "ssh://git@github.com/belastingdienst/my-paas-repo.git"
+        # enable grafana
+        grafana:
+          enabled: true
+          quota:
+            limits.cpu: "5"
+            limits.memory: "2Gi"
+    ```
 
 !!! Notes
     Labels defined on Paas resources are copied to child resources such as PaasNs,

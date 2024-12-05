@@ -91,29 +91,29 @@ by the Paas.
 
   This is the normal use case (part of the argocd capability)
 
-Example:
+!!! example
 
-```yaml
----
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: my-paas
-spec:
-  # Specifying a sshSecret for all capability- and functional- namespaces
-  sshSecrets:
-    "ssh://git@github.com/belastingdienst/paas.git": >-
-      2wkeKebCnqgl...L/jDAUmhWG3ng==
-  capabilities:
-    argocd:
-      # Specifying a sshSecret for a specific capability namespace
+    ```yaml
+    ---
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: Paas
+    metadata:
+      name: my-paas
+    spec:
+      # Specifying a sshSecret for all capability- and functional- namespaces
       sshSecrets:
         "ssh://git@github.com/belastingdienst/paas.git": >-
           2wkeKebCnqgl...L/jDAUmhWG3ng==
-  requestor: my-team
-  quota:
-    limits.cpu: "40"
-```
+      capabilities:
+        argocd:
+          # Specifying a sshSecret for a specific capability namespace
+          sshSecrets:
+            "ssh://git@github.com/belastingdienst/paas.git": >-
+              2wkeKebCnqgl...L/jDAUmhWG3ng==
+      requestor: my-team
+      quota:
+        limits.cpu: "40"
+    ```
 
 ### Defining `sshSecret`s in a PaasNs
 
@@ -125,16 +125,18 @@ value is changed in the PaasNs resource. However, when the key changes
 (e.a. `ssh://git@github.com/belastingdienst/paas.git` in the example below), the
 original SSH secret is not removed.
 
-```yaml
----
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: PaasNs
-metadata:
-  name: my-ns
-  namespace: my-paas-argocd
-spec:
-  paas: my-paas
-  sshSecrets:
-    "ssh://git@github.com/belastingdienst/paas.git": >-
-      2wkeKebCnqgl...L/jDAUmhWG3ng==
-```
+!!! example
+
+    ```yaml
+    ---
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: PaasNs
+    metadata:
+      name: my-ns
+      namespace: my-paas-argocd
+    spec:
+      paas: my-paas
+      sshSecrets:
+        "ssh://git@github.com/belastingdienst/paas.git": >-
+          2wkeKebCnqgl...L/jDAUmhWG3ng==
+    ```

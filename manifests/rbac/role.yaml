@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: manager-role
+  name: paas-manager-role
 rules:
 - apiGroups:
   - argoproj.io
@@ -55,6 +55,32 @@ rules:
   - cpet.belastingdienst.nl
   resources:
   - paas/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - cpet.belastingdienst.nl
+  resources:
+  - paasconfig
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cpet.belastingdienst.nl
+  resources:
+  - paasconfig/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - cpet.belastingdienst.nl
+  resources:
+  - paasconfig/status
   verbs:
   - get
   - patch

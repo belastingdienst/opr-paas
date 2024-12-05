@@ -94,7 +94,7 @@ func (r *PaasReconciler) backendQuota(
 			Selector: quotav1.ClusterResourceQuotaSelector{
 				LabelSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						getConfig().QuotaLabel: quotaName,
+						GetConfig().QuotaLabel: quotaName,
 					},
 				},
 			},
@@ -117,7 +117,7 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (quotas []*quotav1.ClusterResourceQuota, err error) {
-	config := getConfig()
+	config := GetConfig()
 	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
 	for name, cap := range paas.Spec.Capabilities {
 		if capConfig, exists := config.Capabilities[name]; !exists {
@@ -125,7 +125,7 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 		} else if cap.IsEnabled() {
 			if !capConfig.QuotaSettings.Clusterwide {
 				defaults := capConfig.QuotaSettings.DefQuota
-				quotaValues := cap.Quotas().QuotaWithDefaults(
+				quotaValues := cap.Quotas().MergeWith(
 					defaults)
 				quotas = append(quotas,
 					r.backendQuota(ctx, paas, name, quotaValues))
@@ -135,12 +135,12 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 	return quotas, nil
 }
 
-type PaasQuotas map[string]paas_quota.Quotas
+type PaasQuotas map[string]paas_quota.Quota
 
 func (r *PaasReconciler) BackendEnabledQuotaStatus(
 	paas *v1alpha1.Paas,
 ) (quotas PaasQuotas, err error) {
-	config := getConfig()
+	config := GetConfig()
 	quotas = make(PaasQuotas)
 	quotas["default"] = paas.Spec.Quota
 	for name, cap := range paas.Spec.Capabilities {
@@ -148,7 +148,7 @@ func (r *PaasReconciler) BackendEnabledQuotaStatus(
 			return nil, fmt.Errorf("a capability is requested, but not configured")
 		} else if cap.IsEnabled() {
 			defaults := capConfig.QuotaSettings.DefQuota
-			quota := cap.Quotas().QuotaWithDefaults(
+			quota := cap.Quotas().MergeWith(
 				defaults)
 			quotas[name] = quota
 		}
@@ -160,7 +160,7 @@ func (r *PaasReconciler) BackendUnneededQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (quotas []string) {
-	config := getConfig()
+	config := GetConfig()
 	for name, cap := range paas.Spec.Capabilities {
 		if capConfig, exists := config.Capabilities[name]; !exists {
 			quotas = append(quotas, fmt.Sprintf("%s-%s", paas.Name, name))
@@ -233,10 +233,11 @@ func (r *PaasReconciler) ReconcileQuotas(
 ) (err error) {
 	ctx = setLogComponent(ctx, "quota")
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("creating quotas for PAAS object ")
+	logger.Info().Msg("creating quotas for Paas")
 	// Create quotas if needed
 	if quotas, err := r.BackendEnabledQuotas(ctx, paas); err != nil {
-		logger.Err(err).Msg("failure while getting list of quotas")
+		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, paas, err.Error())
+		return err
 	} else {
 		for _, q := range quotas {
 			logger.Info().Msg("creating quota " + q.Name + " for PAAS object ")

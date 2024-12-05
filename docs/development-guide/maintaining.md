@@ -39,8 +39,11 @@ Methods used
 
 ### Creating a release
 
-TBD
+We release from `main`. All changes to `main` are made through PRs. Merging a PR
+will trigger the release drafter action to create a draft release.
 
-- Create release branch;
+The process to create a release is mostly automated, to start it:
+
+- Merge one or more PRs to `main`;
 - Ensure completeness;
-- Tag release;
+- Edit the draft release and publish it;

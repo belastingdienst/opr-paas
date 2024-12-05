@@ -29,7 +29,7 @@ func TestSecrets(t *testing.T) {
 
 	toBeDecryptedPaas := api.PaasSpec{
 		Requestor:  "paas-user",
-		Quota:      make(quota.Quotas),
+		Quota:      make(quota.Quota),
 		SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
 		Capabilities: api.PaasCapabilities{
 			"sso":    api.PaasCapability{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-other-repo.git": encrypted}},

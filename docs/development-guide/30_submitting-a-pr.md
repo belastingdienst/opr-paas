@@ -46,9 +46,10 @@ Please read [https://developercertificate.org](https://developercertificate.org)
 
 If you can certify it, then just add a line to every git commit message:
 
-```
-  Signed-off-by: Random J Developer <random@developer.example.org>
-```
+!!! example
+    ```
+      Signed-off-by: Random J Developer <random@developer.example.org>
+    ```
 
 or use the command `git commit -s -m "commit message comes here"` to sign-off on your commits.
 

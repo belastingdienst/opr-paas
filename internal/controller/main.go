@@ -9,8 +9,9 @@ package controller
 import (
 	"context"
 	"fmt"
+	"sync"
 
-	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 
 	"github.com/google/uuid"
@@ -22,26 +23,34 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
+// PaasConfigStore is a thread-safe store for the current PaasConfig
+type PaasConfigStore struct {
+	currentConfig v1alpha1.PaasConfigSpec
+	mutex         sync.RWMutex
+}
+
 var (
-	_cnf            *config.Config
+	_cnf            = &PaasConfigStore{}
 	_crypt          map[string]*crypt.Crypt
 	debugComponents []string
 )
 
-func getConfig() config.Config {
-	var err error
-	if _cnf == nil {
-		if _cnf, err = config.NewConfig(); err != nil {
-			panic(fmt.Sprintf(
-				"Could not read config: %s",
-				err.Error()))
-		}
-	}
-	return *_cnf
+// GetConfig retrieves the current configuration
+func GetConfig() v1alpha1.PaasConfigSpec {
+	_cnf.mutex.RLock()
+	defer _cnf.mutex.RUnlock()
+	return _cnf.currentConfig
+}
+
+// SetConfig updates the current configuration
+func SetConfig(newConfig v1alpha1.PaasConfig) {
+	_cnf.mutex.Lock()
+	defer _cnf.mutex.Unlock()
+	_cnf.currentConfig = newConfig.Spec
 }
 
 func getRsa(paas string) *crypt.Crypt {
-	config := getConfig()
+	config := GetConfig()
 	if _crypt == nil {
 		_crypt = make(map[string]*crypt.Crypt)
 	}

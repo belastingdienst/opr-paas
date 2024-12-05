@@ -96,7 +96,7 @@ help: ## Display this help.
 
 .PHONY: manifests
 manifests: controller-gen ## Generate ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd paths="./..." output:crd:artifacts:config=manifests/crds output:crd:artifacts:config=manifests/crds output:rbac:artifacts:config=manifests/rbac
+	$(CONTROLLER_GEN) rbac:roleName=paas-manager-role crd paths="./..." output:crd:artifacts:config=manifests/crds output:crd:artifacts:config=manifests/crds output:rbac:artifacts:config=manifests/rbac
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
@@ -139,21 +139,8 @@ setup-e2e: kustomize ## Setup test environment in the K8s cluster specified in ~
 	$(KUSTOMIZE) build test/e2e/manifests/paas-context | kubectl apply -f -
 	# Apply opr-paas crds
 	$(KUSTOMIZE) build manifests/crds | kubectl apply -f -
-
-# Starts operator for e2e tests with fixtures
-.PHONY: start-e2e
-start-e2e:
-	# Clean start
-	killall goreman || true
-	mkdir -p /tmp/paas-e2e/secrets/priv && chmod 0700 /tmp/paas-e2e/secrets/priv
-	mkdir -p /tmp/paas-e2e/secrets/pub && chmod 0700 /tmp/paas-e2e/secrets/pub
-	cp -r ./test/e2e/fixtures/crypt/priv* /tmp/paas-e2e/secrets/priv
-	cp -r ./test/e2e/fixtures/crypt/pub/* /tmp/paas-e2e/secrets/pub
 	# create folder to hold go coverage result
 	mkdir -p /tmp/coverage/paas
-	PAAS_CONFIG=./test/e2e/fixtures/paas_config.yml \
-		goreman -f $(PAAS_PROCFILE) start
-	rm -rf /tmp/paas-e2e
 
 # TODO this should be using other fixtures and has the same purpose as the: 'run' target.
 .PHONY: run-operator
@@ -161,9 +148,10 @@ run-operator:
 	# Clean start
 	killall goreman || true
 	mkdir -p /tmp/paas-e2e/secrets/priv && chmod 0700 /tmp/paas-e2e/secrets/priv
+	mkdir -p /tmp/paas-e2e/secrets/pub && chmod 0700 /tmp/paas-e2e/secrets/pub
 	cp -r ./test/e2e/fixtures/crypt/priv* /tmp/paas-e2e/secrets/priv
-	PAAS_CONFIG=./test/e2e/fixtures/paas_config.yml \
-		goreman -f $(PAAS_PROCFILE) start
+	cp -r ./test/e2e/fixtures/crypt/pub/* /tmp/paas-e2e/secrets/pub
+	goreman -f $(PAAS_PROCFILE) start
 	rm -rf /tmp/paas-e2e
 
 ##@ Build

@@ -26,7 +26,7 @@ const (
 func TestAppProject(t *testing.T) {
 	paasSpec := api.PaasSpec{
 		Requestor: "paas-user",
-		Quota:     make(quota.Quotas),
+		Quota:     make(quota.Quota),
 		Capabilities: api.PaasCapabilities{
 			"sso": api.PaasCapability{Enabled: true},
 		},
@@ -37,7 +37,7 @@ func TestAppProject(t *testing.T) {
 		features.New("App Project").
 			Setup(createPaasFn(simplePaas, paasSpec)).
 			Assess("is created", assertAppProjectCreated).
-			Assess("is deleted when PaaS is deleted", assertAppProjectDeleted).
+			Assess("is deleted when Paas is deleted", assertAppProjectDeleted).
 			Teardown(teardownPaasFn(simplePaas)).
 			Feature(),
 	)
@@ -49,7 +49,7 @@ func assertAppProjectCreated(ctx context.Context, t *testing.T, cfg *envconf.Con
 	applicationSet := getOrFail(ctx, testAppSet, appSetNamespace, &argo.ApplicationSet{}, t, cfg)
 	appProject := getOrFail(ctx, simplePaas, appSetNamespace, &argo.AppProject{}, t, cfg)
 
-	// ClusterResource is created with the same name as the PaaS
+	// ClusterResource is created with the same name as the Paas
 	assert.Equal(t, simplePaas, paas.Name)
 
 	// Paas Namespace exist

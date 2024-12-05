@@ -9,6 +9,8 @@ package controller
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/groups"
 
@@ -27,7 +29,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 	groups string,
 ) error {
 	// Create the ConfigMap
-	wlConfigMap := getConfig().Whitelist
+	wlConfigMap := GetConfig().Whitelist
 	return r.Create(ctx, &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -52,7 +54,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("creating ldap groups for PAAS object ")
 	// See if group already exists and create if it doesn't
-	namespacedName := getConfig().Whitelist
+	namespacedName := GetConfig().Whitelist
 	cm := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Configmap",
@@ -63,7 +65,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 			Namespace: namespacedName.Namespace,
 		},
 	}
-	err := r.Get(ctx, namespacedName, cm)
+	err := r.Get(ctx, types.NamespacedName{Namespace: namespacedName.Namespace, Name: namespacedName.Name}, cm)
 	gs := paas.Spec.Groups.AsGroups()
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info().Msg("creating whitelist configmap")
@@ -114,8 +116,8 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 	logger := log.Ctx(ctx)
 	// See if group already exists and create if it doesn't
 	cm := &corev1.ConfigMap{}
-	wlConfigMap := getConfig().Whitelist
-	err := r.Get(ctx, wlConfigMap, cm)
+	wlConfigMap := GetConfig().Whitelist
+	err := r.Get(ctx, types.NamespacedName{Name: wlConfigMap.Name, Namespace: wlConfigMap.Namespace}, cm)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info().Msg("whitelist configmap does not exist")
 		// ConfigMap does not exist, so nothing to clean

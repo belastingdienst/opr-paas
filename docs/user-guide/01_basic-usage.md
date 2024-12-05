@@ -24,33 +24,37 @@ contain the name of the Paas that is allowed to manage this Paas.
 
 Example Paas definition being managed by another Paas:
 
-```yaml
----
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: tst-tst
-spec:
-  managedByPaas: trd-prt
-```
+!!! example
+
+    ```yaml
+    ---
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: Paas
+    metadata:
+      name: tst-tst
+    spec:
+      managedByPaas: trd-prt
+    ```
 
 Minimal Paas, self-managed using ArgoCD
 ---------------------------------------
 
 Example Paas definition, using its own ArgoCD:
 
-```yaml
----
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-kind: Paas
-metadata:
-  name: tst-tst
-spec:
-  capabilities:
-    argocd:
-      enabled: true
-      gitPath: environments/production
-      gitRevision: main
-      gitUrl: >-
-        ssh://git@git.example.nl/example/example-repo.git
-```
+!!! example
+
+    ```yaml
+    ---
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: Paas
+    metadata:
+      name: tst-tst
+    spec:
+      capabilities:
+        argocd:
+          enabled: true
+          gitPath: environments/production
+          gitRevision: main
+          gitUrl: >-
+            ssh://git@git.example.nl/example/example-repo.git
+    ```

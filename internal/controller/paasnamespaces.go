@@ -42,7 +42,7 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 	logger.Info().Msg("defining")
 	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate,
 		pns, "Setting requestor_label")
-	pns.ObjectMeta.Labels[getConfig().RequestorLabel] = paas.Spec.Requestor
+	pns.ObjectMeta.Labels[GetConfig().RequestorLabel] = paas.Spec.Requestor
 
 	logger.Info().Msg("setting Owner")
 

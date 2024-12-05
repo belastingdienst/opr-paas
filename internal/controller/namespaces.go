@@ -102,16 +102,16 @@ func BackendNamespace(
 		Spec: corev1.NamespaceSpec{},
 	}
 	logger.Info().Msgf("setting Quotagroup %s", quota)
-	ns.ObjectMeta.Labels[getConfig().QuotaLabel] = quota
+	ns.ObjectMeta.Labels[GetConfig().QuotaLabel] = quota
 
 	argoNameSpace := fmt.Sprintf("%s-argocd", paas.ManagedByPaas())
 	logger.Info().Msg("setting managed_by_label")
-	ns.ObjectMeta.Labels[getConfig().ManagedByLabel] = argoNameSpace
+	ns.ObjectMeta.Labels[GetConfig().ManagedByLabel] = argoNameSpace
 
 	logger.Info().Msg("setting requestor_label")
-	ns.ObjectMeta.Labels[getConfig().RequestorLabel] = paas.Spec.Requestor
+	ns.ObjectMeta.Labels[GetConfig().RequestorLabel] = paas.Spec.Requestor
 
-	logger.Info().Str("PaaS", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
+	logger.Info().Str("Paas", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
 	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {
 		logger.Err(err).Msg("setControllerReference failure")
 		return nil, err
@@ -142,7 +142,7 @@ func (r *PaasNSReconciler) FinalizeNamespace(
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
-		err = fmt.Errorf("cannot remove Namespace %s because PaaS %s is not the owner", found.Name, paas.Name)
+		err = fmt.Errorf("cannot remove Namespace %s because Paas %s is not the owner", found.Name, paas.Name)
 		paasns.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, paasns, err.Error())
 		return err
 	} else if err = r.Delete(ctx, found); err != nil {
@@ -161,7 +161,7 @@ func (r *PaasNSReconciler) ReconcileNamespaces(
 ) (err error) {
 	nsName := paasns.NamespaceName()
 	var nsQuota string
-	if config, exists := getConfig().Capabilities[paasns.Name]; !exists {
+	if config, exists := GetConfig().Capabilities[paasns.Name]; !exists {
 		nsQuota = paas.Name
 	} else if !config.QuotaSettings.Clusterwide {
 		nsQuota = nsName
