@@ -21,7 +21,23 @@ func createPaasFn(name string, paasSpec api.PaasSpec) types.StepFunc {
 			Spec:       paasSpec,
 		}
 
-		if err := createPaasSync(ctx, cfg, paas); err != nil {
+		if err := createPaasSyncSuccess(ctx, cfg, paas); err != nil {
+			t.Fatal(err)
+		}
+
+		return ctx
+	}
+}
+
+// createPaasFn accepts a Paas spec object and a name and creates the Paas resource.
+func createPaasWithErrorFn(name string, paasSpec api.PaasSpec, msg string) types.StepFunc {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		paas := &api.Paas{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+			Spec:       paasSpec,
+		}
+
+		if err := createPaasSyncWithError(ctx, cfg, paas, msg); err != nil {
 			t.Fatal(err)
 		}
 

@@ -19,7 +19,7 @@ import (
 
 const (
 	paasWithCapability5 = "cap5paas"
-	paasCap5            = "cap5paas-cap5"
+	paasCap5Ns          = "cap5paas-cap5"
 	cap5ApplicationSet  = "cap5as"
 )
 
@@ -47,7 +47,7 @@ func assertCap5Created(ctx context.Context, t *testing.T, cfg *envconf.Config) c
 	paas := getPaas(ctx, paasWithCapability5, t, cfg)
 	namespace := getOrFail(ctx, paasWithCapability5, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
 	applicationSet := getOrFail(ctx, cap5ApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
-	cap5Quota := getOrFail(ctx, paasCap5, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
+	cap5Quota := getOrFail(ctx, paasCap5Ns, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
 	// ClusterResource is created with the same name as the PaaS
 	assert.Equal(t, paasWithCapability5, paas.Name)
@@ -72,12 +72,12 @@ func assertCap5Created(ctx context.Context, t *testing.T, cfg *envconf.Config) c
 
 	// Check whether the LabelSelector is specific to the cap5paas-cap5 namespace
 	labelSelector := cap5Quota.Spec.Selector.LabelSelector
-	assert.True(t, MatchLabelExists(labelSelector.MatchLabels, "q.lbl", paasCap5))
+	assert.True(t, MatchLabelExists(labelSelector.MatchLabels, "q.lbl", paasCap5Ns))
 	assert.False(t, MatchLabelExists(labelSelector.MatchLabels, "q.lbl", "wrong-value"))
-	assert.False(t, MatchLabelExists(labelSelector.MatchLabels, "nonexistent.lbl", paasCap5))
+	assert.False(t, MatchLabelExists(labelSelector.MatchLabels, "nonexistent.lbl", paasCap5Ns))
 
 	// Quota namespace name
-	assert.Equal(t, paasCap5, cap5Quota.Name)
+	assert.Equal(t, paasCap5Ns, cap5Quota.Name)
 
 	// Cap5 quota size matches those passed in the PaaS spec
 	assert.Equal(t, resource.MustParse("5"), cap5Quota.Spec.Quota.Hard[corev1.ResourceRequestsCPU])
@@ -96,7 +96,7 @@ func assertCap5Deleted(ctx context.Context, t *testing.T, cfg *envconf.Config) c
 	}
 
 	// Quota list not contains paas
-	assert.NotContains(t, quotaList.Items, paasCap5)
+	assert.NotContains(t, quotaList.Items, paasCap5Ns)
 
 	// Namespace is deleted
 	var namespaceList corev1.NamespaceList

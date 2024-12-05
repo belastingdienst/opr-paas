@@ -187,7 +187,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 			return ctrl.Result{RequeueAfter: time.Minute * 10}, nil
 		}
 		logger.Err(err).Msg("could not get Paas from k8s")
-		return errResult, err
+		return errResult, nil
 	}
 
 	if paas == nil {
@@ -201,58 +201,58 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		err = r.setErrorCondition(ctx, paas, err)
 		if err != nil {
 			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
+			return errResult, nil
 		}
-		return errResult, err
+		return errResult, nil
 	} else if err = r.ReconcileClusterWideQuota(ctx, paas); err != nil {
 		err = r.setErrorCondition(ctx, paas, err)
 		if err != nil {
 			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
+			return errResult, nil
 		}
-		return errResult, err
+		return errResult, nil
 	} else if err = r.ReconcilePaasNss(ctx, paas); err != nil {
 		err = r.setErrorCondition(ctx, paas, err)
 		if err != nil {
 			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
+			return errResult, nil
 		}
-		return errResult, err
+		return errResult, nil
 	} else if err = r.EnsureAppProject(ctx, paas); err != nil {
 		err = r.setErrorCondition(ctx, paas, err)
 		if err != nil {
 			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
+			return errResult, nil
 		}
-		return errResult, err
+		return errResult, nil
 	} else if err = r.ReconcileGroups(ctx, paas); err != nil {
 		err = r.setErrorCondition(ctx, paas, err)
 		if err != nil {
 			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
+			return errResult, nil
 		}
-		return errResult, err
+		return errResult, nil
 	} else if err = r.EnsureLdapGroups(ctx, paas); err != nil {
 		err = r.setErrorCondition(ctx, paas, err)
 		if err != nil {
 			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
+			return errResult, nil
 		}
-		return errResult, err
+		return errResult, nil
 	} else if err = r.ReconcileRolebindings(ctx, paas); err != nil {
 		err = r.setErrorCondition(ctx, paas, err)
 		if err != nil {
 			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
+			return errResult, nil
 		}
-		return errResult, err
+		return errResult, nil
 	}
 
 	// Reconciling succeeded, set appropriate Condition
 	err = r.setSuccesfullCondition(ctx, paas)
 	if err != nil {
 		logger.Err(err).Msg("failed to update Paas status")
-		return errResult, err
+		return errResult, nil
 	}
 	return okResult, nil
 }

@@ -18,7 +18,8 @@ import (
 const (
 	paasWithCapability6 = "cap6paas"
 	cap6Name            = "cap6"
-	paasCap6            = "cap6paas-cap6"
+	paasCap6Ns          = "cap6paas-cap6"
+	paasCap6CRQ         = "paas-cap6"
 	cap6ApplicationSet  = "cap6as"
 	cap6StatusMessage   = "Capability 'cap6' is not configured"
 )
@@ -35,31 +36,46 @@ func TestCapabilityCap6(t *testing.T) {
 	testenv.Test(
 		t,
 		features.New("Capability 6").
-			Setup(createPaasFn(paasWithCapability6, paasSpec)).
-			Assess("is created", assertCap6NotCreated).
+			Setup(createPaasWithErrorFn(paasWithCapability6, paasSpec, "a capability is requested, but not configured")).
+			Assess("is created", assertCap6PaasCreated).
+			Assess("is deleted when PaaS is deleted", assertCap6Deleted).
 			Teardown(teardownPaasFn(paasWithCapability6)).
 			Feature(),
 	)
 }
 
-func assertCap6NotCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+func assertCap6PaasCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapability6, t, cfg)
-	namespace := getOrFail(ctx, paasWithCapability6, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
-	cap6Quota := getOrFail(ctx, paasCap6, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 	getAndFail(ctx, cap6ApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
-	getAndFail(ctx, paasCap6, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
+	getAndFail(ctx, paasCap6Ns, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
+	getAndFail(ctx, paasCap6CRQ, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
 	// Paas has correct name
 	assert.Equal(t, paasWithCapability6, paas.Name)
 
-	// Paas Namespace exist
-	assert.Equal(t, paasWithCapability6, namespace.Name)
+	return ctx
+}
 
-	// Quota exists
-	assert.Equal(t, paasCap6, cap6Quota.Name)
+func assertCap6Deleted(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	deletePaasSync(ctx, paasWithCapability6, t, cfg)
 
-	// Paas has status message
-	assert.Contains(t, paas.Status.Messages, cap6StatusMessage)
+	// Quota is deleted
+	var quotaList quotav1.ClusterResourceQuotaList
+	if err := cfg.Client().Resources().List(ctx, &quotaList); err != nil {
+		t.Fatalf("Failed to retrieve Quota list: %v", err)
+	}
+
+	// Quota list not contains paas
+	assert.NotContains(t, quotaList.Items, paasCap6Ns)
+
+	// Namespace is deleted
+	var namespaceList corev1.NamespaceList
+	if err := cfg.Client().Resources().List(ctx, &namespaceList); err != nil {
+		t.Fatalf("Failed to retrieve Namespace list: %v", err)
+	}
+
+	// Namespace list not contains paas
+	assert.NotContains(t, namespaceList.Items, paasWithCapability6)
 
 	return ctx
 }
