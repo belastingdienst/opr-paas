@@ -13,7 +13,8 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/types"
 )
 
-// createPaasFn accepts a Paas spec object and a name and creates the Paas resource.
+// createPaasFn accepts a valid Paas spec object and a name and creates the Paas resource,
+// waiting for successful creation.
 func createPaasFn(name string, paasSpec api.PaasSpec) types.StepFunc {
 	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 		paas := &api.Paas{
@@ -21,7 +22,24 @@ func createPaasFn(name string, paasSpec api.PaasSpec) types.StepFunc {
 			Spec:       paasSpec,
 		}
 
-		if err := createPaasSync(ctx, cfg, paas); err != nil {
+		if err := createPaasSyncSuccess(ctx, cfg, paas); err != nil {
+			t.Fatal(err)
+		}
+
+		return ctx
+	}
+}
+
+// createPaasWithErrorFn accepts an invalid Paas spec object and a name and creates the Paas resource,
+// waiting for an error.
+func createPaasWithErrorFn(name string, paasSpec api.PaasSpec, msg string) types.StepFunc {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		paas := &api.Paas{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+			Spec:       paasSpec,
+		}
+
+		if err := createPaasSyncWithError(ctx, cfg, paas, msg); err != nil {
 			t.Fatal(err)
 		}
 

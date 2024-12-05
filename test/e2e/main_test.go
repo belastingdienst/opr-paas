@@ -88,6 +88,31 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 					},
 				},
 			},
+			"cap5": {
+				AppSet:             "cap5as",
+				DefaultPermissions: map[string][]string{},
+				ExtraPermissions:   map[string][]string{},
+				QuotaSettings: v1alpha1.ConfigQuotaSettings{
+					Clusterwide: false,
+					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+						corev1.ResourceLimitsCPU:       resource.MustParse("6"),
+						corev1.ResourceLimitsMemory:    resource.MustParse("7Gi"),
+						corev1.ResourceRequestsCPU:     resource.MustParse("5"),
+						corev1.ResourceRequestsMemory:  resource.MustParse("6Gi"),
+						corev1.ResourceRequestsStorage: resource.MustParse("0"),
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
+					},
+					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{
+						corev1.ResourceLimitsCPU:    resource.MustParse("5"),
+						corev1.ResourceLimitsMemory: resource.MustParse("4Gi"),
+					},
+					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{
+						corev1.ResourceLimitsCPU:    resource.MustParse("1"),
+						corev1.ResourceLimitsMemory: resource.MustParse("1Gi"),
+					},
+					Ratio: 10,
+				},
+			},
 			"tekton": {
 				AppSet: "tektonas",
 				DefaultPermissions: map[string][]string{

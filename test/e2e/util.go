@@ -53,6 +53,13 @@ func getOrFail[T k8s.Object](ctx context.Context, name string, namespace string,
 	return obj
 }
 
+// getAndFail retrieves a resource from k8s, failing the test if it was successfully retrieved.
+func failWhenExists[T k8s.Object](ctx context.Context, name string, namespace string, obj T, t *testing.T, cfg *envconf.Config) {
+	if err := cfg.Client().Resources().Get(ctx, name, namespace, obj); err == nil {
+		t.Fatalf("Resource %s should not be successfully retrieved", name)
+	}
+}
+
 // listOrFail retrieves a resource list from k8s, failing the test if there is an error.
 func listOrFail[L k8s.ObjectList](ctx context.Context, namespace string, obj L, t *testing.T, cfg *envconf.Config) L {
 	if err := cfg.Client().Resources(namespace).List(ctx, obj); err != nil {
@@ -122,22 +129,4 @@ func waitForStatus(ctx context.Context, cfg *envconf.Config, obj k8s.Object, old
 	}
 
 	return nil
-}
-
-func updateSyncStatus(ctx context.Context, cfg *envconf.Config, obj k8s.Object, match func(conds []metav1.Condition) bool) error {
-	gen := obj.GetGeneration()
-
-	if err := cfg.Client().Resources().Update(ctx, obj); err != nil {
-		return fmt.Errorf("failed to update %s: %w", obj.GetName(), err)
-	}
-
-	return waitForStatus(ctx, cfg, obj, gen, match)
-}
-
-func createSyncStatus(ctx context.Context, cfg *envconf.Config, obj k8s.Object, match func(conds []metav1.Condition) bool) error {
-	if err := cfg.Client().Resources().Create(ctx, obj); err != nil {
-		return fmt.Errorf("failed to create %s: %w", obj.GetName(), err)
-	}
-
-	return waitForStatus(ctx, cfg, obj, 0, match)
 }
