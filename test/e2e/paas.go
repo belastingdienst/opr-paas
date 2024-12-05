@@ -5,8 +5,9 @@ package e2e
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/api/meta"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 
@@ -15,8 +16,6 @@ import (
 	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 )
-
-var reconcileStatusRegexp = regexp.MustCompile("^INFO: reconcile for .* succeeded$")
 
 // getPaas retrieves the Paas with the associated name.
 func getPaas(ctx context.Context, name string, t *testing.T, cfg *envconf.Config) *api.Paas {
@@ -29,16 +28,17 @@ func createPaasSync(ctx context.Context, cfg *envconf.Config, paas *api.Paas) er
 		return fmt.Errorf("failed to create Paas %s: %w", paas.GetName(), err)
 	}
 
-	return waitForPaasReconciliation(ctx, cfg, paas)
+	return waitForPaasReconciliation(ctx, cfg, paas, 0)
 }
 
 // updatePaasSync requests an update to a Paas and returns once the Paas reports successful reconciliation.
 func updatePaasSync(ctx context.Context, cfg *envconf.Config, paas *api.Paas) error {
+	oldGeneration := paas.Generation
 	if err := cfg.Client().Resources().Update(ctx, paas); err != nil {
 		return fmt.Errorf("failed to update Paas %s: %w", paas.GetName(), err)
 	}
 
-	return waitForPaasReconciliation(ctx, cfg, paas)
+	return waitForPaasReconciliation(ctx, cfg, paas, oldGeneration)
 }
 
 // deletePaasSync deletes the Paas with the associated name.
@@ -51,12 +51,16 @@ func deletePaasSync(ctx context.Context, name string, t *testing.T, cfg *envconf
 }
 
 // waitForPaasReconciliation polls a Paas resource, blocking until the Paas status reports successful reconciliation.
-func waitForPaasReconciliation(ctx context.Context, cfg *envconf.Config, paas *api.Paas) error {
+func waitForPaasReconciliation(ctx context.Context, cfg *envconf.Config, paas *api.Paas, oldGeneration int64) error {
 	waitCond := conditions.New(cfg.Client().Resources()).
 		ResourceMatch(paas, func(object k8s.Object) bool {
-			messages := object.(*api.Paas).Status.Messages
-
-			return reconcileStatusRegexp.MatchString(messages[len(messages)-1])
+			conditionsMet := meta.IsStatusConditionPresentAndEqual(object.(*api.Paas).Status.Conditions, api.TypeReadyPaas, metav1.ConditionTrue)
+			if conditionsMet {
+				foundCondition := meta.FindStatusCondition(object.(*api.Paas).Status.Conditions, api.TypeReadyPaas)
+				versionMet := object.(*api.Paas).Generation != oldGeneration && object.(*api.Paas).Generation == foundCondition.ObservedGeneration
+				return conditionsMet && versionMet
+			}
+			return false
 		})
 
 	if err := waitForDefaultOpts(ctx, waitCond); err != nil {

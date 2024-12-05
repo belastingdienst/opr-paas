@@ -38,16 +38,13 @@ func (r *PaasReconciler) EnsureQuota(
 		// Create the quota
 		if err = r.Create(ctx, quota); err != nil {
 			// creating the quota failed
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, quota, err.Error())
 			return err
 		} else {
 			// creating the quota was successful
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, quota, "succeeded")
 			return nil
 		}
 	} else if err != nil {
 		// Error that isn't due to the quota not existing
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, quota, err.Error())
 		return err
 	} else {
 		// Update the quota
@@ -55,13 +52,9 @@ func (r *PaasReconciler) EnsureQuota(
 		found.Spec = quota.Spec
 		if err = r.Update(ctx, found); err != nil {
 			// updating the quota failed
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusUpdate, quota, err.Error())
 			return err
-		} else {
-			// updating the quota was successful
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, quota, "succeeded")
-			return nil
 		}
+		return nil
 	}
 }
 
@@ -236,7 +229,6 @@ func (r *PaasReconciler) ReconcileQuotas(
 	logger.Info().Msg("creating quotas for Paas")
 	// Create quotas if needed
 	if quotas, err := r.BackendEnabledQuotas(ctx, paas); err != nil {
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, paas, err.Error())
 		return err
 	} else {
 		for _, q := range quotas {

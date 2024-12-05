@@ -40,8 +40,6 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 	}
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("defining")
-	paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate,
-		pns, "Setting requestor_label")
 	pns.ObjectMeta.Labels[GetConfig().RequestorLabel] = paas.Spec.Requestor
 
 	logger.Info().Msg("setting Owner")
@@ -64,20 +62,12 @@ func (r *PaasReconciler) ensurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
 		if err = r.Create(ctx, pns); err != nil {
-			// creating the namespace failed
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, pns, err.Error())
 			return err
-		} else {
-			// creating the namespace was successful
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, pns, "succeeded")
-			return nil
 		}
+		return nil
 	} else if err != nil {
-		// Error that isn't due to the namespace not existing
-		paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusFind, pns, err.Error())
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
-		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
 		if err := controllerutil.SetControllerReference(paas, found, r.Scheme); err != nil {
 			return err
 		}
@@ -112,10 +102,7 @@ func (r *PaasReconciler) FinalizePaasNss(ctx context.Context, paas *v1alpha1.Paa
 		} else if _, isEnabled := enabledNs[pns.Name]; isEnabled {
 			// logger.Info().Msg("skipping finalization", "Namespace", ns.Name, "Reason", "Should be there")
 		} else if err := r.Delete(ctx, &pns); err != nil {
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusDelete, &pns, err.Error())
-			// logger.Err(err).Msg("could not delete ns", "Namespace", ns.Name)
-		} else {
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusDelete, &pns, "succeeded")
+			return err
 		}
 	}
 	return nil

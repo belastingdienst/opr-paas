@@ -73,13 +73,13 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 	}
 
 	if err := r.Get(ctx, req.NamespacedName, paasns); err != nil {
-		logger.Err(err).Msg("Failed to re-fetch PaasNs")
+		logger.Err(err).Msg("failed to re-fetch PaasNs")
 		return nil, err
 	}
 
 	// Add finalizer for this CR
 	if !controllerutil.ContainsFinalizer(paasns, paasNsFinalizer) {
-		logger.Info().Msg("PaasNs object has no finalizer yet")
+		logger.Info().Msg("paasNs object has no finalizer yet")
 		if ok := controllerutil.AddFinalizer(paasns, paasNsFinalizer); !ok {
 			logger.Err(err).Msg("failed to add finalizer")
 			return nil, fmt.Errorf("failed to add finalizer")
@@ -115,7 +115,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 			})
 
 			if err := r.Status().Update(ctx, paasns); err != nil {
-				logger.Err(err).Msg("Failed to update PaasNs status")
+				logger.Err(err).Msg("failed to update PaasNs status")
 				return nil, err
 			}
 
@@ -134,11 +134,11 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 			})
 
 			if err := r.Status().Update(ctx, paasns); err != nil {
-				logger.Err(err).Msg("Failed to update PaasNs status")
+				logger.Err(err).Msg("failed to update PaasNs status")
 				return nil, err
 			}
 
-			logger.Info().Msg("Removing finalizer")
+			logger.Info().Msg("removing finalizer")
 			// Remove paasNsFinalizer. Once all finalizers have been removed, the object will be deleted.
 			controllerutil.RemoveFinalizer(paasns, paasNsFinalizer)
 			if err := r.Update(ctx, paasns); err != nil {
@@ -466,7 +466,7 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 	if _, isCapability := paas.Spec.Capabilities[paasns.Name]; isCapability {
 		logger.Info().Msg("paasNs is a capability, also finalizing Cluster Resource Quota")
 		if err := r.FinalizeClusterQuota(ctx, paasns); err != nil {
-			logger.Err(err).Msg(fmt.Sprintf("Failure while finalizing quota %s", paasns.Name))
+			logger.Err(err).Msg(fmt.Sprintf("failure while finalizing quota %s", paasns.Name))
 			return err
 		}
 	}

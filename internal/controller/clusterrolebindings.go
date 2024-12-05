@@ -38,9 +38,6 @@ func getClusterRoleBinding(
 	if err != nil && errors.IsNotFound(err) {
 		return newClusterRoleBinding(role), nil
 	} else if err != nil {
-		// Error that isn't due to the rolebinding not existing
-		paas.Status.AddMessage(v1alpha1.PaasStatusError,
-			v1alpha1.PaasStatusFind, newClusterRoleBinding(role), err.Error())
 		return nil, err
 	} else {
 		return found, nil

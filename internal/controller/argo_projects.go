@@ -41,21 +41,15 @@ func (r *PaasReconciler) EnsureAppProject(
 	if err != nil && errors.IsNotFound(err) {
 		// Create the namespace
 		err = r.Create(ctx, project)
-
 		if err != nil {
 			// creating the appProject failed
-			paas.Status.AddMessage(v1alpha1.PaasStatusError, v1alpha1.PaasStatusCreate, found, err.Error())
 			return err
-		} else {
-			// creating the appProject was successful
-			paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusCreate, found, "succeeded")
-			return nil
 		}
+		return nil
 	} else if err != nil {
 		// Error that isn't due to the appProject not existing
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
-		paas.Status.AddMessage(v1alpha1.PaasStatusInfo, v1alpha1.PaasStatusUpdate, found, "updating owner")
 		if err := controllerutil.SetControllerReference(paas, found, r.Scheme); err != nil {
 			return err
 		}

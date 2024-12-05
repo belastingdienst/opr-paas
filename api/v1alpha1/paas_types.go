@@ -13,8 +13,16 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/groups"
 	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+// Definitions to manage status conditions
+const (
+	// TypeReadyPaas represents the status of the Paas reconciliation
+	TypeReadyPaas = "Ready"
+	// TypeHasErrorsPaas represents the status used when the Paas reconciliation holds errors.
+	TypeHasErrorsPaas = "HasErrors"
+	// TypeDegradedPaas represents the status used when the Paas is deleted and the finalizer operations are yet to occur.
+	TypeDegradedPaas = "Degraded"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -301,48 +309,20 @@ func (pc *PaasCapability) SetSshSecret(key string, value string) {
 
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
-	// Important: Run "make" to regenerate code after modifying this file
-	Messages []string                    `json:"messages,omitempty"`
-	Quota    map[string]paas_quota.Quota `json:"quotas,omitempty"`
+	// Deprecated: use paasns.status.conditions instead
+	Messages   []string                    `json:"messages,omitempty"`
+	Quota      map[string]paas_quota.Quota `json:"quotas,omitempty"`
+	Conditions []metav1.Condition          `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
+// Deprecated: use paas.status.conditions instead
 func (ps *PaasStatus) Truncate() {
 	ps.Messages = []string{}
 }
 
-type (
-	PaasStatusLevel  string
-	PaasStatusAction string
-)
-
-const (
-	PaasStatusInfo      PaasStatusLevel  = "INFO"
-	PaasStatusWarning   PaasStatusLevel  = "WARNING"
-	PaasStatusError     PaasStatusLevel  = "ERROR"
-	PaasStatusParse     PaasStatusAction = "parse"
-	PaasStatusCreate    PaasStatusAction = "create"
-	PaasStatusDelete    PaasStatusAction = "delete"
-	PaasStatusFind      PaasStatusAction = "find"
-	PaasStatusUpdate    PaasStatusAction = "update"
-	PaasStatusReconcile PaasStatusAction = "reconcile"
-)
-
-func (ps *PaasStatus) AddMessage(level PaasStatusLevel, action PaasStatusAction, obj client.Object, message string) {
-	namespacedName := types.NamespacedName{
-		Name:      obj.GetName(),
-		Namespace: obj.GetNamespace(),
-	}
-	ps.Messages = append(ps.Messages,
-		fmt.Sprintf("%s: %s for %s (%s) %s", level, action, namespacedName.String(), obj.GetObjectKind().GroupVersionKind().String(), message),
-	)
-}
-
+// Deprecated: use paasns.status.conditions instead
 func (ps *PaasStatus) GetMessages() []string {
 	return ps.Messages
-}
-
-func (ps *PaasStatus) AddMessages(msgs []string) {
-	ps.Messages = append(ps.Messages, msgs...)
 }
 
 //+kubebuilder:object:root=true
