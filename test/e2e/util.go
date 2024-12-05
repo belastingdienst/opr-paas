@@ -52,6 +52,13 @@ func getOrFail[T k8s.Object](ctx context.Context, name string, namespace string,
 	return obj
 }
 
+// getAndFail retrieves a resource from k8s, failing the test if it was successfully retrieved.
+func getAndFail[T k8s.Object](ctx context.Context, name string, namespace string, obj T, t *testing.T, cfg *envconf.Config) {
+	if err := cfg.Client().Resources().Get(ctx, name, namespace, obj); err == nil {
+		t.Fatalf("Resource %s should not be successfully retrieved", name)
+	}
+}
+
 // listOrFail retrieves a resource list from k8s, failing the test if there is an error.
 func listOrFail[L k8s.ObjectList](ctx context.Context, namespace string, obj L, t *testing.T, cfg *envconf.Config) L {
 	if err := cfg.Client().Resources(namespace).List(ctx, obj); err != nil {
