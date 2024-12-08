@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -25,7 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const paasFinalizer = "paas.cpet.belastingdienst.nl/finalizer"
@@ -172,89 +172,41 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	paas := &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
 	ctx, logger := setRequestLogger(ctx, paas, r.Scheme, req)
 
-	errResult := reconcile.Result{
-		Requeue:      true,
-		RequeueAfter: time.Second * 10,
-	}
-	okResult := reconcile.Result{
-		Requeue: false,
-	}
-
 	if paas, err = r.GetPaas(ctx, req); err != nil {
 		// TODO(portly-halicore-76) move to admission webhook once available
-		// Don't requeue that often
+		// Don't requeue that often when no config is found
 		if strings.Contains(err.Error(), "no config found") {
 			return ctrl.Result{RequeueAfter: time.Minute * 10}, nil
 		}
 		logger.Err(err).Msg("could not get Paas from k8s")
-		return errResult, err
+		return ctrl.Result{}, err
 	}
 
 	if paas == nil {
 		// r.GetPaas handled all logic and returned a nil object
-		return okResult, nil
+		return ctrl.Result{}, nil
 	}
 
 	paas.Status.Truncate()
 
 	if err := r.ReconcileQuotas(ctx, paas); err != nil {
-		err = r.setErrorCondition(ctx, paas, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
-		}
-		return errResult, err
+		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.ReconcileClusterWideQuota(ctx, paas); err != nil {
-		err = r.setErrorCondition(ctx, paas, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
-		}
-		return errResult, err
+		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.ReconcilePaasNss(ctx, paas); err != nil {
-		err = r.setErrorCondition(ctx, paas, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
-		}
-		return errResult, err
+		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.EnsureAppProject(ctx, paas); err != nil {
-		err = r.setErrorCondition(ctx, paas, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
-		}
-		return errResult, err
+		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.ReconcileGroups(ctx, paas); err != nil {
-		err = r.setErrorCondition(ctx, paas, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
-		}
-		return errResult, err
+		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.EnsureLdapGroups(ctx, paas); err != nil {
-		err = r.setErrorCondition(ctx, paas, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
-		}
-		return errResult, err
+		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.ReconcileRolebindings(ctx, paas); err != nil {
-		err = r.setErrorCondition(ctx, paas, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update Paas status")
-			return errResult, err
-		}
-		return errResult, err
+		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	}
 
 	// Reconciling succeeded, set appropriate Condition
-	err = r.setSuccesfullCondition(ctx, paas)
-	if err != nil {
-		logger.Err(err).Msg("failed to update Paas status")
-		return errResult, err
-	}
-	return okResult, nil
+	return ctrl.Result{}, r.setSuccesfullCondition(ctx, paas)
 }
 
 func (r *PaasReconciler) setSuccesfullCondition(ctx context.Context, paas *v1alpha1.Paas) error {
@@ -269,10 +221,7 @@ func (r *PaasReconciler) setSuccesfullCondition(ctx context.Context, paas *v1alp
 		Message: fmt.Sprintf("Reconciled (%s) successfully", paas.Name),
 	})
 
-	if err := r.Status().Update(ctx, paas); err != nil {
-		return err
-	}
-	return nil
+	return r.Status().Update(ctx, paas)
 }
 
 func (r *PaasReconciler) setErrorCondition(ctx context.Context, paas *v1alpha1.Paas, err error) error {
@@ -287,10 +236,7 @@ func (r *PaasReconciler) setErrorCondition(ctx context.Context, paas *v1alpha1.P
 		Message: err.Error(),
 	})
 
-	if err := r.Status().Update(ctx, paas); err != nil {
-		return err
-	}
-	return nil
+	return r.Status().Update(ctx, paas)
 }
 
 // SetupWithManager sets up the controller with the Manager.
