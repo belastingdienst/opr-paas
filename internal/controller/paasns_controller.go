@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -16,11 +17,9 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	"github.com/rs/zerolog/log"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -81,7 +80,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 	if !controllerutil.ContainsFinalizer(paasns, paasNsFinalizer) {
 		logger.Info().Msg("paasNs object has no finalizer yet")
 		if ok := controllerutil.AddFinalizer(paasns, paasNsFinalizer); !ok {
-			logger.Err(err).Msg("failed to add finalizer")
+			logger.Error().Msg("failed to add finalizer")
 			return nil, fmt.Errorf("failed to add finalizer")
 		}
 		if err := r.Update(ctx, paasns); err != nil {
@@ -154,7 +153,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, err error) {
 	paas, _, err = r.paasFromPaasNs(ctx, paasns)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			err = fmt.Errorf("cannot find Paas %s", paasns.Spec.Paas)
 		}
 		// This cannot be resolved by itself, so we should not have this keep on reconciling
@@ -174,85 +173,50 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	paasns := &v1alpha1.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
 	ctx, logger := setRequestLogger(ctx, paasns, r.Scheme, req)
 
-	errResult := reconcile.Result{
-		Requeue:      true,
-		RequeueAfter: time.Second * 10,
-	}
-	okResult := reconcile.Result{
-		Requeue: false,
-	}
-
 	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
 		// TODO(portly-halicore-76) move to admission webhook once available
-		// Don't requeue that often
+		// Don't requeue that often when no config is found
 		if strings.Contains(err.Error(), "no config found") {
 			return ctrl.Result{RequeueAfter: time.Minute * 10}, nil
 		}
 		logger.Err(err).Msg("could not get PaasNs from k8s")
-		return errResult, err
+		return ctrl.Result{}, err
 	}
 
 	if paasns == nil {
 		// r.GetPaasNs handled all logic and returned a nil object
-		return okResult, nil
+		return ctrl.Result{}, nil
 	}
 
+	// TODO(portly-halicore-76) remove once api version is upgraded
 	paasns.Status.Truncate()
 
 	var paas *v1alpha1.Paas
 	if paas, err = r.GetPaas(ctx, paasns); err != nil {
-		err = r.setErrorCondition(ctx, paasns, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update PaasNs status")
-			return errResult, err
-		}
-		// This cannot be resolved by itself, so we should not have this keep on reconciling
-		return okResult, nil
+		// This cannot be resolved by itself, so we should not have this keep on reconciling, only try again when setErrorCondition
+		// fails
+		return ctrl.Result{}, r.setErrorCondition(ctx, paasns, err)
 	}
 
 	err = r.ReconcileNamespaces(ctx, paas, paasns)
 	if err != nil {
-		err = r.setErrorCondition(ctx, paasns, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update PaasNs status")
-			return errResult, err
-		}
-		return errResult, err
+		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
 	}
 
 	err = r.ReconcileRolebindings(ctx, paas, paasns)
 	if err != nil {
-		err = r.setErrorCondition(ctx, paasns, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update PaasNs status")
-			return errResult, err
-		}
-		return errResult, err
+		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
 	}
 
 	err = r.ReconcileSecrets(ctx, paas, paasns)
 	if err != nil {
-		// error related to decrypting secret. User error, must not retry reconciliation
-		if strings.Contains(err.Error(), "failed to decrypt secret") {
-			return okResult, nil
-		}
-		err = r.setErrorCondition(ctx, paasns, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update PaasNs status")
-			return errResult, err
-		}
-		return errResult, err
+		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
 	}
 
 	err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas)
 	if err != nil {
 		logger.Err(err).Msg("reconciling Extra ClusterRoleBindings failed")
-		err = r.setErrorCondition(ctx, paasns, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update PaasNs status")
-			return errResult, err
-		}
-		return errResult, err
+		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
 	}
 
 	if _, exists := paas.Spec.Capabilities[paasns.Name]; exists {
@@ -261,43 +225,22 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 
 			// Create bootstrap Argo App
 			if err := r.EnsureArgoApp(ctx, paasns, paas); err != nil {
-				err = r.setErrorCondition(ctx, paasns, err)
-				if err != nil {
-					logger.Err(err).Msg("failed to update PaasNs status")
-					return errResult, err
-				}
-				return errResult, err
+				return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
 			}
 
 			if err := r.EnsureArgoCD(ctx, paasns); err != nil {
-				err = r.setErrorCondition(ctx, paasns, err)
-				if err != nil {
-					logger.Err(err).Msg("failed to update PaasNs status")
-					return errResult, err
-				}
-				return errResult, err
+				return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
 			}
 		}
 
 		logger.Info().Msg("extending Applicationsets for Paas object")
 		if err := r.EnsureAppSetCap(ctx, paasns, paas); err != nil {
-			err = r.setErrorCondition(ctx, paasns, err)
-			if err != nil {
-				logger.Err(err).Msg("failed to update PaasNs status")
-				return errResult, err
-			}
-			return errResult, err
+			return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
 		}
 	}
 
 	// Reconciling succeeded, set appropriate Condition
-	err = r.setSuccesfullCondition(ctx, paasns)
-	if err != nil {
-		logger.Err(err).Msg("failed to update PaasNs status")
-		return errResult, err
-	}
-
-	return okResult, nil
+	return ctrl.Result{}, r.setSuccesfullCondition(ctx, paasns)
 }
 
 func (r *PaasNSReconciler) setSuccesfullCondition(ctx context.Context, paasNs *v1alpha1.PaasNS) error {
@@ -312,10 +255,7 @@ func (r *PaasNSReconciler) setSuccesfullCondition(ctx context.Context, paasNs *v
 		Message: fmt.Sprintf("Reconciled (%s) successfully", paasNs.Name),
 	})
 
-	if err := r.Status().Update(ctx, paasNs); err != nil {
-		return err
-	}
-	return nil
+	return r.Status().Update(ctx, paasNs)
 }
 
 func (r *PaasNSReconciler) setErrorCondition(ctx context.Context, paasNs *v1alpha1.PaasNS, err error) error {
@@ -330,10 +270,7 @@ func (r *PaasNSReconciler) setErrorCondition(ctx context.Context, paasNs *v1alph
 		Message: err.Error(),
 	})
 
-	if err := r.Status().Update(ctx, paasNs); err != nil {
-		return err
-	}
-	return nil
+	return r.Status().Update(ctx, paasNs)
 }
 
 // SetupWithManager sets up the controller with the Manager.

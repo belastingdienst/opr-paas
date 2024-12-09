@@ -130,25 +130,6 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 
 type PaasQuotas map[string]paas_quota.Quota
 
-func (r *PaasReconciler) BackendEnabledQuotaStatus(
-	paas *v1alpha1.Paas,
-) (quotas PaasQuotas, err error) {
-	config := GetConfig()
-	quotas = make(PaasQuotas)
-	quotas["default"] = paas.Spec.Quota
-	for name, cap := range paas.Spec.Capabilities {
-		if capConfig, exists := config.Capabilities[name]; !exists {
-			return nil, fmt.Errorf("a capability is requested, but not configured")
-		} else if cap.IsEnabled() {
-			defaults := capConfig.QuotaSettings.DefQuota
-			quota := cap.Quotas().MergeWith(
-				defaults)
-			quotas[name] = quota
-		}
-	}
-	return quotas, nil
-}
-
 func (r *PaasReconciler) BackendUnneededQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
@@ -239,16 +220,15 @@ func (r *PaasReconciler) ReconcileQuotas(
 			}
 		}
 	}
-	if paas.Status.Quota, err = r.BackendEnabledQuotaStatus(paas); err != nil {
-		return err
-	} else {
-		for _, name := range r.BackendUnneededQuotas(ctx, paas) {
-			logger.Info().Msg("cleaning quota " + name + " for PAAS object ")
-			if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {
-				logger.Err(err).Msgf("failure while finalizing quota %s", name)
-				return err
-			}
+	// TODO(portly-halicore-76) remove once quota is removed from Status in a future release
+	paas.Status.Quota = map[string]paas_quota.Quota{}
+	for _, name := range r.BackendUnneededQuotas(ctx, paas) {
+		logger.Info().Msg("cleaning quota " + name + " for PAAS object ")
+		if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {
+			logger.Err(err).Msgf("failure while finalizing quota %s", name)
+			return err
 		}
 	}
+
 	return nil
 }
