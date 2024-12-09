@@ -8,10 +8,14 @@ package v1alpha1
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -286,4 +290,43 @@ type PaasConfigList struct {
 
 func init() {
 	SchemeBuilder.Register(&PaasConfig{}, &PaasConfigList{})
+}
+
+// ActivePaasConfigUpdated returns a predicate to be used in watches. We are only interested in changes to the active PaasConfig.
+// because we determine the active PaasConfig based on a Condition, we must use the updateFunc as the status set is done via an
+// update. We explicitly don't return deletions of the PaasConfig.
+func ActivePaasConfigUpdated() predicate.Predicate {
+	return predicate.Funcs{
+		// Trigger reconciliation only if the paasConfig has the Active PaasConfig is updated
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			oldObj := e.ObjectOld.(*PaasConfig)
+			newObj := e.ObjectNew.(*PaasConfig)
+
+			// The 'double' status check is needed because during 'creation' of the PaasConfig, the Condition is set. Once set
+			// we check for specChanges.
+			if meta.IsStatusConditionPresentAndEqual(newObj.Status.Conditions, TypeActivePaasConfig, metav1.ConditionTrue) {
+				if !meta.IsStatusConditionPresentAndEqual(oldObj.Status.Conditions, TypeActivePaasConfig, metav1.ConditionTrue) {
+					return true
+				}
+				return !reflect.DeepEqual(oldObj.Spec, newObj.Spec)
+			}
+
+			return false
+		},
+
+		// Disallow create events
+		CreateFunc: func(e event.CreateEvent) bool {
+			return false
+		},
+
+		// Disallow delete events
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return false
+		},
+
+		// Disallow generic events (e.g., external triggers)
+		GenericFunc: func(e event.GenericEvent) bool {
+			return false
+		},
+	}
 }
