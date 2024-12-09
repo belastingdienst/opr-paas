@@ -80,6 +80,25 @@ _Appears in:_
 | `quotas` _[ConfigQuotaSettings](#configquotasettings)_ | Quota settings for this capability |  | Required: \{\} <br /> |
 | `extra_permissions` _[ConfigCapPerm](#configcapperm)_ | Extra permissions set for this capability |  | Required: \{\} <br /> |
 | `default_permissions` _[ConfigCapPerm](#configcapperm)_ | Default permissions set for this capability |  | Required: \{\} <br /> |
+| `custom_fields` _object (keys:string, values:[ConfigCustomField](#configcustomfield))_ | Settings to allow specific configuration specific to a capability |  |  |
+
+
+#### ConfigCustomField
+
+
+
+
+
+
+
+_Appears in:_
+- [ConfigCapability](#configcapability)
+
+| Field | Description | Default | Validation |
+| --- | --- | --- | --- |
+| `validation` _string_ | Regular expression for validating input, defaults to '', which means no validation. |  |  |
+| `default` _string_ | Set a default when no value is specified, defaults to ''.<br />Only applies when Required is false. |  |  |
+| `required` _boolean_ | Define if the value must be specified in the PaaS.<br />When set to true, and no value is set, PaasNs has error in status field, and capability is not built.<br />When set to false, and no value is set, Default is used. |  |  |
 
 
 #### ConfigLdap
@@ -200,9 +219,10 @@ _Appears in:_
 | `gitUrl` _string_ | The URL that contains the Applications / Application Sets to be used by this capability |  |  |
 | `gitRevision` _string_ | The revision of the git repo that contains the Applications / Application Sets to be used by this capability |  |  |
 | `gitPath` _string_ | the path in the git repo that contains the Applications / Application Sets to be used by this capability |  |  |
+| `custom_fields` _object (keys:string, values:string)_ | Custom fields to configure this specific Capability |  |  |
 | `quota` _[Quota](#quota)_ | This project has it's own ClusterResourceQuota settings |  |  |
 | `sshSecrets` _object (keys:string, values:string)_ | You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket<br />They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator |  |  |
-| `extra_permissions` _boolean_ | You can enable extra permissions for the service accounts beloning to this capability<br />Exact definitions is configured in Paas Configmap<br />Note that we want to remove (some of) these permissions in future releases (like self-provisioner) |  |  |
+| `extra_permissions` _boolean_ | You can enable extra permissions for the service accounts belonging to this capability<br />Exact definitions is configured in Paas Configmap<br />Note that we want to remove (some of) these permissions in future releases (like self-provisioner) |  |  |
 
 
 #### PaasConfig
@@ -370,7 +390,7 @@ _Appears in:_
 
 | Field | Description | Default | Validation |
 | --- | --- | --- | --- |
-| `paas` _string_ | Foo is an example field of PaasNS. Edit paasns_types.go to remove/update |  |  |
+| `paas` _string_ |  |  |  |
 | `groups` _string array_ |  |  |  |
 | `sshSecrets` _object (keys:string, values:string)_ |  |  |  |
 
@@ -397,10 +417,6 @@ _Appears in:_
 | `namespaces` _string array_ | Namespaces can be used to define extra namespaces to be created as part of this Paas project |  |  |
 | `sshSecrets` _object (keys:string, values:string)_ | You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket<br />They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator |  |  |
 | `managedByPaas` _string_ | Indicated by which 3rd party Paas's ArgoCD this Paas is managed |  |  |
-
-
-
-
 
 
 
