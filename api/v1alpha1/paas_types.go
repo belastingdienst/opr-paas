@@ -310,7 +310,8 @@ func (pc *PaasCapability) SetSshSecret(key string, value string) {
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
 	// Deprecated: use paasns.status.conditions instead
-	Messages   []string                    `json:"messages,omitempty"`
+	Messages []string `json:"messages,omitempty"`
+	// Deprecated: will not be set and removed in a future release
 	Quota      map[string]paas_quota.Quota `json:"quotas,omitempty"`
 	Conditions []metav1.Condition          `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
