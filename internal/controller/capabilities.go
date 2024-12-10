@@ -122,27 +122,37 @@ func splitToService(paasName string) (string, string) {
 	return parts[0], parts[1]
 }
 
-func entryFromPaas(paas *v1alpha1.Paas) Elements {
-	service, subService := splitToService(paas.Name)
-	return Elements{
-		"requestor":  paas.Spec.Requestor,
-		"paas":       paas.Name,
-		"service":    service,
-		"subservice": subService,
-	}
-}
-
-// ensureAppSetCap ensures a list entry in the AppSet voor the capability
+// ensureAppSetCap ensures a list entry in the AppSet for the capability
 func (r *PaasNSReconciler) EnsureAppSetCap(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) error {
 	var err error
-	if _, exists := paas.Spec.Capabilities[paasns.Name]; !exists {
+	var errs []error
+	var fields Elements
+	if cap, exists := paas.Spec.Capabilities[paasns.Name]; !exists {
 		// Not a capability
 		return nil
+	} else if capConfig, exists := GetConfig().Capabilities[paasns.Name]; !exists {
+		if setErr := r.setErrorCondition(ctx, paasns, err); setErr != nil {
+			return fmt.Errorf("while setting condition for %w, another error occurred: %w", err, setErr)
+		}
+		// Not needed to keep reconciling
+		return nil
+	} else if fields, errs = cap.CapExtraFields(capConfig.CustomFields); errs != nil {
+		for _, err := range errs {
+			if setErr := r.setErrorCondition(ctx, paasns, err); setErr != nil {
+				return fmt.Errorf("while setting condition for %w, another error occurred: %w", err, setErr)
+			}
+		}
+		return fmt.Errorf("%d errors while validating extra_fields", len(errs))
 	}
+	service, subService := splitToService(paas.Name)
+	fields["requestor"] = paas.Spec.Requestor
+	fields["paas"] = paas.Name
+	fields["service"] = service
+	fields["subservice"] = subService
 	// See if AppSet exists raise error if it doesn't
 	namespacedName := GetConfig().CapabilityK8sName(paasns.Name)
 	appSet := &appv1.ApplicationSet{
@@ -173,12 +183,12 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 		}
 		appSet.Spec.Generators = append(appSet.Spec.Generators, *listGen)
 		entries = Entries{
-			paasns.Spec.Paas: entryFromPaas(paas),
+			paasns.Spec.Paas: fields,
 		}
 	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
 		return err
 	} else {
-		entry := entryFromPaas(paas)
+		entry := fields
 		entries[entry.Key()] = entry
 	}
 	// log.Info(fmt.Sprintf("entries: %s", entries.AsString()))
@@ -192,7 +202,7 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 	return r.Patch(ctx, appSet, patch)
 }
 
-// ensureAppSetCap ensures a list entry in the AppSet voor the capability
+// ensureAppSetCap ensures a list entry in the AppSet for the capability
 func (r *PaasNSReconciler) EnsureAppSetCaps(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
@@ -266,8 +276,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
 		return err
 	} else {
-		entry := entryFromPaas(paas)
-		delete(entries, entry.Key())
+		delete(entries, paas.Name)
 	}
 	if json, err := entries.AsJSON(); err != nil {
 		return err
