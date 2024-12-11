@@ -21,10 +21,6 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          sparse-checkout: |
-            docs
 
       - name: Set up Go for generating API doc
         uses: actions/setup-go@v5
@@ -34,8 +30,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           go install github.com/elastic/crd-ref-docs@6d9cbb2645274941d10941cc988a49e873562fba
-          pwd
-          ls
           crd-ref-docs --config=./crd-ref-docs-config.yml --source-path=./api --renderer=markdown --output-path=./docs/development-guide/00_api.md
         working-directory: ${{ github.workspace }}
 
