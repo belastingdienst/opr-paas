@@ -42,6 +42,10 @@ type PaasConfig struct {
 	Status PaasConfigStatus `json:"status,omitempty"`
 }
 
+func (p PaasConfig) GetConditions() []metav1.Condition {
+	return p.Status.Conditions
+}
+
 type PaasConfigSpec struct {
 	// Deprecated: Will be replaced by a secretRef to overcome caching
 	// Paths where the manager can find the decryptKeys to decrypt Paas'es
