@@ -35,6 +35,7 @@ jobs:
         run: |
           go install github.com/elastic/crd-ref-docs@latest
           crd-ref-docs --config=./crd-ref-docs-config.yml --source-path=./api --renderer=markdown --output-path=./docs/development-guide/00_api.md
+        working-directory: ${{ github.workspace }}
 
       - name: Set up Python runtime
         uses: actions/setup-python@v5
