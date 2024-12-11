@@ -1,5 +1,6 @@
 name: Build and publish documentation
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -24,6 +25,15 @@ jobs:
           fetch-depth: 0
           sparse-checkout: |
             docs
+
+      - name: Set up Go for generating API doc
+        uses: actions/setup-go@v5
+
+      - name: Generate API document
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          crd-ref-docs --config=./crd-ref-docs-config.yml --source-path=./api --renderer=markdown --output-path=./docs/development-guide/00_api.md
 
       - name: Set up Python runtime
         uses: actions/setup-python@v5
