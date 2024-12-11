@@ -33,7 +33,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          go install github.com/elastic/crd-ref-docs
+          go install github.com/elastic/crd-ref-docs@latest
           crd-ref-docs --config=./crd-ref-docs-config.yml --source-path=./api --renderer=markdown --output-path=./docs/development-guide/00_api.md
 
       - name: Set up Python runtime
