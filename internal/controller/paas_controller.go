@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -23,8 +25,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
@@ -242,14 +246,37 @@ func (r *PaasReconciler) setErrorCondition(ctx context.Context, paas *v1alpha1.P
 // SetupWithManager sets up the controller with the Manager.
 func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Paas{}).
-		WithEventFilter(
+		For(&v1alpha1.Paas{}, builder.WithPredicates(
 			predicate.Or(
 				// Spec updated
 				predicate.GenerationChangedPredicate{},
 				// Labels updated
 				predicate.LabelChangedPredicate{},
-			)).
+			))).
+		Watches(
+			&v1alpha1.PaasConfig{},
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+				// Enqueue all Paas objects
+				var reqs []reconcile.Request
+				var paasList v1alpha1.PaasList
+				if err := mgr.GetClient().List(context.Background(), &paasList); err == nil {
+					for _, p := range paasList.Items {
+						reqs = append(reqs, reconcile.Request{
+							NamespacedName: types.NamespacedName{
+								Namespace: p.Namespace,
+								Name:      p.Name,
+							},
+						})
+					}
+				} else {
+					mgr.GetLogger().Error(err, "unable to list paases")
+					return nil
+				}
+
+				return reqs
+			}),
+			builder.WithPredicates(v1alpha1.ActivePaasConfigUpdated()),
+		).
 		Complete(r)
 }
 

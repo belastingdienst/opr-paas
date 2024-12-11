@@ -14,6 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	"github.com/rs/zerolog/log"
@@ -276,14 +279,32 @@ func (r *PaasNSReconciler) setErrorCondition(ctx context.Context, paasNs *v1alph
 // SetupWithManager sets up the controller with the Manager.
 func (r *PaasNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.PaasNS{}).
-		WithEventFilter(
+		For(&v1alpha1.PaasNS{}, builder.WithPredicates(
 			predicate.Or(
 				// Spec updated
 				predicate.GenerationChangedPredicate{},
 				// Labels updated
 				predicate.LabelChangedPredicate{},
-			)).
+			))).
+		Watches(&v1alpha1.PaasConfig{},
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []ctrl.Request {
+				paasnses := &v1alpha1.PaasNSList{}
+				if err := mgr.GetClient().List(ctx, paasnses); err != nil {
+					mgr.GetLogger().Error(err, "while listing paasnses")
+					return nil
+				}
+
+				reqs := make([]ctrl.Request, 0, len(paasnses.Items))
+				for _, item := range paasnses.Items {
+					reqs = append(reqs, ctrl.Request{
+						NamespacedName: types.NamespacedName{
+							Namespace: item.GetNamespace(),
+							Name:      item.GetName(),
+						},
+					})
+				}
+				return reqs
+			}), builder.WithPredicates(v1alpha1.ActivePaasConfigUpdated())).
 		Complete(r)
 }
 
