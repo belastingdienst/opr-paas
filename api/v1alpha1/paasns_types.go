@@ -80,6 +80,10 @@ func (p PaasNS) AmIOwner(references []metav1.OwnerReference) bool {
 	return false
 }
 
+func (p PaasNS) GetConditions() []metav1.Condition {
+	return p.Status.Conditions
+}
+
 //+kubebuilder:object:root=true
 
 // PaasNSList contains a list of PaasNS
