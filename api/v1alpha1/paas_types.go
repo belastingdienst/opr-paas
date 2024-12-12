@@ -385,6 +385,10 @@ func (p Paas) WithoutMe(references []metav1.OwnerReference) (withoutMe []metav1.
 	return withoutMe
 }
 
+func (p Paas) GetConditions() []metav1.Condition {
+	return p.Status.Conditions
+}
+
 //+kubebuilder:object:root=true
 
 // PaasList contains a list of Paas
