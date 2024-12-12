@@ -17,6 +17,8 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
+const paasConfigDuplicateName = "paas-config-2"
+
 func TestPaasConfig(t *testing.T) {
 	testenv.Test(
 		t,
@@ -47,6 +49,15 @@ func TestPaasConfig(t *testing.T) {
 			Assess("PaasConfig is Active", assertPaasConfigIsActive).
 			Assess("PaasConfig is Updated", assertPaasConfigIsUpdated).
 			Assess("PaasConfig Invalid Spec", assertPaasConfigInvalidSpec).
+			Assess("Operator reports error when a second PaasConfig is loaded", assertDoublePaasConfigError).
+			Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+				secondPaasConfig := &v1alpha1.PaasConfig{
+					ObjectMeta: metav1.ObjectMeta{Name: paasConfigDuplicateName},
+				}
+				require.NoError(t, deleteResourceSync(ctx, cfg, secondPaasConfig))
+
+				return ctx
+			}).
 			Feature(),
 	)
 }
@@ -117,6 +128,21 @@ func assertPaasConfigInvalidSpec(ctx context.Context, t *testing.T, cfg *envconf
 	return ctx
 }
 
+func assertDoublePaasConfigError(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	paasConfig := examplePaasConfig.DeepCopy()
+	paasConfig.Name = paasConfigDuplicateName
+	require.NoError(t, createSyncStatus(ctx, cfg, paasConfig, func(conds []metav1.Condition) bool {
+		if errorCond := meta.FindStatusCondition(conds, api.TypeHasErrorsPaasConfig); errorCond != nil {
+			return errorCond.Status == metav1.ConditionTrue &&
+				errorCond.Message == "paasConfig singleton violation"
+		}
+
+		return false
+	}))
+
+	return ctx
+}
+
 func assertOperatorErrorWithoutPaasConfig(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	// Ensure no PaasConfig resource exists
 	var existingPaasConfig v1alpha1.PaasConfig
@@ -136,8 +162,12 @@ func assertOperatorErrorWithoutPaasConfig(ctx context.Context, t *testing.T, cfg
 	require.NoError(
 		t,
 		waitForStatus(ctx, cfg, paas, 0, func(conds []metav1.Condition) bool {
-			cond := meta.FindStatusCondition(conds, api.TypeHasErrorsPaas)
-			return cond.Status == metav1.ConditionTrue && cond.Message == "please reach out to your system administrator as there is no Paasconfig available to reconcile against."
+			if cond := meta.FindStatusCondition(conds, api.TypeHasErrorsPaas); cond != nil {
+				return cond.Status == metav1.ConditionTrue &&
+					cond.Message == "please reach out to your system administrator as there is no Paasconfig available to reconcile against."
+			}
+
+			return false
 		}),
 	)
 
