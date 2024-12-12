@@ -129,24 +129,14 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 	paas *v1alpha1.Paas,
 ) error {
 	var err error
-	var errs []error
 	var fields Elements
 	if cap, exists := paas.Spec.Capabilities[paasns.Name]; !exists {
-		// Not a capability
-		return nil
+		// This function is called from on other function within this exact if exists check
+		return fmt.Errorf("We should never end here")
 	} else if capConfig, exists := GetConfig().Capabilities[paasns.Name]; !exists {
-		if setErr := r.setErrorCondition(ctx, paasns, err); setErr != nil {
-			return fmt.Errorf("while setting condition for %w, another error occurred: %w", err, setErr)
-		}
-		// Not needed to keep reconciling
-		return nil
-	} else if fields, errs = cap.CapExtraFields(capConfig.CustomFields); errs != nil {
-		for _, err := range errs {
-			if setErr := r.setErrorCondition(ctx, paasns, err); setErr != nil {
-				return fmt.Errorf("while setting condition for %w, another error occurred: %w", err, setErr)
-			}
-		}
-		return fmt.Errorf("%d errors while validating extra_fields", len(errs))
+		return fmt.Errorf("Capability not configured")
+	} else if fields, err = cap.CapExtraFields(capConfig.CustomFields); err != nil {
+		return err
 	}
 	service, subService := splitToService(paas.Name)
 	fields["requestor"] = paas.Spec.Requestor
@@ -200,20 +190,6 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 
 	appSet.Spec.Generators = clearGenerators(appSet.Spec.Generators)
 	return r.Patch(ctx, appSet, patch)
-}
-
-// ensureAppSetCap ensures a list entry in the AppSet for the capability
-func (r *PaasNSReconciler) EnsureAppSetCaps(
-	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
-	paas *v1alpha1.Paas,
-) error {
-	if _, exists := paas.Spec.Capabilities[paasns.Name]; !exists {
-		return nil
-	} else if err := r.EnsureAppSetCap(ctx, paasns, paas); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (r *PaasNSReconciler) finalizeAppSetCap(

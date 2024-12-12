@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -281,13 +282,14 @@ type PaasCapability struct {
 	ExtraPermissions bool `json:"extra_permissions,omitempty"`
 }
 
-func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomField) (fields map[string]string, issues []error) {
+func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomField) (fields map[string]string, err error) {
 	// TODO: remove argocd specific fields
 	fields = map[string]string{
 		"git_url":      pc.GitUrl,
 		"git_revision": pc.GitRevision,
 		"git_path":     pc.GitPath,
 	}
+	var issues []error
 	for key, value := range pc.CustomFields {
 		if _, exists := fieldConfig[key]; !exists {
 			issues = append(issues, fmt.Errorf("Custom field %s is not configured in capability config", key))
@@ -303,13 +305,13 @@ func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomFiel
 				issues = append(issues, fmt.Errorf("Invalid value %s (does not match %s)", value, fieldConf.Validation))
 			}
 		} else if fieldConf.Required {
-			issues = append(issues, fmt.Errorf("Value %s is required", value))
+			issues = append(issues, fmt.Errorf("Value %s is required", key))
 		} else {
 			fields[key] = fieldConf.Default
 		}
 	}
 	if len(issues) > 0 {
-		return nil, issues
+		return nil, errors.Join(issues...)
 	}
 	return fields, nil
 }

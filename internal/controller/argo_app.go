@@ -8,13 +8,12 @@ package controller
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/rs/zerolog/log"
-	"k8s.io/apimachinery/pkg/api/errors"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -51,7 +50,7 @@ func (r *PaasNSReconciler) EnsureArgoApp(
 		patch := client.MergeFrom(found.DeepCopy())
 		found.Spec = argoApp.Spec
 		return r.Patch(ctx, found, patch)
-	} else if !errors.IsNotFound(err) {
+	} else if !kerrors.IsNotFound(err) {
 		logger.Err(err).Msg("could not retrieve info of Argo Application")
 		return err
 	} else {
@@ -72,14 +71,9 @@ func (r *PaasNSReconciler) backendArgoApp(
 	namespace := paasns.NamespaceName()
 	argoConfig := paas.Spec.Capabilities["argocd"]
 	argoConfig.SetDefaults()
-	fields, errs := argoConfig.CapExtraFields(GetConfig().Capabilities["argocd"].CustomFields)
-	if len(errs) > 0 {
-		for _, err := range errs {
-			if setErr := r.setErrorCondition(ctx, paasns, err); setErr != nil {
-				return nil, fmt.Errorf("while setting condition for %w, another error occurred: %w", err, setErr)
-			}
-		}
-		return nil, fmt.Errorf("%d errors while validating extra_fields", len(errs))
+	fields, err := argoConfig.CapExtraFields(GetConfig().Capabilities["argocd"].CustomFields)
+	if err != nil {
+		return nil, err
 	}
 	app := &argo.Application{
 		TypeMeta: metav1.TypeMeta{
@@ -138,7 +132,7 @@ func (r *PaasNSReconciler) FinalizeArgoApp(
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("finalizing")
 	obj := &argo.Application{}
-	if err := r.Get(ctx, namespacedName, obj); err != nil && errors.IsNotFound(err) {
+	if err := r.Get(ctx, namespacedName, obj); err != nil && kerrors.IsNotFound(err) {
 		logger.Info().Msg("does not exist")
 		return nil
 	} else if err != nil {
