@@ -79,6 +79,32 @@ spec:
                       description: Name of the ArgoCD ApplicationSet which manages
                         this capability
                       type: string
+                    custom_fields:
+                      additionalProperties:
+                        properties:
+                          default:
+                            description: |-
+                              Set a default when no value is specified, defaults to ''.
+                              Only applies when Required is false.
+                            type: string
+                          required:
+                            description: |-
+                              Define if the value must be specified in the PaaS.
+                              When set to true, and no value is set, PaasNs has error in status field, and capability is not built.
+                              When set to false, and no value is set, Default is used.
+                            type: boolean
+                          validation:
+                            description: Regular expression for validating input,
+                              defaults to '', which means no validation.
+                            type: string
+                        required:
+                        - default
+                        - required
+                        - validation
+                        type: object
+                      description: Settings to allow specific configuration specific
+                        to a capability
+                      type: object
                     default_permissions:
                       additionalProperties:
                         items:

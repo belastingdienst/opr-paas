@@ -122,27 +122,27 @@ func splitToService(paasName string) (string, string) {
 	return parts[0], parts[1]
 }
 
-func entryFromPaas(paas *v1alpha1.Paas) Elements {
-	service, subService := splitToService(paas.Name)
-	return Elements{
-		"requestor":  paas.Spec.Requestor,
-		"paas":       paas.Name,
-		"service":    service,
-		"subservice": subService,
-	}
-}
-
-// ensureAppSetCap ensures a list entry in the AppSet voor the capability
+// ensureAppSetCap ensures a list entry in the AppSet for the capability
 func (r *PaasNSReconciler) EnsureAppSetCap(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) error {
 	var err error
-	if _, exists := paas.Spec.Capabilities[paasns.Name]; !exists {
-		// Not a capability
-		return nil
+	var fields Elements
+	if cap, exists := paas.Spec.Capabilities[paasns.Name]; !exists {
+		// This function is called from on other function within this exact if exists check
+		return fmt.Errorf("We should never end here")
+	} else if capConfig, exists := GetConfig().Capabilities[paasns.Name]; !exists {
+		return fmt.Errorf("Capability not configured")
+	} else if fields, err = cap.CapExtraFields(capConfig.CustomFields); err != nil {
+		return err
 	}
+	service, subService := splitToService(paas.Name)
+	fields["requestor"] = paas.Spec.Requestor
+	fields["paas"] = paas.Name
+	fields["service"] = service
+	fields["subservice"] = subService
 	// See if AppSet exists raise error if it doesn't
 	namespacedName := GetConfig().CapabilityK8sName(paasns.Name)
 	appSet := &appv1.ApplicationSet{
@@ -173,12 +173,12 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 		}
 		appSet.Spec.Generators = append(appSet.Spec.Generators, *listGen)
 		entries = Entries{
-			paasns.Spec.Paas: entryFromPaas(paas),
+			paasns.Spec.Paas: fields,
 		}
 	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
 		return err
 	} else {
-		entry := entryFromPaas(paas)
+		entry := fields
 		entries[entry.Key()] = entry
 	}
 	// log.Info(fmt.Sprintf("entries: %s", entries.AsString()))
@@ -190,20 +190,6 @@ func (r *PaasNSReconciler) EnsureAppSetCap(
 
 	appSet.Spec.Generators = clearGenerators(appSet.Spec.Generators)
 	return r.Patch(ctx, appSet, patch)
-}
-
-// ensureAppSetCap ensures a list entry in the AppSet voor the capability
-func (r *PaasNSReconciler) EnsureAppSetCaps(
-	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
-	paas *v1alpha1.Paas,
-) error {
-	if _, exists := paas.Spec.Capabilities[paasns.Name]; !exists {
-		return nil
-	} else if err := r.EnsureAppSetCap(ctx, paasns, paas); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (r *PaasNSReconciler) finalizeAppSetCap(
@@ -266,8 +252,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
 		return err
 	} else {
-		entry := entryFromPaas(paas)
-		delete(entries, entry.Key())
+		delete(entries, paas.Name)
 	}
 	if json, err := entries.AsJSON(); err != nil {
 		return err

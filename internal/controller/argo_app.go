@@ -13,7 +13,7 @@ import (
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/rs/zerolog/log"
-	"k8s.io/apimachinery/pkg/api/errors"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,7 +50,7 @@ func (r *PaasNSReconciler) EnsureArgoApp(
 		patch := client.MergeFrom(found.DeepCopy())
 		found.Spec = argoApp.Spec
 		return r.Patch(ctx, found, patch)
-	} else if !errors.IsNotFound(err) {
+	} else if !kerrors.IsNotFound(err) {
 		logger.Err(err).Msg("could not retrieve info of Argo Application")
 		return err
 	} else {
@@ -71,6 +71,10 @@ func (r *PaasNSReconciler) backendArgoApp(
 	namespace := paasns.NamespaceName()
 	argoConfig := paas.Spec.Capabilities["argocd"]
 	argoConfig.SetDefaults()
+	fields, err := argoConfig.CapExtraFields(GetConfig().Capabilities["argocd"].CustomFields)
+	if err != nil {
+		return nil, err
+	}
 	app := &argo.Application{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Application",
@@ -81,6 +85,7 @@ func (r *PaasNSReconciler) backendArgoApp(
 			Namespace: namespace,
 			Labels:    paasns.ClonedLabels(),
 		},
+
 		Spec: argo.ApplicationSpec{
 			Destination: argo.ApplicationDestination{
 				Server:    "https://kubernetes.default.svc",
@@ -96,9 +101,9 @@ func (r *PaasNSReconciler) backendArgoApp(
 			},
 			Project: "default",
 			Source: &argo.ApplicationSource{
-				RepoURL:        argoConfig.GitUrl,
-				Path:           argoConfig.GitPath,
-				TargetRevision: argoConfig.GitRevision,
+				RepoURL:        fields["git_url"],
+				Path:           fields["git_path"],
+				TargetRevision: fields["git_revision"],
 			},
 			SyncPolicy: &argo.SyncPolicy{
 				Automated: &argo.SyncPolicyAutomated{
@@ -127,7 +132,7 @@ func (r *PaasNSReconciler) FinalizeArgoApp(
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("finalizing")
 	obj := &argo.Application{}
-	if err := r.Get(ctx, namespacedName, obj); err != nil && errors.IsNotFound(err) {
+	if err := r.Get(ctx, namespacedName, obj); err != nil && kerrors.IsNotFound(err) {
 		logger.Info().Msg("does not exist")
 		return nil
 	} else if err != nil {
