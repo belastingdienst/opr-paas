@@ -67,7 +67,7 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		Name:      "argocd",
 		Namespace: paasWithArgo,
 	}}
-	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, argopaasns, 0), "ArgoCD PaasNS reconciliation succeeds")
+	require.NoError(t, waitForCondition(ctx, cfg, argopaasns, 0, api.TypeReadyPaasNs), "ArgoCD PaasNS reconciliation succeeds")
 
 	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
 	entries, _ := getApplicationSetListEntries(argoAppSet)
@@ -137,7 +137,7 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	// As only the Paas spec is updated via the above change, we wait for that and
 	// know that no reconciliation of PaasNs takes place so no need to wait for that.
 	// check #185 for more details
-	if err := updatePaasSync(ctx, cfg, paas); err != nil {
+	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
 	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)

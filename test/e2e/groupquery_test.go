@@ -88,7 +88,7 @@ func assertGroupQueryCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *
 		Roles: []string{"viewer"},
 	}
 
-	if err := updatePaasSync(ctx, cfg, paas); err != nil {
+	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
 
