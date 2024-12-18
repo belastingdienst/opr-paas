@@ -35,7 +35,7 @@ func TestCapabilityCap6(t *testing.T) {
 	testenv.Test(
 		t,
 		features.New("Capability 6").
-			Setup(createPaasWithErrorFn(paasWithCapability6, paasSpec, "a capability is requested, but not configured")).
+			Setup(createPaasWithCondFn(paasWithCapability6, paasSpec, api.TypeHasErrorsPaas)).
 			Assess("is created", assertCap6NoUnwantedArtifacts).
 			Assess("is deleted when PaaS is deleted", assertCap6Deleted).
 			Teardown(teardownPaasFn(paasWithCapability6)).
