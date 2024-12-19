@@ -53,3 +53,28 @@ there is an additional ApplicationSet to manage Paas capabilities.
 The Paas operator integrates through these capabilities by managing a list generator
 in the ApplicationSet, which in turn creates an ArgoApplication for every enabled
 capability in every enabled Paas.
+
+### ArgoCD bootstrap
+
+When the ArgoCD capability is enabled, values from the Paas (git_url, git_revision, git_path) are copied to an application in the argocd capability namespace for the Paas (next to ArgoCD).
+Once ArgoCD has been initialized and started, this app-of-the-apps Application will make ArgoCD create all resources which are found in this location (git_url, git_revision, git_path).
+The main idea is for the requestor to define all other Applications and ApplicationSets, and link them to the specific end resources that together make up all resources for the CI, Application, etc.
+
+The entire boostrapping of a Paas is performed through the following steps:
+![bootstrap.png](./bootstrap.png)
+
+1. The Paas is applied on the Kubernetes cluster.
+2. The paas operator:
+
+   - creates all namespaces as defined in `spec.namespaces` and a namespace for every enabled capability in `spec.capabilities`.
+   - adds an entry in the list generator for this Paas for every capability (argocd being one of them), which creates an Application for every enabled capability for this Paas.
+     The Application created for the argocd capability for this Paas makes the cluster-wide argocd create an ArgoCD in the namespace belonging to this capability for this Paas.
+
+3. The paas operator creates the bootstrap Application in the namespace for the ArgoCD deployed in the argocd namespace for this Paas.
+4. The bootstrap application makes the ArgoCD running in the argocd namespace for this paas check the github repo and create all (Application and ApplicationSet) resources as defined there.
+5. One Application (as defined by the requestor in his git repo) has all resources in the tekton namespace created.
+   This could be pipelines, trigger templates, etc. Everything as required to define and run CI.
+6. An ApplicationSet might have a github generator which is triggered by github Pull Requests.
+   The generater creates an Application for every PR
+   The Application creates all resources as defined in a namespace belonging to the paas.
+   Tekton could then be utilized to run e2e tests against the deployed version of the application and return feedback to the Pull Request.
