@@ -57,7 +57,7 @@ func assertSecretCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		Name:      "sso",
 		Namespace: "sshpaas",
 	}}
-	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, ssopaasns, 0), "SSO PaasNS reconciliation succeeds")
+	require.NoError(t, waitForCondition(ctx, cfg, ssopaasns, 0, api.TypeReadyPaasNs), "SSO PaasNS reconciliation succeeds")
 
 	// Assert secrets
 	secret1 := getOrFail(ctx, "paas-ssh-1deb30f1", "sshpaas-sso", &corev1.Secret{}, t, cfg)
@@ -100,13 +100,13 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 
 	oldSsoPaasNs := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
 
-	if err := updatePaasSync(ctx, cfg, paas); err != nil {
+	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for reconciliation of sso paasns
 	ssopaasns := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
-	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation), "SSO PaasNS reconciliation succeeds")
+	require.NoError(t, waitForCondition(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation, api.TypeReadyPaasNs), "SSO PaasNS reconciliation succeeds")
 
 	// List secrets in namespace to be sure
 	secrets := &corev1.SecretList{}
@@ -156,13 +156,13 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 
 	oldSsoPaasNs := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
 
-	if err := updatePaasSync(ctx, cfg, paas); err != nil {
+	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for reconciliation of sso paasns
 	ssopaasns := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
-	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation), "SSO PaasNS reconciliation succeeds")
+	require.NoError(t, waitForCondition(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation, api.TypeReadyPaasNs), "SSO PaasNS reconciliation succeeds")
 
 	// List secrets in namespace to be sure
 	secrets := &corev1.SecretList{}
@@ -203,13 +203,13 @@ func assertSecretRemovedAfterRemovingFromPaas(ctx context.Context, t *testing.T,
 
 	oldSsoPaasNs := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
 
-	if err := updatePaasSync(ctx, cfg, paas); err != nil {
+	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for reconciliation of sso paasns
 	ssopaasns := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
-	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation), "SSO PaasNS reconciliation succeeds")
+	require.NoError(t, waitForCondition(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation, api.TypeReadyPaasNs), "SSO PaasNS reconciliation succeeds")
 
 	secrets := &corev1.SecretList{}
 	err := cfg.Client().Resources().List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })

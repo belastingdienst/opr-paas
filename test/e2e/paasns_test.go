@@ -101,7 +101,7 @@ func assertPaasNSCreatedWithUnlinkedPaas(ctx context.Context, t *testing.T, cfg 
 		},
 	}
 
-	require.NoError(t, createPaasSyncSuccess(ctx, cfg, paas))
+	require.NoError(t, createSync(ctx, cfg, paas, api.TypeReadyPaas))
 
 	paasNs := &api.PaasNS{
 		ObjectMeta: metav1.ObjectMeta{
@@ -146,7 +146,7 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		},
 	}
 
-	require.NoError(t, createPaasSyncSuccess(ctx, cfg, paas))
+	require.NoError(t, createSync(ctx, cfg, paas, api.TypeReadyPaas))
 
 	paasNs := &api.PaasNS{
 		ObjectMeta: metav1.ObjectMeta{
