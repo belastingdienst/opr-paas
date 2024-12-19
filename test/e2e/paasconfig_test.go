@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,8 +40,14 @@ func TestPaasConfig(t *testing.T) {
 			}).
 			Assess("Operator reports error when no PaasConfig is loaded", assertOperatorErrorWithoutPaasConfig).
 			Assess("Paas reconciliation resumes once PaasConfig is loaded", assertPaasReconciliationResumed).
+			Assess("Paas reconciliation is triggered after PaasConfig is updated", assertPaasReconciliationAfterConfigUpdate).
 			Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 				deletePaasSync(ctx, "foo", t, cfg)
+
+				// Reset PaasConfig to erase tested changes
+				paasConfig := getOrFail(ctx, "paas-config", cfg.Namespace(), &api.PaasConfig{}, t, cfg)
+				examplePaasConfig.Spec.DeepCopyInto(&paasConfig.Spec)
+				require.NoError(t, updateSync(ctx, cfg, paasConfig, api.TypeActivePaasConfig))
 
 				return ctx
 			}).
@@ -184,6 +191,23 @@ func assertPaasReconciliationResumed(ctx context.Context, t *testing.T, cfg *env
 	// not incremented. Thus we pass the initial generation (i.e. 0), as `waitForCondition` waits to observe a generation change
 	// before matching the condition.
 	require.NoError(t, waitForCondition(ctx, cfg, paas, 0, api.TypeReadyPaas))
+
+	return ctx
+}
+
+func assertPaasReconciliationAfterConfigUpdate(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	paasConfig := getOrFail(ctx, "paas-config", cfg.Namespace(), &api.PaasConfig{}, t, cfg)
+	ns := getOrFail(ctx, "foo", cfg.Namespace(), &v1.Namespace{}, t, cfg)
+	assert.Equal(t, "paas-user", ns.Labels["o.lbl"])
+	assert.Equal(t, "foo", ns.Labels["q.lbl"])
+
+	paasConfig.Spec.RequestorLabel = "another.lbl"
+	paasConfig.Spec.QuotaLabel = "different.lbl"
+	require.NoError(t, updateSync(ctx, cfg, paasConfig, api.TypeActivePaasConfig))
+
+	ns = getOrFail(ctx, "foo", cfg.Namespace(), &v1.Namespace{}, t, cfg)
+	assert.Equal(t, "paas-user", ns.Labels["another.lbl"])
+	assert.Equal(t, "foo", ns.Labels["different.lbl"])
 
 	return ctx
 }
