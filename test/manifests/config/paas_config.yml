@@ -76,7 +76,7 @@ ldap:
 managed_by_label: argocd.argoproj.io/manby
 requestor_label: o.lbl
 quota_label: q.lbl
-whitelist:
+groupsynclist:
   namespace: wlns
   name: wlname
 exclude_appset_name: whatever

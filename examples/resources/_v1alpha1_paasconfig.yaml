@@ -103,7 +103,7 @@ spec:
       - admin
     viewer:
       - view
-  whitelist:
+  groupsynclist:
     namespace: wlns
     name: wlname
   exclude_appset_name: whatever

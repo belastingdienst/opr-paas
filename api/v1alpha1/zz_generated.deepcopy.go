@@ -440,7 +440,7 @@ func (in *PaasConfigSpec) DeepCopyInto(out *PaasConfigSpec) {
 			(*out)[key] = *val.DeepCopy()
 		}
 	}
-	out.Whitelist = in.Whitelist
+	out.GroupSyncList = in.GroupSyncList
 	out.LDAP = in.LDAP
 	out.ArgoPermissions = in.ArgoPermissions
 	if in.RoleMappings != nil {
