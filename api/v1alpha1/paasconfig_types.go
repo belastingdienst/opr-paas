@@ -62,10 +62,10 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	Capabilities ConfigCapabilities `json:"capabilities"`
 
-	// Deprecated: Whitelist code will be removed from the operator to make it more generic
-	// A reference to a configmap containing a whitelist of LDAP groups to be synced using LDAP sync
+	// Deprecated: GroupSyncList code will be removed from the operator to make it more generic
+	// A reference to a configmap containing a groupsynclist of LDAP groups to be synced using LDAP sync
 	// +kubebuilder:validation:Required
-	Whitelist NamespacedName `json:"whitelist"`
+	GroupSyncList NamespacedName `json:"groupsynclist"`
 
 	// LDAP configuration for the operator to add to Groups
 	// +kubebuilder:validation:Optional

@@ -3,4 +3,4 @@ kind: Kustomization
 resources:
   - capability-applicationsets
   - roles
-  - whitelist
+  - groupsynclist

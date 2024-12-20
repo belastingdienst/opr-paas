@@ -181,6 +181,19 @@ spec:
                   Deprecated: ArgoCD specific code will be removed from the operator
                   Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
                 type: string
+              groupsynclist:
+                description: |-
+                  Deprecated: GroupSyncList code will be removed from the operator to make it more generic
+                  A reference to a configmap containing a groupsynclist of LDAP groups to be synced using LDAP sync
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               ldap:
                 description: LDAP configuration for the operator to add to Groups
                 properties:
@@ -217,24 +230,11 @@ spec:
                 description: Grant permissions to all groups according to config in
                   configmap and role selected per group in paas.
                 type: object
-              whitelist:
-                description: |-
-                  Deprecated: Whitelist code will be removed from the operator to make it more generic
-                  A reference to a configmap containing a whitelist of LDAP groups to be synced using LDAP sync
-                properties:
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
             required:
             - clusterwide_argocd_namespace
             - decryptKeyPaths
             - exclude_appset_name
-            - whitelist
+            - groupsynclist
             type: object
           status:
             properties:
