@@ -13,6 +13,7 @@ For this exact reason, we have introduced the concept of PaasNs.
 
 The concept works as follows:
 
+![paasns architecture](./paasns.png)
 For every Paas, the operator also creates a system namespace called exactly the
 same as the Paas. This system is not visible to DevOps teams and is only meant to
 be used by the Paas operator to keep the PaasNs objects for all capabilities and
@@ -50,7 +51,7 @@ To add user namespaces, the following options are available:
 - In this Paas, the `spec.namespaces` field could have a list of namespaces.
   If this would be set to (just as an example) `[ ns1, ns2, ns3 ]`, the Paas
   controller would create three PaasNs resources in a namespace called `my-paas`.
-  
+
   The PaasNs controller would process them as being part of `my-paas` and create
   the following namespaces: `my-paas-ns1`, `my-paas-ns2` and `my-paas-ns3`.
 
@@ -69,6 +70,7 @@ To add user namespaces, the following options are available:
     spec:
       Paas: my-paas
     ```
+
 - Yet another option would be to create a PaasNs resource using automation such as
   `argocd` or `tekton`.
   It is advised to create them in the namespace belonging to the capability that
@@ -82,5 +84,5 @@ To add user namespaces, the following options are available:
   called after the Paas, all child PaasNs's are assumed to be part of the same Paas.
 
 !!! Note
-    Note that besides creating the namespaces, the PaasNs controller also properly
-    sets up the namespace with the proper quota and the proper [authorization](authorization.yaml).
+Note that besides creating the namespaces, the PaasNs controller also properly
+sets up the namespace with the proper quota and the proper [authorization](authorization.yaml).
