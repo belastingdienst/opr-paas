@@ -210,12 +210,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	}
 
 	// Reconciling succeeded, set appropriate Condition
-	err = r.setSuccesfullCondition(ctx, paas)
-	if err != nil {
-		logger.Err(err).Msg("failed to update Paas status")
-		return ctrl.Result{}, err
-	}
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, r.setSuccesfullCondition(ctx, paas)
 }
 
 func (r *PaasReconciler) setSuccesfullCondition(ctx context.Context, paas *v1alpha1.Paas) error {
