@@ -287,12 +287,9 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) error {
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("inside Paas finalizer")
+	logger.Debug().Msg("inside Paas finalizer")
 	if err := r.FinalizeAppSetCaps(ctx, paas); err != nil {
 		logger.Err(err).Msg("appSet finalizer error")
-		return err
-	} else if err = r.FinalizeAppProject(ctx, paas); err != nil {
-		logger.Err(err).Msg("appProject finalizer error")
 		return err
 	} else if err = r.FinalizeClusterQuotas(ctx, paas); err != nil {
 		logger.Err(err).Msg("quota finalizer error")
