@@ -58,16 +58,16 @@ autolabeler:
       - '/BREAKING CHANGE/'
   - label: 'chore'
     title:
-      - '/^chore(\([a-z]*\))?!?:/i'
+      - '/^chore\b'
   - label: 'ci'
     title:
-      - '/^(ci|build)(\([a-z]*\))?!?:/i'
+      - '/^(ci|build)\b'
     files:
       - '.github/*'
       - '.github/**/*'
   - label: 'documentation'
     title:
-      - '/^docs(\([a-z]*\))?!?:/i'
+      - '/^docs\b'
     files:
       - 'docs/*'
       - 'docs/**/*'
@@ -75,22 +75,22 @@ autolabeler:
       - '**/*.md'
   - label: 'enhancement'
     title:
-      - '/^(feat|perf)(\([a-z]*\))?!?:/i'
+      - '/^(feat|perf)\b'
   - label: 'bug'
     title:
-      - '/^(fix|hotfix|bug)(\([a-z]*\))?!?:/i'
+      - '/^(fix|hotfix|bug)\b'
   - label: 'refactor'
     title:
-      - '/^refactor(\([a-z]*\))?!?:/i'
+      - '/^refactor\b'
   - label: 'revert'
     title:
-      - '/^revert(\([a-z]*\))?!?:/i'
+      - '/^revert\b'
   - label: 'style'
     title:
-      - '/^style(\([a-z]*\))?!?:/i'
+      - '/^style\b'
   - label: 'test'
     title:
-      - '/^test(\([a-z]*\))?!?:/i'
+      - '/^test\b'
 template: |
   ## Changes
 
