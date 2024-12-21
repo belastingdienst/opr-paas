@@ -53,10 +53,8 @@ func (r *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.PaasConfig{}).
 		WithEventFilter(
-			predicate.Or(
-				predicate.GenerationChangedPredicate{}, // Spec changed
-				// TODO add custom predicate funcs for more finegrained reconciliation?
-			)).
+			predicate.GenerationChangedPredicate{}, // Spec changed .
+		).
 		Complete(r)
 }
 
