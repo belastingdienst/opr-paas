@@ -37,11 +37,6 @@ spec:
             type: object
           spec:
             properties:
-              applicationset_namespace:
-                default: argocd
-                description: Namespace in which ArgoCD applicationSets will be found
-                  for managing capabilities
-                type: string
               argopermissions:
                 description: |-
                   Deprecated: ArgoCD specific code will be removed from the operator
@@ -119,6 +114,7 @@ spec:
                       description: Quota settings for this capability
                       properties:
                         clusterwide:
+                          default: false
                           description: Is this a clusterwide quota or not
                           type: boolean
                         defaults:
@@ -164,6 +160,10 @@ spec:
                   type: object
                 description: A map with zero or more ConfigCapability
                 type: object
+              clusterwide_argocd_namespace:
+                description: Namespace in which a clusterwide ArgoCD can be found
+                  for managing capabilities and appProjects
+                type: string
               debug:
                 default: false
                 description: Enable debug information generation or not
@@ -231,6 +231,7 @@ spec:
                 - namespace
                 type: object
             required:
+            - clusterwide_argocd_namespace
             - decryptKeyPaths
             - exclude_appset_name
             - whitelist

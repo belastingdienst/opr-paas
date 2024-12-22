@@ -24,16 +24,22 @@ const (
 
 // PaasNSSpec defines the desired state of PaasNS
 type PaasNSSpec struct {
-	Paas       string            `json:"paas"`
-	Groups     []string          `json:"groups,omitempty"`
-	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
+	// The metadata.name of the Paas which created the namespace in which this PaasNS is applied
+	// +kubebuilder:validation:Required
+	Paas string `json:"paas"`
+	// Groupnames of the groups, created externally, which should have access to the namespace created through this PaasNS
+	// +kubebuilder:validation:Optional
+	Groups []string `json:"groups"`
+	// SshSecrets which should exist in the namespace created through this PaasNS, the values are the encrypted secrets through Crypt
+	// +kubebuilder:validation:Optional
+	SshSecrets map[string]string `json:"sshSecrets"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=paasns,scope=Namespaced
 
-// PaasNS is the Schema for the paasns API
+// PaasNS is the Schema for the PaasNS API
 type PaasNS struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -100,8 +106,10 @@ func init() {
 // PaasStatus defines the observed state of Paas
 type PaasNsStatus struct {
 	// Deprecated: use paasns.status.conditions instead
-	Messages   []string           `json:"messages,omitempty"`
-	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	// +kubebuilder:validation:Optional
+	Messages []string `json:"messages"`
+	// +kubebuilder:validation:Optional
+	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 // Deprecated: use paasns.status.conditions instead

@@ -40,7 +40,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 		Name: "paas-config",
 	},
 	Spec: v1alpha1.PaasConfigSpec{
-		AppSetNamespace: "asns",
+		ClusterWideArgoCDNamespace: "asns",
 		ArgoPermissions: v1alpha1.ConfigArgoPermissions{
 			ResourceName:  "argocd",
 			DefaultPolicy: "role:tester",
