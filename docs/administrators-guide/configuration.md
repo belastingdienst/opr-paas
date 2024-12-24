@@ -58,7 +58,7 @@ Example PaasConfig
       requestor_label: level-one-support
       decryptKeyPaths:
         - /secrets/paas
-      applicationset_namespace: prod-argocd
+      clusterwide_argocd_namespace: prod-argocd
       exclude_appset_name: something-to-be-excluded
       quota_label: clusterquotagroup
       rolemappings:

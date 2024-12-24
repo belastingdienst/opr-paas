@@ -65,7 +65,7 @@ func (r *PaasReconciler) FinalizeAppProject(ctx context.Context, paas *v1alpha1.
 	appProject := &argo.AppProject{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Name:      paas.Name,
-		Namespace: GetConfig().AppSetNamespace,
+		Namespace: GetConfig().ClusterWideArgoCDNamespace,
 	}, appProject); err != nil && errors.IsNotFound(err) {
 		logger.Info().Msg("app Project already deleted")
 		return nil
@@ -93,7 +93,7 @@ func (r *PaasReconciler) BackendAppProject(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: GetConfig().AppSetNamespace,
+			Namespace: GetConfig().ClusterWideArgoCDNamespace,
 			Labels:    paas.ClonedLabels(),
 			// Only removes appProject when apps no longer reference appProject
 			Finalizers: []string{
