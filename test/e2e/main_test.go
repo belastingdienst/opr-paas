@@ -19,7 +19,6 @@ import (
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
@@ -239,7 +238,7 @@ func TestMain(m *testing.M) {
 			}
 
 			waitUntilPaasConfigExists := conditions.New(cfg.Client().Resources()).ResourceMatch(paasconfig, func(obj k8s.Object) bool {
-				return obj.(*api.PaasConfig).Name == paasconfig.Name
+				return obj.(*v1alpha1.PaasConfig).Name == paasconfig.Name
 			})
 
 			if err := waitForDefaultOpts(ctx, waitUntilPaasConfigExists); err != nil {
