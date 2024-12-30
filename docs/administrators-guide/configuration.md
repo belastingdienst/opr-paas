@@ -41,9 +41,9 @@ Example PaasConfig
       name: opr-paas-config
     spec:
       debug: false
-      whitelist:
+      groupsynclist:
         namespace: chp-cronjobs
-        name: caaswhitelist
+        name: groupsynclist
       ldap:
         host: ${PROD_LDAP_HOST}
         port: 636

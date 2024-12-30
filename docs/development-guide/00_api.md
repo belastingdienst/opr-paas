@@ -278,7 +278,7 @@ _Appears in:_
 | `decryptKeyPaths` _string array_ | Deprecated: Will be replaced by a secretRef to overcome caching<br />Paths where the manager can find the decryptKeys to decrypt Paas'es |  | MinItems: 1 <br />Required: \{\} <br /> |
 | `debug` _boolean_ | Enable debug information generation or not | false | Optional: \{\} <br /> |
 | `capabilities` _[ConfigCapabilities](#configcapabilities)_ | A map with zero or more ConfigCapability |  | Required: \{\} <br /> |
-| `whitelist` _[NamespacedName](#namespacedname)_ | Deprecated: Whitelist code will be removed from the operator to make it more generic<br />A reference to a configmap containing a whitelist of LDAP groups to be synced using LDAP sync |  | Required: \{\} <br /> |
+| `groupsynclist` _[NamespacedName](#namespacedname)_ | Deprecated: GroupSyncList code will be removed from the operator to make it more generic<br />A reference to a configmap containing a groupsynclist of LDAP groups to be synced using LDAP sync |  | Required: \{\} <br /> |
 | `ldap` _[ConfigLdap](#configldap)_ | LDAP configuration for the operator to add to Groups |  | Optional: \{\} <br /> |
 | `argopermissions` _[ConfigArgoPermissions](#configargopermissions)_ | Deprecated: ArgoCD specific code will be removed from the operator<br />Permissions to set for ArgoCD instance |  | Required: \{\} <br /> |
 | `applicationset_namespace` _string_ | Namespace in which ArgoCD applicationSets will be found for managing capabilities | argocd | Required: \{\} <br /> |

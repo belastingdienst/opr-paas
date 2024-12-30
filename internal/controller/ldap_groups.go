@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	whitelistKeyName = "whitelist.txt"
+	groupSyncListKeyName = "groupsynclist.txt"
 )
 
 func (r *PaasReconciler) ensureLdapGroupsConfigMap(
@@ -29,7 +29,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 	groups string,
 ) error {
 	// Create the ConfigMap
-	wlConfigMap := GetConfig().Whitelist
+	wlConfigMap := GetConfig().GroupSyncList
 	return r.Create(ctx, &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -40,7 +40,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 			Namespace: wlConfigMap.Namespace,
 		},
 		Data: map[string]string{
-			whitelistKeyName: groups,
+			groupSyncListKeyName: groups,
 		},
 	})
 }
@@ -54,7 +54,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("creating ldap groups for PAAS object ")
 	// See if group already exists and create if it doesn't
-	namespacedName := GetConfig().Whitelist
+	namespacedName := GetConfig().GroupSyncList
 	cm := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Configmap",
@@ -68,28 +68,28 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	err := r.Get(ctx, types.NamespacedName{Namespace: namespacedName.Namespace, Name: namespacedName.Name}, cm)
 	gs := paas.Spec.Groups.AsGroups()
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info().Msg("creating whitelist configmap")
+		logger.Info().Msg("creating groupsynclist configmap")
 		// Create the ConfigMap
 		return r.ensureLdapGroupsConfigMap(ctx, gs.AsString())
 	} else if err != nil {
-		logger.Err(err).Msg("could not retrieve whitelist configmap")
+		logger.Err(err).Msg("could not retrieve groupsynclist configmap")
 		return err
-	} else if whitelist, exists := cm.Data[whitelistKeyName]; !exists {
-		logger.Info().Msg("adding whitelist.txt to whitelist configmap")
-		cm.Data[whitelistKeyName] = gs.AsString()
+	} else if groupsynclist, exists := cm.Data[groupSyncListKeyName]; !exists {
+		logger.Info().Msg("adding groupsynclist.txt to groupsynclist configmap")
+		cm.Data[groupSyncListKeyName] = gs.AsString()
 	} else {
-		logger.Info().Msgf("reading group queries from whitelist %v", cm)
-		whitelistGroups := groups.NewGroups()
-		whitelistGroups.AddFromString(whitelist)
-		logger.Info().Msgf("adding extra groups to whitelist: %v", gs)
-		if changed := whitelistGroups.Add(&gs); !changed {
-			logger.Info().Msg("no new info in whitelist")
+		logger.Info().Msgf("reading group queries from groupsynclist %v", cm)
+		groupsynclistGroups := groups.NewGroups()
+		groupsynclistGroups.AddFromString(groupsynclist)
+		logger.Info().Msgf("adding extra groups to groupsynclist: %v", gs)
+		if changed := groupsynclistGroups.Add(&gs); !changed {
+			logger.Info().Msg("no new info in groupsynclist")
 			return nil
 		}
-		logger.Info().Msg("adding to whitelist configmap")
-		cm.Data[whitelistKeyName] = whitelistGroups.AsString()
+		logger.Info().Msg("adding to groupsynclist configmap")
+		cm.Data[groupSyncListKeyName] = groupsynclistGroups.AsString()
 	}
-	logger.Info().Msgf("updating whitelist configmap: %v", cm)
+	logger.Info().Msgf("updating groupsynclist configmap: %v", cm)
 	return r.Update(ctx, cm)
 }
 
@@ -102,24 +102,24 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 	logger := log.Ctx(ctx)
 	// See if group already exists and create if it doesn't
 	cm := &corev1.ConfigMap{}
-	wlConfigMap := GetConfig().Whitelist
+	wlConfigMap := GetConfig().GroupSyncList
 	err := r.Get(ctx, types.NamespacedName{Name: wlConfigMap.Name, Namespace: wlConfigMap.Namespace}, cm)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info().Msg("whitelist configmap does not exist")
+		logger.Info().Msg("groupsynclist configmap does not exist")
 		// ConfigMap does not exist, so nothing to clean
 		return nil
 	} else if err != nil {
-		logger.Err(err).Msg("error retrieving whitelist configmap")
+		logger.Err(err).Msg("error retrieving groupsynclist configmap")
 		// Error that isn't due to the group not existing
 		return err
-	} else if whitelist, exists := cm.Data[whitelistKeyName]; !exists {
-		// No whitelist.txt exists in the configmap, so nothing to clean
-		logger.Info().Msgf("%s does not exists in whitelist configmap", whitelistKeyName)
+	} else if groupsynclist, exists := cm.Data[groupSyncListKeyName]; !exists {
+		// No groupsynclist.txt exists in the configmap, so nothing to clean
+		logger.Info().Msgf("%s does not exists in groupsynclist configmap", groupSyncListKeyName)
 		return nil
 	} else {
 		var isChanged bool
 		gs := groups.NewGroups()
-		gs.AddFromString(whitelist)
+		gs.AddFromString(groupsynclist)
 		for _, query := range cleanedLdapQueries {
 			g := groups.NewGroup(query)
 			if g.Key == "" {
@@ -132,7 +132,7 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		if !isChanged {
 			return nil
 		}
-		cm.Data[whitelistKeyName] = gs.AsString()
+		cm.Data[groupSyncListKeyName] = gs.AsString()
 	}
 	return r.Update(ctx, cm)
 }
