@@ -13,12 +13,14 @@ repo: github.com/belastingdienst/opr-paas
 resources:
 - api:
     crdVersion: v1
-    namespaced: false
   controller: true
   domain: cpet.belastingdienst.nl
   kind: Paas
   path: github.com/belastingdienst/opr-paas/api/v1alpha1
   version: v1alpha1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true
@@ -29,7 +31,6 @@ resources:
   version: v1alpha1
 - api:
     crdVersion: v1
-    namespaced: false
   controller: true
   domain: cpet.belastingdienst.nl
   kind: PaasConfig
