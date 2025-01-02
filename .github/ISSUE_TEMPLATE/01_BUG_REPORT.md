@@ -8,15 +8,15 @@ assignees: ""
 
 # Bug Report
 
-**PAAS Operator version:**
+**Paas Operator version:**
 
 <!-- Please specify commit or tag version. -->
 
-**Current behavior:**
+**Current behaviour:**
 
 <!-- Describe how the bug manifests. -->
 
-**Expected behavior:**
+**Expected behaviour:**
 
 <!-- Describe what you expect the behavior to be without the bug. -->
 
