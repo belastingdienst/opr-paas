@@ -120,26 +120,3 @@ func (r *PaasNSReconciler) backendArgoApp(
 	}
 	return app, nil
 }
-
-func (r *PaasNSReconciler) FinalizeArgoApp(
-	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
-) error {
-	namespacedName := types.NamespacedName{
-		Namespace: paasns.NamespaceName(),
-		Name:      appName,
-	}
-	logger := log.Ctx(ctx)
-	logger.Info().Msg("finalizing")
-	obj := &argo.Application{}
-	if err := r.Get(ctx, namespacedName, obj); err != nil && kerrors.IsNotFound(err) {
-		logger.Info().Msg("does not exist")
-		return nil
-	} else if err != nil {
-		logger.Err(err).Msg("error retrieving info")
-		return err
-	} else {
-		logger.Info().Msg("deleting")
-		return r.Delete(ctx, obj)
-	}
-}
