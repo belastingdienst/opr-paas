@@ -17,7 +17,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PaasNS is the Schema for the paasns API
+        description: PaasNS is the Schema for the PaasNS API
         properties:
           apiVersion:
             description: |-
@@ -40,14 +40,21 @@ spec:
             description: PaasNSSpec defines the desired state of PaasNS
             properties:
               groups:
+                description: Groupnames of the groups, created externally, which should
+                  have access to the namespace created through this PaasNS
                 items:
                   type: string
                 type: array
               paas:
+                description: The metadata.name of the Paas which created the namespace
+                  in which this PaasNS is applied
                 type: string
               sshSecrets:
                 additionalProperties:
                   type: string
+                description: SshSecrets which should exist in the namespace created
+                  through this PaasNS, the values are the encrypted secrets through
+                  Crypt
                 type: object
             required:
             - paas

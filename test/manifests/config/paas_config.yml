@@ -1,5 +1,5 @@
 ---
-applicationset_namespace: asns
+clusterwide_argocd_namespace: asns
 argopermissions:
   resource_name: argocd
   role: admin

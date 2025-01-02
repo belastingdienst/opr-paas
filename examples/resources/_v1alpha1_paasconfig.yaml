@@ -3,7 +3,7 @@ kind: PaasConfig
 metadata:
   name: paas-config
 spec:
-  applicationset_namespace: asns
+  clusterwide_argocd_namespace: asns
   argopermissions:
     resource_name: argocd
     default_policy: "role:tester"
