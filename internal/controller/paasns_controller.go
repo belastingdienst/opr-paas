@@ -222,26 +222,6 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
 	}
 
-	if _, exists := paas.Spec.Capabilities[paasns.Name]; exists {
-		if paasns.Name == "argocd" {
-			logger.Info().Msg("creating Argo App for client bootstrapping")
-
-			// Create bootstrap Argo App
-			if err := r.EnsureArgoApp(ctx, paasns, paas); err != nil {
-				return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
-			}
-
-			if err := r.EnsureArgoCD(ctx, paasns); err != nil {
-				return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
-			}
-		}
-
-		logger.Info().Msg("extending Applicationsets for Paas object")
-		if err := r.EnsureAppSetCap(ctx, paasns, paas); err != nil {
-			return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
-		}
-	}
-
 	// Reconciling succeeded, set appropriate Condition
 	return ctrl.Result{}, r.setSuccesfullCondition(ctx, paasns)
 }
@@ -416,9 +396,6 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 	logger.Info().Msg("inside PaasNs finalizer")
 	if err := r.FinalizeNamespace(ctx, paasns, paas); err != nil {
 		err = fmt.Errorf("cannot remove namespace belonging to Paas %s: %s", paasns.Spec.Paas, err.Error())
-		return err
-	} else if err = r.finalizeAppSetCap(ctx, paasns); err != nil {
-		err = fmt.Errorf("cannot remove paas from capability ApplicationSet belonging to Paas %s: %s", paasns.Spec.Paas, err.Error())
 		return err
 	}
 	if _, isCapability := paas.Spec.Capabilities[paasns.Name]; isCapability {
