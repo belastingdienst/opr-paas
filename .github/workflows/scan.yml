@@ -35,7 +35,6 @@ jobs:
       with:
         repository: ${{ inputs.repository }}
         ref: ${{ inputs.ref }}
-        # token: ${{secrets.GH_REPOSITORY_READ_PERMISSIONS }}
 
     - name: Ensure output directory
       if: ${{ !cancelled() }}
@@ -63,6 +62,6 @@ jobs:
       if: ${{ !cancelled() }}
       uses: oss-review-toolkit/ort-ci-github-action@main
       with:
-        ort-config-repository: "https://oauth2:${{ secrets.GH_REPOSITORY_READ_PERMISSIONS }}@${{ env.ORT_CONFIG_REPO }}"
+        ort-config-repository: "https://${{ env.ORT_CONFIG_REPO }}"
         run: "${{ env.ORT_STEPS }}"
         sw-name: "${{ env.SW_NAME }}"
