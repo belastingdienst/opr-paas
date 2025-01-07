@@ -29,6 +29,10 @@ theme:
 copyright: >
   Copyright &copy; 2024 Tax Administration of The Netherlands, software and documentation licensed under EUPL.
 
+extra:
+  version:
+    provider: mike
+
 markdown_extensions:
   - abbr
   - admonition

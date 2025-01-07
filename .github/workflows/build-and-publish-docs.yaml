@@ -55,7 +55,8 @@ jobs:
                                      mkdocs-literate-nav \
                                      mkdocs-redirects \
                                      mkdocs-material[recommended] \
-                                     mkdocs-material[imaging]
+                                     mkdocs-material[imaging] \
+                                     mike
 
       - name: Build documentation
         env:
