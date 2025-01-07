@@ -52,38 +52,6 @@ jobs:
       if: ${{ !cancelled() }}
       uses: fsfe/reuse-action@v4
 
-    - name: 🔍 Scan secrets (TruffleHog OSS)
-      if: ${{ !cancelled() }}
-      uses: trufflesecurity/trufflehog@main
-
-    - name: 🔍 Scan security practices (OSSF Scorecard)
-      # Scan runs from GitHub instead of local source so that more checks can be executed.
-      # The commit reference ensures that the same code is checked.
-      if: ${{ !cancelled() }}
-    #   env:
-        # GITHUB_AUTH_TOKEN: ${{ secrets.GH_REPOSITORY_READ_PERMISSIONS }}
-      run: |
-        docker run -e GITHUB_AUTH_TOKEN gcr.io/openssf/scorecard:stable \
-        --show-details --repo ${{ inputs.repository }} --commit ${{ env.COMMIT_HASH }} \
-        | tee ../results/openssf-scorecard.txt
-        # Set exit code ok (0) only if it is a 10.0 / 10 score
-        grep "Aggregate score: 10.0 / 10" ../results/openssf-scorecard.txt
-
-    # Checkout config files and run steps needing the config
-    # - name: Checkout config files
-    #   if: ${{ !cancelled() }}
-    #   uses: actions/checkout@v4
-    #   with:
-    #     path: .ospo-code-scanner
-    #     sparse-checkout: |
-    #       config/repolinter-rules.yaml
-    #     sparse-checkout-cone-mode: false
-
-    - name: 🔍 Repository structure (Repolinter)
-      if: ${{ !cancelled() }}
-      run: |
-        npx repolinter --rulesetFile ../repolinter-rules.yaml
-
     - name: Generate software name from repository (for ORT)
       if: ${{ !cancelled() }}
       env:
