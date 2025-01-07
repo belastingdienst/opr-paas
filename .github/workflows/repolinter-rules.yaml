@@ -1,0 +1,382 @@
+# SPDX-FileCopyrightText: Copyright TODO Group. All rights reserved.
+# SPDX-FileCopyrightText: Contributors to the Repolinter project
+# SPDX-FileCopyrightText: Alliander N.V.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+$schema: ./schema.json
+version: 2
+axioms:
+  linguist: language
+  licensee: license
+  packagers: packager
+rules:
+
+  # Check if the root of the project contains a file describing the license information
+  license-file-exists:
+    level: error
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - LICENSE*
+          - COPYING*
+        nocase: true
+
+  readme-file-exists:
+    level: error
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - README*
+        nocase: true
+
+  contributing-file-exists:
+    level: error
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - '{docs/,.github/,}CONTRIB*'
+        nocase: true
+
+  code-of-conduct-file-exists:
+    level: error
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - '{docs/,.github/,}CODEOFCONDUCT*'
+          - '{docs/,.github/,}CODE-OF-CONDUCT*'
+          - '{docs/,.github/,}CODE_OF_CONDUCT*'
+        nocase: true
+
+  codeowners-or-commiters-file-exists:
+    level: error
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - '{docs/,.github/,}CODEOWNERS*'
+          - '{docs/,.github/,}COMMITTERS*'
+        nocase: true
+
+  changelog-file-exists:
+    level: error
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - CHANGELOG*
+          - RELEASE*
+        nocase: true
+
+  governance-file-exists:
+    level: error
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - '{docs/,.github/,}*GOVERNANCE*'
+        nocase: true
+
+  security-file-exists:
+    level: error
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - '{docs/,.github/,}SECURITY.{md,rst}'
+
+  support-file-exists:
+    level: error
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - '{docs/,.github/,}SUPPORT*'
+        nocase: true
+
+  # README should contain some indication of the project license
+  readme-references-license:
+    level: error
+    rule:
+      type: file-contents
+      options:
+        globsAll:
+          - README*
+        content: license
+        flags: i
+
+  # README should contain some install description
+  readme-references-install:
+    level: error
+    rule:
+      type: file-contents
+      options:
+        globsAll:
+          - README*
+        content: install
+
+  # README could contain a Zenodo badge with a DOI identifier if the project is relevant for scientific publication
+  readme-references-zenodo-badge:
+    level: warning
+    rule:
+      type: file-contents
+      options:
+        globsAll:
+          - README*
+        content: https://zenodo.org/badge/DOI
+
+  # README could contain a REUSE compliance badge to check and show REUSE compliance
+  readme-references-reuse-compliance-badge:
+    level: warning
+    rule:
+      type: file-contents
+      options:
+        globsAll:
+          - README*
+        content: https://api.reuse.software/badge/
+
+  # README should contain no broken links (currently disabled)
+  # NOTE: requires additional dependencies in order to work
+  readme-no-broken-links:
+    level: off
+    rule:
+      type: file-no-broken-links
+      options:
+        globsAll:
+          - README*
+
+  # Git repository should not contain binaries because they are a security risk and are difficult in version control
+  binaries-not-present:
+    level: error
+    rule:
+      type: file-type-exclusion
+      options:
+        type:
+          - '**/*.exe'
+          - '**/*.dll'
+          - '!node_modules/**'
+          - '**/*.zip'
+          - '**/*.xlsx'
+          - '**/*.docx'
+
+  # Code repository should contain tests, which can be identified using a 'test' or 'specs' directory
+  test-directory-exists:
+    level: warning
+    rule:
+      type: directory-existence
+      options:
+        globsAny:
+          - '**/test*'
+          - '**/specs'
+        nocase: true
+
+  # Repository must contain some automated checks to evaluate pull requests
+  integrates-with-ci:
+    level: error
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - .gitlab-ci.yml
+          - .travis.yml
+          - appveyor.yml
+          - .appveyor.yml
+          - circle.yml
+          - .circleci/config.yml
+          - Jenkinsfile
+          - .drone.yml
+          - .github/workflows/*
+          - azure-pipelines.yml
+
+  # Code of conduct should contain a contact email address
+  code-of-conduct-file-contains-email:
+    level: error
+    rule:
+      type: file-contents
+      options:
+        globsAll:
+          - CODEOFCONDUCT*
+          - CODE-OF-CONDUCT*
+          - CODE_OF_CONDUCT*
+          - .github/CODEOFCONDUCT*
+          - .github/CODE-OF-CONDUCT*
+          - .github/CODE_OF_CONDUCT*
+        content: .+@.+\..+
+        flags: i
+        human-readable-content: email address
+
+  # Source code should contain license headers
+  # This is a basic check. REUSE compliance is a more advanced check.
+  source-license-headers-exist:
+    level: off
+    rule:
+      type: file-starts-with
+      options:
+        globsAll:
+          - '**/*.js'
+          - '!node_modules/**'
+          - '**/*.py'
+          - '**/*.java'
+          - '**/*.cpp'
+        lineCount: 5
+        patterns:
+          - Copyright
+          - License
+        flags: i
+
+  # Repository must contain an issue template to guide newcomers into project way of working
+  issue-template-exists:
+    level: error
+    rule:
+      type: file-existence
+      options:
+        dirs: true
+        globsAny:
+          - ISSUE_TEMPLATE*
+          - .github/ISSUE_TEMPLATE*
+          - .gitlab/issue_templates*
+
+  # Repository must contain a pull request template to guide newcomers into project way of working
+  pull-request-template-exists:
+    level: error
+    rule:
+      type: file-existence
+      options:
+        dirs: true
+        globsAny:
+          - PULL_REQUEST_TEMPLATE*
+          - .github/PULL_REQUEST_TEMPLATE*
+          - .github/pull_request_template.md
+          - docs/pull_request_template.md
+          - docs/PULL_REQUEST_TEMPLATE*
+          - pull_request_template.md
+          - .gitlab/merge_request_templates*
+
+  # Projects should contain package metadata. Files depend on the programming language.
+  # NOTE: requires additional dependencies in order to work
+  javascript-package-metadata-exists:
+    level: error
+    where:
+      - language=javascript
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - package.json
+  java-package-metadata-exists:
+    level: error
+    where:
+      - language=java
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - pom.xml
+          - build.xml
+          - build.gradle
+  python-package-metadata-exists:
+    level: error
+    where:
+      - language=python
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - setup.py
+          - requirements.txt
+          - pyproject.toml
+
+  # Licensee should be able to detect the project license
+  # NOTE: requires additional dependencies in order to work
+  license-detectable-by-licensee:
+    level: off
+    where:
+      - license=*
+    rule:
+      type: license-detectable-by-licensee
+      options: {}
+
+  # Must contain a notice file in case of Apache-2.0 license
+  # NOTE: requires additional dependencies in order to work
+  notice-file-exists:
+    level: error
+    where:
+      - license=Apache-2.0
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - NOTICE*
+        fail-message: The NOTICE file is described in section 4.4 of the Apache License version 2.0. Its presence is not mandated by the license itself, but by ASF policy.
+
+  # Must contain an OpenSSF best-practices badge
+  best-practices-badge-present:
+    level: off  # This check seems broken (Aug '24)
+    rule:
+      type: best-practices-badge-present
+      options:
+        minPercentage: 100
+  readme-references-best-practices-badge:
+    level: error
+    rule:
+      type: file-contents
+      options:
+        globsAll:
+          - README*
+        content: https://bestpractices.coreinfrastructure.org/projects/
+        flags: i
+
+  # Should contain .gitignore file to prevent accidental code inclusion
+  gitignore-file-exists:
+    level: warning
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - .gitignore
+        fail-message: .gitignore file prevents accidential contributions
+
+  # Should contain a publiccode.yml file to increase discoverability
+  publiccode-yml-file-exists:
+    level: warning
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - publiccode.yml
+        fail-message: Publiccode.yml file helps indexing of public sector software
+
+  # Must not contain a Backstage catalog-info.yml file
+  company-specific-catalog-info-yaml-not-present:
+    level: error
+    rule:
+      type: file-type-exclusion
+      options:
+        type:
+          - catalog-info.yml
+          - catalog-info.yaml
+
+  # Could contain a reference to United Nations Sustainable Development Goals
+  readme-references-sustainable-development-goals:
+    level: warning
+    rule:
+      type: file-contents
+      options:
+        globsAll:
+          - README*
+        content: Sustainable Development Goal
+        flags: i
+
+  # Should contain a pre-commit hook to have quality checks even before committing
+  git-pre-commit-hook-exists:
+    level: warning
+    rule:
+      type: file-existence
+      options:
+        globsAny:
+          - .git/hooks/pre-commit
+          - .pre-commit-config.yaml
