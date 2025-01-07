@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
@@ -20,23 +21,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-// ensureLdapGroup ensures Group presence
-func (r *PaasNSReconciler) EnsureArgoCD(
+// EnsureArgoCD ensures ArgoCD instance
+func (r *PaasReconciler) EnsureArgoCD(
 	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
+	paas *v1alpha1.Paas,
 ) error {
-	if paasns.Name != "argocd" {
-		return nil
-	}
 	ctx = setLogComponent(ctx, "argopermissions")
 	logger := log.Ctx(ctx)
-	paas, _, err := r.paasFromPaasNs(ctx, paasns)
-	if err != nil {
-		return err
-	}
+
+	namespace := fmt.Sprintf("%s-%s", paas.Name, "argocd")
 
 	defaultPolicy := GetConfig().ArgoPermissions.DefaultPolicy
-	policy := GetConfig().ArgoPermissions.FromGroups(paasns.Spec.Groups)
+	policy := GetConfig().ArgoPermissions.FromGroups(paas.Spec.Groups.Names())
 	scopes := "[groups]"
 
 	argo := &argocd.ArgoCD{
@@ -46,7 +42,7 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      GetConfig().ArgoPermissions.ResourceName,
-			Namespace: paasns.NamespaceName(),
+			Namespace: namespace,
 		},
 		Spec: argocd.ArgoCDSpec{
 			RBAC: argocd.ArgoCDRBACSpec{
@@ -57,17 +53,15 @@ func (r *PaasNSReconciler) EnsureArgoCD(
 		},
 	}
 
-	argoName := types.NamespacedName{
-		Namespace: paasns.NamespaceName(),
-		Name:      GetConfig().ArgoPermissions.ResourceName,
-	}
-
-	err = controllerutil.SetControllerReference(paas, argo, r.Scheme)
+	err := controllerutil.SetControllerReference(paas, argo, r.Scheme)
 	if err != nil {
 		return err
 	}
 
-	err = r.Get(ctx, argoName, argo)
+	err = r.Get(ctx, types.NamespacedName{
+		Namespace: argo.Namespace,
+		Name:      argo.Name,
+	}, argo)
 	if err != nil && errors.IsNotFound(err) {
 		return r.Create(ctx, argo)
 	} else if err != nil {
