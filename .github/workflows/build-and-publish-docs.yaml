@@ -76,7 +76,7 @@ jobs:
         run: |
           SHORT_TAG=${{ steps.extract_short_tag.outputs.SHORT_TAG }}
           git pull -r
-          mike deploy --update-aliases --push "$SHORT_TAG" latest
+          mike deploy --update-aliases --push --branch=gh-pages "$SHORT_TAG" latest
           mike --version
           
       - name: Save build cache
