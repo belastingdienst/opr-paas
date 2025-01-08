@@ -66,8 +66,7 @@ jobs:
         id: extract_short_tag
         run: |
           TAG="${{ github.event.release.tag_name }}"
-          # Strip leading "v" if present, then drop everything after the second dot
-          SHORT_TAG="$(echo "$TAG" | sed 's/^v//; s/\([0-9]*\.[0-9]*\).*/\1/')"
+          SHORT_TAG="$(echo "$TAG" | sed 's/\([0-9]*\.[0-9]*\).*/\1/')"
           echo "SHORT_TAG=$SHORT_TAG" >> $GITHUB_OUTPUT
 
       - name: Deploy with mike 🚀
