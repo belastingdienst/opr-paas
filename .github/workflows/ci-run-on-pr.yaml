@@ -29,12 +29,15 @@ jobs:
         id: filter
         with:
           # Any file which is not under docs/, examples/, or is not a markdown file is counted as a backend file
+          # Also run when ci-run-on-pr has been changed to validate it is working
           files_yaml: |
             backend:
               - '!**.md'
               - '!**/*.md'
               - '!docs/**'
               - '!examples/**'
+              - '!.github/**'
+              - '.github/workflows/ci-run-on-pr.yaml'
   
   check-go:
     name: Ensure Go modules synchronicity
