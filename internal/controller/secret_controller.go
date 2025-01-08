@@ -128,17 +128,28 @@ func (r *PaasNSReconciler) getSecrets(
 	if len(encryptedSecrets) > 0 {
 		return nil, nil
 	}
-	// Get the configured decryptSecret
-	decryptSecret := &corev1.Secret{}
-	err = r.Get(ctx, types.NamespacedName{Name: GetConfig().DecryptKeysSecret.Name, Namespace: GetConfig().DecryptKeysSecret.Namespace}, decryptSecret)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to get decryptSecret from kubernetes, contact system administrator: %w", err)
-	}
-	// If the generation is changed, the secret has changed, reset Crypts.
-	if decryptSecret.Generation != currentDecryptSecretGeneration {
-		resetCrypts()
+	// TODO(portly-halicore-76) As we didn't remove DecryptKeysPath yet, that still has to be a valid config option.
+	// Therefore we must check if one or the other config has been set.
+	// TODO(portly-halicore-76) Check in a decent way, whether this config is empty
+	if (GetConfig().DecryptKeysSecret != v1alpha1.NamespacedName{}) {
+		// Get the configured decryptSecret
+		decryptSecret := &corev1.Secret{}
+		err = r.Get(ctx, types.NamespacedName{Name: GetConfig().DecryptKeysSecret.Name, Namespace: GetConfig().DecryptKeysSecret.Namespace}, decryptSecret)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to get decryptSecret from kubernetes, contact system administrator: %w", err)
+		}
+		// If the generation is changed, the secret has changed, reset Crypts.
+		if decryptSecret.Generation != currentDecryptSecretGeneration {
+			resetCrypts()
+		}
+		// TODO get privateKeys from secret
+	} else if GetConfig().DecryptKeyPaths != nil {
+		// TODO get privateKeys from path
+	} else {
+		return nil, fmt.Errorf("no decrypt secret has been configured")
 	}
 
+	// TODO create rsa from privateKeys, remove secret from here
 	var rsa *crypt.Crypt
 	rsa, err = getRsa(paas.Name, *decryptSecret)
 	if err != nil {
