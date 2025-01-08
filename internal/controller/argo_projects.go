@@ -73,7 +73,7 @@ func (r *PaasReconciler) BackendAppProject(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: GetConfig().AppSetNamespace,
+			Namespace: GetConfig().ClusterWideArgoCDNamespace,
 			Labels:    paas.ClonedLabels(),
 			// Only removes appProject when apps no longer reference appProject
 			Finalizers: []string{
