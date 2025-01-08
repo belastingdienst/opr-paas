@@ -66,8 +66,7 @@ jobs:
         id: extract_short_tag
         run: |
           TAG="${{ github.event.release.tag_name }}"
-          # Strip leading "v" if present, then drop everything after the second dot
-          SHORT_TAG="$(echo "$TAG" | sed 's/^v//; s/\([0-9]*\.[0-9]*\).*/\1/')"
+          SHORT_TAG="$(echo "$TAG" | sed 's/\([0-9]*\.[0-9]*\).*/\1/')"
           echo "SHORT_TAG=$SHORT_TAG" >> $GITHUB_OUTPUT
 
       - name: Deploy with mike 🚀
@@ -75,7 +74,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           SHORT_TAG=${{ steps.extract_short_tag.outputs.SHORT_TAG }}
-          mike deploy --update-aliases --push "$SHORT_TAG" latest
+          git pull -r
+          mike deploy --update-aliases --push --branch=gh-pages "$SHORT_TAG" latest
           mike --version
           
       - name: Save build cache
