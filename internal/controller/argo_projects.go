@@ -58,26 +58,6 @@ func (r *PaasReconciler) EnsureAppProject(
 	return nil
 }
 
-// FinalizeAppProject finalizes AppProject
-func (r *PaasReconciler) FinalizeAppProject(ctx context.Context, paas *v1alpha1.Paas) error {
-	logger := log.Ctx(ctx)
-	logger.Info().Msg("finalizing App Project")
-	appProject := &argo.AppProject{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Name:      paas.Name,
-		Namespace: GetConfig().AppSetNamespace,
-	}, appProject); err != nil && errors.IsNotFound(err) {
-		logger.Info().Msg("app Project already deleted")
-		return nil
-	} else if err != nil {
-		logger.Err(err).Msg("error retrieving App Project")
-		return err
-	} else {
-		logger.Info().Msg("deleting App Project")
-		return r.Delete(ctx, appProject)
-	}
-}
-
 // backendAppProject is code for Creating AppProject
 func (r *PaasReconciler) BackendAppProject(
 	ctx context.Context,

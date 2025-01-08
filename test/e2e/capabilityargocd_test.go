@@ -144,16 +144,16 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	entries, _ := getApplicationSetListEntries(argoAppSet)
 
 	// For now this still applies, later we move the git_.. properties to the appSet as well
-	// Assert AppSet entry unchanged
+	// Assert AppSet entry updated accordingly
 	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
 	assert.Equal(t, map[string]string{
+		"git_path":     paasArgoGitPath,
+		"git_revision": updatedRevision,
+		"git_url":      paasArgoGitUrl,
 		"paas":         paasWithArgo,
-		"requestor":    "paas-requestor",
+		"requestor":    paasRequestor,
 		"service":      "paas",
 		"subservice":   "capability",
-		"git_path":     "foo/",
-		"git_revision": "main",
-		"git_url":      "ssh://git@scm/some-repo.git",
 	}, entries[0], "ApplicationSet List generator contains the correct parameters")
 
 	assert.NotNil(t, getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")
@@ -165,14 +165,14 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Equal(t, "g, system:cluster-admins, role:admin", *argocd.Spec.RBAC.Policy)
 	assert.Equal(t, "[groups]", *argocd.Spec.RBAC.Scopes)
 
-	// Assert Bootstrap is not updated as described in issue #185
+	// Assert Bootstrap is now updated as described in issue #185
 	applications := listOrFail(ctx, paasArgoNs, &argo.ApplicationList{}, t, cfg).Items
 	assert.Len(t, applications, 1, "An application is present in the ArgoCD namespace")
 	assert.Equal(t, "paas-bootstrap", applications[0].Name)
 	assert.Equal(t, argo.ApplicationSource{
 		RepoURL:        paasArgoGitUrl,
 		Path:           paasArgoGitPath,
-		TargetRevision: paasArgoGitRevision,
+		TargetRevision: updatedRevision,
 	}, *applications[0].Spec.Source, "Application source matches Git properties from Paas")
 	assert.Equal(t, "whatever", applications[0].Spec.IgnoreDifferences[0].Name, "`exclude_appset_name` configuration is included in IgnoreDifferences")
 
