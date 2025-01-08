@@ -97,10 +97,6 @@ spec:
                             description: Regular expression for validating input,
                               defaults to '', which means no validation.
                             type: string
-                        required:
-                        - default
-                        - required
-                        - validation
                         type: object
                       description: Settings to allow specific configuration specific
                         to a capability
@@ -160,16 +156,10 @@ spec:
                           format: int64
                           type: integer
                       required:
-                      - clusterwide
                       - defaults
-                      - max
-                      - min
-                      - ratio
                       type: object
                   required:
                   - applicationset
-                  - default_permissions
-                  - extra_permissions
                   - quotas
                   type: object
                 description: A map with zero or more ConfigCapability
@@ -241,7 +231,6 @@ spec:
                 - namespace
                 type: object
             required:
-            - capabilities
             - decryptKeyPaths
             - exclude_appset_name
             - whitelist

@@ -58,7 +58,6 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 					"argo-service-argocd-application-controller": {"admin"},
 				},
 				QuotaSettings: v1alpha1.ConfigQuotaSettings{
-					Clusterwide: false,
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 						corev1.ResourceLimitsCPU:       resource.MustParse("5"),
 						corev1.ResourceLimitsMemory:    resource.MustParse("4Gi"),
@@ -67,9 +66,6 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceRequestsStorage: resource.MustParse("0"),
 						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
 					},
-					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
-					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
-					Ratio:     0,
 				},
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
 					"git_url": {
@@ -88,11 +84,8 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 				},
 			},
 			"cap5": {
-				AppSet:             "cap5as",
-				DefaultPermissions: map[string][]string{},
-				ExtraPermissions:   map[string][]string{},
+				AppSet: "cap5as",
 				QuotaSettings: v1alpha1.ConfigQuotaSettings{
-					Clusterwide: false,
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 						corev1.ResourceLimitsCPU:       resource.MustParse("6"),
 						corev1.ResourceLimitsMemory:    resource.MustParse("7Gi"),
@@ -101,15 +94,6 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceRequestsStorage: resource.MustParse("0"),
 						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
 					},
-					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{
-						corev1.ResourceLimitsCPU:    resource.MustParse("5"),
-						corev1.ResourceLimitsMemory: resource.MustParse("4Gi"),
-					},
-					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{
-						corev1.ResourceLimitsCPU:    resource.MustParse("1"),
-						corev1.ResourceLimitsMemory: resource.MustParse("1Gi"),
-					},
-					Ratio: 10,
 				},
 			},
 			"tekton": {
@@ -142,9 +126,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 				},
 			},
 			"sso": {
-				AppSet:             "ssoas",
-				DefaultPermissions: map[string][]string{},
-				ExtraPermissions:   map[string][]string{},
+				AppSet: "ssoas",
 				QuotaSettings: v1alpha1.ConfigQuotaSettings{
 					Clusterwide: false,
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
@@ -155,17 +137,11 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceRequestsStorage: resource.MustParse("0"),
 						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
 					},
-					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
-					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
-					Ratio:     0,
 				},
 			},
 			"grafana": {
-				AppSet:             "grafanaas",
-				DefaultPermissions: map[string][]string{},
-				ExtraPermissions:   map[string][]string{},
+				AppSet: "grafanaas",
 				QuotaSettings: v1alpha1.ConfigQuotaSettings{
-					Clusterwide: false,
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 						corev1.ResourceLimitsCPU:       resource.MustParse("2"),
 						corev1.ResourceLimitsMemory:    resource.MustParse("2Gi"),
@@ -174,9 +150,6 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceRequestsStorage: resource.MustParse("2Gi"),
 						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
 					},
-					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
-					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
-					Ratio:     0,
 				},
 			},
 		},
