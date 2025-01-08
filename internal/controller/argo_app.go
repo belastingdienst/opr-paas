@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
@@ -25,25 +26,21 @@ const (
 )
 
 // ensureArgoApp ensures ArgoApp presence in given argo application.
-func (r *PaasNSReconciler) EnsureArgoApp(
+func (r *PaasReconciler) EnsureArgoApp(
 	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) error {
-	if paasns.Name != "argocd" {
-		return nil
-	}
-
 	ctx = setLogComponent(ctx, "argoapp")
 	logger := log.Ctx(ctx)
+	namespace := fmt.Sprintf("%s-%s", paas.Name, "argocd")
 	namespacedName := types.NamespacedName{
-		Namespace: paasns.NamespaceName(),
+		Namespace: namespace,
 		Name:      appName,
 	}
 
 	// See if argo application exists and create if it doesn't
 	found := &argo.Application{}
-	if argoApp, err := r.backendArgoApp(ctx, paasns, paas); err != nil {
+	if argoApp, err := r.backendArgoApp(ctx, paas); err != nil {
 		return err
 	} else if err := r.Get(ctx, namespacedName, found); err == nil {
 		logger.Info().Msg("argo Application already exists, updating")
@@ -60,15 +57,14 @@ func (r *PaasNSReconciler) EnsureArgoApp(
 }
 
 // backendArgoApp is code for creating a ArgoApp
-func (r *PaasNSReconciler) backendArgoApp(
+func (r *PaasReconciler) backendArgoApp(
 	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) (*argo.Application, error) {
 	logger := log.Ctx(ctx)
 	logger.Info().Msgf("defining %s Argo Application", appName)
 
-	namespace := paasns.NamespaceName()
+	namespace := fmt.Sprintf("%s-%s", paas.Name, "argocd")
 	argoConfig := paas.Spec.Capabilities["argocd"]
 	argoConfig.SetDefaults()
 	fields, err := argoConfig.CapExtraFields(GetConfig().Capabilities["argocd"].CustomFields)
@@ -83,7 +79,7 @@ func (r *PaasNSReconciler) backendArgoApp(
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      appName,
 			Namespace: namespace,
-			Labels:    paasns.ClonedLabels(),
+			Labels:    paas.ClonedLabels(),
 		},
 
 		Spec: argo.ApplicationSpec{
@@ -119,27 +115,4 @@ func (r *PaasNSReconciler) backendArgoApp(
 		return app, err
 	}
 	return app, nil
-}
-
-func (r *PaasNSReconciler) FinalizeArgoApp(
-	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
-) error {
-	namespacedName := types.NamespacedName{
-		Namespace: paasns.NamespaceName(),
-		Name:      appName,
-	}
-	logger := log.Ctx(ctx)
-	logger.Info().Msg("finalizing")
-	obj := &argo.Application{}
-	if err := r.Get(ctx, namespacedName, obj); err != nil && kerrors.IsNotFound(err) {
-		logger.Info().Msg("does not exist")
-		return nil
-	} else if err != nil {
-		logger.Err(err).Msg("error retrieving info")
-		return err
-	} else {
-		logger.Info().Msg("deleting")
-		return r.Delete(ctx, obj)
-	}
 }
