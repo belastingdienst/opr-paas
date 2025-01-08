@@ -151,7 +151,7 @@ With this example (combined with the operator config example), the following wou
 
 !!! Note
 That there is also options to manage users with a federated solution.
-For more information, see [ldap integration with caas-whitelist](caas-whitelist.md).
+For more information, see [ldap integration with groupsynclist](groupsynclist.md).
 
 ### PaasNs
 
@@ -184,5 +184,5 @@ DevOps engineers could additionally create a PaasNs with the following definitio
 - Next to permissions on groups and users, there is also capabilities to implement
   permissions for service accounts. See [extra_permissions](../../administrators-guide/capabilities.md#configuring-permissions) for
   more info.
-- For ldap integration, the operator has options to manage groups using a caas-whitelist
-  implementation. For more information, see [ldap integration with caas-whitelist](caas-whitelist.md).
+- For ldap integration, the operator has options to manage groups using a groupsynclist
+  implementation. For more information, see [ldap integration with groupsynclist](groupsynclist.md).

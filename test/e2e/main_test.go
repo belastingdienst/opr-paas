@@ -166,8 +166,8 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 			"default": {"admin"},
 			"viewer":  {"view"},
 		},
-		Whitelist: v1alpha1.NamespacedName{
-			Namespace: "wlns",
+		GroupSyncList: v1alpha1.NamespacedName{
+			Namespace: "gsns",
 			Name:      "wlname",
 		},
 		ExcludeAppSetName: "whatever",

@@ -47,7 +47,7 @@ func TestGroupUsers(t *testing.T) {
 func assertGroupCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithGroups, t, cfg)
 	group := getOrFail(ctx, groupName, cfg.Namespace(), &userv1.Group{}, t, cfg)
-	whitelist := getOrFail(ctx, "wlname", "wlns", &corev1.ConfigMap{}, t, cfg)
+	groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
 	rolebinding := getOrFail(ctx, "paas-admin", paasAbsoluteNs, &rbacv1.RoleBinding{}, t, cfg)
 	rolebindingsPaas := listOrFail(ctx, paasWithGroups, &rbacv1.RoleBindingList{}, t, cfg)
 
@@ -60,8 +60,8 @@ func assertGroupCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) 
 	assert.Equal(t, "my-ldap-host", group.Labels["openshift.io/ldap.host"])
 	// The owner of the group is the Paas that created it
 	assert.Equal(t, paas.UID, group.OwnerReferences[0].UID)
-	// The whitelist is unchanged (empty)
-	assert.Empty(t, whitelist.Data["whitelist.txt"])
+	// The groupsynclist is unchanged (empty)
+	assert.Empty(t, groupsynclist.Data["groupsynclist.txt"])
 	// Default RoleBinding (as per Paas config) is set for group
 	assert.Len(t, rolebinding.Subjects, 1)
 	assert.Equal(t, groupName, rolebinding.Subjects[0].Name)
@@ -89,7 +89,7 @@ func assertGroupCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *envco
 	}
 
 	group2 := getOrFail(ctx, group2Name, cfg.Namespace(), &userv1.Group{}, t, cfg)
-	whitelist := getOrFail(ctx, "wlname", "wlns", &corev1.ConfigMap{}, t, cfg)
+	groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
 	rolebinding := getOrFail(ctx, "paas-view", paasAbsoluteNs, &rbacv1.RoleBinding{}, t, cfg)
 	rolebindingsPaas := listOrFail(ctx, paasWithGroups, &rbacv1.RoleBindingList{}, t, cfg)
 
@@ -102,8 +102,8 @@ func assertGroupCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *envco
 	assert.Equal(t, "my-ldap-host", group2.Labels["openshift.io/ldap.host"])
 	// The owner of the group is the Paas that created it
 	assert.Equal(t, paas.UID, group2.OwnerReferences[0].UID)
-	// The whitelist is unchanged (empty)
-	assert.Empty(t, whitelist.Data["whitelist.txt"])
+	// The groupsynclist is unchanged (empty)
+	assert.Empty(t, groupsynclist.Data["groupsynclist.txt"])
 	// Default RoleBinding (as per Paas config) is set for group
 	assert.Len(t, rolebinding.Subjects, 1)
 	assert.Equal(t, group2Name, rolebinding.Subjects[0].Name)
