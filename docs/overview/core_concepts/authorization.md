@@ -15,18 +15,18 @@ Configuring authorization is done by:
 - DevOps engineers can specify groups in their PaasNs resources;
 - For every PaasNs the PaasNs controller derives the required RoleBindings and
   creates as required;
-    - If a list is specified in the PaasNs it is correlated to the Paas;
-      when not defined all groups as specified in the Paas are used by default.
-    - For every group, the Paas definition is checked for the functional roles;
-      when not defined the default role mapping is used.
-    - For every functional role the technical roles are derived from the Paas ConfigMap;
-    - For every PaasNs namespace the PaasNs controller creates a role binding for
-      every applicable technical role, and adds the groups that should have the
-      required permissions;
+  - If a list is specified in the PaasNs it is correlated to the Paas;
+    when not defined all groups as specified in the Paas are used by default.
+  - For every group, the Paas definition is checked for the functional roles;
+    when not defined the default role mapping is used.
+  - For every functional role the technical roles are derived from the Paas ConfigMap;
+  - For every PaasNs namespace the PaasNs controller creates a role binding for
+    every applicable technical role, and adds the groups that should have the
+    required permissions;
 - For the `argocd` capability, the PaasNs controller adds the required permissions
   to the RBAC block so that the applicable groups get the permissions in ArgoCD
   as required;
-  
+
   Additionally the Paas operator configmap can have additional `argopermissions` to
   be handed to additional groups (e.a. cluster admins).
 
@@ -90,8 +90,8 @@ The Paas Operator ConfigMap (managed by cluster admins) can be configured as fol
     ```
 
 !!! Note
-    Groups that only have view defined will have the same permissions as groups
-    without any functional roles.
+Groups that only have view defined will have the same permissions as groups
+without any functional roles.
 
 ### Paas
 
@@ -150,8 +150,8 @@ With this example (combined with the operator config example), the following wou
   for all users in group `us` and group `them`;
 
 !!! Note
-    That there is also options to manage users with a federated solution.
-    For more information, see [ldap integration with caas-whitelist](caas-whitelist.md).
+That there is also options to manage users with a federated solution.
+For more information, see [ldap integration with groupsynclist](groupsynclist.md).
 
 ### PaasNs
 
@@ -182,7 +182,7 @@ DevOps engineers could additionally create a PaasNs with the following definitio
   That also means that changing the groups, operator config,, etc. does not automatically
   apply to existing ArgoCD deployments.
 - Next to permissions on groups and users, there is also capabilities to implement
-  permissions for service accounts. See [extra_permissions](extrapermissions.md) for
+  permissions for service accounts. See [extra_permissions](../../administrators-guide/capabilities.md#configuring-permissions) for
   more info.
-- For ldap integration, the operator has options to manage groups using a caas-whitelist
-  implementation. For more information, see [ldap integration with caas-whitelist](caas-whitelist.md).
+- For ldap integration, the operator has options to manage groups using a groupsynclist
+  implementation. For more information, see [ldap integration with groupsynclist](groupsynclist.md).

@@ -9,6 +9,8 @@ import (
 
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachinerywait "k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/e2e-framework/klient/k8s"
 	"sigs.k8s.io/e2e-framework/klient/wait"
@@ -52,6 +54,13 @@ func getOrFail[T k8s.Object](ctx context.Context, name string, namespace string,
 	return obj
 }
 
+// getAndFail retrieves a resource from k8s, failing the test if it was successfully retrieved.
+func failWhenExists[T k8s.Object](ctx context.Context, name string, namespace string, obj T, t *testing.T, cfg *envconf.Config) {
+	if err := cfg.Client().Resources().Get(ctx, name, namespace, obj); err == nil {
+		t.Fatalf("Resource %s should not be successfully retrieved", name)
+	}
+}
+
 // listOrFail retrieves a resource list from k8s, failing the test if there is an error.
 func listOrFail[L k8s.ObjectList](ctx context.Context, namespace string, obj L, t *testing.T, cfg *envconf.Config) L {
 	if err := cfg.Client().Resources(namespace).List(ctx, obj); err != nil {
@@ -81,4 +90,73 @@ func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) ([]map[st
 	}
 
 	return entries, nil
+}
+
+// withStatus represents a k8s object with a `.status.conditions` slice field of conditions.
+// This is a workaround to match our custom resource types; all our custom resource types have the same `.status.conditions` fields,
+// but Go generics do not currently allow accessing shared struct fields via generic types. This is apparently a feature slated for
+// Go 2. (https://github.com/golang/go/issues/48522#issuecomment-924380147)
+type withStatus interface {
+	k8s.Object
+	GetConditions() []metav1.Condition
+}
+
+// waitForStatus accepts a k8s object with a `.status.conditions` block, and waits until the resource has been updated and status
+// conditions have been matched as per the passed function. Only conditions matching the current generation of the resource are
+// passed to the match function. `oldGeneration` must contain the generation of the resource prior to its requested update. The
+// `generation` of a resource only updates on changes to its spec. For new resources, use 0.
+func waitForStatus(ctx context.Context, cfg *envconf.Config, obj withStatus, oldGeneration int64, match func(conds []metav1.Condition) bool) error {
+	var fetched k8s.Object
+	waitCond := conditions.New(cfg.Client().Resources()).
+		ResourceMatch(obj, func(object k8s.Object) bool {
+			fetched = object
+
+			currentGen := object.GetGeneration()
+			if currentGen <= oldGeneration {
+				return false
+			}
+
+			// Filter out all non-current status conditions
+			conds := make([]metav1.Condition, 0)
+			for _, c := range object.(withStatus).GetConditions() {
+				if currentGen == c.ObservedGeneration {
+					conds = append(conds, c)
+				}
+			}
+
+			return match(conds)
+		})
+
+	if err := waitForDefaultOpts(ctx, waitCond); err != nil {
+		return fmt.Errorf("failed waiting for %s to be reconciled: %w and has status block: %v", fetched.GetName(), err, fetched.(withStatus).GetConditions())
+	}
+
+	return nil
+}
+
+// waitForCondition blocks until the given status condition is true.
+func waitForCondition(ctx context.Context, cfg *envconf.Config, obj withStatus, oldGeneration int64, readyCondition string) error {
+	return waitForStatus(ctx, cfg, obj, oldGeneration, func(conds []metav1.Condition) bool {
+		return meta.IsStatusConditionTrue(conds, readyCondition)
+	})
+}
+
+// createSync creates the resource, blocking until the given status condition is true.
+func createSync(ctx context.Context, cfg *envconf.Config, obj withStatus, readyCondition string) error {
+	if err := cfg.Client().Resources().Create(ctx, obj); err != nil {
+		return fmt.Errorf("failed to create %s: %w", obj.GetName(), err)
+	}
+
+	return waitForCondition(ctx, cfg, obj, 0, readyCondition)
+}
+
+// updateSync updates the resource, blocking until the given status condition is true.
+func updateSync(ctx context.Context, cfg *envconf.Config, obj withStatus, readyCondition string) error {
+	gen := obj.GetGeneration()
+
+	if err := cfg.Client().Resources().Update(ctx, obj); err != nil {
+		return fmt.Errorf("failed to update %s: %w", obj.GetName(), err)
+	}
+
+	return waitForCondition(ctx, cfg, obj, gen, readyCondition)
 }

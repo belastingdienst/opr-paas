@@ -1,9 +1,9 @@
 # Build the manager binary
 
-FROM docker.io/golang:1.22 AS builder
+FROM --platform=${BUILDPLATFORM} docker.io/golang:1.22 AS builder
 
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+ARG TARGETOS
+ARG TARGETARCH
 ARG VERSION=v0.0.0-devel
 
 WORKDIR /workspace

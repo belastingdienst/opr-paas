@@ -41,9 +41,9 @@ Example PaasConfig
       name: opr-paas-config
     spec:
       debug: false
-      whitelist:
+      groupsynclist:
         namespace: chp-cronjobs
-        name: caaswhitelist
+        name: groupsynclist
       ldap:
         host: ${PROD_LDAP_HOST}
         port: 636
@@ -58,7 +58,7 @@ Example PaasConfig
       requestor_label: level-one-support
       decryptKeyPaths:
         - /secrets/paas
-      applicationset_namespace: prod-argocd
+      clusterwide_argocd_namespace: prod-argocd
       exclude_appset_name: something-to-be-excluded
       quota_label: clusterquotagroup
       rolemappings:
@@ -77,6 +77,15 @@ Example PaasConfig
             argocd-argocd-application-controller:
               - monitoring-edit
               - alert-routing-edit
+          custom_fields:
+            git_url:
+              validation: '^ssh:\/\/git@scm\/[a-zA-Z0-9-.\/]*.git$'
+              required: true
+            git_revision:
+              default: main
+            git_path:
+              default: '.'
+              validation: '^[a-zA-Z0-9.\/]*$'
           extra_permissions: {}
           quotas:
             clusterwide: false

@@ -7,7 +7,9 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/internal/groups"
@@ -25,32 +27,34 @@ const (
 	TypeDegradedPaas = "Degraded"
 )
 
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // PaasSpec defines the desired state of Paas
 type PaasSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 	// Capabilities is a subset of capabilities that will be available in this Paas Project
-	Capabilities PaasCapabilities `json:"capabilities,omitempty"`
+	// +kubebuilder:validation:Optional
+	Capabilities PaasCapabilities `json:"capabilities"`
 
-	// Requestor is an informational field which decides on the requestor (also application responable)
+	// Requestor is an informational field which decides on the requestor (also application responsible)
+	// +kubebuilder:validation:Required
 	Requestor string `json:"requestor"`
 
-	Groups PaasGroups `json:"groups,omitempty"`
+	// +kubebuilder:validation:Optional
+	Groups PaasGroups `json:"groups"`
 
 	// Quota defines the quotas which should be set on the cluster resource quota as used by this Paas project
+	// +kubebuilder:validation:Required
 	Quota paas_quota.Quota `json:"quota"`
 
 	// Namespaces can be used to define extra namespaces to be created as part of this Paas project
-	Namespaces []string `json:"namespaces,omitempty"`
+	// +kubebuilder:validation:Optional
+	Namespaces []string `json:"namespaces"`
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
-	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
+	// +kubebuilder:validation:Optional
+	SshSecrets map[string]string `json:"sshSecrets"`
 
 	// Indicated by which 3rd party Paas's ArgoCD this Paas is managed
-	ManagedByPaas string `json:"managedByPaas,omitempty"`
+	// +kubebuilder:validation:Optional
+	ManagedByPaas string `json:"managedByPaas"`
 }
 
 func (p Paas) ManagedByPaas() string {
@@ -128,9 +132,12 @@ func (p Paas) extraNamespaces() (ns map[string]bool) {
 }
 
 type PaasGroup struct {
-	Query string   `json:"query,omitempty"`
-	Users []string `json:"users,omitempty"`
-	Roles []string `json:"roles,omitempty"`
+	// +kubebuilder:validation:Optional
+	Query string `json:"query"`
+	// +kubebuilder:validation:Optional
+	Users []string `json:"users"`
+	// +kubebuilder:validation:Optional
+	Roles []string `json:"roles"`
 }
 
 func (pg PaasGroup) Name(defName string) string {
@@ -260,22 +267,65 @@ func (pcs PaasCapabilities) ResetCapSshSecret(capability string) (err error) {
 
 type PaasCapability struct {
 	// Do we want to use this capability, default false
-	Enabled bool `json:"enabled,omitempty"`
+	// +kubebuilder:validation:Optional
+	Enabled bool `json:"enabled"`
 	// The URL that contains the Applications / Application Sets to be used by this capability
-	GitUrl string `json:"gitUrl,omitempty"`
+	// +kubebuilder:validation:Optional
+	GitUrl string `json:"gitUrl"`
 	// The revision of the git repo that contains the Applications / Application Sets to be used by this capability
-	GitRevision string `json:"gitRevision,omitempty"`
+	// +kubebuilder:validation:Optional
+	GitRevision string `json:"gitRevision"`
 	// the path in the git repo that contains the Applications / Application Sets to be used by this capability
-	GitPath string `json:"gitPath,omitempty"`
+	// +kubebuilder:validation:Optional
+	GitPath string `json:"gitPath"`
+	// Custom fields to configure this specific Capability
+	// +kubebuilder:validation:Optional
+	CustomFields map[string]string `json:"custom_fields"`
 	// This project has it's own ClusterResourceQuota settings
-	Quota paas_quota.Quota `json:"quota,omitempty"`
+	// +kubebuilder:validation:Optional
+	Quota paas_quota.Quota `json:"quota"`
 	// You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
-	SshSecrets map[string]string `json:"sshSecrets,omitempty"`
-	// You can enable extra permissions for the service accounts beloning to this capability
+	// +kubebuilder:validation:Optional
+	SshSecrets map[string]string `json:"sshSecrets"`
+	// You can enable extra permissions for the service accounts belonging to this capability
 	// Exact definitions is configured in Paas Configmap
-	// Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
-	ExtraPermissions bool `json:"extra_permissions,omitempty"`
+	// +kubebuilder:validation:Optional
+	ExtraPermissions bool `json:"extra_permissions"`
+}
+
+func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomField) (fields map[string]string, err error) {
+	// TODO: remove argocd specific fields
+	fields = map[string]string{
+		"git_url":      pc.GitUrl,
+		"git_revision": pc.GitRevision,
+		"git_path":     pc.GitPath,
+	}
+	var issues []error
+	for key, value := range pc.CustomFields {
+		if _, exists := fieldConfig[key]; !exists {
+			issues = append(issues, fmt.Errorf("Custom field %s is not configured in capability config", key))
+		} else {
+			fields[key] = value
+		}
+	}
+	for key, fieldConf := range fieldConfig {
+		if value, exists := fields[key]; exists {
+			if matched, err := regexp.Match(fieldConf.Validation, []byte(value)); err != nil {
+				issues = append(issues, fmt.Errorf("Could not validate value %s: %w", value, err))
+			} else if !matched {
+				issues = append(issues, fmt.Errorf("Invalid value %s (does not match %s)", value, fieldConf.Validation))
+			}
+		} else if fieldConf.Required {
+			issues = append(issues, fmt.Errorf("Value %s is required", key))
+		} else {
+			fields[key] = fieldConf.Default
+		}
+	}
+	if len(issues) > 0 {
+		return nil, errors.Join(issues...)
+	}
+	return fields, nil
 }
 
 func (pc *PaasCapability) WithExtraPermissions() bool {
@@ -310,10 +360,13 @@ func (pc *PaasCapability) SetSshSecret(key string, value string) {
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
 	// Deprecated: use paasns.status.conditions instead
-	Messages []string `json:"messages,omitempty"`
+	// +kubebuilder:validation:Optional
+	Messages []string `json:"messages"`
 	// Deprecated: will not be set and removed in a future release
-	Quota      map[string]paas_quota.Quota `json:"quotas,omitempty"`
-	Conditions []metav1.Condition          `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	// +kubebuilder:validation:Optional
+	Quota map[string]paas_quota.Quota `json:"quotas"`
+	// +kubebuilder:validation:Optional
+	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 // Deprecated: use paas.status.conditions instead
@@ -383,6 +436,10 @@ func (p Paas) WithoutMe(references []metav1.OwnerReference) (withoutMe []metav1.
 		}
 	}
 	return withoutMe
+}
+
+func (p Paas) GetConditions() []metav1.Condition {
+	return p.Status.Conditions
 }
 
 //+kubebuilder:object:root=true

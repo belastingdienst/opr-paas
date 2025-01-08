@@ -26,21 +26,24 @@ const (
 	paasArgoGitUrl      = "ssh://git@scm/some-repo.git"
 	paasArgoGitPath     = "foo/"
 	paasArgoGitRevision = "main"
+	paasRequestor       = "paas-requestor"
 	// String `dummysecret` encrypted with fixtures/crypt/pub/publicKey0
 	paasArgoSecret = "mPNADW4KlAYmiBSXfgyoP6G0h/8prFQNH7VBFXB3xiZ8wij2sRIgKekVUC3N9cHk73wkuewoH2fyM0BH2P1xKvSP4v4wwzq+fJC6qxx+d/lucrfnBHWCpsAr646OVYyoH8Er6PpBrPxM+OXCjVsXhd/8CGA32VzcUKSrAWBVWTgXpJ4/X/9gez865AmZkfFf2WBImYgs5Q/rH/mPP1jxl3WP10g51FLi4XG1qn2XdLRzBKXRKluh+PvMRYgqZ8QKl2Yd2HWj1SkzXrtayB7197r0fQ6t4cwpn8mqy30GQhsw6NEPSkcYakukOX2PYeRIVCwmMl3uEe9X1y7fesQVBMnq1loQJRpd7kBUj6EErnKNZ9Qa8tOXYLMME2tzsaYWz+rxhczCaMv9r55EGBENRB0K6VMY4jfC4NKkcVwgZm182/Z1wzOnPbhSKAoaSYUXVrsNfjuzlvQGJmaNF4onDgJdVpqJxkEH98E3q+NMlSYhIzZDph1RDjHmUm2aoAhx2W9zle+LsOWHLgogPHRwY+N7NRII5SBEnw99miCAQVqHnpEk0uITzny0G5AuoS9aKmVhbUNNR1TgZ6u2dFjrkbnZB0GKilJhVENM+oE8Fbq7Q4Qa9wtk/GK1myPNvY7ARbw1tfvbcpJT/NtKnEKsho/OVzfHn15W3niNVpXrZgs=" //nolint:gosec
 )
 
 func TestCapabilityArgoCD(t *testing.T) {
 	paasSpec := api.PaasSpec{
-		Requestor: "paas-requestor",
+		Requestor: paasRequestor,
 		Quota:     quota.Quota{},
 		Capabilities: api.PaasCapabilities{
 			"argocd": api.PaasCapability{
+				CustomFields: map[string]string{
+					"git_revision": paasArgoGitRevision,
+				},
 				Enabled:          true,
 				SshSecrets:       map[string]string{paasArgoGitUrl: paasArgoSecret},
 				GitUrl:           paasArgoGitUrl,
 				GitPath:          paasArgoGitPath,
-				GitRevision:      paasArgoGitRevision,
 				ExtraPermissions: true,
 			},
 		},
@@ -64,17 +67,20 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		Name:      "argocd",
 		Namespace: paasWithArgo,
 	}}
-	require.NoError(t, waitForPaasNSReconciliation(ctx, cfg, argopaasns, 0), "ArgoCD PaasNS reconciliation succeeds")
+	require.NoError(t, waitForCondition(ctx, cfg, argopaasns, 0, api.TypeReadyPaasNs), "ArgoCD PaasNS reconciliation succeeds")
 
 	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
 	entries, _ := getApplicationSetListEntries(argoAppSet)
 
 	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
 	assert.Equal(t, map[string]string{
-		"paas":       paasWithArgo,
-		"requestor":  "paas-requestor",
-		"service":    "paas",
-		"subservice": "capability",
+		"git_path":     paasArgoGitPath,
+		"git_revision": paasArgoGitRevision,
+		"git_url":      paasArgoGitUrl,
+		"paas":         paasWithArgo,
+		"requestor":    paasRequestor,
+		"service":      "paas",
+		"subservice":   "capability",
 	}, entries[0], "ApplicationSet List generator contains the correct parameters")
 
 	assert.NotNil(t, getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")
@@ -131,20 +137,23 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	// As only the Paas spec is updated via the above change, we wait for that and
 	// know that no reconciliation of PaasNs takes place so no need to wait for that.
 	// check #185 for more details
-	if err := updatePaasSync(ctx, cfg, paas); err != nil {
+	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
 	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
 	entries, _ := getApplicationSetListEntries(argoAppSet)
 
 	// For now this still applies, later we move the git_.. properties to the appSet as well
-	// Assert AppSet entry unchanged
+	// Assert AppSet entry updated accordingly
 	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
 	assert.Equal(t, map[string]string{
-		"paas":       paasWithArgo,
-		"requestor":  "paas-requestor",
-		"service":    "paas",
-		"subservice": "capability",
+		"git_path":     paasArgoGitPath,
+		"git_revision": updatedRevision,
+		"git_url":      paasArgoGitUrl,
+		"paas":         paasWithArgo,
+		"requestor":    paasRequestor,
+		"service":      "paas",
+		"subservice":   "capability",
 	}, entries[0], "ApplicationSet List generator contains the correct parameters")
 
 	assert.NotNil(t, getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")
@@ -156,14 +165,14 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Equal(t, "g, system:cluster-admins, role:admin", *argocd.Spec.RBAC.Policy)
 	assert.Equal(t, "[groups]", *argocd.Spec.RBAC.Scopes)
 
-	// Assert Bootstrap is not updated as described in issue #185
+	// Assert Bootstrap is now updated as described in issue #185
 	applications := listOrFail(ctx, paasArgoNs, &argo.ApplicationList{}, t, cfg).Items
 	assert.Len(t, applications, 1, "An application is present in the ArgoCD namespace")
 	assert.Equal(t, "paas-bootstrap", applications[0].Name)
 	assert.Equal(t, argo.ApplicationSource{
 		RepoURL:        paasArgoGitUrl,
 		Path:           paasArgoGitPath,
-		TargetRevision: paasArgoGitRevision,
+		TargetRevision: updatedRevision,
 	}, *applications[0].Spec.Source, "Application source matches Git properties from Paas")
 	assert.Equal(t, "whatever", applications[0].Spec.IgnoreDifferences[0].Name, "`exclude_appset_name` configuration is included in IgnoreDifferences")
 

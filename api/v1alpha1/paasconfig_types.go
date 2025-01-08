@@ -42,6 +42,10 @@ type PaasConfig struct {
 	Status PaasConfigStatus `json:"status,omitempty"`
 }
 
+func (p PaasConfig) GetConditions() []metav1.Condition {
+	return p.Status.Conditions
+}
+
 type PaasConfigSpec struct {
 	// Deprecated: Will be replaced by a secretRef to overcome caching
 	// Paths where the manager can find the decryptKeys to decrypt Paas'es
@@ -52,45 +56,44 @@ type PaasConfigSpec struct {
 	// Enable debug information generation or not
 	// +kubebuilder:default:=false
 	// +kubebuilder:validation:Optional
-	Debug bool `json:"debug,omitempty"`
+	Debug bool `json:"debug"`
 
 	// A map with zero or more ConfigCapability
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	Capabilities ConfigCapabilities `json:"capabilities"`
 
-	// Deprecated: Whitelist code will be removed from the operator to make it more generic
-	// A reference to a configmap containing a whitelist of LDAP groups to be synced using LDAP sync
+	// Deprecated: GroupSyncList code will be removed from the operator to make it more generic
+	// A reference to a configmap containing a groupsynclist of LDAP groups to be synced using LDAP sync
 	// +kubebuilder:validation:Required
-	Whitelist NamespacedName `json:"whitelist"`
+	GroupSyncList NamespacedName `json:"groupsynclist"`
 
 	// LDAP configuration for the operator to add to Groups
 	// +kubebuilder:validation:Optional
-	LDAP ConfigLdap `json:"ldap,omitempty"`
+	LDAP ConfigLdap `json:"ldap"`
 
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// Permissions to set for ArgoCD instance
-	// +kubebuilder:validation:Required
-	ArgoPermissions ConfigArgoPermissions `json:"argopermissions,omitempty"`
+	// +kubebuilder:validation:Optional
+	ArgoPermissions ConfigArgoPermissions `json:"argopermissions"`
 
-	// Namespace in which ArgoCD applicationSets will be found for managing capabilities
-	// +kubebuilder:default:=argocd
+	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
 	// +kubebuilder:validation:Required
-	AppSetNamespace string `json:"applicationset_namespace,omitempty"`
+	ClusterWideArgoCDNamespace string `json:"clusterwide_argocd_namespace"`
 
 	// Label which is added to clusterquotas
 	// +kubebuilder:default:=clusterquotagroup
 	// +kubebuilder:validation:Optional
-	QuotaLabel string `json:"quota_label,omitempty"`
+	QuotaLabel string `json:"quota_label"`
 
 	// Name of the label used to define who is the contact for this resource
 	// +kubebuilder:default:=requestor
 	// +kubebuilder:validation:Optional
-	RequestorLabel string `json:"requestor_label,omitempty"`
+	RequestorLabel string `json:"requestor_label"`
 
 	// Name of the label used to define by whom the resource is managed.
 	// +kubebuilder:default:=argocd.argoproj.io/managed-by
 	// +kubebuilder:validation:Optional
-	ManagedByLabel string `json:"managed_by_label,omitempty"`
+	ManagedByLabel string `json:"managed_by_label"`
 
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
@@ -99,7 +102,7 @@ type PaasConfigSpec struct {
 
 	// Grant permissions to all groups according to config in configmap and role selected per group in paas.
 	// +kubebuilder:validation:Optional
-	RoleMappings ConfigRoleMappings `json:"rolemappings,omitempty"`
+	RoleMappings ConfigRoleMappings `json:"rolemappings"`
 }
 
 type NamespacedName struct {
@@ -129,7 +132,7 @@ type ConfigArgoPermissions struct {
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// The optional default policy which is set in the ArgoCD instance
 	// +kubebuilder:validation:Optional
-	DefaultPolicy string `json:"default_policy,omitempty"`
+	DefaultPolicy string `json:"default_policy"`
 
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// The name of the ArgoCD instance to apply ArgoPermissions to
@@ -180,21 +183,45 @@ type ConfigCapability struct {
 	QuotaSettings ConfigQuotaSettings `json:"quotas"`
 
 	// Extra permissions set for this capability
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	ExtraPermissions ConfigCapPerm `json:"extra_permissions"`
 
 	// Default permissions set for this capability
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	DefaultPermissions ConfigCapPerm `json:"default_permissions"`
+
+	// Settings to allow specific configuration specific to a capability
+	CustomFields map[string]ConfigCustomField `json:"custom_fields,omitempty"`
+}
+
+// TODO: When we move to PaasConfig, we can probably combine Required and Default fields
+// TODO: When we move to PaasConfig, we can verify Validation being a valid RE
+// TODO: When we move to PaasConfig, we can verify Default meeting Validation
+// TODO: When we move to PaasConfig, we can verify that Default and Required are not both set
+
+type ConfigCustomField struct {
+	// Regular expression for validating input, defaults to '', which means no validation.
+	// +kubebuilder:validation:Optional
+	Validation string `json:"validation"`
+	// Set a default when no value is specified, defaults to ''.
+	// Only applies when Required is false.
+	// +kubebuilder:validation:Optional
+	Default string `json:"default"`
+	// Define if the value must be specified in the PaaS.
+	// When set to true, and no value is set, PaasNs has error in status field, and capability is not built.
+	// When set to false, and no value is set, Default is used.
+	// +kubebuilder:validation:Optional
+	Required bool `json:"required"`
 }
 
 type ConfigQuotaSettings struct {
 	// Is this a clusterwide quota or not
-	// +kubebuilder:validation:Required
+	// +kubebuilder:default:=false
+	// +kubebuilder:validation:Optional
 	Clusterwide bool `json:"clusterwide"`
 
 	// The ratio of the requested quota which will be applied to the total quota
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	Ratio int64 `json:"ratio"`
 
 	// The default quota which the enabled capability gets
@@ -202,11 +229,11 @@ type ConfigQuotaSettings struct {
 	DefQuota map[corev1.ResourceName]resourcev1.Quantity `json:"defaults"`
 
 	// The minimum quota which the enabled capability gets
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	MinQuotas map[corev1.ResourceName]resourcev1.Quantity `json:"min"`
 
 	// The maximum quota which the capability gets
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	MaxQuotas map[corev1.ResourceName]resourcev1.Quantity `json:"max"`
 }
 
@@ -264,13 +291,13 @@ func (ccp ConfigCapPerm) ServiceAccounts() []string {
 }
 
 func (config PaasConfigSpec) CapabilityK8sName(capability string) (as types.NamespacedName) {
-	as.Namespace = config.AppSetNamespace
+	as.Namespace = config.ClusterWideArgoCDNamespace
 	if cap, exists := config.Capabilities[capability]; exists {
 		as.Name = cap.AppSet
-		as.Namespace = config.AppSetNamespace
+		as.Namespace = config.ClusterWideArgoCDNamespace
 	} else {
 		as.Name = fmt.Sprintf("paas-%s", capability)
-		as.Namespace = config.AppSetNamespace
+		as.Namespace = config.ClusterWideArgoCDNamespace
 	}
 	return as
 }

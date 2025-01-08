@@ -207,7 +207,9 @@ func (r *PaasReconciler) removeFromClusterWideQuota(ctx context.Context, paas *v
 	var capConfig v1alpha1.ConfigCapability
 	var exists bool
 	if capConfig, exists = GetConfig().Capabilities[capabilityName]; !exists {
-		return fmt.Errorf("capability %s does not seem to exist", quotaName)
+		// If a Paas was created with a capability that was nog yet configured, we should be able to delete it.
+		// Returning an error would block deletion.
+		return nil
 	} else {
 		quota = backendClusterWideQuota(quotaName,
 			capConfig.QuotaSettings.MinQuotas)

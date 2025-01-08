@@ -13,49 +13,49 @@ spec:
   requestor: acme
   groups:
     appa:
-      query: CN=appa,OU=paas,OU=caas,OU=corp,DC=prod,DC=acme,DC=org
+      query: CN=appa,OU=paas,OU=clusters,OU=corp,DC=prod,DC=acme,DC=org
       users:
-      - aap
-      - paa
+        - aap
+        - paa
   quota:
-    limits.cpu: "13"
+    limits.cpu: '13'
     limits.memory: 42Gi
-    requests.cpu: "10"
+    requests.cpu: '10'
     requests.memory: 32Gi
     requests.storage: 1024Gi
-    thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+    thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
   capabilities:
     argocd:
       enabled: true
       quota:
-        limits.cpu: "2"
+        limits.cpu: '2'
         limits.memory: 5Gi
-        requests.cpu: "1Gi"
+        requests.cpu: '1Gi'
         requests.memory: 4Gi
         requests.storage: 20Gi
-        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
       gitUrl: https://
     tekton:
       quota:
-        limits.cpu: "2"
+        limits.cpu: '2'
         limits.memory: 5Gi
-        requests.cpu: "1Gi"
+        requests.cpu: '1Gi'
         requests.memory: 4Gi
         requests.storage: 20Gi
-        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
     sso:
       quota:
-        limits.cpu: "2"
+        limits.cpu: '2'
         limits.memory: 5Gi
-        requests.cpu: "1Gi"
+        requests.cpu: '1Gi'
         requests.memory: 4Gi
         requests.storage: 20Gi
-        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
     grafana:
       quota:
-        limits.cpu: "2"
+        limits.cpu: '2'
         limits.memory: 5Gi
-        requests.cpu: "1Gi"
+        requests.cpu: '1Gi'
         requests.memory: 4Gi
         requests.storage: 20Gi
-        thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+        thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'

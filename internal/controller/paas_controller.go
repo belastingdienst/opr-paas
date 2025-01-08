@@ -207,6 +207,21 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.ReconcileRolebindings(ctx, paas); err != nil {
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
+	} else if err = r.ensureAppSetCaps(ctx, paas); err != nil {
+		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
+	} else if argoCap, exists := paas.Spec.Capabilities["argocd"]; exists {
+		if argoCap.IsEnabled() {
+			logger.Info().Msg("creating Argo App for client bootstrapping")
+
+			// Create bootstrap Argo App
+			if err := r.EnsureArgoApp(ctx, paas); err != nil {
+				return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
+			}
+
+			if err := r.EnsureArgoCD(ctx, paas); err != nil {
+				return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
+			}
+		}
 	}
 
 	// Reconciling succeeded, set appropriate Condition
@@ -282,12 +297,9 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) error {
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("inside Paas finalizer")
-	if err := r.FinalizeAppSetCaps(ctx, paas); err != nil {
+	logger.Debug().Msg("inside Paas finalizer")
+	if err := r.finalizeAppSetCaps(ctx, paas); err != nil {
 		logger.Err(err).Msg("appSet finalizer error")
-		return err
-	} else if err = r.FinalizeAppProject(ctx, paas); err != nil {
-		logger.Err(err).Msg("appProject finalizer error")
 		return err
 	} else if err = r.FinalizeClusterQuotas(ctx, paas); err != nil {
 		logger.Err(err).Msg("quota finalizer error")

@@ -37,16 +37,16 @@ func TestGroupQuery(t *testing.T) {
 		features.New("Group with query").
 			Setup(createPaasFn(paasWithGroupQuery, paasSpec)).
 			Assess("group is created with query", assertGroupQueryCreated).
-			Assess("whitelist contains the group query", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-				whitelist := getOrFail(ctx, "wlname", "wlns", &corev1.ConfigMap{}, t, cfg)
-				assert.Equal(t, groupQuery, whitelist.Data["whitelist.txt"], "The whitelist includes the group query")
+			Assess("groupsynclist contains the group query", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+				groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
+				assert.Equal(t, groupQuery, groupsynclist.Data["groupsynclist.txt"], "The groupsynclist includes the group query")
 
 				return ctx
 			}).
 			Assess("second group with role and query is created after Paas update", assertGroupQueryCreatedAfterUpdate).
-			Assess("whitelist contains both group's queries", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-				whitelist := getOrFail(ctx, "wlname", "wlns", &corev1.ConfigMap{}, t, cfg)
-				assert.Equal(t, groupQuery+"\n"+group2Query, whitelist.Data["whitelist.txt"], "The whitelist should include both group's queries")
+			Assess("groupsynclist contains both group's queries", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+				groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
+				assert.Equal(t, groupQuery+"\n"+group2Query, groupsynclist.Data["groupsynclist.txt"], "The groupsynclist should include both group's queries")
 
 				return ctx
 			}).
@@ -88,7 +88,7 @@ func assertGroupQueryCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *
 		Roles: []string{"viewer"},
 	}
 
-	if err := updatePaasSync(ctx, cfg, paas); err != nil {
+	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
 

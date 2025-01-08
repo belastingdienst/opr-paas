@@ -17,6 +17,7 @@ theme:
     - bash
   features:
     - content.action.edit
+    - navigation.expand
     - navigation.path
     - navigation.tracking
     - navigation.tabs

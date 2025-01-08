@@ -37,11 +37,6 @@ spec:
             type: object
           spec:
             properties:
-              applicationset_namespace:
-                default: argocd
-                description: Namespace in which ArgoCD applicationSets will be found
-                  for managing capabilities
-                type: string
               argopermissions:
                 description: |-
                   Deprecated: ArgoCD specific code will be removed from the operator
@@ -79,6 +74,28 @@ spec:
                       description: Name of the ArgoCD ApplicationSet which manages
                         this capability
                       type: string
+                    custom_fields:
+                      additionalProperties:
+                        properties:
+                          default:
+                            description: |-
+                              Set a default when no value is specified, defaults to ''.
+                              Only applies when Required is false.
+                            type: string
+                          required:
+                            description: |-
+                              Define if the value must be specified in the PaaS.
+                              When set to true, and no value is set, PaasNs has error in status field, and capability is not built.
+                              When set to false, and no value is set, Default is used.
+                            type: boolean
+                          validation:
+                            description: Regular expression for validating input,
+                              defaults to '', which means no validation.
+                            type: string
+                        type: object
+                      description: Settings to allow specific configuration specific
+                        to a capability
+                      type: object
                     default_permissions:
                       additionalProperties:
                         items:
@@ -97,6 +114,7 @@ spec:
                       description: Quota settings for this capability
                       properties:
                         clusterwide:
+                          default: false
                           description: Is this a clusterwide quota or not
                           type: boolean
                         defaults:
@@ -134,20 +152,18 @@ spec:
                           format: int64
                           type: integer
                       required:
-                      - clusterwide
                       - defaults
-                      - max
-                      - min
-                      - ratio
                       type: object
                   required:
                   - applicationset
-                  - default_permissions
-                  - extra_permissions
                   - quotas
                   type: object
                 description: A map with zero or more ConfigCapability
                 type: object
+              clusterwide_argocd_namespace:
+                description: Namespace in which a clusterwide ArgoCD can be found
+                  for managing capabilities and appProjects
+                type: string
               debug:
                 default: false
                 description: Enable debug information generation or not
@@ -165,6 +181,19 @@ spec:
                   Deprecated: ArgoCD specific code will be removed from the operator
                   Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
                 type: string
+              groupsynclist:
+                description: |-
+                  Deprecated: GroupSyncList code will be removed from the operator to make it more generic
+                  A reference to a configmap containing a groupsynclist of LDAP groups to be synced using LDAP sync
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               ldap:
                 description: LDAP configuration for the operator to add to Groups
                 properties:
@@ -201,24 +230,11 @@ spec:
                 description: Grant permissions to all groups according to config in
                   configmap and role selected per group in paas.
                 type: object
-              whitelist:
-                description: |-
-                  Deprecated: Whitelist code will be removed from the operator to make it more generic
-                  A reference to a configmap containing a whitelist of LDAP groups to be synced using LDAP sync
-                properties:
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
             required:
-            - capabilities
+            - clusterwide_argocd_namespace
             - decryptKeyPaths
             - exclude_appset_name
-            - whitelist
+            - groupsynclist
             type: object
           status:
             properties:

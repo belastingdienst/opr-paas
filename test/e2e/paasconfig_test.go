@@ -6,17 +6,19 @@ import (
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	v1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/belastingdienst/opr-paas/internal/quota"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"sigs.k8s.io/e2e-framework/klient/k8s"
-	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
+	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
+
+const paasConfigDuplicateName = "paas-config-2"
 
 func TestPaasConfig(t *testing.T) {
 	testenv.Test(
@@ -37,23 +39,15 @@ func TestPaasConfig(t *testing.T) {
 				return ctx
 			}).
 			Assess("Operator reports error when no PaasConfig is loaded", assertOperatorErrorWithoutPaasConfig).
+			Assess("Paas reconciliation resumes once PaasConfig is loaded", assertPaasReconciliationResumed).
+			Assess("Paas reconciliation is triggered after PaasConfig is updated", assertPaasReconciliationAfterConfigUpdate).
 			Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-				// Recreate the PaasConfig resource for other tests
-				paasconfig := &v1alpha1.PaasConfig{}
-				*paasconfig = examplePaasConfig
+				deletePaasSync(ctx, "foo", t, cfg)
 
-				err := cfg.Client().Resources().Create(ctx, paasconfig)
-				if err != nil && !apierrors.IsAlreadyExists(err) {
-					t.Fatalf("Failed to recreate PaasConfig: %v", err)
-				}
-
-				waitUntilPaasConfigExists := conditions.New(cfg.Client().Resources()).ResourceMatch(paasconfig, func(obj k8s.Object) bool {
-					return obj.(*api.PaasConfig).Name == paasconfig.Name
-				})
-
-				if err := waitForDefaultOpts(ctx, waitUntilPaasConfigExists); err != nil {
-					t.Fatalf("Failed to recreate PaasConfig: %v", err)
-				}
+				// Reset PaasConfig to erase tested changes
+				paasConfig := getOrFail(ctx, "paas-config", cfg.Namespace(), &api.PaasConfig{}, t, cfg)
+				examplePaasConfig.Spec.DeepCopyInto(&paasConfig.Spec)
+				require.NoError(t, updateSync(ctx, cfg, paasConfig, api.TypeActivePaasConfig))
 
 				return ctx
 			}).
@@ -62,6 +56,15 @@ func TestPaasConfig(t *testing.T) {
 			Assess("PaasConfig is Active", assertPaasConfigIsActive).
 			Assess("PaasConfig is Updated", assertPaasConfigIsUpdated).
 			Assess("PaasConfig Invalid Spec", assertPaasConfigInvalidSpec).
+			Assess("Operator reports error when a second PaasConfig is loaded", assertDoublePaasConfigError).
+			Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+				secondPaasConfig := &v1alpha1.PaasConfig{
+					ObjectMeta: metav1.ObjectMeta{Name: paasConfigDuplicateName},
+				}
+				require.NoError(t, deleteResourceSync(ctx, cfg, secondPaasConfig))
+
+				return ctx
+			}).
 			Feature(),
 	)
 }
@@ -132,6 +135,24 @@ func assertPaasConfigInvalidSpec(ctx context.Context, t *testing.T, cfg *envconf
 	return ctx
 }
 
+func assertDoublePaasConfigError(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	paasConfig := examplePaasConfig.DeepCopy()
+	paasConfig.Name = paasConfigDuplicateName
+
+	require.NoError(t, cfg.Client().Resources().Create(ctx, paasConfig))
+	require.NoError(
+		t,
+		waitForStatus(ctx, cfg, paasConfig, 0, func(conds []metav1.Condition) bool {
+			cond := meta.FindStatusCondition(conds, api.TypeHasErrorsPaasConfig)
+			return cond != nil &&
+				cond.Status == metav1.ConditionTrue &&
+				cond.Message == "paasConfig singleton violation"
+		}),
+	)
+
+	return ctx
+}
+
 func assertOperatorErrorWithoutPaasConfig(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	// Ensure no PaasConfig resource exists
 	var existingPaasConfig v1alpha1.PaasConfig
@@ -139,7 +160,54 @@ func assertOperatorErrorWithoutPaasConfig(ctx context.Context, t *testing.T, cfg
 
 	require.True(t, apierrors.IsNotFound(err))
 
-	// Verify operator behavior when no PaasConfig exists?
+	paas := &api.Paas{
+		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
+		Spec: api.PaasSpec{
+			Requestor: "paas-user",
+			Quota:     make(quota.Quota),
+		},
+	}
+
+	require.NoError(t, cfg.Client().Resources().Create(ctx, paas))
+	require.NoError(
+		t,
+		waitForStatus(ctx, cfg, paas, 0, func(conds []metav1.Condition) bool {
+			cond := meta.FindStatusCondition(conds, api.TypeHasErrorsPaas)
+			return cond != nil &&
+				cond.Status == metav1.ConditionTrue &&
+				cond.Message == "please reach out to your system administrator as there is no Paasconfig available to reconcile against."
+		}),
+	)
+
+	return ctx
+}
+
+func assertPaasReconciliationResumed(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	paasConfig := examplePaasConfig.DeepCopy()
+	require.NoError(t, createSync(ctx, cfg, paasConfig, api.TypeActivePaasConfig))
+
+	paas := getPaas(ctx, "foo", t, cfg)
+	// Because the spec is not being changed between the failed and resumed reconciliation, the generation of the Paas resource is
+	// not incremented. Thus we pass the initial generation (i.e. 0), as `waitForCondition` waits to observe a generation change
+	// before matching the condition.
+	require.NoError(t, waitForCondition(ctx, cfg, paas, 0, api.TypeReadyPaas))
+
+	return ctx
+}
+
+func assertPaasReconciliationAfterConfigUpdate(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	paasConfig := getOrFail(ctx, "paas-config", cfg.Namespace(), &api.PaasConfig{}, t, cfg)
+	ns := getOrFail(ctx, "foo", cfg.Namespace(), &v1.Namespace{}, t, cfg)
+	assert.Equal(t, "paas-user", ns.Labels["o.lbl"])
+	assert.Equal(t, "foo", ns.Labels["q.lbl"])
+
+	paasConfig.Spec.RequestorLabel = "another.lbl"
+	paasConfig.Spec.QuotaLabel = "different.lbl"
+	require.NoError(t, updateSync(ctx, cfg, paasConfig, api.TypeActivePaasConfig))
+
+	ns = getOrFail(ctx, "foo", cfg.Namespace(), &v1.Namespace{}, t, cfg)
+	assert.Equal(t, "paas-user", ns.Labels["another.lbl"])
+	assert.Equal(t, "foo", ns.Labels["different.lbl"])
 
 	return ctx
 }

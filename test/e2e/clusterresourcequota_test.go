@@ -59,7 +59,7 @@ func assertCRQUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) co
 		"memory": resource.MustParse("128Mi"),
 	}
 
-	if err := updatePaasSync(ctx, cfg, paas); err != nil {
+	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
 

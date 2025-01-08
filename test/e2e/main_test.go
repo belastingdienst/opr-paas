@@ -19,7 +19,6 @@ import (
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
@@ -41,7 +40,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 		Name: "paas-config",
 	},
 	Spec: v1alpha1.PaasConfigSpec{
-		AppSetNamespace: "asns",
+		ClusterWideArgoCDNamespace: "asns",
 		ArgoPermissions: v1alpha1.ConfigArgoPermissions{
 			ResourceName:  "argocd",
 			DefaultPolicy: "role:tester",
@@ -59,7 +58,6 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 					"argo-service-argocd-application-controller": {"admin"},
 				},
 				QuotaSettings: v1alpha1.ConfigQuotaSettings{
-					Clusterwide: false,
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 						corev1.ResourceLimitsCPU:       resource.MustParse("5"),
 						corev1.ResourceLimitsMemory:    resource.MustParse("4Gi"),
@@ -68,9 +66,34 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceRequestsStorage: resource.MustParse("0"),
 						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
 					},
-					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
-					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
-					Ratio:     0,
+				},
+				CustomFields: map[string]v1alpha1.ConfigCustomField{
+					"git_url": {
+						Required: true,
+						// in yaml you need escaped slashes: '^ssh:\/\/git@scm\/[a-zA-Z0-9-.\/]*.git$'
+						Validation: "^ssh://git@scm/[a-zA-Z0-9-./]*.git$",
+					},
+					"git_revision": {
+						Default: "main",
+					},
+					"git_path": {
+						Default: ".",
+						// in yaml you need escaped slashes: '^[a-zA-Z0-9.\/]*$'
+						Validation: "^[a-zA-Z0-9./]*$",
+					},
+				},
+			},
+			"cap5": {
+				AppSet: "cap5as",
+				QuotaSettings: v1alpha1.ConfigQuotaSettings{
+					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+						corev1.ResourceLimitsCPU:       resource.MustParse("6"),
+						corev1.ResourceLimitsMemory:    resource.MustParse("7Gi"),
+						corev1.ResourceRequestsCPU:     resource.MustParse("5"),
+						corev1.ResourceRequestsMemory:  resource.MustParse("6Gi"),
+						corev1.ResourceRequestsStorage: resource.MustParse("0"),
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
+					},
 				},
 			},
 			"tekton": {
@@ -103,9 +126,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 				},
 			},
 			"sso": {
-				AppSet:             "ssoas",
-				DefaultPermissions: map[string][]string{},
-				ExtraPermissions:   map[string][]string{},
+				AppSet: "ssoas",
 				QuotaSettings: v1alpha1.ConfigQuotaSettings{
 					Clusterwide: false,
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
@@ -116,17 +137,11 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceRequestsStorage: resource.MustParse("0"),
 						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
 					},
-					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
-					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
-					Ratio:     0,
 				},
 			},
 			"grafana": {
-				AppSet:             "grafanaas",
-				DefaultPermissions: map[string][]string{},
-				ExtraPermissions:   map[string][]string{},
+				AppSet: "grafanaas",
 				QuotaSettings: v1alpha1.ConfigQuotaSettings{
-					Clusterwide: false,
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 						corev1.ResourceLimitsCPU:       resource.MustParse("2"),
 						corev1.ResourceLimitsMemory:    resource.MustParse("2Gi"),
@@ -135,9 +150,6 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceRequestsStorage: resource.MustParse("2Gi"),
 						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
 					},
-					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
-					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{},
-					Ratio:     0,
 				},
 			},
 		},
@@ -154,8 +166,8 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 			"default": {"admin"},
 			"viewer":  {"view"},
 		},
-		Whitelist: v1alpha1.NamespacedName{
-			Namespace: "wlns",
+		GroupSyncList: v1alpha1.NamespacedName{
+			Namespace: "gsns",
 			Name:      "wlname",
 		},
 		ExcludeAppSetName: "whatever",
@@ -199,7 +211,7 @@ func TestMain(m *testing.M) {
 			}
 
 			waitUntilPaasConfigExists := conditions.New(cfg.Client().Resources()).ResourceMatch(paasconfig, func(obj k8s.Object) bool {
-				return obj.(*api.PaasConfig).Name == paasconfig.Name
+				return obj.(*v1alpha1.PaasConfig).Name == paasconfig.Name
 			})
 
 			if err := waitForDefaultOpts(ctx, waitUntilPaasConfigExists); err != nil {

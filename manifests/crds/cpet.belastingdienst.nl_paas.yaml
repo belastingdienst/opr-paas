@@ -42,14 +42,18 @@ spec:
               capabilities:
                 additionalProperties:
                   properties:
+                    custom_fields:
+                      additionalProperties:
+                        type: string
+                      description: Custom fields to configure this specific Capability
+                      type: object
                     enabled:
                       description: Do we want to use this capability, default false
                       type: boolean
                     extra_permissions:
                       description: |-
-                        You can enable extra permissions for the service accounts beloning to this capability
+                        You can enable extra permissions for the service accounts belonging to this capability
                         Exact definitions is configured in Paas Configmap
-                        Note that we want to remove (some of) these permissions in future releases (like self-provisioner)
                       type: boolean
                     gitPath:
                       description: the path in the git repo that contains the Applications
@@ -121,7 +125,7 @@ spec:
                 type: object
               requestor:
                 description: Requestor is an informational field which decides on
-                  the requestor (also application responable)
+                  the requestor (also application responsible)
                 type: string
               sshSecrets:
                 additionalProperties:
