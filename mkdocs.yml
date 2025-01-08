@@ -9,6 +9,7 @@ edit_uri: edit/main/docs
 
 theme:
   name: material
+  custom_dir: mkdocs_overrides
   language: en
   hljs_languages:
     - yaml
@@ -29,6 +30,11 @@ theme:
     - toc.follow
 copyright: >
   Copyright &copy; 2024 Tax Administration of The Netherlands, software and documentation licensed under EUPL.
+
+extra:
+  version:
+    provider: mike
+    alias: true
 
 markdown_extensions:
   - abbr

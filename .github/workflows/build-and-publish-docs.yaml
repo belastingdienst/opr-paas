@@ -1,10 +1,9 @@
 name: Build and publish documentation
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-
+  release:
+    types:
+      - published
 env:
   PYTHON_VERSION: 3.x
 
@@ -55,47 +54,32 @@ jobs:
                                      mkdocs-literate-nav \
                                      mkdocs-redirects \
                                      mkdocs-material[recommended] \
-                                     mkdocs-material[imaging]
+                                     mkdocs-material[imaging] \
+                                     mike
 
-      - name: Build documentation
+      - name: Configure Git user
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Extract short tag
+        id: extract_short_tag
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          # Strip leading "v" if present, then drop everything after the second dot
+          SHORT_TAG="$(echo "$TAG" | sed 's/^v//; s/\([0-9]*\.[0-9]*\).*/\1/')"
+          echo "SHORT_TAG=$SHORT_TAG" >> $GITHUB_OUTPUT
+
+      - name: Deploy with mike 🚀
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          mkdocs build --clean
-          mkdocs --version
-
-      - name: Adjust permissions
-        run: |
-          chmod -c -R +rX site/ | while read line; do
-            echo "::warning title=Invalid file permissions automatically fixed::$line"
-          done
-
-      - name: Upload to GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
+          SHORT_TAG=${{ steps.extract_short_tag.outputs.SHORT_TAG }}
+          mike deploy --update-aliases --push "$SHORT_TAG" latest
+          mike --version
+          
       - name: Save build cache
         uses: actions/cache/save@v4
         with:
           key: mkdocs-material-${{ hashfiles('.cache/**') }}
           path: .cache
-
-  deploy:
-    name: Deploy documentation
-    runs-on: ubuntu-latest
-    needs: build
-
-    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
-    permissions:
-            pages: write      # to deploy to Pages
-            id-token: write   # to verify the deployment originates from an appropriate source 
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-       
-    steps:
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
-
