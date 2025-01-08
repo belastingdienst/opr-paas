@@ -27,7 +27,7 @@ Adding capabilities does not require code changes / building new images. It only
 Cluster administrators can configure the ApplicationSet to be used for this specific capability.
 Imagine a cluster-wide ArgoCD to manage capabilities for Paas'es.
 It is deployed in the namespace `paas-capabilities-argocd`.
-To enable any capability, `spec.ApplicationSet_namespace` needs to be set to `paas-capabilities-argocd`, so that the Paas operator will locate ApplicationSets for capabilities in this namespace.
+To enable any capability, `spec.clusterwide_argocd_namespace` needs to be set to `paas-capabilities-argocd`, so that the Paas operator will locate ApplicationSets for capabilities in this namespace.
 And for a new capability (e.a. `new-capability`), there should be an ApplicationSet to manage resources for this new capability.
 This ApplicationSet should be created in `paas-capabilities-argocd`, and it's name (e.a. `new-capability`) should be configured in PaasConfig (`spec.capabilities["new-capability"].ApplicationSet`).
 After setting this configuration, for every Paas with the capability `new-capability` enabled, the Paas operator will
@@ -179,7 +179,7 @@ For more information on Custom Fields please revert to:
 On every cluster running the Paas operator, a PaasConfig resource is defined.
 This PaasConfig resource holds the specific configuration for the operator.
 For each capability a chapter needs to be set in `spec.capabilities`. An example can be found below.
-Furthermore, the Paas operator needs to know the namespace where to search for ApplicationSets managing the capability (`spec.ApplicationSet_namespace`).
+Furthermore, the Paas operator needs to know the namespace where to search for ApplicationSets managing the capability (`spec.clusterwide_argocd_namespace`).
 
 ### Example PaasConfig with a capability
 
@@ -193,7 +193,7 @@ Below example shows all configuration required to configure a capability.
     metadata:
       name: opr-paas-config
     spec:
-      ApplicationSet_namespace: paas-capabilities-argocd
+      clusterwide_argocd_namespace: paas-capabilities-argocd
       capabilities:
         mycap:
           ApplicationSet: mycap-as
