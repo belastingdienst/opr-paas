@@ -1,8 +1,0 @@
-.cache
-bin
-cli
-site
-venv
-*.out
-crypttool
-manager
