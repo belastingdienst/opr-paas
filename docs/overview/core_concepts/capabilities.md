@@ -25,9 +25,9 @@ their Paas and only usable in that context.
 We want Product teams to be able to define which capabilities should be available,
 and to have control over the components that comprise these capabilities.
 
-Therefore it is designed a follows:
+Therefore, it is designed a follows:
 
-- The available capabilities are all defined in the Paas configuration
+- The available capabilities are all defined in the PaasConfig
   Per capability the following can be defined:
     - the default quota to be used when no quota is set in the Paas
     - if the cluster wide quota feature should be enabled for this capability
@@ -41,9 +41,9 @@ Therefore it is designed a follows:
 
 ## Example:
 
-### Paas Config
+### PaasConfig
 
-In the Paas configuration the following could be configured:
+In the PaasConfig the following could be configured:
 
 !!! example
 

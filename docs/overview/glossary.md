@@ -12,7 +12,7 @@ Glossary
 ## Capabilities
 
 A capability is extra functionality that can be added to your Paas simply by
-enabling it through your Paas' yaml config.
+enabling it through your PaasConfig.
 
 Examples can include, but are not limited to, ArgoCD, Tekton or Grafana.
 
@@ -47,18 +47,17 @@ Lastly it can be used to `generate` a new public/private key pair.
 
 ## Groups [openshift]
 
-Access to a Paas is granted to specific groups, which can be listed in the Paas'
-configuration file.
+Access to a Paas is granted to specific groups, which can be listed in the PaasConfig.
 
 A group can contain roles that allow them certain permissions, users and/or an
 LDAP query. When configured, the LDAP query is used to find the members of the
-group, *in addition* to any users listed specifically in the Paas configuration.
+group, *in addition* to any users listed specifically in the PaasConfig.
 
 Please be aware that this is an OpenShift specific feature.
 
 ## ManagedByPaas
 
-This is a field in the Paas configuration, and feature, that allows the user to
+This is a field in the PaasConfig, and feature, that allows the user to
 indicate that this Paas is actually managed by another Paas' ArgoCD.
 
 ## Namespace / PaasNs
@@ -73,7 +72,7 @@ wide, per Paas or for a capability.
 
 ## Requestor
 
-The requestor is an informational field in the Paas configuration, which can contain
+The requestor is an informational field in the PaasConfig, which can contain
 a string that is intended to point to the person or group responsible for the
 application / Paas.
 

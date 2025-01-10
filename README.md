@@ -29,14 +29,14 @@ The second command will load an example PaasConfig resource from the main branch
 to get you going. Feel free to replace this with your own or a release specific
 version instead.
 
-This will install the latest release and create:
+This will install the operator using the `install.yaml` that was generated for the
+latest release. It will create:
 
 - a namespace called `paas-system`;
-- 2 CRDs (`Paas` and `PaasNs`);
+- 3 CRDs (`Paas`, `PaasNs` and `PaasConfig`);
 - a service account, role, role binding, cluster role and cluster role binding for
   all permissions required by the operator;
-- a viewer & an editor cluster role for Paas and PaasNs resources;
-- a configmap with all operator configuration options;
+- a viewer & an editor cluster role for all crds;
 - a deployment running the operator;
 
 Feel free to change config as required.

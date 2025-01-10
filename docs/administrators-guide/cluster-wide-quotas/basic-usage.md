@@ -19,7 +19,7 @@ Use a quota per Paas
 
 Set:
 
-- `paasconfig.capabilities['tekton'].quotas.clusterwide` to `false`
+- `paasconfig.spec.capabilities['tekton'].quotas.clusterwide` to `false`
 
 Use CWQs with one hard-set value
 --------------------------------
@@ -28,9 +28,9 @@ You can use CWQs with a single hard-set value (e.a. 10).
 
 Set:
 
-- `paasconfig.capabilities['tekton'].quotas.clusterwide` to `true`
-- `paasconfig.capabilities['tekton'].quotas.ratio` to `0`
-- `paasconfig.capabilities['tekton'].quotas.min` to `10`
+- `paasconfig.spec.capabilities['tekton'].quotas.clusterwide` to `true`
+- `paasconfig.spec.capabilities['tekton'].quotas.ratio` to `0`
+- `paasconfig.spec.capabilities['tekton'].quotas.min` to `10`
 
 Use CWQs with autoscaling
 -------------------------
@@ -38,14 +38,14 @@ Use CWQs with autoscaling
 You can use cluster wide quotas with an autoscaling feature.
 
 For this example: every Paas is expected to use 1 CPU, and a minimum of 3 CPU
-should always be available. Additionally a maximum of 10 CPU can be reserved,
+should always be available. Additionally, a maximum of 10 CPU can be reserved,
 and we scale down to 10% of normal usage.
 
 Set:
 
-- `paasconfig.capabilities['tekton'].quotas.clusterwide` to `true`
-- `paasconfig.capabilities['tekton'].quotas.default` to `1`
-- `paasconfig.capabilities['tekton'].quotas.default` to `1`
-- `paasconfig.capabilities['tekton'].quotas.min` to `3`
-- `paasconfig.capabilities['tekton'].quotas.max` to `10`
-- `paasconfig.capabilities['tekton'].quotas.ratio` to `0.1` (10%)
+- `paasconfig.spec.capabilities['tekton'].quotas.clusterwide` to `true`
+- `paasconfig.spec.capabilities['tekton'].quotas.default` to `1`
+- `paasconfig.spec.capabilities['tekton'].quotas.default` to `1`
+- `paasconfig.spec.capabilities['tekton'].quotas.min` to `3`
+- `paasconfig.spec.capabilities['tekton'].quotas.max` to `10`
+- `paasconfig.spec.capabilities['tekton'].quotas.ratio` to `0.1` (10%)
