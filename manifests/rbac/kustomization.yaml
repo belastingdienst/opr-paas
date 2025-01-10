@@ -8,8 +8,10 @@ resources:
   - role.yaml
   - role_binding.yaml
   - service_account.yaml
-# Uncomment the following four lines if you want to add roles for end-users
+# Uncomment the following lines if you want to add roles for end-users
 # - paas_editor_role.yaml
 # - paas_viewer_role.yaml
 # - paasns_editor_role.yaml
 # - paasns_viewer_role.yaml
+# - paasconfig_editor_role.yaml
+# - paasconfig_viewer_role.yaml
