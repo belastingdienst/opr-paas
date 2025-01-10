@@ -4,13 +4,13 @@ The whole idea is to create a multi tenancy solution which allows DevOps teams
 to request a context for their project, which we like to call a 'Project as a Service',
 e.a. Paas.
 
-Requestors of a Paas have the option to setup permissions for groups. Groups can
+Requestors of a Paas have the option to set up permissions for groups. Groups can
 get permissions on namespaces, and additionally get access in the ArgoCD deployed
-for their Paas. Additionally default groups can get permissions on these ArgoCDs as well.
+for their Paas. Additionally, default groups can get permissions on these ArgoCDs as well.
 
 Configuring authorization is done by:
 
-- Cluster administrators defining role mappings in the Paas operator configmap;
+- Cluster administrators defining role mappings in the PaasConfig;
 - DevOps engineers specifying groups in their Paas resources;
 - DevOps engineers can specify groups in their PaasNs resources;
 - For every PaasNs the PaasNs controller derives the required RoleBindings and
@@ -19,7 +19,7 @@ Configuring authorization is done by:
     when not defined all groups as specified in the Paas are used by default.
   - For every group, the Paas definition is checked for the functional roles;
     when not defined the default role mapping is used.
-  - For every functional role the technical roles are derived from the Paas ConfigMap;
+  - For every functional role the technical roles are derived from the PaasConfig;
   - For every PaasNs namespace the PaasNs controller creates a role binding for
     every applicable technical role, and adds the groups that should have the
     required permissions;
@@ -27,14 +27,14 @@ Configuring authorization is done by:
   to the RBAC block so that the applicable groups get the permissions in ArgoCD
   as required;
 
-  Additionally the Paas operator configmap can have additional `argopermissions` to
+  Additionally, the PaasConfig can have additional `argopermissions` to
   be handed to additional groups (e.a. cluster admins).
 
 ## Config examples
 
-### Paas Operator ConfigMap
+### PaasConfig
 
-The Paas Operator ConfigMap (managed by cluster admins) can be configured as follows:
+The PaasConfig (managed by cluster admins) can be configured as follows:
 
 !!! example
 
