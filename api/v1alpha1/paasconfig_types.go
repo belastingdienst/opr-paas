@@ -50,7 +50,7 @@ type PaasConfigSpec struct {
 	// Deprecated: Will be replaced by a secretRef to overcome caching
 	// Paths where the manager can find the decryptKeys to decrypt Paas'es
 	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	DecryptKeyPaths []string `json:"decryptKeyPaths"`
 
 	// DecryptKeysSecretName is a reference to the secret containing the DecryptKeys

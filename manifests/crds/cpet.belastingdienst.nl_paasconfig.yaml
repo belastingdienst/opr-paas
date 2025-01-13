@@ -188,8 +188,10 @@ spec:
                   the DecryptKeys
                 properties:
                   name:
+                    minLength: 1
                     type: string
                   namespace:
+                    minLength: 1
                     type: string
                 required:
                 - name
@@ -262,7 +264,6 @@ spec:
                 type: object
             required:
             - clusterwide_argocd_namespace
-            - decryptKeyPaths
             - decryptKeySecret
             - exclude_appset_name
             - groupsynclist
