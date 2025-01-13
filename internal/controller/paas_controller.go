@@ -100,7 +100,7 @@ func (r *PaasReconciler) GetPaas(
 	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
 	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
 		logger.Error().Msg("no config found")
-		err = r.setErrorCondition(ctx, paas, fmt.Errorf("please reach out to your system administrator as there is no Paasconfig available to reconcile against."))
+		err = r.setErrorCondition(ctx, paas, fmt.Errorf("please reach out to your system administrator as there is no Paasconfig available to reconcile against"))
 		if err != nil {
 			logger.Err(err).Msg("failed to update Paas status")
 			return nil, err
