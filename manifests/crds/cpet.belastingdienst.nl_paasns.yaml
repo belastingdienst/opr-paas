@@ -48,6 +48,7 @@ spec:
               paas:
                 description: The metadata.name of the Paas which created the namespace
                   in which this PaasNS is applied
+                minLength: 1
                 type: string
               sshSecrets:
                 additionalProperties:

@@ -83,6 +83,7 @@ type PaasConfigSpec struct {
 	ArgoPermissions ConfigArgoPermissions `json:"argopermissions"`
 
 	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	ClusterWideArgoCDNamespace string `json:"clusterwide_argocd_namespace"`
 
@@ -103,6 +104,7 @@ type PaasConfigSpec struct {
 
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	ExcludeAppSetName string `json:"exclude_appset_name"`
 
@@ -112,8 +114,10 @@ type PaasConfigSpec struct {
 }
 
 type NamespacedName struct {
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Namespace string `json:"namespace"`
 }
@@ -142,16 +146,19 @@ type ConfigArgoPermissions struct {
 
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// The name of the ArgoCD instance to apply ArgoPermissions to
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	ResourceName string `json:"resource_name"`
 
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// The name of the role to add to Groups set in ArgoPermissions
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Role string `json:"role"`
 
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// The header value to set in ArgoPermissions
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Header string `json:"header"`
 }
@@ -169,10 +176,12 @@ func (ap ConfigArgoPermissions) FromGroups(groups []string) string {
 
 type ConfigLdap struct {
 	// LDAP server hostname
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Host string `json:"host"`
 
 	// LDAP server port
+	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Required
 	Port int32 `json:"port"`
 }
@@ -181,6 +190,7 @@ type ConfigCapabilities map[string]ConfigCapability
 
 type ConfigCapability struct {
 	// Name of the ArgoCD ApplicationSet which manages this capability
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	AppSet string `json:"applicationset"`
 

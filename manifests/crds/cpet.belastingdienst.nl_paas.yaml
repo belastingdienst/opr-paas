@@ -126,6 +126,7 @@ spec:
               requestor:
                 description: Requestor is an informational field which decides on
                   the requestor (also application responsible)
+                minLength: 1
                 type: string
               sshSecrets:
                 additionalProperties:

@@ -94,6 +94,7 @@ func assertPaasNSCreatedWithUnlinkedPaas(ctx context.Context, t *testing.T, cfg 
 			Name: "new-paas",
 		},
 		Spec: api.PaasSpec{
+			Requestor: paasRequestor,
 			Quota: map[corev1.ResourceName]resource.Quantity{
 				"cpu":    resource.MustParse("2"),
 				"memory": resource.MustParse("2Gi"),
@@ -138,6 +139,7 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 			Name: thisPaas,
 		},
 		Spec: api.PaasSpec{
+			Requestor:  paasRequestor,
 			Namespaces: []string{thisNamespace}, // define suffixes to use for namespace names
 			Quota: map[corev1.ResourceName]resource.Quantity{
 				"cpu":    resource.MustParse("2"),
