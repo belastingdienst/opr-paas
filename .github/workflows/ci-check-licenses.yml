@@ -1,0 +1,49 @@
+name: Check licenses and compatibility on PR
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened, ready_for_review ]
+
+jobs:
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        goos: [linux]
+        goarch: [amd64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate SBOM
+        uses: CycloneDX/gh-gomod-generate-sbom@v2
+        with:
+          version: v1
+          # added assert-licenses as required by dependency-track
+          args: mod -licenses -assert-licenses -output sources_${{ matrix.goos }}_${{ matrix.goarch }}.sbom.xml
+        env:
+          GOARCH: ${{ matrix.goarch }}
+          GOOS: ${{ matrix.goos }}
+
+      - name: Evaluate license compatibility
+        if: ${{ matrix.goarch == 'amd64' && matrix.goos == 'linux' }}
+        uses: mvdkleijn/licenses-action@v1
+        with:
+          # We only use the linux_amd64 variant here for generating the LICENSES.md
+          sbom: sources_linux_amd64.sbom.xml
+          type: xml
+          filename: tmp-LICENSES.md
+          evaluate: true
+          template: |
+            # Licenses
+ 
+            The following third-party licenses are applicable to this project:
+  
+            {{range .SortedKeys}}## {{.}}
+  
+            {{range index $.ComponentsByLicense .}}- {{.Name}} ({{.Version}})
+            {{end}}
+            {{end}}
+  
