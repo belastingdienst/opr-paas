@@ -37,6 +37,7 @@ jobs:
           sbom: sources_linux_amd64.sbom.xml
           type: xml
           filename: LICENSES.md
+          evaluate: true
           template: |
             # Licenses
  
