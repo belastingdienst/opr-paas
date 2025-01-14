@@ -22,7 +22,7 @@ jobs:
     if: ${{ github.event.pull_request.draft == false }}
     runs-on: ubuntu-22.04
     outputs:
-      backend: ${{ steps.filter.outputs.backend_any_changed && steps.filter.outputs.ci_any_changed }}
+      backend: ${{ steps.filter.outputs.backend_any_changed || steps.filter.outputs.ci_any_changed }}
     steps:
       - uses: actions/checkout@8410ad0602e1e429cee44a835ae9f77f654a6694 # v4.0.0
       - uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
