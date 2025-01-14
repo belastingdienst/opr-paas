@@ -194,6 +194,12 @@ spec:
                 - name
                 - namespace
                 type: object
+              groupsynclist_key:
+                default: groupsynclist.txt
+                description: |-
+                  Deprecated: GroupSyncListKey code will be removed from the operator to make it more generic
+                  A key in the configures GroupSyncList which will contain the LDAP groups to be synced using LDAP sync
+                type: string
               ldap:
                 description: LDAP configuration for the operator to add to Groups
                 properties:

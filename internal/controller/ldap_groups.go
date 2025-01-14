@@ -20,10 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	groupSyncListKeyName = "groupsynclist.txt"
-)
-
 func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 	ctx context.Context,
 	groups string,
@@ -40,7 +36,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 			Namespace: wlConfigMap.Namespace,
 		},
 		Data: map[string]string{
-			groupSyncListKeyName: groups,
+			GetConfig().GroupSyncListKey: groups,
 		},
 	})
 }
@@ -74,9 +70,9 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	} else if err != nil {
 		logger.Err(err).Msg("could not retrieve groupsynclist configmap")
 		return err
-	} else if groupsynclist, exists := cm.Data[groupSyncListKeyName]; !exists {
+	} else if groupsynclist, exists := cm.Data[GetConfig().GroupSyncListKey]; !exists {
 		logger.Info().Msg("adding groupsynclist.txt to groupsynclist configmap")
-		cm.Data[groupSyncListKeyName] = gs.AsString()
+		cm.Data[GetConfig().GroupSyncListKey] = gs.AsString()
 	} else {
 		logger.Info().Msgf("reading group queries from groupsynclist %v", cm)
 		groupsynclistGroups := groups.NewGroups()
@@ -87,7 +83,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 			return nil
 		}
 		logger.Info().Msg("adding to groupsynclist configmap")
-		cm.Data[groupSyncListKeyName] = groupsynclistGroups.AsString()
+		cm.Data[GetConfig().GroupSyncListKey] = groupsynclistGroups.AsString()
 	}
 	logger.Info().Msgf("updating groupsynclist configmap: %v", cm)
 	return r.Update(ctx, cm)
@@ -111,9 +107,9 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		logger.Err(err).Msg("error retrieving groupsynclist configmap")
 		// Error that isn't due to the group not existing
 		return err
-	} else if groupsynclist, exists := cm.Data[groupSyncListKeyName]; !exists {
+	} else if groupsynclist, exists := cm.Data[GetConfig().GroupSyncListKey]; !exists {
 		// No groupsynclist.txt exists in the configmap, so nothing to clean
-		logger.Info().Msgf("%s does not exists in groupsynclist configmap", groupSyncListKeyName)
+		logger.Info().Msgf("%s does not exists in groupsynclist configmap", GetConfig().GroupSyncListKey)
 		return nil
 	} else {
 		var isChanged bool
@@ -131,7 +127,7 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		if !isChanged {
 			return nil
 		}
-		cm.Data[groupSyncListKeyName] = gs.AsString()
+		cm.Data[GetConfig().GroupSyncListKey] = gs.AsString()
 	}
 	return r.Update(ctx, cm)
 }

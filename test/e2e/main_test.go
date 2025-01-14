@@ -170,6 +170,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 			Namespace: "gsns",
 			Name:      "wlname",
 		},
+		GroupSyncListKey:  "groupsynclist.txt",
 		ExcludeAppSetName: "whatever",
 	},
 }
