@@ -4,7 +4,7 @@ mkdocs~=1.6
 mkdocs-material-extensions~=1.3
 mike~=2.1
 pygments~=2.16
-pymdown-extensions~=10.2
+pymdown-extensions~=10.14
 
 # Requirements for plugins
 babel~=2.10
