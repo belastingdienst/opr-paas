@@ -5,7 +5,7 @@ on:
 
 env:
   # Golang version to use across CI steps
-  GOLANG_VERSION: '1.23' # As we have go toolchain 1.23 specified in go.mod
+  GOLANG_VERSION: '1.23'
 
 permissions:
   contents: read
@@ -25,7 +25,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend_any_changed && steps.filter.outputs.ci_any_changed }}
     steps:
       - uses: actions/checkout@8410ad0602e1e429cee44a835ae9f77f654a6694 # v4.0.0
-      - uses: tj-actions/changed-files@e9772d140489982e0e3704fea5ee93d536f1e275 # v45.0.1
+      - uses: tj-actions/changed-files@d6e91a2266cdb9d62096cebf1e8546899c6aa18f # v45.0.6
         id: filter
         with:
           # Any file which is not under docs/, examples/, or is not a markdown file is counted as a backend file
@@ -78,7 +78,7 @@ jobs:
         with:
           go-version: ${{ env.GOLANG_VERSION }}
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86 # v6.1.0
+        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
         with:
           version: v1.60.3
           args: --verbose
@@ -114,7 +114,7 @@ jobs:
       - name: Test
         run: make test
       - name: Generate test results artifacts
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: unittests-coverage
           path: /tmp/coverage/unittests
@@ -171,12 +171,12 @@ jobs:
           make test-e2e
           killall goreman run stop-all || echo "trouble killing goreman"
       - name: Upload e2e coverage report
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: e2e-code-coverage
           path: /tmp/coverage/paas
       - name: Upload operator deployment log on failure
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: e2e-operator-logs-${{ github.run_id }}.log
           path: /tmp/e2e-server.log
@@ -233,7 +233,7 @@ jobs:
         run: kubectl logs deployment/paas-controller-manager -n paas-system > /tmp/e2e-deployed-operator-logs-${{ github.run_id }}.log
         if: ${{ failure() }}
       - name: Upload operator deployment log on failure
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: e2e-deployed-operator-logs-${{ github.run_id }}.log
           path: /tmp/e2e-deployed-operator-logs-${{ github.run_id }}.log
@@ -267,7 +267,7 @@ jobs:
       - name: Generate and print report
         run: go tool cover -func test-results/full-coverage
       - name: Upload test-coverage artifact
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
         with:
           name: full-coverage-report
           path: test-results/full-coverage

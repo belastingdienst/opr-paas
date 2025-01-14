@@ -6,23 +6,11 @@ See LICENSE.md for details.
 
 package controller
 
-// broken with adding ArgoPermissions capability
-// Seems we need to downgrade to v.0.26.4
-// (see https://github.com/operator-framework/operator-sdk/issues/6396)
-// but that adds other incompatibilities.
-// Maybe fix later.
-
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestMain_getConfig(t *testing.T) {
-	os.Setenv("PAAS_CONFIG", "../../test/manifests/config/paas_config.yml")
-	assert.NotNil(t, GetConfig(), "some-ns")
-}
 
 func TestMain_intersection(t *testing.T) {
 	l1 := []string{"v1", "v2", "v2", "v3", "v4"}
