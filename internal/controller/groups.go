@@ -165,9 +165,11 @@ func (r *PaasReconciler) FinalizeGroups(
 	if err != nil {
 		return err
 	}
-	err = r.FinalizeLdapGroups(ctx, removedLdapGroups)
-	if err != nil {
-		return err
+	if len(removedLdapGroups) != 0 {
+		err = r.FinalizeLdapGroups(ctx, removedLdapGroups)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -188,9 +190,11 @@ func (r *PaasReconciler) ReconcileGroups(
 	if err != nil {
 		return err
 	}
-	err = r.FinalizeLdapGroups(ctx, removedLdapGroups)
-	if err != nil {
-		return err
+	if len(removedLdapGroups) != 0 {
+		err = r.FinalizeLdapGroups(ctx, removedLdapGroups)
+		if err != nil {
+			return err
+		}
 	}
 	for _, group := range desiredGroups {
 		if err := r.EnsureGroup(ctx, paas, group); err != nil {
@@ -219,6 +223,7 @@ func (r *PaasReconciler) deleteObsoleteGroups(ctx context.Context, paas *v1alpha
 				if existingGroup.Annotations["openshift.io/ldap.uid"] != "" {
 					removedLdapGroups = append(removedLdapGroups, existingGroup.Annotations["openshift.io/ldap.uid"])
 				}
+				continue
 			}
 			logger.Info().Msgf("not last owner of group %s", existingGroup.Name)
 			// FIXME no updates to users is executed
