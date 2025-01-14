@@ -22,6 +22,7 @@ const (
 	groupWithQueryName       = "aug-cet-groupquery" //nolint:gosec
 	groupQuery               = "CN=aug-cet-groupquery,OU=paas,DC=test,DC=acme,DC=org"
 	group2Query              = "CN=aug-cet-queryviewrole,OU=paas,DC=test,DC=acme,DC=org"
+	updatedGroup2Query       = "CN=aug-cet-second-queryviewrole,OU=paas,DC=test,DC=acme,DC=org"
 )
 
 func TestGroupQuery(t *testing.T) {
@@ -50,6 +51,7 @@ func TestGroupQuery(t *testing.T) {
 
 				return ctx
 			}).
+			Assess("old group is not removed from groupsynclist when groupkey is renamed", assertLdapGroupNotRemovedAfterUpdatingKey).
 			Assess("first group remains unchanged after Paas update", assertGroupQueryCreated).
 			Assess("groups are deleted when Paas is deleted", assertGroupQueryDeleted).
 			Teardown(teardownPaasFn(paasWithGroupQuery)).
@@ -98,8 +100,11 @@ func assertGroupQueryCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *
 
 	assert.Equal(t, group2Name, group2.Name, "The group name should match the one defined in the Paas")
 	assert.Empty(t, group2.Users, "No users should be defined in the group")
-	assert.Len(t, group2.Labels, 1)
-	assert.Equal(t, "my-ldap-host", group2.Labels["openshift.io/ldap.host"], "The correct label should be defined")
+	assert.Len(t, group2.Labels, 1, "Group should contain one label")
+	assert.Equal(t, "my-ldap-host", group2.Labels["openshift.io/ldap.host"], "The ldap.host label should contain PaasConfig value")
+	assert.Len(t, group2.Annotations, 2, "Group should have 2 annotations")
+	assert.Equal(t, group2Query, group2.Annotations["openshift.io/ldap.uid"], "The ldap.uid annotation should contain group.query value")
+	assert.Equal(t, "my-ldap-host:13", group2.Annotations["openshift.io/ldap.url"], "The ldap.url annotation should contain PaasConfig value")
 	assert.Equal(t, paas.UID, group2.OwnerReferences[0].UID, "The owner of the group should be the Paas defining it")
 	assert.Len(t, rolebinding.Subjects, 1)
 	assert.Equal(t, group2Name, rolebinding.Subjects[0].Name, "A RoleBinding for the passed 'viewer' role should be set for the group")
@@ -109,6 +114,25 @@ func assertGroupQueryCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *
 			assert.NotEqual(t, group2Name, sub.Name, "No RoleBindings should be set on the parent Paas")
 		}
 	}
+
+	return ctx
+}
+
+func assertLdapGroupNotRemovedAfterUpdatingKey(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	paas := getPaas(ctx, paasWithGroupQuery, t, cfg)
+	paas.Spec.Groups = api.PaasGroups{groupWithQueryName: api.PaasGroup{Query: groupQuery}, "updatedSecondLdapGroup": api.PaasGroup{
+		Query: updatedGroup2Query,
+		Roles: []string{"viewer"},
+	}}
+
+	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
+		t.Fatal(err)
+	}
+
+	// Regression for #269 "old" group still in k8s
+	groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
+	assert.Equal(t, groupQuery+"\n"+group2Query+"\n"+updatedGroup2Query, groupsynclist.Data["groupsynclist.txt"],
+		"The groupsynclist includes obsolete group query")
 
 	return ctx
 }
