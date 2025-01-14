@@ -5,7 +5,7 @@ on:
 
 env:
   # Golang version to use across CI steps
-  GOLANG_VERSION: '1.23' # As we have go toolchain 1.23 specified in go.mod
+  GOLANG_VERSION: '1.23'
 
 permissions:
   contents: read
