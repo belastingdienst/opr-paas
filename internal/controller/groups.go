@@ -152,51 +152,24 @@ func (r *PaasReconciler) BackendGroups(
 	return groups
 }
 
-// cleanGroup is a code for Creating Group
-func (r *PaasReconciler) finalizeGroup(
-	ctx context.Context,
-	paas *v1alpha1.Paas,
-	groupName string,
-) (cleaned bool, err error) {
-	logger := log.Ctx(ctx)
-	obj := &userv1.Group{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Name: groupName,
-	}, obj); err != nil && errors.IsNotFound(err) {
-		logger.Info().Msg("group does not exist")
-		return false, nil
-	} else if err != nil {
-		logger.Info().Msg("group not deleted. error: " + err.Error())
-		return false, err
-	} else if !paas.AmIOwner(obj.OwnerReferences) {
-		logger.Info().Msg("paas is not an owner")
-		return false, nil
-	} else {
-		logger.Info().Msg("removing Paas finalizer " + groupName)
-		obj.OwnerReferences = paas.WithoutMe(obj.OwnerReferences)
-		if len(obj.OwnerReferences) == 0 {
-			logger.Info().Msg("deleting " + groupName)
-			return true, r.Delete(ctx, obj)
-		} else {
-			logger.Info().Msg("not last reference, skipping deletion for " + groupName)
-			return false, r.Update(ctx, obj)
-		}
-	}
-}
-
 func (r *PaasReconciler) FinalizeGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-) (cleaned []string, err error) {
+) error {
 	ctx = setLogComponent(ctx, "group")
-	for key, group := range paas.Spec.Groups {
-		if isCleaned, err := r.finalizeGroup(ctx, paas, paas.Spec.Groups.Key2Name(key)); err != nil {
-			return cleaned, err
-		} else if isCleaned && group.Query != "" {
-			cleaned = append(cleaned, group.Query)
-		}
+	existingGroups, err := r.getExistingGroups(ctx, paas)
+	if err != nil {
+		return err
 	}
-	return cleaned, nil
+	removedLdapGroups, err := r.deleteObsoleteGroups(ctx, paas, []*userv1.Group{}, existingGroups)
+	if err != nil {
+		return err
+	}
+	err = r.FinalizeLdapGroups(ctx, removedLdapGroups)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *PaasReconciler) ReconcileGroups(
@@ -205,12 +178,85 @@ func (r *PaasReconciler) ReconcileGroups(
 ) error {
 	ctx = setLogComponent(ctx, "group")
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("creating groups for PAAS object ")
-	for _, group := range r.BackendGroups(ctx, paas) {
+	logger.Info().Msg("reconciling groups for Paas")
+	desiredGroups := r.BackendGroups(ctx, paas)
+	existingGroups, err := r.getExistingGroups(ctx, paas)
+	if err != nil {
+		return err
+	}
+	removedLdapGroups, err := r.deleteObsoleteGroups(ctx, paas, desiredGroups, existingGroups)
+	if err != nil {
+		return err
+	}
+	err = r.FinalizeLdapGroups(ctx, removedLdapGroups)
+	if err != nil {
+		return err
+	}
+	for _, group := range desiredGroups {
 		if err := r.EnsureGroup(ctx, paas, group); err != nil {
-			logger.Err(err).Msgf("failure while creating group %s", group.ObjectMeta.Name)
+			logger.Err(err).Msgf("failure while reconciling group %s", group.ObjectMeta.Name)
 			return err
 		}
 	}
 	return nil
+}
+
+// deleteObsoleteGroups delete groups which are no longer desired from a Paas desired state. As multiple Paas'es can reference one
+// group, a check is executed whether the group can really be removed. If a Group is marked as an ldap group, the ldap query is added
+// to a list of to be removedLdapGroups.
+func (r *PaasReconciler) deleteObsoleteGroups(ctx context.Context, paas *v1alpha1.Paas, desiredGroups []*userv1.Group, existingGroups []*userv1.Group) (removedLdapGroups []string, err error) {
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("deleting obsolete groups")
+	// Delete groups that are no longer needed
+	for _, existingGroup := range existingGroups {
+		if !isGroupInGroups(existingGroup, desiredGroups) {
+			existingGroup.OwnerReferences = paas.WithoutMe(existingGroup.OwnerReferences)
+			if len(existingGroup.OwnerReferences) == 0 {
+				logger.Info().Msgf("deleting %s", existingGroup.Name)
+				if err = r.Delete(ctx, existingGroup); err != nil {
+					return removedLdapGroups, err
+				}
+				if existingGroup.Annotations["openshift.io/ldap.uid"] != "" {
+					removedLdapGroups = append(removedLdapGroups, existingGroup.Annotations["openshift.io/ldap.uid"])
+				}
+			}
+			logger.Info().Msgf("not last owner of group %s", existingGroup.Name)
+			// FIXME no updates to users is executed
+			err = r.Update(ctx, existingGroup)
+			if err != nil {
+				return removedLdapGroups, err
+			}
+		}
+	}
+	return removedLdapGroups, nil
+}
+
+// isGroupInGroups determines whether a list of groups contains a specified group, based on it's name
+func isGroupInGroups(group *userv1.Group, groups []*userv1.Group) bool {
+	for _, desiredGroup := range groups {
+		if group.Name == desiredGroup.Name {
+			return true
+		}
+	}
+	return false
+}
+
+// TODO (portly-halicore-76) use label selector as this is quite expensive
+// getExistingGroups returns all groups owned by the specified Paas
+func (r *PaasReconciler) getExistingGroups(ctx context.Context, paas *v1alpha1.Paas) (existingGroups []*userv1.Group, err error) {
+	logger := log.Ctx(ctx)
+	var groups userv1.GroupList
+	err = r.List(ctx, &groups)
+	if err != nil {
+		return existingGroups, err
+	}
+	for _, group := range groups.Items {
+		if paas.AmIOwner(group.OwnerReferences) {
+			logger.Debug().Msgf("existing group %s owned by Paas %s", group.ObjectMeta.Name, paas.Name)
+			existingGroups = append(existingGroups, &group)
+		}
+		logger.Debug().Msgf("existing group %s not owned by Paas %s", group.ObjectMeta.Name, paas.Name)
+	}
+	logger.Debug().Msgf("found %d existing groups owned by Paas %s", len(existingGroups), paas.Name)
+	return existingGroups, nil
 }

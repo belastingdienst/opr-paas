@@ -100,7 +100,6 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 ) error {
 	ctx = setLogComponent(ctx, "ldapgroup")
 	logger := log.Ctx(ctx)
-	// See if group already exists and create if it doesn't
 	cm := &corev1.ConfigMap{}
 	wlConfigMap := GetConfig().GroupSyncList
 	err := r.Get(ctx, types.NamespacedName{Name: wlConfigMap.Name, Namespace: wlConfigMap.Namespace}, cm)
