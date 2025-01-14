@@ -3,6 +3,10 @@ namespace: paas-system
 
 resources:
 - ../config
-- ../crds
+- ../crd
 - ../rbac
 - ../manager
+- ../webhook
+
+patches:
+- path: manager_webhook_patch.yaml

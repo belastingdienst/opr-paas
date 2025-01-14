@@ -213,8 +213,9 @@ jobs:
           # Wait a bit as the paas-context files rely on the previous deployed mocks
           sleep 10s
           kustomize build test/e2e/manifests/paas-context | kubectl apply -f -
-      - name: Deploy operator
-        run: make deploy
+      - name: Deploy operator including certmanager
+        description: deploy the operator including certmanager, to generate a cert for
+        run: make deploy-with-certmanager
       - name: Wait for operator deployment to be ready
         run: |
           kubectl wait --for=condition=Available deployment/paas-controller-manager -n paas-system --timeout=120s
