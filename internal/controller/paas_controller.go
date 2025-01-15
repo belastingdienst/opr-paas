@@ -304,17 +304,8 @@ func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) 
 	} else if err = r.FinalizeClusterQuotas(ctx, paas); err != nil {
 		logger.Err(err).Msg("quota finalizer error")
 		return err
-	} else if cleanedLdapQueries, err := r.FinalizeGroups(ctx, paas); err != nil {
-		// The whole idea is that groups (which are resources)
-		// can also be ldapGroups (lines in a field in a configmap)
-		// ldapGroups are only cleaned if the corresponding group is also cleaned
+	} else if err = r.FinalizeGroups(ctx, paas); err != nil {
 		logger.Err(err).Msg("group finalizer error")
-		if ldapErr := r.FinalizeLdapGroups(ctx, cleanedLdapQueries); ldapErr != nil {
-			logger.Err(ldapErr).Msg("and ldapGroup finalizer error")
-		}
-		return err
-	} else if err = r.FinalizeLdapGroups(ctx, cleanedLdapQueries); err != nil {
-		logger.Err(err).Msg("ldapGroup finalizer error")
 		return err
 	} else if err = r.FinalizeExtraClusterRoleBindings(ctx, paas); err != nil {
 		logger.Err(err).Msg("extra ClusterRoleBindings finalizer error")
