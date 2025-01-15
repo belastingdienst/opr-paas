@@ -47,11 +47,9 @@ func (p PaasConfig) GetConditions() []metav1.Condition {
 }
 
 type PaasConfigSpec struct {
-	// Deprecated: Will be replaced by a secretRef to overcome caching
-	// Paths where the manager can find the decryptKeys to decrypt Paas'es
-	// +kubebuilder:validation:MinItems=1
+	// DecryptKeysSecret is a reference to the secret containing the DecryptKeys
 	// +kubebuilder:validation:Required
-	DecryptKeyPaths []string `json:"decryptKeyPaths"`
+	DecryptKeysSecret NamespacedName `json:"decryptKeySecret"`
 
 	// Enable debug information generation or not
 	// +kubebuilder:default:=false

@@ -8,11 +8,9 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/crypt"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -30,38 +28,22 @@ type PaasConfigStore struct {
 }
 
 var (
-	_cnf            = &PaasConfigStore{}
-	_crypt          map[string]*crypt.Crypt
+	cnf             = &PaasConfigStore{}
 	debugComponents []string
 )
 
 // GetConfig retrieves the current configuration
 func GetConfig() v1alpha1.PaasConfigSpec {
-	_cnf.mutex.RLock()
-	defer _cnf.mutex.RUnlock()
-	return _cnf.currentConfig
+	cnf.mutex.RLock()
+	defer cnf.mutex.RUnlock()
+	return cnf.currentConfig
 }
 
 // SetConfig updates the current configuration
 func SetConfig(newConfig v1alpha1.PaasConfig) {
-	_cnf.mutex.Lock()
-	defer _cnf.mutex.Unlock()
-	_cnf.currentConfig = newConfig.Spec
-}
-
-func getRsa(paas string) *crypt.Crypt {
-	config := GetConfig()
-	if _crypt == nil {
-		_crypt = make(map[string]*crypt.Crypt)
-	}
-	if c, exists := _crypt[paas]; exists {
-		return c
-	} else if c, err := crypt.NewCrypt(config.DecryptKeyPaths, "", paas); err != nil {
-		panic(fmt.Errorf("could not get a crypt: %w", err))
-	} else {
-		_crypt[paas] = c
-		return c
-	}
+	cnf.mutex.Lock()
+	defer cnf.mutex.Unlock()
+	cnf.currentConfig = newConfig.Spec
 }
 
 // setRequestLogger derives a context with a `zerolog` logger configured for a specific controller.

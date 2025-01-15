@@ -147,12 +147,10 @@ setup-e2e: kustomize ## Setup test environment in the K8s cluster specified in ~
 run-operator:
 	# Clean start
 	killall goreman || true
-	mkdir -p /tmp/paas-e2e/secrets/priv && chmod 0700 /tmp/paas-e2e/secrets/priv
-	mkdir -p /tmp/paas-e2e/secrets/pub && chmod 0700 /tmp/paas-e2e/secrets/pub
-	cp -r ./test/e2e/fixtures/crypt/priv* /tmp/paas-e2e/secrets/priv
-	cp -r ./test/e2e/fixtures/crypt/pub/* /tmp/paas-e2e/secrets/pub
+	kubectl create namespace paas-system
+	kubectl apply -f manifests/config/example-keys.yaml
 	goreman -f $(PAAS_PROCFILE) start
-	rm -rf /tmp/paas-e2e
+	kubectl delete namespace paas-system
 
 ##@ Build
 
