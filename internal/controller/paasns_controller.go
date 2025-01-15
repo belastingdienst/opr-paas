@@ -98,7 +98,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
 	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
 		logger.Error().Msg("no config found")
-		err = r.setErrorCondition(ctx, paasns, fmt.Errorf("please reach out to your system administrator as there is no Paasconfig available to reconcile against."))
+		err = r.setErrorCondition(ctx, paasns, fmt.Errorf("please reach out to your system administrator as there is no Paasconfig available to reconcile against"))
 		if err != nil {
 			logger.Err(err).Msg("failed to update PaasNs status")
 			return nil, err
@@ -223,10 +223,10 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	}
 
 	// Reconciling succeeded, set appropriate Condition
-	return ctrl.Result{}, r.setSuccesfullCondition(ctx, paasns)
+	return ctrl.Result{}, r.setSuccessfulCondition(ctx, paasns)
 }
 
-func (r *PaasNSReconciler) setSuccesfullCondition(ctx context.Context, paasNs *v1alpha1.PaasNS) error {
+func (r *PaasNSReconciler) setSuccessfulCondition(ctx context.Context, paasNs *v1alpha1.PaasNS) error {
 	meta.SetStatusCondition(&paasNs.Status.Conditions, metav1.Condition{
 		Type:   v1alpha1.TypeReadyPaasNs,
 		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: paasNs.Generation,
