@@ -131,7 +131,6 @@ func assertLdapGroupRemovedAfterUpdatingKey(ctx context.Context, t *testing.T, c
 
 	// Regression for #269 old group should be removed from groupsynclist
 	groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
-	t.Log("Groupsynclist", groupsynclist)
 	assert.NotContains(t, groupsynclist.Data["groupsynclist.txt"], group2Query,
 		"The groupsynclist does not include obsolete group query")
 
