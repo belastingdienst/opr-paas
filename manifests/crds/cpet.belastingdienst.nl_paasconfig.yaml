@@ -175,14 +175,6 @@ spec:
                 default: false
                 description: Enable debug information generation or not
                 type: boolean
-              decryptKeyPaths:
-                description: |-
-                  Deprecated: Will be replaced by a secretRef to overcome caching
-                  Paths where the manager can find the decryptKeys to decrypt Paas'es
-                items:
-                  type: string
-                minItems: 1
-                type: array
               decryptKeySecret:
                 description: DecryptKeysSecretName is a reference to the secret containing
                   the DecryptKeys

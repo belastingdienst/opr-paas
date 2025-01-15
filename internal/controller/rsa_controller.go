@@ -7,7 +7,6 @@ import (
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -28,7 +27,6 @@ func resetCrypts() {
 func (r *PaasNSReconciler) getOrEnsureRsaSecret(
 	ctx context.Context,
 ) (keys *crypt.CryptPrivateKeys, err error) {
-	logger := log.Ctx(ctx)
 	// See if rsa secret exists and create if it doesn't
 	rsaSecret := &corev1.Secret{}
 	config := GetConfig()
@@ -39,29 +37,6 @@ func (r *PaasNSReconciler) getOrEnsureRsaSecret(
 		Namespace: namespacedName.Namespace,
 	}, rsaSecret)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Debug().Msg("decrypt key secret not yet defined, creating from files")
-		decryptPrivateKeysFromFiles, err := crypt.NewPrivateKeysFromFiles(config.DecryptKeyPaths)
-		if err != nil {
-			return nil, err
-		}
-		// Create the rsa secret
-		rsaSecret = &corev1.Secret{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Secret",
-				APIVersion: "v1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      namespacedName.Name,
-				Namespace: namespacedName.Namespace,
-			},
-			Data: decryptPrivateKeysFromFiles.AsSecretData(),
-		}
-		if err = r.Create(ctx, rsaSecret); err != nil {
-			return nil, err
-		}
-		return &decryptPrivateKeysFromFiles, nil
-	} else if err != nil {
-		// Error that isn't due to the secret not existing
 		return nil, err
 	}
 	// Create new set of keys from data in secret
