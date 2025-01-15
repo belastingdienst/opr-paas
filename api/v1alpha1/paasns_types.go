@@ -25,6 +25,7 @@ const (
 // PaasNSSpec defines the desired state of PaasNS
 type PaasNSSpec struct {
 	// The metadata.name of the Paas which created the namespace in which this PaasNS is applied
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Paas string `json:"paas"`
 	// Groupnames of the groups, created externally, which should have access to the namespace created through this PaasNS

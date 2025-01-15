@@ -34,6 +34,7 @@ type PaasSpec struct {
 	Capabilities PaasCapabilities `json:"capabilities"`
 
 	// Requestor is an informational field which decides on the requestor (also application responsible)
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Requestor string `json:"requestor"`
 

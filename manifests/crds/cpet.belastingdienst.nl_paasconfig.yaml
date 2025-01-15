@@ -51,16 +51,19 @@ spec:
                     description: |-
                       Deprecated: ArgoCD specific code will be removed from the operator
                       The header value to set in ArgoPermissions
+                    minLength: 1
                     type: string
                   resource_name:
                     description: |-
                       Deprecated: ArgoCD specific code will be removed from the operator
                       The name of the ArgoCD instance to apply ArgoPermissions to
+                    minLength: 1
                     type: string
                   role:
                     description: |-
                       Deprecated: ArgoCD specific code will be removed from the operator
                       The name of the role to add to Groups set in ArgoPermissions
+                    minLength: 1
                     type: string
                 required:
                 - header
@@ -73,6 +76,7 @@ spec:
                     applicationset:
                       description: Name of the ArgoCD ApplicationSet which manages
                         this capability
+                      minLength: 1
                       type: string
                     custom_fields:
                       additionalProperties:
@@ -165,6 +169,7 @@ spec:
               clusterwide_argocd_namespace:
                 description: Namespace in which a clusterwide ArgoCD can be found
                   for managing capabilities and appProjects
+                minLength: 1
                 type: string
               debug:
                 default: false
@@ -182,6 +187,7 @@ spec:
                 description: |-
                   Deprecated: ArgoCD specific code will be removed from the operator
                   Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
+                minLength: 1
                 type: string
               groupsynclist:
                 description: |-
@@ -189,8 +195,10 @@ spec:
                   A reference to a configmap containing a groupsynclist of LDAP groups to be synced using LDAP sync
                 properties:
                   name:
+                    minLength: 1
                     type: string
                   namespace:
+                    minLength: 1
                     type: string
                 required:
                 - name
@@ -207,10 +215,12 @@ spec:
                 properties:
                   host:
                     description: LDAP server hostname
+                    minLength: 1
                     type: string
                   port:
                     description: LDAP server port
                     format: int32
+                    minimum: 1
                     type: integer
                 required:
                 - host
