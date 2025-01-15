@@ -228,7 +228,10 @@ type ConfigQuotaSettings struct {
 
 	// The ratio of the requested quota which will be applied to the total quota
 	// +kubebuilder:validation:Optional
-	Ratio int64 `json:"ratio"`
+	// +kubebuilder:validation:Format:=float
+	// +kubebuilder:validation:Minimum:=0.0
+	// +kubebuilder:validation:Maximum:=1.0
+	Ratio float64 `json:"ratio"`
 
 	// The default quota which the enabled capability gets
 	// +kubebuilder:validation:Required

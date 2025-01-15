@@ -95,7 +95,7 @@ func (pcr QuotaLists) Min() Quota {
 	return quotaResources
 }
 
-func (pcr QuotaLists) OptimalValues(ratio int64, minQuotas Quota, maxQuotas Quota) Quota {
+func (pcr QuotaLists) OptimalValues(ratio float64, minQuotas Quota, maxQuotas Quota) Quota {
 	// Calculate resources with 3 different approaches and select largest value
 	approaches := NewQuotaLists()
 	approaches.Append(pcr.Sum().Resized(ratio))

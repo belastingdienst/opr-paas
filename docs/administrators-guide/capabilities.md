@@ -230,5 +230,5 @@ Below example shows all configuration required to configure a capability.
               requests.memory: 16Gi
               requests.storage: "10Gi"
               thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
-            ratio: 10
+            ratio: 0.1
     ```

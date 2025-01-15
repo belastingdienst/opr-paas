@@ -121,7 +121,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceLimitsCPU:    resourcev1.MustParse("1"),
 						corev1.ResourceLimitsMemory: resourcev1.MustParse("1Gi"),
 					},
-					Ratio: 10,
+					Ratio: 0.1,
 				},
 			},
 			"sso": {
