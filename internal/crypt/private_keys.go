@@ -15,7 +15,7 @@ import (
 // We can use multiple private keys (for rotation) and store them in a list of PrivateKey's
 type CryptPrivateKeys []*CryptPrivateKey
 
-// NewPrivateKeysFromFiles returns a Crypt based on the provided privateKeyPaths and publicKeyPath using the encryptionContext
+// NewPrivateKeysFromFiles returns a Crypt based on the provided privateKeyPaths
 func NewPrivateKeysFromFiles(privateKeyPaths []string) (CryptPrivateKeys, error) {
 	var privateKeys CryptPrivateKeys
 
@@ -34,7 +34,7 @@ func NewPrivateKeysFromFiles(privateKeyPaths []string) (CryptPrivateKeys, error)
 	return privateKeys, nil
 }
 
-// NewPrivateKeysFromSecretData returns a Crypt based on the provided privateKeyPaths and publicKeyPath using the encryptionContext
+// NewPrivateKeysFromSecretData returns a Crypt based on the provided privateKeyPaths
 func NewPrivateKeysFromSecretData(privateKeyData map[string][]byte) (CryptPrivateKeys, error) {
 	var privateKeys CryptPrivateKeys
 
@@ -60,7 +60,7 @@ func (pks CryptPrivateKeys) Compare(other CryptPrivateKeys) (same bool) {
 			}
 		}
 	}
-	return false
+	return true
 }
 
 func (pks CryptPrivateKeys) AsSecretData() (data map[string][]byte) {
@@ -90,7 +90,7 @@ func NewPrivateKeyFromFile(privateKeyPath string) (*CryptPrivateKey, error) {
 	}
 }
 
-// NewPrivateKeyFromFile returns a CryptPrivateKey from a privateKeyFilePath
+// NewPrivateKeyFromPem returns a CryptPrivateKey from a privateKeyFilePath
 func NewPrivateKeyFromPem(privateKeyPath string, privateKeyPem []byte) (*CryptPrivateKey, error) {
 	var privateKey *rsa.PrivateKey = nil
 	return &CryptPrivateKey{

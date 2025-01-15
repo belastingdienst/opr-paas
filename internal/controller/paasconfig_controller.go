@@ -169,7 +169,6 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	logger.Info().Msg("configuration has changed")
-	// TODO(portly-halicore-76) is this the correct place and time to change?
 	if !reflect.DeepEqual(config.Spec.DecryptKeysSecret, GetConfig().DecryptKeysSecret) {
 		resetCrypts()
 	}

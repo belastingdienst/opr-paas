@@ -176,7 +176,7 @@ spec:
                 description: Enable debug information generation or not
                 type: boolean
               decryptKeySecret:
-                description: DecryptKeysSecretName is a reference to the secret containing
+                description: DecryptKeysSecret is a reference to the secret containing
                   the DecryptKeys
                 properties:
                   name:
