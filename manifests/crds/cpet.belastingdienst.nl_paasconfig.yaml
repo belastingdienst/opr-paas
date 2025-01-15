@@ -149,6 +149,9 @@ spec:
                         ratio:
                           description: The ratio of the requested quota which will
                             be applied to the total quota
+                          format: float
+                          maximum: 1
+                          minimum: 0
                           type: number
                       required:
                       - defaults
