@@ -133,7 +133,7 @@ Example PaasConfig
               thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
             min: {}
             max: {}
-            ratio: 10
+            ratio: 0.1
         sso:
           applicationset: prod-paas-sso
           default_permissions: {}

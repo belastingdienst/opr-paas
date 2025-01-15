@@ -56,7 +56,7 @@ spec:
         max:
           requests.cpu: '1'
           requests.memory: 1Gi
-        ratio: 10
+        ratio: 0.1
     sso:
       applicationset: ssoas
       default_permissions: {}

@@ -18,10 +18,10 @@ func (pq Quota) MergeWith(targetQuota map[corev1.ResourceName]resourcev1.Quantit
 	return q
 }
 
-func (pq Quota) Resized(scale int64) (q Quota) {
+func (pq Quota) Resized(scale float64) (q Quota) {
 	q = make(Quota)
 	for key, value := range pq {
-		resized := value.AsApproximateFloat64() * (float64(scale) / 100)
+		resized := value.AsApproximateFloat64() * scale
 		q[key] = *(resourcev1.NewQuantity(int64(resized), value.Format))
 	}
 	return q
