@@ -130,7 +130,7 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	config := GetConfig()
 	for capName := range paas.Spec.Capabilities {
 		if _, exists := config.Capabilities[capName]; !exists {
-			return fmt.Errorf("Capability not configured")
+			return fmt.Errorf("capability not configured")
 		}
 		// Only do this when enabled
 		capability := paas.Spec.Capabilities[capName]

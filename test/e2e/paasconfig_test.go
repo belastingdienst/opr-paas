@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	v1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/quota"
 
@@ -45,9 +44,9 @@ func TestPaasConfig(t *testing.T) {
 				deletePaasSync(ctx, "foo", t, cfg)
 
 				// Reset PaasConfig to erase tested changes
-				paasConfig := getOrFail(ctx, "paas-config", cfg.Namespace(), &api.PaasConfig{}, t, cfg)
+				paasConfig := getOrFail(ctx, "paas-config", cfg.Namespace(), &v1alpha1.PaasConfig{}, t, cfg)
 				examplePaasConfig.Spec.DeepCopyInto(&paasConfig.Spec)
-				require.NoError(t, updateSync(ctx, cfg, paasConfig, api.TypeActivePaasConfig))
+				require.NoError(t, updateSync(ctx, cfg, paasConfig, v1alpha1.TypeActivePaasConfig))
 
 				return ctx
 			}).
@@ -143,7 +142,7 @@ func assertDoublePaasConfigError(ctx context.Context, t *testing.T, cfg *envconf
 	require.NoError(
 		t,
 		waitForStatus(ctx, cfg, paasConfig, 0, func(conds []metav1.Condition) bool {
-			cond := meta.FindStatusCondition(conds, api.TypeHasErrorsPaasConfig)
+			cond := meta.FindStatusCondition(conds, v1alpha1.TypeHasErrorsPaasConfig)
 			return cond != nil &&
 				cond.Status == metav1.ConditionTrue &&
 				cond.Message == "paasConfig singleton violation"
@@ -160,9 +159,9 @@ func assertOperatorErrorWithoutPaasConfig(ctx context.Context, t *testing.T, cfg
 
 	require.True(t, apierrors.IsNotFound(err))
 
-	paas := &api.Paas{
+	paas := &v1alpha1.Paas{
 		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
-		Spec: api.PaasSpec{
+		Spec: v1alpha1.PaasSpec{
 			Requestor: "paas-user",
 			Quota:     make(quota.Quota),
 		},
@@ -172,10 +171,10 @@ func assertOperatorErrorWithoutPaasConfig(ctx context.Context, t *testing.T, cfg
 	require.NoError(
 		t,
 		waitForStatus(ctx, cfg, paas, 0, func(conds []metav1.Condition) bool {
-			cond := meta.FindStatusCondition(conds, api.TypeHasErrorsPaas)
+			cond := meta.FindStatusCondition(conds, v1alpha1.TypeHasErrorsPaas)
 			return cond != nil &&
 				cond.Status == metav1.ConditionTrue &&
-				cond.Message == "please reach out to your system administrator as there is no Paasconfig available to reconcile against."
+				cond.Message == "please reach out to your system administrator as there is no Paasconfig available to reconcile against"
 		}),
 	)
 
@@ -184,26 +183,26 @@ func assertOperatorErrorWithoutPaasConfig(ctx context.Context, t *testing.T, cfg
 
 func assertPaasReconciliationResumed(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paasConfig := examplePaasConfig.DeepCopy()
-	require.NoError(t, createSync(ctx, cfg, paasConfig, api.TypeActivePaasConfig))
+	require.NoError(t, createSync(ctx, cfg, paasConfig, v1alpha1.TypeActivePaasConfig))
 
 	paas := getPaas(ctx, "foo", t, cfg)
 	// Because the spec is not being changed between the failed and resumed reconciliation, the generation of the Paas resource is
 	// not incremented. Thus we pass the initial generation (i.e. 0), as `waitForCondition` waits to observe a generation change
 	// before matching the condition.
-	require.NoError(t, waitForCondition(ctx, cfg, paas, 0, api.TypeReadyPaas))
+	require.NoError(t, waitForCondition(ctx, cfg, paas, 0, v1alpha1.TypeReadyPaas))
 
 	return ctx
 }
 
 func assertPaasReconciliationAfterConfigUpdate(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	paasConfig := getOrFail(ctx, "paas-config", cfg.Namespace(), &api.PaasConfig{}, t, cfg)
+	paasConfig := getOrFail(ctx, "paas-config", cfg.Namespace(), &v1alpha1.PaasConfig{}, t, cfg)
 	ns := getOrFail(ctx, "foo", cfg.Namespace(), &v1.Namespace{}, t, cfg)
 	assert.Equal(t, "paas-user", ns.Labels["o.lbl"])
 	assert.Equal(t, "foo", ns.Labels["q.lbl"])
 
 	paasConfig.Spec.RequestorLabel = "another.lbl"
 	paasConfig.Spec.QuotaLabel = "different.lbl"
-	require.NoError(t, updateSync(ctx, cfg, paasConfig, api.TypeActivePaasConfig))
+	require.NoError(t, updateSync(ctx, cfg, paasConfig, v1alpha1.TypeActivePaasConfig))
 
 	ns = getOrFail(ctx, "foo", cfg.Namespace(), &v1.Namespace{}, t, cfg)
 	assert.Equal(t, "paas-user", ns.Labels["another.lbl"])
