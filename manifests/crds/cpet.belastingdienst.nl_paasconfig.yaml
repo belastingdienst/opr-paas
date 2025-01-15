@@ -149,6 +149,7 @@ spec:
                         ratio:
                           description: The ratio of the requested quota which will
                             be applied to the total quota
+                          type: number
                       required:
                       - defaults
                       type: object
