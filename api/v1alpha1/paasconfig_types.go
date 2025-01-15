@@ -47,7 +47,7 @@ func (p PaasConfig) GetConditions() []metav1.Condition {
 }
 
 type PaasConfigSpec struct {
-	// DecryptKeysSecretName is a reference to the secret containing the DecryptKeys
+	// DecryptKeysSecret is a reference to the secret containing the DecryptKeys
 	// +kubebuilder:validation:Required
 	DecryptKeysSecret NamespacedName `json:"decryptKeySecret"`
 

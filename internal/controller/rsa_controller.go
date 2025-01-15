@@ -6,7 +6,6 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 )
 
@@ -18,42 +17,33 @@ var (
 
 // resetCrypts removes all crypts and resets decryptSecretPrivateKeys
 func resetCrypts() {
-	crypts = nil
+	crypts = make(map[string]*crypt.Crypt)
 	decryptPrivateKeys = nil
 }
 
-// getOrEnsureRsaSecret ensures that secret exists creating an empty secret if needed
-// and returns the body of the fetched or created secret
-func (r *PaasNSReconciler) getOrEnsureRsaSecret(
+// getRsaPrivateKeys fetches secret, compares to cached private keys, resets crypts if needed, and returns keys
+func (r *PaasNSReconciler) getRsaPrivateKeys(
 	ctx context.Context,
-) (keys *crypt.CryptPrivateKeys, err error) {
-	// See if rsa secret exists and create if it doesn't
+) (*crypt.CryptPrivateKeys, error) {
+	ctx = setLogComponent(ctx, "rolebinding")
+	logger := log.Ctx(ctx)
 	rsaSecret := &corev1.Secret{}
 	config := GetConfig()
 	namespacedName := config.DecryptKeysSecret
 
-	err = r.Get(ctx, types.NamespacedName{
+	err := r.Get(ctx, types.NamespacedName{
 		Name:      namespacedName.Name,
 		Namespace: namespacedName.Namespace,
 	}, rsaSecret)
-	if err != nil && errors.IsNotFound(err) {
-		return nil, err
-	}
-	// Create new set of keys from data in secret
-	decryptPrivateKeysFromFiles, err := crypt.NewPrivateKeysFromSecretData(rsaSecret.Data)
-	return &decryptPrivateKeysFromFiles, err
-}
-
-func (r *PaasNSReconciler) refreshRsaPrivateKeys(ctx context.Context) (keys *crypt.CryptPrivateKeys, err error) {
-	// Secret changed? Yes: Reset map, get keys, update SecretGen
-	// If one error occurs, all is invalid
-
-	ctx = setLogComponent(ctx, "rolebinding")
-	logger := log.Ctx(ctx)
-	keys, err = r.getOrEnsureRsaSecret(ctx)
 	if err != nil {
 		return nil, err
 	}
+	// Create new set of keys from data in secret
+	keys, err := crypt.NewPrivateKeysFromSecretData(rsaSecret.Data)
+	if err != nil {
+		return nil, err
+	}
+
 	if decryptPrivateKeys != nil {
 		if keys.Compare(*decryptPrivateKeys) {
 			// It already was the same secret
@@ -62,15 +52,15 @@ func (r *PaasNSReconciler) refreshRsaPrivateKeys(ctx context.Context) (keys *cry
 		}
 	}
 
-	decryptPrivateKeys = keys
-	logger.Debug().Msgf("setting (%d) new keys", len(*keys))
-	crypts = make(map[string]*crypt.Crypt)
-	return
+	logger.Debug().Msgf("setting (%d) new keys", len(keys))
+	resetCrypts()
+	decryptPrivateKeys = &keys
+	return decryptPrivateKeys, nil
 }
 
 // getRsa returns a crypt.Crypt for a specified paasName
 func (r *PaasNSReconciler) getRsa(ctx context.Context, paasName string) (*crypt.Crypt, error) {
-	if keys, err := r.refreshRsaPrivateKeys(ctx); err != nil {
+	if keys, err := r.getRsaPrivateKeys(ctx); err != nil {
 		return nil, err
 	} else if rsa, exists := crypts[paasName]; exists {
 		return rsa, nil

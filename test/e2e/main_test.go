@@ -204,7 +204,6 @@ func TestMain(m *testing.M) {
 	// Global setup
 	testenv.Setup(
 		func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-			// Nasty, required fields (according to CRD) are filled with an 'empty' value, which allows creation.
 			paasconfig := &v1alpha1.PaasConfig{}
 			*paasconfig = examplePaasConfig
 

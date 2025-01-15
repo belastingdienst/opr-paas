@@ -14,8 +14,6 @@ import (
 	"maps"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/internal/crypt"
-
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
 	"github.com/rs/zerolog/log"
@@ -129,9 +127,7 @@ func (r *PaasNSReconciler) getSecrets(
 		return nil, nil
 	}
 
-	// TODO create rsa from privateKeys, remove secret from here
-	var rsa *crypt.Crypt
-	rsa, err = r.getRsa(ctx, paas.Name)
+	rsa, err := r.getRsa(ctx, paas.Name)
 	if err != nil {
 		return nil, err
 	}
