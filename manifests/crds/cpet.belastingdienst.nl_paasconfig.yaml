@@ -149,8 +149,6 @@ spec:
                         ratio:
                           description: The ratio of the requested quota which will
                             be applied to the total quota
-                          format: int64
-                          type: integer
                       required:
                       - defaults
                       type: object
