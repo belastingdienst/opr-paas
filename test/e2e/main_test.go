@@ -15,7 +15,6 @@ import (
 	argoprojlabsv1beta1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
 	argoprojv1alpha1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -59,12 +58,12 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 				},
 				QuotaSettings: v1alpha1.ConfigQuotaSettings{
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
-						corev1.ResourceLimitsCPU:       resource.MustParse("5"),
-						corev1.ResourceLimitsMemory:    resource.MustParse("4Gi"),
-						corev1.ResourceRequestsCPU:     resource.MustParse("1"),
-						corev1.ResourceRequestsMemory:  resource.MustParse("1Gi"),
-						corev1.ResourceRequestsStorage: resource.MustParse("0"),
-						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
+						corev1.ResourceLimitsCPU:       resourcev1.MustParse("5"),
+						corev1.ResourceLimitsMemory:    resourcev1.MustParse("4Gi"),
+						corev1.ResourceRequestsCPU:     resourcev1.MustParse("1"),
+						corev1.ResourceRequestsMemory:  resourcev1.MustParse("1Gi"),
+						corev1.ResourceRequestsStorage: resourcev1.MustParse("0"),
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse("0"),
 					},
 				},
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
@@ -87,12 +86,12 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 				AppSet: "cap5as",
 				QuotaSettings: v1alpha1.ConfigQuotaSettings{
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
-						corev1.ResourceLimitsCPU:       resource.MustParse("6"),
-						corev1.ResourceLimitsMemory:    resource.MustParse("7Gi"),
-						corev1.ResourceRequestsCPU:     resource.MustParse("5"),
-						corev1.ResourceRequestsMemory:  resource.MustParse("6Gi"),
-						corev1.ResourceRequestsStorage: resource.MustParse("0"),
-						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
+						corev1.ResourceLimitsCPU:       resourcev1.MustParse("6"),
+						corev1.ResourceLimitsMemory:    resourcev1.MustParse("7Gi"),
+						corev1.ResourceRequestsCPU:     resourcev1.MustParse("5"),
+						corev1.ResourceRequestsMemory:  resourcev1.MustParse("6Gi"),
+						corev1.ResourceRequestsStorage: resourcev1.MustParse("0"),
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse("0"),
 					},
 				},
 			},
@@ -107,20 +106,20 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 				QuotaSettings: v1alpha1.ConfigQuotaSettings{
 					Clusterwide: true,
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
-						corev1.ResourceLimitsCPU:       resource.MustParse("5"),
-						corev1.ResourceLimitsMemory:    resource.MustParse("8Gi"),
-						corev1.ResourceRequestsCPU:     resource.MustParse("1"),
-						corev1.ResourceRequestsMemory:  resource.MustParse("2Gi"),
-						corev1.ResourceRequestsStorage: resource.MustParse("100Gi"),
-						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
+						corev1.ResourceLimitsCPU:       resourcev1.MustParse("5"),
+						corev1.ResourceLimitsMemory:    resourcev1.MustParse("8Gi"),
+						corev1.ResourceRequestsCPU:     resourcev1.MustParse("1"),
+						corev1.ResourceRequestsMemory:  resourcev1.MustParse("2Gi"),
+						corev1.ResourceRequestsStorage: resourcev1.MustParse("100Gi"),
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse("0"),
 					},
 					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{
-						corev1.ResourceLimitsCPU:    resource.MustParse("5"),
-						corev1.ResourceLimitsMemory: resource.MustParse("4Gi"),
+						corev1.ResourceLimitsCPU:    resourcev1.MustParse("5"),
+						corev1.ResourceLimitsMemory: resourcev1.MustParse("4Gi"),
 					},
 					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{
-						corev1.ResourceLimitsCPU:    resource.MustParse("1"),
-						corev1.ResourceLimitsMemory: resource.MustParse("1Gi"),
+						corev1.ResourceLimitsCPU:    resourcev1.MustParse("1"),
+						corev1.ResourceLimitsMemory: resourcev1.MustParse("1Gi"),
 					},
 					Ratio: 10,
 				},
@@ -130,12 +129,12 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 				QuotaSettings: v1alpha1.ConfigQuotaSettings{
 					Clusterwide: false,
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
-						corev1.ResourceLimitsCPU:       resource.MustParse("1"),
-						corev1.ResourceLimitsMemory:    resource.MustParse("512Mi"),
-						corev1.ResourceRequestsCPU:     resource.MustParse("100m"),
-						corev1.ResourceRequestsMemory:  resource.MustParse("128Mi"),
-						corev1.ResourceRequestsStorage: resource.MustParse("0"),
-						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
+						corev1.ResourceLimitsCPU:       resourcev1.MustParse("1"),
+						corev1.ResourceLimitsMemory:    resourcev1.MustParse("512Mi"),
+						corev1.ResourceRequestsCPU:     resourcev1.MustParse("100m"),
+						corev1.ResourceRequestsMemory:  resourcev1.MustParse("128Mi"),
+						corev1.ResourceRequestsStorage: resourcev1.MustParse("0"),
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse("0"),
 					},
 				},
 			},
@@ -143,12 +142,12 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 				AppSet: "grafanaas",
 				QuotaSettings: v1alpha1.ConfigQuotaSettings{
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
-						corev1.ResourceLimitsCPU:       resource.MustParse("2"),
-						corev1.ResourceLimitsMemory:    resource.MustParse("2Gi"),
-						corev1.ResourceRequestsCPU:     resource.MustParse("500m"),
-						corev1.ResourceRequestsMemory:  resource.MustParse("512Mi"),
-						corev1.ResourceRequestsStorage: resource.MustParse("2Gi"),
-						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resource.MustParse("0"),
+						corev1.ResourceLimitsCPU:       resourcev1.MustParse("2"),
+						corev1.ResourceLimitsMemory:    resourcev1.MustParse("2Gi"),
+						corev1.ResourceRequestsCPU:     resourcev1.MustParse("500m"),
+						corev1.ResourceRequestsMemory:  resourcev1.MustParse("512Mi"),
+						corev1.ResourceRequestsStorage: resourcev1.MustParse("2Gi"),
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse("0"),
 					},
 				},
 			},
