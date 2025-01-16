@@ -115,12 +115,23 @@ func (r *PaasNSReconciler) backendSecret(
 	return s, nil
 }
 
+// getSecrets returns a list of Secrets which are desired based on the Paas(Ns) spec
 func (r *PaasNSReconciler) getSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 	encryptedSecrets map[string]string,
 ) (secrets []*corev1.Secret, err error) {
+	// Only do something when secrets are required
+	if len(encryptedSecrets) == 0 {
+		return nil, nil
+	}
+
+	rsa, err := r.getRsa(ctx, paas.Name)
+	if err != nil {
+		return nil, err
+	}
+
 	for url, encryptedSecretData := range encryptedSecrets {
 		namespacedName := types.NamespacedName{
 			Namespace: paasns.NamespaceName(),
@@ -130,16 +141,18 @@ func (r *PaasNSReconciler) getSecrets(
 		if err != nil {
 			return nil, err
 		}
-		if decrypted, err := getRsa(paasns.Spec.Paas).Decrypt(encryptedSecretData); err != nil {
+		if decrypted, err := rsa.Decrypt(encryptedSecretData); err != nil {
 			return nil, fmt.Errorf("failed to decrypt secret %s: %s", secret, err.Error())
 		} else {
 			secret.Data["sshPrivateKey"] = decrypted
 			secrets = append(secrets, secret)
 		}
 	}
-	return
+	return secrets, nil
 }
 
+// BackendSecrets returns a list of kubernetes Secrets which are desired based on the Paas(Ns) spec.
+// It returns an error when the secrets cannot be determined.
 func (r *PaasNSReconciler) BackendSecrets(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
@@ -235,10 +248,12 @@ func (r *PaasNSReconciler) ReconcileSecrets(
 	if err != nil {
 		return err
 	}
+	logger.Debug().Int("count", len(desiredSecrets)).Msg("desired secrets count")
 	existingSecrets, err := r.getExistingSecrets(ctx, paas, paasns)
 	if err != nil {
 		return err
 	}
+	logger.Debug().Int("count", len(existingSecrets)).Msg("existing secrets count")
 	err = r.deleteObsoleteSecrets(ctx, existingSecrets, desiredSecrets)
 	if err != nil {
 		return err

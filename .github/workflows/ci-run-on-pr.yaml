@@ -218,12 +218,6 @@ jobs:
       - name: Wait for operator deployment to be ready
         run: |
           kubectl wait --for=condition=Available deployment/paas-controller-manager -n paas-system --timeout=120s
-      - name: Copy test fixtures
-        run: |
-          mkdir -p /tmp/paas-e2e/secrets/priv && chmod 0700 /tmp/paas-e2e/secrets/priv
-          mkdir -p /tmp/paas-e2e/secrets/pub && chmod 0700 /tmp/paas-e2e/secrets/pub
-          cp -r ./test/e2e/fixtures/crypt/priv* /tmp/paas-e2e/secrets/priv
-          cp -r ./test/e2e/fixtures/crypt/pub/* /tmp/paas-e2e/secrets/pub
       - name: Run E2E testsuite
         timeout-minutes: 20
         run: |
