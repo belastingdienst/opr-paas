@@ -90,8 +90,9 @@ spec:
         max: {}
         ratio: 0
   debug: false
-  decryptKeyPaths:
-    - /tmp/paas-e2e/secrets/priv
+  decryptKeySecret:
+    namespace: paas-system
+    name: example-keys
   ldap:
     host: my-ldap-host
     port: 13

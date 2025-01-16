@@ -56,8 +56,9 @@ Example PaasConfig
           g, something, role:admin
       managed_by_label: argocd.argoproj.io/managed-by
       requestor_label: level-one-support
-      decryptKeyPaths:
-        - /secrets/paas
+      decryptKeySecret:
+        namespace: paas-system
+        name: example-keys
       clusterwide_argocd_namespace: prod-argocd
       exclude_appset_name: something-to-be-excluded
       quota_label: clusterquotagroup
