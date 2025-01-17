@@ -4,7 +4,7 @@ summary: A short overview of defining authorization for users and groups
 authors:
   - hikarukin
   - devotional-phoenix-97
-date: 2025-01-20
+date: 2025-01-21
 ---
 
 ## Groups and Users
@@ -18,9 +18,9 @@ For more information on authorization, please see [Core Concepts - Authorization
 
 !!! Note
 
-    When both an LDAP query and a list of users is defined, the users from the list
-    are added in addition to the users from the LDAP group. If the user from the list
-    was already added through the LDAP group, the user is simply ignored.
+    When both an LDAP query and a list of users is defined, the LDAP query takes precedence
+    above the users. This because `oc adm group sync` overwrites / errors when there are already
+    users in the group which it believes it should create.
 
 !!! example
 
@@ -34,8 +34,6 @@ For more information on authorization, please see [Core Concepts - Authorization
         example_group:
           query: >-
             CN=example_group,OU=example,OU=UID,DC=example,DC=nl
-          users:
-            - jdsmith
         second_example_group:
           users:
             - jdsmith

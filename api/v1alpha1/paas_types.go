@@ -202,6 +202,16 @@ func (pgs PaasGroups) Names() (groups []string) {
 	return groups
 }
 
+func (p Paas) GroupKey2GroupName(groupKey string) string {
+	if group, exists := p.Spec.Groups[groupKey]; !exists {
+		return ""
+	} else if len(group.Query) > 0 {
+		return group.Name(groupKey)
+	} else {
+		return fmt.Sprintf("%s-%s", p.Name, p.Spec.Groups.Key2Name(groupKey))
+	}
+}
+
 func (pgs PaasGroups) LdapQueries() []string {
 	var queries []string
 	for _, group := range pgs {

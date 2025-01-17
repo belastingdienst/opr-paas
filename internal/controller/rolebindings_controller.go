@@ -180,7 +180,7 @@ func (r *PaasReconciler) reconcileRolebindings(
 		for groupKey, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
 			logger.Info().Msgf("defining Rolebindings for Group %s", groupKey)
 			// Convert the groupKey to a groupName to map the rolebinding subjects to a group
-			groupName := paas.Spec.Groups.Key2Name(groupKey)
+			groupName := paas.GroupKey2GroupName(groupKey)
 			for _, mappedRole := range GetConfig().RoleMappings.Roles(groupRoles) {
 				if role, exists := roles[mappedRole]; exists {
 					roles[mappedRole] = append(role, groupName)
@@ -196,7 +196,10 @@ func (r *PaasReconciler) reconcileRolebindings(
 				Str("role", roleName).
 				Strs("groups", groupNames).
 				Msg("creating Rolebinding")
-			rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupNames)
+			rb, err := backendRoleBinding(ctx, r, paas, rbName, roleName, groupNames)
+			if err != nil {
+				return err
+			}
 			if err := ensureRoleBinding(ctx, r, paas, rb); err != nil {
 				err = fmt.Errorf("failure while creating/updating rolebinding %s/%s: %s", rb.Namespace, rb.Name, err.Error())
 				return err
@@ -218,7 +221,7 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 	roles := make(map[string][]string)
 	for groupKey, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
 		// Convert the groupKey to a groupName to map the rolebinding subjects to a group
-		groupName := paas.Spec.Groups.Key2Name(groupKey)
+		groupName := paas.GroupKey2GroupName(groupKey)
 		for _, mappedRole := range GetConfig().RoleMappings.Roles(groupRoles) {
 			if role, exists := roles[mappedRole]; exists {
 				roles[mappedRole] = append(role, groupName)
@@ -236,7 +239,10 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 			Str("role", roleName).
 			Strs("groups", groupNames).
 			Msg("creating Rolebinding")
-		rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupNames)
+		rb, err := backendRoleBinding(ctx, r, paas, rbName, roleName, groupNames)
+		if err != nil {
+			return err
+		}
 		if err := ensureRoleBinding(ctx, r, paas, rb); err != nil {
 			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.Namespace, rb.Name, err.Error())
 			return err

@@ -24,18 +24,17 @@ import (
 
 const crbNameFormat string = "paas-%s"
 
-// ensureClusterRoleBinding ensures ClusterRoleBindings to enable extra permissions for certain capabilities.
+// getClusterRoleBinding returns a ClusterRoleBinding to enable extra permissions for certain capabilities.
 func getClusterRoleBinding(
 	r client.Client,
 	ctx context.Context,
 	role string,
 ) (crb *rbac.ClusterRoleBinding, err error) {
-	// See if rolebinding exists and create if it doesn't
 	crbName := fmt.Sprintf(crbNameFormat, role)
 	found := &rbac.ClusterRoleBinding{}
 	err = r.Get(ctx, types.NamespacedName{Name: crbName}, found)
 	if err != nil && errors.IsNotFound(err) {
-		return newClusterRoleBinding(role), nil
+		return backendClusterRoleBinding(role), nil
 	} else if err != nil {
 		return nil, err
 	} else {
@@ -62,8 +61,8 @@ func updateClusterRoleBinding(
 	return nil
 }
 
-// backendRoleBinding is a code for Creating RoleBinding
-func newClusterRoleBinding(
+// backendClusterRoleBinding is a code for Creating RoleBinding
+func backendClusterRoleBinding(
 	role string,
 ) *rbac.ClusterRoleBinding {
 	crbName := fmt.Sprintf(crbNameFormat, role)
@@ -74,6 +73,7 @@ func newClusterRoleBinding(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: crbName,
+			// TODO are these labels still correct?
 			Labels: map[string]string{
 				"app.kubernetes.io/created-by": "opr-paas",
 				"app.kubernetes.io/part-of":    "opr-paas",
