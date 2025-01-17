@@ -147,10 +147,9 @@ setup-e2e: kustomize ## Setup test environment in the K8s cluster specified in ~
 run-operator:
 	# Clean start
 	killall goreman || true
-	kubectl create namespace paas-system
+	@kubectl get namespace paas-system >/dev/null 2>&1 || kubectl create namespace paas-system
 	kubectl apply -f manifests/config/example-keys.yaml
 	goreman -f $(PAAS_PROCFILE) start
-	kubectl delete namespace paas-system
 
 ##@ Build
 
