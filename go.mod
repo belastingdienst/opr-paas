@@ -11,6 +11,7 @@ require (
 	k8s.io/apimachinery v0.31.1
 	k8s.io/client-go v12.0.0+incompatible
 	sigs.k8s.io/controller-runtime v0.19.4
+	github.com/hashicorp/terraform v1.10.4
 )
 
 require (
