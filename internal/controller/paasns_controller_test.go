@@ -21,7 +21,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -34,7 +35,7 @@ var _ = Describe("PaasNS Controller", func() {
 
 		const name = "my-paas-ns"
 		paasns := &api.PaasNS{
-			ObjectMeta: meta.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: "default",
 			},
@@ -53,22 +54,28 @@ var _ = Describe("PaasNS Controller", func() {
 				To(Succeed())
 		})
 
-		It("should not return an error", func() {
-			nsname := types.NamespacedName{
-				Name:      name,
-				Namespace: "default",
-			}
+		It("should not return an error or set an error status", func() {
 			reconciler := &PaasNSReconciler{
 				Client: k8sClient,
 				Scheme: k8sClient.Scheme(),
 			}
 
+			nsname := types.NamespacedName{
+				Name:      name,
+				Namespace: "default",
+			}
 			_, err := reconciler.Reconcile(
 				ctx,
 				reconcile.Request{NamespacedName: nsname},
 			)
-
 			Expect(err).NotTo(HaveOccurred())
+
+			pn := &api.PaasNS{}
+			Expect(k8sClient.Get(ctx, nsname, pn)).
+				To(Succeed())
+
+			Expect(meta.IsStatusConditionFalse(pn.Status.Conditions, api.TypeHasErrorsPaasNs)).
+				To(Succeed())
 		})
 	})
 })
