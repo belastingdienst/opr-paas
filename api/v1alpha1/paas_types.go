@@ -135,20 +135,19 @@ func (p Paas) extraNamespaces() (ns map[string]bool) {
 }
 
 type PaasGroup struct {
-	// A fully qualified LDAP query which will be used by the Group Sync Operator to sync users to the group with the
-	// LDAP query.
+	// A fully qualified LDAP query which will be used by the Group Sync Operator to sync users to the defined group.
 	//
-	// Cannot be set in combination with `users`, as the Group Sync Operator will overwrite the manually assigned users.
+	// When set in combination with `users`, the Group Sync Operator will overwrite the manually assigned users.
 	// Therefore, this field is mutually exclusive with `group.users`.
 	// +kubebuilder:validation:Optional
 	Query string `json:"query"`
-	// A list of LDAP users which are added to this group.
+	// A list of LDAP users which are added to the defined group.
 	//
-	// Cannot be set in combination with `query`, as the Group Sync Operator will overwrite the manually assigned users.
+	// When set in combination with `users`, the Group Sync Operator will overwrite the manually assigned users.
 	// Therefore, this field is mutually exclusive with `group.query`.
 	// +kubebuilder:validation:Optional
 	Users []string `json:"users"`
-	// List of roles which the users in this role get assigned via a rolebinding.
+	// List of roles, as defined in the `PaasConfig` which the users in this group get assigned via a rolebinding.
 	// +kubebuilder:validation:Optional
 	Roles []string `json:"roles"`
 }

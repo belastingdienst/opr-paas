@@ -92,25 +92,24 @@ spec:
                   properties:
                     query:
                       description: |-
-                        A fully qualified LDAP query which will be used by the Group Sync Operator to sync users to the group with the
-                        LDAP query.
+                        A fully qualified LDAP query which will be used by the Group Sync Operator to sync users to the defined group.
 
 
-                        Cannot be set in combination with `users`, as the Group Sync Operator will overwrite the manually assigned users.
+                        When set in combination with `users`, the Group Sync Operator will overwrite the manually assigned users.
                         Therefore, this field is mutually exclusive with `group.users`.
                       type: string
                     roles:
-                      description: List of roles which the users in this role get
-                        assigned via a rolebinding.
+                      description: List of roles, as defined in the `PaasConfig` which
+                        the users in this group get assigned via a rolebinding.
                       items:
                         type: string
                       type: array
                     users:
                       description: |-
-                        A list of LDAP users which are added to this group.
+                        A list of LDAP users which are added to the defined group.
 
 
-                        Cannot be set in combination with `query`, as the Group Sync Operator will overwrite the manually assigned users.
+                        When set in combination with `users`, the Group Sync Operator will overwrite the manually assigned users.
                         Therefore, this field is mutually exclusive with `group.query`.
                       items:
                         type: string
