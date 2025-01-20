@@ -74,8 +74,7 @@ spec:
                         - type: string
                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
-                      description: This project has it's own ClusterResourceQuota
-                        settings
+                      description: This project has its own ClusterResourceQuota settings
                       type: object
                     sshSecrets:
                       additionalProperties:
@@ -92,16 +91,34 @@ spec:
                 additionalProperties:
                   properties:
                     query:
+                      description: |-
+                        A fully qualified LDAP query which will be used by the Group Sync Operator to sync users to the group with the
+                        LDAP query.
+
+
+                        Cannot be set in combination with `users`, as the Group Sync Operator will overwrite the manually assigned users.
+                        Therefore, this field is mutually exclusive with `group.users`.
                       type: string
                     roles:
+                      description: List of roles which the users in this role get
+                        assigned via a rolebinding.
                       items:
                         type: string
                       type: array
                     users:
+                      description: |-
+                        A list of LDAP users which are added to this group.
+
+
+                        Cannot be set in combination with `query`, as the Group Sync Operator will overwrite the manually assigned users.
+                        Therefore, this field is mutually exclusive with `group.query`.
                       items:
                         type: string
                       type: array
                   type: object
+                description: |-
+                  Groups define the groups of users, based on an LDAP query or a list of LDAP users, which get access to the namespaces
+                  belonging to this Paas. Per group, an RBAC role can be defined which the users in that group get assigned.
                 type: object
               managedByPaas:
                 description: Indicated by which 3rd party Paas's ArgoCD this Paas

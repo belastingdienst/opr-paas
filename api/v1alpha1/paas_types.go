@@ -38,6 +38,8 @@ type PaasSpec struct {
 	// +kubebuilder:validation:Required
 	Requestor string `json:"requestor"`
 
+	// Groups define the groups of users, based on an LDAP query or a list of LDAP users, which get access to the namespaces
+	// belonging to this Paas. Per group, an RBAC role can be defined which the users in that group get assigned.
 	// +kubebuilder:validation:Optional
 	Groups PaasGroups `json:"groups"`
 
@@ -133,10 +135,20 @@ func (p Paas) extraNamespaces() (ns map[string]bool) {
 }
 
 type PaasGroup struct {
+	// A fully qualified LDAP query which will be used by the Group Sync Operator to sync users to the group with the
+	// LDAP query.
+	//
+	// Cannot be set in combination with `users`, as the Group Sync Operator will overwrite the manually assigned users.
+	// Therefore, this field is mutually exclusive with `group.users`.
 	// +kubebuilder:validation:Optional
 	Query string `json:"query"`
+	// A list of LDAP users which are added to this group.
+	//
+	// Cannot be set in combination with `query`, as the Group Sync Operator will overwrite the manually assigned users.
+	// Therefore, this field is mutually exclusive with `group.query`.
 	// +kubebuilder:validation:Optional
 	Users []string `json:"users"`
+	// List of roles which the users in this role get assigned via a rolebinding.
 	// +kubebuilder:validation:Optional
 	Roles []string `json:"roles"`
 }
@@ -282,7 +294,7 @@ type PaasCapability struct {
 	// Custom fields to configure this specific Capability
 	// +kubebuilder:validation:Optional
 	CustomFields map[string]string `json:"custom_fields"`
-	// This project has it's own ClusterResourceQuota settings
+	// This project has its own ClusterResourceQuota settings
 	// +kubebuilder:validation:Optional
 	Quota paas_quota.Quota `json:"quota"`
 	// You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket
