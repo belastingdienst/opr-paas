@@ -35,6 +35,7 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/controller"
 	"github.com/belastingdienst/opr-paas/internal/version"
+	"github.com/hikarukin/incompat/incompatversion"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -52,6 +53,8 @@ func init() {
 }
 
 func main() {
+	fmt.Printf("INCOMPAT VERSION: %s", incompatversion.Version)
+
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
