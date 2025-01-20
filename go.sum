@@ -88,8 +88,8 @@ github.com/gorilla/websocket v1.5.0 h1:PPwGk2jz7EePpoHN/+ClbZu8SPxiqlu12wZP/3sWm
 github.com/gorilla/websocket v1.5.0/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/hashicorp/hcl v1.0.0 h1:0Anlzjpi4vEasTeNFn2mLJgTSwt0+6sfsiTG8qcWGx4=
 github.com/hashicorp/hcl v1.0.0/go.mod h1:E5yfLk+7swimpb2L/Alb/PJmXilQ/rhwaUYs4T20WEQ=
-github.com/hikarukin/incompat v0.0.2 h1:HI1+v8qkdOxllAJDXJRYUFdnaowpo93vbLFH5H9kmRk=
-github.com/hikarukin/incompat v0.0.2/go.mod h1:B5UU6g7QPtHcZ1Ez60pQPDjhvAGorqGTf7yQN4PHkt0=
+github.com/hikarukin/incompat v0.0.3 h1:RGS9LQr7dsdHWGNcm+mjFcc9VJhkSYHgSk7X15YU3yU=
+github.com/hikarukin/incompat v0.0.3/go.mod h1:B5UU6g7QPtHcZ1Ez60pQPDjhvAGorqGTf7yQN4PHkt0=
 github.com/imdario/mergo v0.3.16 h1:wwQJbIsHYGMUyLSPrEq1CT16AhnhNJQ51+4fdHUnCl4=
 github.com/imdario/mergo v0.3.16/go.mod h1:WBLT9ZmE3lPoWsEzCh9LPo3TiwVN+ZKEjmz+hD27ysY=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
