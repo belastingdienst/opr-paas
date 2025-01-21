@@ -114,7 +114,7 @@ func (r *PaasReconciler) ReconcilePaasNss(
 ) error {
 	ctx = setLogComponent(ctx, "paasns")
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("creating default namespace to hold PaasNs resources for PAAS object")
+	logger.Info().Msg("creating default namespace to hold PaasNs resources for Paas object")
 	if ns, err := BackendNamespace(ctx, paas, paas.Name, paas.Name, r.Scheme); err != nil {
 		logger.Err(err).Msgf("failure while defining namespace %s", paas.Name)
 		return err
@@ -122,9 +122,9 @@ func (r *PaasReconciler) ReconcilePaasNss(
 		logger.Err(err).Msgf("failure while creating namespace %s", paas.Name)
 		return err
 	} else {
-		logger.Info().Msg("creating PaasNs resources for PAAS object")
+		logger.Info().Msg("creating PaasNs resources for Paas object")
 		for nsName := range paas.AllEnabledNamespaces() {
-			pns, err := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Names(), paas.GetNsSshSecrets(nsName))
+			pns, err := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Keys(), paas.GetNsSshSecrets(nsName))
 			if err != nil {
 				logger.Err(err).Msgf("failure while creating PaasNs %s",
 					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace})

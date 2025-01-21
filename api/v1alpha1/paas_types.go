@@ -164,6 +164,7 @@ func (pg PaasGroup) Name(defName string) string {
 
 type PaasGroups map[string]PaasGroup
 
+// Filtered returns a list of PaasGroups which have a key that is in the list of groups, specified as string.
 func (pgs PaasGroups) Filtered(groups []string) PaasGroups {
 	filtered := make(PaasGroups)
 	if len(groups) == 0 {
@@ -177,10 +178,11 @@ func (pgs PaasGroups) Filtered(groups []string) PaasGroups {
 	return filtered
 }
 
+// Roles returns a map of groupKeys with the roles defined within that groupKey
 func (pgs PaasGroups) Roles() map[string][]string {
 	roles := make(map[string][]string)
-	for groupName, group := range pgs {
-		roles[groupName] = group.Roles
+	for groupKey, group := range pgs {
+		roles[groupKey] = group.Roles
 	}
 	return roles
 }
@@ -210,8 +212,12 @@ func (pgs PaasGroups) LdapQueries() []string {
 	return queries
 }
 
-func (pgs PaasGroups) Keys() (groups []string) {
-	return pgs.Names()
+// Keys() returns the keys of the PaasGroups
+func (pgs PaasGroups) Keys() (keys []string) {
+	for key := range pgs {
+		keys = append(keys, key)
+	}
+	return keys
 }
 
 func (pgs PaasGroups) AsGroups() groups.Groups {
@@ -219,8 +225,6 @@ func (pgs PaasGroups) AsGroups() groups.Groups {
 	newGroups.AddFromStrings(pgs.LdapQueries())
 	return *newGroups
 }
-
-// see config/samples/_v1alpha1_paas.yaml for example of CR
 
 type PaasCapabilities map[string]PaasCapability
 
