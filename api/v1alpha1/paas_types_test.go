@@ -120,6 +120,7 @@ func TestPaasGroups_Roles(t *testing.T) {
 	pgs := PaasGroups{
 		"grp1": {},
 		"grp2": {
+			Query: "CN=test1,OU=org_unit,DC=example,DC=org",
 			Roles: []string{},
 		},
 		"grp3": {
@@ -159,6 +160,13 @@ func TestPaasGroups_Key2Name(t *testing.T) {
 	assert.Equal(t, "test2", testGroups.Key2Name("cn=test1"))
 	assert.Equal(t, "", testGroups.Key2Name("cn=test123"))
 	assert.Equal(t, "test4", testGroups.Key2Name("cn=test3"))
+}
+
+func TestPaasGroups_Keys(t *testing.T) {
+	assert.NotNil(t, "", testGroups.Keys())
+	assert.Contains(t, testGroups.Keys(), "cn=test1")
+	assert.Contains(t, testGroups.Keys(), "cn=test3")
+	assert.NotContains(t, testGroups.Keys(), "cn=test4")
 }
 
 func TestPaasGroups_Names(t *testing.T) {

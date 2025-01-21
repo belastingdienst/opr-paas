@@ -45,7 +45,7 @@ func diffRbacSubjects(l1 []rbac.Subject, l2 []rbac.Subject) bool {
 }
 
 // ensureRoleBinding ensures RoleBinding presence in given rolebinding.
-func EnsureRoleBinding(
+func ensureRoleBinding(
 	ctx context.Context,
 	r Reconciler,
 	paas *v1alpha1.Paas,
@@ -53,7 +53,7 @@ func EnsureRoleBinding(
 ) error {
 	logger := log.Ctx(ctx)
 	if len(rb.Subjects) < 1 {
-		return FinalizeRoleBinding(ctx, r, rb)
+		return finalizeRoleBinding(ctx, r, rb)
 	}
 	namespacedName := types.NamespacedName{
 		Name:      rb.Name,
@@ -110,28 +110,27 @@ func EnsureRoleBinding(
 			return err
 		}
 	}
-	return err
+	return nil
 }
 
-// backendRoleBinding is a code for Creating RoleBinding
+// backendRoleBinding is code for defining RoleBindings
 func backendRoleBinding(
 	ctx context.Context,
 	r Reconciler,
 	paas *v1alpha1.Paas,
 	name types.NamespacedName,
 	role string,
-	groups []string,
+	groupNames []string,
 ) (*rbac.RoleBinding, error) {
 	logger := log.Ctx(ctx)
 	logger.Info().Msgf("defining %s RoleBinding", name)
-
 	subjects := []rbac.Subject{}
-	for _, g := range groups {
+	for _, groupName := range groupNames {
 		subjects = append(subjects,
 			rbac.Subject{
 				Kind:     "Group",
 				APIGroup: "rbac.authorization.k8s.io",
-				Name:     g,
+				Name:     groupName,
 			})
 	}
 
@@ -160,8 +159,8 @@ func backendRoleBinding(
 	return rb, nil
 }
 
-// ensureRoleBinding ensures RoleBinding presence in given rolebinding.
-func FinalizeRoleBinding(
+// finalizeRoleBinding ensures RoleBinding presence in given rolebinding.
+func finalizeRoleBinding(
 	ctx context.Context,
 	r Reconciler,
 	rb *rbac.RoleBinding,
@@ -183,8 +182,8 @@ func FinalizeRoleBinding(
 	}
 }
 
-// ReconcileRolebindings is used by the Paas reconciler to reconcile RB's
-func (r *PaasReconciler) ReconcileRolebindings(
+// reconcileRolebindings is used by the Paas reconciler to reconcile RB's
+func (r *PaasReconciler) reconcileRolebindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
@@ -201,7 +200,10 @@ func (r *PaasReconciler) ReconcileRolebindings(
 			}
 		}
 		logger.Info().Any("Rolebindings map", roles).Msg("all roles")
-		for groupName, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
+		for groupKey, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
+			logger.Info().Msgf("defining Rolebindings for Group %s", groupKey)
+			// Convert the groupKey to a groupName to map the rolebinding subjects to a group
+			groupName := paas.Spec.Groups.Key2Name(groupKey)
 			for _, mappedRole := range GetConfig().RoleMappings.Roles(groupRoles) {
 				if role, exists := roles[mappedRole]; exists {
 					roles[mappedRole] = append(role, groupName)
@@ -211,15 +213,15 @@ func (r *PaasReconciler) ReconcileRolebindings(
 			}
 		}
 		logger.Info().Any("Rolebindings map", roles).Msg("creating paas RoleBindings for PAASNS object")
-		for roleName, groupKeys := range roles {
+		for roleName, groupNames := range roles {
 			rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
-			logger.Info().
+			logger.Debug().
 				Str("role", roleName).
-				Strs("groups", groupKeys).
+				Strs("groups", groupNames).
 				Msg("creating Rolebinding")
-			rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
-			if err := EnsureRoleBinding(ctx, r, paas, rb); err != nil {
-				err = fmt.Errorf("failure while creating/updating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
+			rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupNames)
+			if err := ensureRoleBinding(ctx, r, paas, rb); err != nil {
+				err = fmt.Errorf("failure while creating/updating rolebinding %s/%s: %s", rb.Namespace, rb.Name, err.Error())
 				return err
 			}
 		}
@@ -237,7 +239,9 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 	logger := log.Ctx(ctx)
 	// Creating a list of roles and the groups that should have them, for this namespace
 	roles := make(map[string][]string)
-	for groupName, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
+	for groupKey, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
+		// Convert the groupKey to a groupName to map the rolebinding subjects to a group
+		groupName := paas.Spec.Groups.Key2Name(groupKey)
 		for _, mappedRole := range GetConfig().RoleMappings.Roles(groupRoles) {
 			if role, exists := roles[mappedRole]; exists {
 				roles[mappedRole] = append(role, groupName)
@@ -248,16 +252,16 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 	}
 	logger.Info().
 		Any("Rolebindings map", roles).
-		Msg("creating paas RoleBindings for PAASNS object")
-	for roleName, groupKeys := range roles {
+		Msg("creating paas RoleBindings for PaasNs object")
+	for roleName, groupNames := range roles {
 		rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
-		logger.Info().
+		logger.Debug().
 			Str("role", roleName).
-			Strs("groups", groupKeys).
+			Strs("groups", groupNames).
 			Msg("creating Rolebinding")
-		rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupKeys)
-		if err := EnsureRoleBinding(ctx, r, paas, rb); err != nil {
-			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.ObjectMeta.Namespace, rb.ObjectMeta.Name, err.Error())
+		rb, _ := backendRoleBinding(ctx, r, paas, rbName, roleName, groupNames)
+		if err := ensureRoleBinding(ctx, r, paas, rb); err != nil {
+			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.Namespace, rb.Name, err.Error())
 			return err
 		}
 	}

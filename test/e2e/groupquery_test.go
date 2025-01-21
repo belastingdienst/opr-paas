@@ -51,6 +51,7 @@ func TestGroupQuery(t *testing.T) {
 
 				return ctx
 			}).
+			Assess("works when key and CN are different", assertGroupKeyAndNameDifferenceIsOk).
 			Assess("old group is removed from groupsynclist when groupkey is renamed", assertLdapGroupRemovedAfterUpdatingKey).
 			Assess("first group remains unchanged after Paas update", assertGroupQueryCreated).
 			Assess("groups are deleted when Paas is deleted", assertGroupQueryDeleted).
@@ -112,6 +113,39 @@ func assertGroupQueryCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *
 	for _, rb := range rolebindingsPaas.Items {
 		for _, sub := range rb.Subjects {
 			assert.NotEqual(t, group2Name, sub.Name, "No RoleBindings should be set on the parent Paas")
+		}
+	}
+
+	return ctx
+}
+
+func assertGroupKeyAndNameDifferenceIsOk(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	paas := getPaas(ctx, paasWithGroupQuery, t, cfg)
+	group3Key := "aug-cet-group3key"
+	group3Name := "different"
+	paas.Spec.Groups[group3Key] = api.PaasGroup{
+		Query: "CN=different",
+		Roles: []string{"viewer"},
+	}
+
+	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
+		t.Fatal(err)
+	}
+
+	failWhenExists(ctx, group3Key, cfg.Namespace(), &userv1.Group{}, t, cfg)
+	_ = getOrFail(ctx, group3Name, cfg.Namespace(), &userv1.Group{}, t, cfg)
+	rolebinding := getOrFail(ctx, "paas-view", paasGroupQueryAbsoluteNs, &rbacv1.RoleBinding{}, t, cfg)
+	rolebindingsPaas := listOrFail(ctx, paasWithGroupQuery, &rbacv1.RoleBindingList{}, t, cfg)
+
+	expectedSubject := rbacv1.Subject{
+		Kind:     "Group",
+		APIGroup: "rbac.authorization.k8s.io", Name: group3Name,
+	}
+	assert.Contains(t, rolebinding.Subjects, expectedSubject, "A RoleBinding for the passed 'viewer' role should be set for the group")
+	assert.Equal(t, "view", rolebinding.RoleRef.Name, "The role in the Paas `rolemappings` configuration for the passed 'viewer' role should be applied in the RoleBinding")
+	for _, rb := range rolebindingsPaas.Items {
+		for _, sub := range rb.Subjects {
+			assert.NotEqual(t, group3Name, sub.Name, "No RoleBindings should be set on the parent Paas")
 		}
 	}
 
