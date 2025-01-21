@@ -146,7 +146,7 @@ build: manifests generate fmt vet ## Build manager binary.
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
 	@kubectl get namespace paas-system >/dev/null 2>&1 || kubectl create namespace paas-system
-    kubectl apply -f manifests/config/example-keys.yaml
+	kubectl apply -f manifests/config/example-keys.yaml
 	go run ./cmd/manager/main.go
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
