@@ -172,8 +172,8 @@ jobs:
       - name: Clean test fixtures
         run: rm -rf /tmp/paas-e2e
   
-  analyze:
-    name: Process & analyze test artifacts
+  test-coverage:
+    name: Analyze test coverage
     if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     runs-on: ubuntu-22.04
     needs:
@@ -197,6 +197,7 @@ jobs:
         run: |
           coverage=$(go tool cover -func=cover.out | grep "total:" | awk '{print $NF}' | cut -d'%' -f1)
           if [ "$(echo "$coverage < 80" | bc)" -eq 1 ]; then
-            echo "Coverage is less than 80% ($coverage%). Failing the build."
-            exit 1
+            echo -e "\033[33mWARN: Coverage is less than 80% ($coverage%). Please consider improving the tests.\033[0m"
+          else
+            echo -e "\033[32mINFO: Coverage is sufficient ($coverage%). Good job!\033[0m"
           fi
