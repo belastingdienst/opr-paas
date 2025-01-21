@@ -1,5 +1,9 @@
 # opr-paas
 
+<div style="text-align: center;">
+  <img src="assets/logo.png" alt="Logo" width="300">
+</div>
+
 ## Goal
 
 The Paas operator delivers an opinionated 'Project as a Service' implementation where
