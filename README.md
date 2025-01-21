@@ -1,8 +1,6 @@
 # opr-paas
 
-<div style="text-align: center;">
-  <img src="assets/logo.png" alt="Logo" width="300">
-</div>
+<img src="assets/logo.png" alt="Logo" width="300">
 
 ## Goal
 
