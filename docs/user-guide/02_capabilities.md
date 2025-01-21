@@ -10,8 +10,9 @@ date: 2025-01-20
 ## Capabilities
 
 One of the core features of the Paas operator is to enable Paas users with capabilities.
-Capabilities need to be created and added to the cluster wide configuration of the Paas operator by administrators.
-After that Paas users can easily add the capabilities to their Paas.
+Capabilities need to be created and added to the cluster wide configuration of the
+Paas operator by administrators. After that Paas users can easily add the capabilities
+to their Paas.
 
 Read more about Paas capabilities in our [core concepts](../overview/core_concepts/capabilities.md) documentation.
 

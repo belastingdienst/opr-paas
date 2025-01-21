@@ -9,7 +9,7 @@ date: 2025-01-20
 
 # Application namespaces
 
-To deploy a micro service, usually a Paas would be extended by one or more namespaces.
+To deploy a (micro) service, usually a Paas would be extended by one or more namespaces.
 Mostly these namespaces would be used for running the actual application components.
 All application namespaces use a combined quota belonging specifically to this Paas.
 
@@ -19,7 +19,8 @@ Each Paas spec has a `required` field for specifying quota.
 Each quota has a name referring to the exact [Resource Type](https://kubernetes.io/docs/concepts/policy/resource-quotas/#compute-resource-quota)
 and has a value defined as a [k8s Resource Quantity](https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity/).
 
-This setting is applied to a Cluster Resource Quota which is applied to all application namespaces created for this Paas.
+This setting is applied to a Cluster Resource Quota which is applied to all application
+namespaces created for this Paas.
 
 !!! Note
 

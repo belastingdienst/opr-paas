@@ -9,18 +9,20 @@ date: 2025-01-20
 
 # SSH Secrets
 
-It is possible to define secrets to be created in a namespace for a specific capability, or in every namespace generically.
-The main use case is to create ssh secrets in the ArgoCD namespace so that it can read private repositories,
-which is where the name sshSecrets came from in the first place.
-But they can be used with other capabilities, and/or application namespaces too.
+It is possible to define secrets to be created in a namespace for a specific capability,
+or in every namespace generically. The main use case is to create ssh secrets in the
+ArgoCD namespace so that it can read private repositories, which is where the name
+sshSecrets came from in the first place. However, they can be used with other capabilities,
+and/or application namespaces as well.
 
 More info can be found in [Core Concepts documentation on ssh Secrets](../overview/core_concepts/sshsecrets.md).
 
 ## Prerequisites
 
-SshSecrets are encrypted using asymmetric encryption and therefore require a public and private keypair.
-Keypairs must be generated and managed by administrators and can provide the public key to Users for encrypting sshSecrets.
-For more info, please see the [Admin guide on configuring ssh secret encryption](../administrators-guide/sshSecrets.md).
+SshSecrets are encrypted using asymmetric encryption and therefore require a public
+and private keypair. Keypairs must be generated and managed by administrators and can
+provide the public key to Users for encrypting sshSecrets. For more info, please see
+the [Admin guide on configuring ssh secret encryption](../administrators-guide/sshSecrets.md).
 
 ## Encrypting secrets
 
@@ -63,7 +65,8 @@ Options are endless. Be creative...
 
 Encrypted SSH Secrets can be specified in multiple places.
 
-By defining the secret in in the Paas spec directly (`Paas.spec.sshSecrets`) the secret will be created in all namespaces belonging to the paas.
+By defining the secret in in the Paas spec directly (`Paas.spec.sshSecrets`) the
+secret will be created in all namespaces belonging to the paas.
 
 !!! example
 
@@ -80,7 +83,8 @@ By defining the secret in in the Paas spec directly (`Paas.spec.sshSecrets`) the
           2wkeKe...g==
     ```
 
-By defining the secret as part of a capability (such as `argocd`), the secret will be deployed in the namespace belonging to the capability specifically.
+By defining the secret as part of a capability (such as `argocd`), the secret will
+be deployed in the namespace belonging to the capability specifically.
 
 !!! example
 
@@ -100,7 +104,8 @@ By defining the secret as part of a capability (such as `argocd`), the secret wi
               2wkeKe...g==
     ```
 
-By defining the secret as part of a PaasNs, the secret will be deployed in the corresponding namespace only.
+By defining the secret as part of a PaasNs, the secret will be deployed in the
+corresponding namespace only.
 
 !!! example
 

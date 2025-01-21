@@ -8,19 +8,22 @@ date: 2025-01-20
 
 # Ssh secret encryption
 
-the Paas operator includes features to manage secrets in namespaces of a Paas.
-The main use case is to create ssh secrets in the ArgoCD namespace so that it can read private repositories,
-which is where the name sshSecrets came from in the first place.
-But they can be used with other capabilities, and/or application namespaces too.
+The Paas operator includes features to manage secrets in namespaces of a Paas.
+The main use case is to create ssh secrets in the ArgoCD namespace so that it can
+read private repositories, which is where the name sshSecrets came from in the first
+place. However, they can be used with other capabilities, and/or application namespaces too.
 
-SshSecrets are encrypted using asymmetric encryption and therefore require a public and private keypair.
-Keypairs must be generated, after which the Private Keys must be added to the secret configured in the `PaasConfig.spec.privateKeySecret`,
-and the public key must be provided to Users for encrypting the ssh Secrets (either directly, or through the web service).
+SshSecrets are encrypted using asymmetric encryption and therefore require a public
+and private keypair. Keypairs must be generated, after which the Private Keys must
+be added to the secret configured in the `PaasConfig.spec.privateKeySecret`, and
+the public key must be provided to Users for encrypting the ssh Secrets (either directly,
+or through the web service).
 
 ## Generating new secrets
 
-New keys can be easily generated using the crypttool.
-You can download the crypttool from the [Downloads section of the latest release](https://github.com/belastingdienst/opr-paas/releases).
+New keys can be easily generated using the crypttool. You can download the crypttool
+from the [Downloads section of the latest release](https://github.com/belastingdienst/opr-paas/releases).
+
 Once downloaded, the crypttool can be used to generate a keypair as follows:
 
 !!! example
@@ -37,10 +40,12 @@ Once generated, the private key should be added to the secret configured in the 
 !!! note
 
     The secret as configured in the `PaasConfig.spec.privateKeySecret` can hold multiple keys.
-    This feature is implemented so that key rotation (generating, deploying and reencryption) do not need to be performed instantly.
-    The Paas operator tries to decrypt with all secrets and detects a successful decryption from one of the supplied keys.
+    This feature is implemented so that key rotation (generating, deploying and reencryption)
+    do not need to be performed instantly. The Paas operator tries to decrypt with all secrets
+    and detects a successful decryption from one of the supplied keys.
 
-For the next Paas reconciliation, the change is detected, and the new private key will (also) be tried for decryption.
+For the next Paas reconciliation, the change is detected, and the new private key
+will (also) be tried for decryption.
 
 ## Supplying new public key
 
@@ -52,8 +57,7 @@ For more info, please refer to [user docs on ssh Secrets](../user-guide/02_ssh-s
 
 ### Running the webservice
 
-Another option is to run the webservice.
-To enable the webservice enable the webservice manifest:
+Another option is to run the webservice. To enable the webservice enable the webservice manifest:
 
 !!! example
 
