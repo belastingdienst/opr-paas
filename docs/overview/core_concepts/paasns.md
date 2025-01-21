@@ -44,6 +44,9 @@ As an example, assuming a Paas called `my-paas` with:
       requestor: my-team
       quota:
         limits.cpu: "40"
+      sshSecrets:
+        'ssh://git@my-git-host/my-git-repo.git': >-
+          2wkeKe...g==
     ```
 
 To add user namespaces, the following options are available:
