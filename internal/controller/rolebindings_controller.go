@@ -9,6 +9,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
@@ -19,30 +20,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
-
-func diffRbacSubjects(l1 []rbac.Subject, l2 []rbac.Subject) bool {
-	subResults := make(map[string]bool)
-	for _, s := range l1 {
-		key := fmt.Sprintf("%s.%s.%s", s.Namespace, s.Name, s.Kind)
-		subResults[key] = false
-	}
-	for _, s := range l2 {
-		key := fmt.Sprintf("%s.%s.%s", s.Namespace, s.Name, s.Kind)
-		if _, exists := subResults[key]; !exists {
-			// Something is in l2, but not in l1
-			return true
-		} else {
-			subResults[key] = true
-		}
-	}
-	for _, value := range subResults {
-		if !value {
-			// Something is in l2, but not in l1
-			return true
-		}
-	}
-	return false
-}
 
 // ensureRoleBinding ensures RoleBinding presence in given rolebinding.
 func ensureRoleBinding(
@@ -94,7 +71,7 @@ func ensureRoleBinding(
 		}
 		changed = true
 	}
-	if diffRbacSubjects(found.Subjects, rb.Subjects) {
+	if !reflect.DeepEqual(found.Subjects, rb.Subjects) {
 		found.Subjects = rb.Subjects
 		changed = true
 	}
