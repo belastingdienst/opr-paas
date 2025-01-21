@@ -2,7 +2,7 @@
 namespace: paas-system
 
 resources:
-- ../config
-- ../crds
-- ../rbac
-- ../manager
+  - ../config
+  - ../crds
+  - ../rbac
+  - ../manager
