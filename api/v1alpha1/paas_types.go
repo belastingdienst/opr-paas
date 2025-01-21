@@ -38,6 +38,8 @@ type PaasSpec struct {
 	// +kubebuilder:validation:Required
 	Requestor string `json:"requestor"`
 
+	// Groups define k8s groups, based on an LDAP query or a list of LDAP users, which get access to the namespaces
+	// belonging to this Paas. Per group, RBAC roles can be defined.
 	// +kubebuilder:validation:Optional
 	Groups PaasGroups `json:"groups"`
 
@@ -133,10 +135,19 @@ func (p Paas) extraNamespaces() (ns map[string]bool) {
 }
 
 type PaasGroup struct {
+	// A fully qualified LDAP query which will be used by the Group Sync Operator to sync users to the defined group.
+	//
+	// When set in combination with `users`, the Group Sync Operator will overwrite the manually assigned users.
+	// Therefore, this field is mutually exclusive with `group.users`.
 	// +kubebuilder:validation:Optional
 	Query string `json:"query"`
+	// A list of LDAP users which are added to the defined group.
+	//
+	// When set in combination with `users`, the Group Sync Operator will overwrite the manually assigned users.
+	// Therefore, this field is mutually exclusive with `group.query`.
 	// +kubebuilder:validation:Optional
 	Users []string `json:"users"`
+	// List of roles, as defined in the `PaasConfig` which the users in this group get assigned via a rolebinding.
 	// +kubebuilder:validation:Optional
 	Roles []string `json:"roles"`
 }
@@ -153,6 +164,7 @@ func (pg PaasGroup) Name(defName string) string {
 
 type PaasGroups map[string]PaasGroup
 
+// Filtered returns a list of PaasGroups which have a key that is in the list of groups, specified as string.
 func (pgs PaasGroups) Filtered(groups []string) PaasGroups {
 	filtered := make(PaasGroups)
 	if len(groups) == 0 {
@@ -166,10 +178,11 @@ func (pgs PaasGroups) Filtered(groups []string) PaasGroups {
 	return filtered
 }
 
+// Roles returns a map of groupKeys with the roles defined within that groupKey
 func (pgs PaasGroups) Roles() map[string][]string {
 	roles := make(map[string][]string)
-	for groupName, group := range pgs {
-		roles[groupName] = group.Roles
+	for groupKey, group := range pgs {
+		roles[groupKey] = group.Roles
 	}
 	return roles
 }
@@ -189,6 +202,16 @@ func (pgs PaasGroups) Names() (groups []string) {
 	return groups
 }
 
+func (p Paas) GroupKey2GroupName(groupKey string) string {
+	if group, exists := p.Spec.Groups[groupKey]; !exists {
+		return ""
+	} else if len(group.Query) > 0 {
+		return group.Name(groupKey)
+	} else {
+		return fmt.Sprintf("%s-%s", p.Name, p.Spec.Groups.Key2Name(groupKey))
+	}
+}
+
 func (pgs PaasGroups) LdapQueries() []string {
 	var queries []string
 	for _, group := range pgs {
@@ -199,8 +222,12 @@ func (pgs PaasGroups) LdapQueries() []string {
 	return queries
 }
 
-func (pgs PaasGroups) Keys() (groups []string) {
-	return pgs.Names()
+// Keys() returns the keys of the PaasGroups
+func (pgs PaasGroups) Keys() (keys []string) {
+	for key := range pgs {
+		keys = append(keys, key)
+	}
+	return keys
 }
 
 func (pgs PaasGroups) AsGroups() groups.Groups {
@@ -208,8 +235,6 @@ func (pgs PaasGroups) AsGroups() groups.Groups {
 	newGroups.AddFromStrings(pgs.LdapQueries())
 	return *newGroups
 }
-
-// see config/samples/_v1alpha1_paas.yaml for example of CR
 
 type PaasCapabilities map[string]PaasCapability
 
@@ -282,7 +307,7 @@ type PaasCapability struct {
 	// Custom fields to configure this specific Capability
 	// +kubebuilder:validation:Optional
 	CustomFields map[string]string `json:"custom_fields"`
-	// This project has it's own ClusterResourceQuota settings
+	// This project has its own ClusterResourceQuota settings
 	// +kubebuilder:validation:Optional
 	Quota paas_quota.Quota `json:"quota"`
 	// You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket

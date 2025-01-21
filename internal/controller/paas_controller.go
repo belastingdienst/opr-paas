@@ -205,7 +205,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.EnsureLdapGroups(ctx, paas); err != nil {
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.ReconcileRolebindings(ctx, paas); err != nil {
+	} else if err = r.reconcileRolebindings(ctx, paas); err != nil {
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.ensureAppSetCaps(ctx, paas); err != nil {
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))

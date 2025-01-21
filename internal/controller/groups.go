@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	userv1 "github.com/openshift/api/user/v1"
 	"github.com/rs/zerolog/log"
@@ -20,44 +21,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func uniqueUsers(found userv1.OptionalNames, expected userv1.OptionalNames) (unique userv1.OptionalNames) {
-	// All of this is to make the list of users a unique
-	// combined list of users that where and now should be added
-	users := make(map[string]bool)
-	for _, user := range found {
-		users[user] = true
-	}
-	for _, user := range expected {
-		users[user] = true
-	}
-	for user := range users {
-		unique = append(unique, user)
-	}
-	return
-}
-
-func mergeStringMap(first map[string]string, second map[string]string) map[string]string {
-	if first == nil {
-		return second
-	}
-	if second == nil {
-		return first
-	}
-
-	for key, value := range second {
-		first[key] = value
-	}
-	return first
-}
-
-// ensureGroup ensures Group presence
+// EnsureGroup ensures Group presence
 func (r *PaasReconciler) EnsureGroup(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	group *userv1.Group,
 ) error {
 	logger := log.Ctx(ctx)
-
 	// See if group already exists and create if it doesn't
 	found := &userv1.Group{}
 	err := r.Get(ctx, types.NamespacedName{
@@ -73,50 +43,37 @@ func (r *PaasReconciler) EnsureGroup(
 		return nil
 	} else if err != nil {
 		// Error that isn't due to the group not existing
-		logger.Err(err).Msg("could not retrieve info on the group")
+		logger.Err(err).Msg("could not retrieve the group")
 		return err
 	}
-	logger.Info().Msg("updating the group")
-	// All of this is to make the list of users a unique
-	// combined list of users that where and now should be added
-	found.Users = uniqueUsers(found.Users, group.Users)
-	found.Annotations = mergeStringMap(found.Annotations, group.Annotations)
 	if !paas.AmIOwner(found.OwnerReferences) {
 		logger.Info().Msg("setting owner reference")
 		if err := controllerutil.SetOwnerReference(paas, found, r.Scheme); err != nil {
 			logger.Err(err).Msg("error while setting owner reference")
+			return err
 		}
-	} else {
-		logger.Info().Msg("already owner")
+		return r.Update(ctx, found)
 	}
-	if err = r.Update(ctx, found); err != nil {
-		// Updating the group failed
-		logger.Err(err).Msg("updating the group failed")
-		return err
-	} else {
-		logger.Info().Msg("group updated")
-		// Updating the group was successful
-		return nil
-	}
+	return nil
 }
 
-// backendGroup is a code for Creating Group
+// backendGroup returns the desired group, based in the paasGroupKey and the group defined in that key.
+// if the paasGroup contains both users and a query, which is mutually exclusive, the query takes precedence.
+// groups with users, are made paas specific by prefixing them with the paas.Name
+// groups with a query can ben shared between multiple Paas'es referencing the same group.
 func (r *PaasReconciler) backendGroup(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	name string,
+	paasGroupKey string,
 	group v1alpha1.PaasGroup,
 ) (*userv1.Group, error) {
 	logger := log.Ctx(ctx)
-	logger.Info().Msg("defining group")
-
-	g := &userv1.Group{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Group",
-			APIVersion: "user.openshift.io/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
+	logger.Debug().Msg("defining group")
+	g := &userv1.Group{}
+	groupName := paas.GroupKey2GroupName(paasGroupKey)
+	if len(group.Query) > 0 {
+		g.ObjectMeta = metav1.ObjectMeta{
+			Name:   groupName,
 			Labels: paas.ClonedLabels(),
 			Annotations: map[string]string{
 				"openshift.io/ldap.uid": group.Query,
@@ -125,31 +82,36 @@ func (r *PaasReconciler) backendGroup(
 					GetConfig().LDAP.Port,
 				),
 			},
-		},
-		Users: group.Users,
+		}
+		g.ObjectMeta.Labels["openshift.io/ldap.host"] = GetConfig().LDAP.Host
+		g.ObjectMeta.Labels["app.kubernetes.io/managed-by"] = "paas"
+	} else {
+		g.ObjectMeta = metav1.ObjectMeta{
+			Name:   groupName,
+			Labels: paas.ClonedLabels(),
+		}
+		g.ObjectMeta.Labels["app.kubernetes.io/managed-by"] = "paas"
+		g.Users = group.Users
 	}
-	g.ObjectMeta.Labels["openshift.io/ldap.host"] = GetConfig().LDAP.Host
 
-	// If we had multiple Paas projects defining this group, and all are cleaned,
-	// the garbage collector would also clean this group...
 	if err := controllerutil.SetOwnerReference(paas, g, r.Scheme); err != nil {
-		return g, err
+		return nil, err
 	}
 	return g, nil
 }
 
-func (r *PaasReconciler) BackendGroups(
+func (r *PaasReconciler) backendGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-) (groups []*userv1.Group) {
-	logger := log.Ctx(ctx)
+) (groups []*userv1.Group, err error) {
 	for key, group := range paas.Spec.Groups {
-		groupName := paas.Spec.Groups.Key2Name(key)
-		logger.Info().Msg("groupname is " + groupName)
-		beGroup, _ := r.backendGroup(ctx, paas, groupName, group)
+		beGroup, err := r.backendGroup(ctx, paas, key, group)
+		if err != nil {
+			return nil, err
+		}
 		groups = append(groups, beGroup)
 	}
-	return groups
+	return groups, nil
 }
 
 func (r *PaasReconciler) FinalizeGroups(
@@ -181,7 +143,10 @@ func (r *PaasReconciler) ReconcileGroups(
 	ctx = setLogComponent(ctx, "group")
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("reconciling groups for Paas")
-	desiredGroups := r.BackendGroups(ctx, paas)
+	desiredGroups, err := r.backendGroups(ctx, paas)
+	if err != nil {
+		return err
+	}
 	existingGroups, err := r.getExistingGroups(ctx, paas)
 	if err != nil {
 		return err
@@ -205,30 +170,30 @@ func (r *PaasReconciler) ReconcileGroups(
 	return nil
 }
 
-// deleteObsoleteGroups delete groups which are no longer desired from a Paas desired state. As multiple Paas'es can reference one
-// group, a check is executed whether the group can really be removed. If a Group is marked as an ldap group, the ldap query is added
-// to a list of to be removedLdapGroups.
+// deleteObsoleteGroups delete groups which are no longer desired from a Paas desired state.
+// If a Group is marked as an LDAP group, and there is no Paas referencing it, the LDAP query is added to a list of to be removedLdapGroups.
 func (r *PaasReconciler) deleteObsoleteGroups(ctx context.Context, paas *v1alpha1.Paas, desiredGroups []*userv1.Group, existingGroups []*userv1.Group) (removedLdapGroups []string, err error) {
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("deleting obsolete groups")
-	// Delete groups that are no longer needed
 	for _, existingGroup := range existingGroups {
 		if !isGroupInGroups(existingGroup, desiredGroups) {
-			existingGroup.OwnerReferences = paas.WithoutMe(existingGroup.OwnerReferences)
-			if len(existingGroup.OwnerReferences) == 0 {
-				logger.Info().Msgf("deleting %s", existingGroup.Name)
-				if err = r.Delete(ctx, existingGroup); err != nil {
+			if existingGroup.Annotations["openshift.io/ldap.uid"] != "" {
+				existingGroup.OwnerReferences = paas.WithoutMe(existingGroup.OwnerReferences)
+				if len(existingGroup.OwnerReferences) == 0 {
+					logger.Info().Msgf("deleting %s", existingGroup.Name)
+					if err = r.Delete(ctx, existingGroup); err != nil {
+						return removedLdapGroups, err
+					}
+					removedLdapGroups = append(removedLdapGroups, existingGroup.Annotations["openshift.io/ldap.uid"])
+					continue
+				}
+				logger.Info().Msgf("not last owner of group %s", existingGroup.Name)
+				err = r.Update(ctx, existingGroup)
+				if err != nil {
 					return removedLdapGroups, err
 				}
-				if existingGroup.Annotations["openshift.io/ldap.uid"] != "" {
-					removedLdapGroups = append(removedLdapGroups, existingGroup.Annotations["openshift.io/ldap.uid"])
-				}
-				continue
 			}
-			logger.Info().Msgf("not last owner of group %s", existingGroup.Name)
-			// FIXME no updates to users is executed
-			err = r.Update(ctx, existingGroup)
-			if err != nil {
+			if err = r.Delete(ctx, existingGroup); err != nil {
 				return removedLdapGroups, err
 			}
 		}
@@ -246,12 +211,14 @@ func isGroupInGroups(group *userv1.Group, groups []*userv1.Group) bool {
 	return false
 }
 
-// TODO (portly-halicore-76) use label selector as this is quite expensive
 // getExistingGroups returns all groups owned by the specified Paas
 func (r *PaasReconciler) getExistingGroups(ctx context.Context, paas *v1alpha1.Paas) (existingGroups []*userv1.Group, err error) {
 	logger := log.Ctx(ctx)
 	var groups userv1.GroupList
-	err = r.List(ctx, &groups)
+	listOpts := []client.ListOption{
+		client.MatchingLabels(map[string]string{"app.kubernetes.io/managed-by": "paas"}),
+	}
+	err = r.List(ctx, &groups, listOpts...)
 	if err != nil {
 		return existingGroups, err
 	}

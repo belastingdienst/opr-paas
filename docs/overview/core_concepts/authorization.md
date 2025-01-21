@@ -19,6 +19,10 @@ Configuring authorization is done by:
     when not defined all groups as specified in the Paas are used by default.
   - For every group, the Paas definition is checked for the functional roles;
     when not defined the default role mapping is used.
+  - When a group spec holds the `users` spec and no `query` value, the OpenShift group gets prefix by
+    the paas-name to make groups unique and prevent unforeseen access to other Paas'es.
+  - When a group spec holds a `query` value, this takes precedence over the optional `users` spec.
+    This is done to prevent issues related to the groupsync managing the OpenShift group.
   - For every functional role the technical roles are derived from the PaasConfig;
   - For every PaasNs namespace the PaasNs controller creates a role binding for
     every applicable technical role, and adds the groups that should have the
@@ -108,7 +112,7 @@ Devops engineers could create a Paas with the following definition:
     spec:
       requestor: my-team
       groups:
-        # An OpenShift group called `us` is created, and `me` and `you` are added to this group.
+        # An OpenShift group called `my-paas-us` is created, and `me` and `you` are added to this group.
         # `us` group has default permissions
         us:
           users:
@@ -118,13 +122,19 @@ Devops engineers could create a Paas with the following definition:
             - admin
             - edit
             - view
-        # An OpenShift group called `them` is created, and `friend` is added to this group.
+        # An OpenShift group called `my-paas-them` is created, and `friend` is added to this group.
         them:
           users:
             - friend
           # `them` group has view permissions
           roles:
             - view
+        # An OpenShift group called `others` is created, as this is named after the CN value.
+        # The users spec will be ignored.
+        others:
+          query: 'CN=others,..'
+          users:
+            - friend
       capabilities:
         # For all capability namespaces (e.a. my-paas-argocd), there will be RoleBindings
         # for `admin`, `edit`, `alert-routing-edit`, and `monitoring-edit`
@@ -145,9 +155,9 @@ With this example (combined with the operator config example), the following wou
 - In all namespaces (`my-paas-cicd`, `my-paas-test`, `my-paas-prod` and `my-paas-argocd`),
   there will be RoleBindings for `admin`. They will all contain the groups `us` group;
 - For all namespaces (`my-paas-cicd`, `my-paas-test`, `my-paas-prod` and `my-paas-argocd`),
-  there will be RoleBindings for `view`. They will all contain the groups `us`, and `them`;
+  there will be RoleBindings for `view`. They will all contain the groups `my-paas-us`, and `my-paas-them`;
 - The `argocd-service` deployed in `my-paas-argocd` will have admin permissions set
-  for all users in group `us` and group `them`;
+  for all users in group `my-paas-us` and group `my-paas-them`;
 
 !!! Note
 That there is also options to manage users with a federated solution.
@@ -169,7 +179,7 @@ DevOps engineers could additionally create a PaasNs with the following definitio
       namespace: my-paas-argocd
     spec:
       Paas: my-paas
-      # The namespace would only contain RoleBindings for the `us` group, which drills
+      # The namespace would only contain RoleBindings for the `my-paas-us` group, which drills
       # down to the `admin`, `edit`, `view`, `alert-routing-edit`, and `monitoring-edit` ClusterRoles.
       groups:
         - us
@@ -179,7 +189,7 @@ DevOps engineers could additionally create a PaasNs with the following definitio
 
 - All groups will have the permissions as specified in the Paas.
 - The RBAC block of the Paas argocd capability can be externally managed.
-  That also means that changing the groups, operator config,, etc. does not automatically
+  That also means that changing the groups, operator config, etc. does not automatically
   apply to existing ArgoCD deployments.
 - Next to permissions on groups and users, there is also capabilities to implement
   permissions for service accounts. See [extra_permissions](../../administrators-guide/capabilities.md#configuring-permissions) for

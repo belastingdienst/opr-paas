@@ -70,8 +70,6 @@ CONTAINER_TOOL ?= docker
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
-PAAS_PROCFILE?=Procfile
-
 .PHONY: all
 all: build
 
@@ -112,8 +110,7 @@ vet: ## Run go vet against code.
 
 .PHONY: test
 test: ## Run tests.
-	mkdir -p /tmp/coverage/unittests/
-	go test $$(go list ./... | grep -v /e2e) -cover -args -test.gocoverdir=/tmp/coverage/unittests
+	go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
 
 .PHONY: test-e2e
 test-e2e:
@@ -139,26 +136,17 @@ setup-e2e: kustomize ## Setup test environment in the K8s cluster specified in ~
 	$(KUSTOMIZE) build test/e2e/manifests/paas-context | kubectl apply -f -
 	# Apply opr-paas crds
 	$(KUSTOMIZE) build manifests/crds | kubectl apply -f -
-	# create folder to hold go coverage result
-	mkdir -p /tmp/coverage/paas
-
-# TODO this should be using other fixtures and has the same purpose as the: 'run' target.
-.PHONY: run-operator
-run-operator:
-	# Clean start
-	killall goreman || true
-	@kubectl get namespace paas-system >/dev/null 2>&1 || kubectl create namespace paas-system
-	kubectl apply -f manifests/config/example-keys.yaml
-	goreman -f $(PAAS_PROCFILE) start
 
 ##@ Build
 
 .PHONY: build
 build: manifests generate fmt vet ## Build manager binary.
-	go build -o bin/manager cmd/manager/main.go
+	go build -o bin/manager ./cmd/manager/main.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
+	@kubectl get namespace paas-system >/dev/null 2>&1 || kubectl create namespace paas-system
+	kubectl apply -f manifests/config/example-keys.yaml
 	go run ./cmd/manager/main.go
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.

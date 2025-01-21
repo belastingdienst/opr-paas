@@ -10,13 +10,19 @@ metadata:
     app.kubernetes.io/created-by: opr-paas
   name: aap-aap
 spec:
+  namespaces:
+    - test
+    - prod
   requestor: acme
   groups:
     appa:
-      query: CN=appa,OU=paas,OU=clusters,OU=corp,DC=prod,DC=acme,DC=org
       users:
         - aap
         - paa
+    appart:
+      query: CN=appatest,OU=paas,OU=clusters,OU=corp,DC=prod,DC=acme,DC=org
+      roles:
+        - viewer
   quota:
     limits.cpu: '13'
     limits.memory: 42Gi
@@ -36,22 +42,6 @@ spec:
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
       gitUrl: https://
     tekton:
-      quota:
-        limits.cpu: '2'
-        limits.memory: 5Gi
-        requests.cpu: '1Gi'
-        requests.memory: 4Gi
-        requests.storage: 20Gi
-        thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
-    sso:
-      quota:
-        limits.cpu: '2'
-        limits.memory: 5Gi
-        requests.cpu: '1Gi'
-        requests.memory: 4Gi
-        requests.storage: 20Gi
-        thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
-    grafana:
       quota:
         limits.cpu: '2'
         limits.memory: 5Gi

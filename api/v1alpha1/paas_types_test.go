@@ -25,6 +25,9 @@ var testGroups = PaasGroups{
 		Query: "CN=test4",
 		Users: []string{"usr3", "usr2"},
 	},
+	"test": PaasGroup{
+		Users: []string{"usr3", "usr2"},
+	},
 }
 
 // Paas
@@ -89,7 +92,9 @@ func TestPaas_GetNsSshSecrets(t *testing.T) {
 
 func TestPaasGroups_Filtered(t *testing.T) {
 	pgs := PaasGroups{
-		"grp1": {},
+		"grp1": {
+			Query: "cn=test1,ou=org_unit,dc=example,dc=org",
+		},
 		"grp2": {},
 		"grp3": {},
 	}
@@ -120,6 +125,7 @@ func TestPaasGroups_Roles(t *testing.T) {
 	pgs := PaasGroups{
 		"grp1": {},
 		"grp2": {
+			Query: "CN=test1,OU=org_unit,DC=example,DC=org",
 			Roles: []string{},
 		},
 		"grp3": {
@@ -161,10 +167,34 @@ func TestPaasGroups_Key2Name(t *testing.T) {
 	assert.Equal(t, "test4", testGroups.Key2Name("cn=test3"))
 }
 
+func TestPaasGroups_Keys(t *testing.T) {
+	assert.NotNil(t, testGroups.Keys(), "Keys not nill")
+	assert.Contains(t, testGroups.Keys(), "cn=test1")
+	assert.Contains(t, testGroups.Keys(), "cn=test3")
+	assert.NotContains(t, testGroups.Keys(), "cn=test4")
+}
+
+func TestPaas_GroupKey2GroupName(t *testing.T) {
+	paas := Paas{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "paas",
+		},
+		Spec: PaasSpec{
+			Groups: testGroups,
+		},
+	}
+	assert.Equal(t, "", paas.GroupKey2GroupName("testers"), "Key not present in Paas")
+	assert.NotNil(t, paas.GroupKey2GroupName("cn=test1"), "")
+	assert.Equal(t, "test2", paas.GroupKey2GroupName("cn=test1"), "cn=test1 is a query group thus returning Key2Name value.")
+	assert.NotNil(t, paas.GroupKey2GroupName("test"), "Test is a present")
+	assert.Equal(t, "paas-test", paas.GroupKey2GroupName("test"), "Test is a group of users thus prefixed by Paas name")
+}
+
 func TestPaasGroups_Names(t *testing.T) {
 	output := testGroups.Names()
 	assert.NotNil(t, output)
-	assert.Len(t, output, 2)
+	assert.Len(t, output, 3)
+	assert.Contains(t, output, "test")
 	assert.Contains(t, output, "test2")
 	assert.Contains(t, output, "test4")
 }
@@ -509,7 +539,6 @@ func Test_Paas_WithoutMe(t *testing.T) {
 }
 
 // compound tests
-
 func TestPaas_Namespaces(t *testing.T) {
 	paas := Paas{
 		ObjectMeta: metav1.ObjectMeta{
