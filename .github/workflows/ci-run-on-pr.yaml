@@ -186,7 +186,6 @@ jobs:
         uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: unittests-coverage
-          path: test-results
       - name: Generate and print report
         run: go tool cover -func=cover.out > full-coverage
       - name: Upload test-coverage artifact
