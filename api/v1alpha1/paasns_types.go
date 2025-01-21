@@ -24,11 +24,12 @@ const (
 
 // PaasNSSpec defines the desired state of PaasNS
 type PaasNSSpec struct {
-	// The metadata.name of the Paas which created the namespace in which this PaasNS is applied
+	// The `metadata.name` of the Paas which created the namespace in which this PaasNS is applied
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Paas string `json:"paas"`
-	// Groupnames of the groups, created externally, which should have access to the namespace created through this PaasNS
+	// Keys of the groups, as defined in the related `paas`, which should get access to the namespace created by this PaasNS.
+	// When not set, all groups as defined in the related `paas` get access to the namespace created by this PaasNS.
 	// +kubebuilder:validation:Optional
 	Groups []string `json:"groups"`
 	// SshSecrets which should exist in the namespace created through this PaasNS, the values are the encrypted secrets through Crypt
