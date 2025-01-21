@@ -6,11 +6,9 @@ authors:
 date: 2024-07-04
 ---
 
-Basic Usage
-===========
+# Basic Usage
 
-Minimal Paas managed by another Paas
-------------------------------------
+## Minimal Paas managed by another Paas
 
 Creating a configuration file to define a Paas is fairly straight forward. The
 configuration file should use the current API version `cpet.belastingdienst.nl/v1alpha1`
@@ -36,8 +34,7 @@ Example Paas definition being managed by another Paas:
       managedByPaas: trd-prt
     ```
 
-Minimal Paas, self-managed using ArgoCD
----------------------------------------
+## Minimal Paas, self-managed using ArgoCD
 
 Example Paas definition, using its own ArgoCD:
 
@@ -53,8 +50,9 @@ Example Paas definition, using its own ArgoCD:
       capabilities:
         argocd:
           enabled: true
-          gitPath: environments/production
-          gitRevision: main
-          gitUrl: >-
-            ssh://git@git.example.nl/example/example-repo.git
+          custom_fields:
+            gitPath: environments/production
+            gitRevision: main
+            gitUrl: >-
+              ssh://git@git.example.nl/example/example-repo.git
     ```
