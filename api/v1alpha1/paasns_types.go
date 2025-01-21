@@ -29,6 +29,7 @@ type PaasNSSpec struct {
 	// +kubebuilder:validation:Required
 	Paas string `json:"paas"`
 	// Keys of the groups, as defined in the related `paas`, which should get access to the namespace created by this PaasNS.
+	// When not set, all groups as defined in the related `paas` get access to the namespace created by this PaasNS.
 	// +kubebuilder:validation:Optional
 	Groups []string `json:"groups"`
 	// SshSecrets which should exist in the namespace created through this PaasNS, the values are the encrypted secrets through Crypt

@@ -38,8 +38,8 @@ type PaasSpec struct {
 	// +kubebuilder:validation:Required
 	Requestor string `json:"requestor"`
 
-	// Groups define groups, based on an LDAP query or a list of LDAP users, which get access to the namespaces
-	// belonging to this Paas. Per group, RBAC roles can be defined which the users in that group get assigned.
+	// Groups define k8s groups, based on an LDAP query or a list of LDAP users, which get access to the namespaces
+	// belonging to this Paas. Per group, RBAC roles can be defined.
 	// +kubebuilder:validation:Optional
 	Groups PaasGroups `json:"groups"`
 
