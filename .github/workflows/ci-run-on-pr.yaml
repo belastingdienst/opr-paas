@@ -193,7 +193,7 @@ jobs:
         with:
           name: full-coverage-report
           path: full-coverage
-      - name: Fail if code coverage < 80%
+      - name: Report coverage threshold
         run: |
           coverage=$(go tool cover -func=cover.out | grep "total:" | awk '{print $NF}' | cut -d'%' -f1)
           if [ "$(echo "$coverage < 80" | bc)" -eq 1 ]; then
