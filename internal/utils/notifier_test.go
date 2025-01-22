@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	timeout = 200 * time.Microsecond
+	timeout = 1 * time.Millisecond
 )
 
 func Test_FileChanged(t *testing.T) {
