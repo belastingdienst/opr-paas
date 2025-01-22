@@ -101,7 +101,7 @@ var _ = BeforeSuite(func() {
 		fmt.Sprintf("*-%s-%s", runtime.GOOS, runtime.GOARCH)))
 	slices.Sort(binDirs)
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "manifests", "crds")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "manifests", "crd", "bases")},
 		ErrorIfCRDPathMissing: true,
 
 		// The BinaryAssetsDirectory is only required if you want to run the tests directly

@@ -13,6 +13,7 @@ import (
 	"net"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 	"time"
 
@@ -56,6 +57,9 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
 
 	By("bootstrapping test environment")
+	binDirs, _ := filepath.Glob(filepath.Join("..", "..", "bin", "k8s",
+		fmt.Sprintf("*-%s-%s", runtime.GOOS, runtime.GOARCH)))
+	slices.Sort(binDirs)
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "manifests", "crd", "bases")},
 		ErrorIfCRDPathMissing: false,
@@ -65,10 +69,7 @@ var _ = BeforeSuite(func() {
 		// default path defined in controller-runtime which is /usr/local/kubebuilder/.
 		// Note that you must have the required binaries setup under the bin directory to perform
 		// the tests directly. When we run make test it will be setup and used automatically.
-		// The version must match the version as setup in the bin directory. Assumed it is installed
-		// via `make test`, make sure the version matches the K8S version as defined in the Makefile.
-		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
-			fmt.Sprintf("1.31.0-%s-%s", runtime.GOOS, runtime.GOARCH)),
+		BinaryAssetsDirectory: binDirs[len(binDirs)-1],
 
 		WebhookInstallOptions: envtest.WebhookInstallOptions{
 			Paths: []string{filepath.Join("..", "..", "manifests", "webhook")},
