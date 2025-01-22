@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: paas-controller-manager
-  namespace: paas-system
+  namespace: system
   labels:
     control-plane: paas-controller-manager
     app.kubernetes.io/name: deployment
@@ -58,6 +58,10 @@ spec:
           volumeMounts:
             - name: example-keys
               mountPath: /tmp/paas-e2e/secrets/priv
+          ports:
+            - containerPort: 8080
+              name: metrics
+              protocol: TCP
       serviceAccountName: paas-controller-manager
       terminationGracePeriodSeconds: 10
       volumes:

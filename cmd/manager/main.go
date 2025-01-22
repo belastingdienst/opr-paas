@@ -115,6 +115,12 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		log.Fatal().Err(err).Str("controller", "Paas").Msg("unable to create controller")
 	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err = v1alpha1.SetupPaasWebhookWithManager(mgr); err != nil {
+			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create webhook")
+		}
+	}
 	if err = (&controller.PaasNSReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
