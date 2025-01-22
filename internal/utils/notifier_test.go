@@ -33,6 +33,7 @@ func Test_FileChanged(t *testing.T) {
 		}
 	}
 
+	time.Sleep(timeout)
 	require.True(t, fw.WasTriggered(), "fileWatcher was triggered after creating 3 files")
 
 	// add file
