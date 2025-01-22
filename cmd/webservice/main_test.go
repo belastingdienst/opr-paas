@@ -67,14 +67,17 @@ func Test_getRSA(t *testing.T) {
 	getConfig()
 
 	// generate private/public keys
+	t.Log("creating temp private key")
 	priv, err := os.CreateTemp("", "private")
 	require.NoError(t, err, "Creating tempfile for private key")
 	defer os.Remove(priv.Name()) // clean up
 
+	t.Log("creating temp public key")
 	pub, err := os.CreateTemp("", "public")
 	require.NoError(t, err, "Creating tempfile for public key")
 	defer os.Remove(pub.Name()) // clean up
 
+	t.Log("generating new keys and creating crypt")
 	crypt.NewGeneratedCrypt(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
 
 	// test: non-existing public key should panic
@@ -82,6 +85,7 @@ func Test_getRSA(t *testing.T) {
 	_config.PublicKeyPath = "/random/non-existing/public/keyfile"
 	assert.Equal(t, "/random/non-existing/public/keyfile", _config.PublicKeyPath)
 	assert.Nil(t, _crypt)
+	t.Log("getting paasName 1")
 	assert.Panics(t, func() { getRsa("paasName") }, "Failed to panic using non-existing public key")
 
 	// reset
@@ -93,6 +97,7 @@ func Test_getRSA(t *testing.T) {
 	_config.PublicKeyPath = pub.Name()
 	_config.PrivateKeyPath = priv.Name()
 	assert.Nil(t, _crypt)
+	t.Log("getting paasName 2")
 	output := getRsa("paasName")
 	assert.Len(t, _crypt, 1)
 	assert.IsType(t, &crypt.Crypt{}, output)
@@ -108,6 +113,7 @@ func Test_getRSA(t *testing.T) {
 	getConfig()
 	_config.PublicKeyPath = pub.Name()
 	assert.NotNil(t, _crypt)
+	t.Log("getting paasName2")
 	output = getRsa("paasName2")
 	assert.Len(t, _crypt, 2)
 	assert.IsType(t, &crypt.Crypt{}, output)
@@ -255,7 +261,7 @@ func Test_v1CheckPaas(t *testing.T) {
 	response2 := RestCheckPaasResult{
 		PaasName:  "testPaas2",
 		Decrypted: false,
-		Error:     "testPaas2: .spec.sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys. , testPaas2: .spec.capabilities[sso].sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys.",
+		Error:     "testPaas2: .spec.sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys , testPaas2: .spec.capabilities[sso].sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys",
 	}
 	response2Json, _ := json.MarshalIndent(response2, "", "    ")
 	assert.Equal(t, string(response2Json), w.Body.String())

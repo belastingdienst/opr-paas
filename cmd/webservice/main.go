@@ -11,8 +11,10 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
+	"github.com/belastingdienst/opr-paas/internal/utils"
 	_version "github.com/belastingdienst/opr-paas/internal/version"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -21,8 +23,10 @@ import (
 )
 
 var (
-	_crypt  map[string]*crypt.Crypt
-	_config *WSConfig
+	_crypt     map[string]*crypt.Crypt
+	_cryptLock sync.RWMutex
+	_config    *WSConfig
+	_fw        *utils.FileWatcher
 )
 
 func getConfig() *WSConfig {
@@ -33,13 +37,37 @@ func getConfig() *WSConfig {
 	return _config
 }
 
-func getRsa(paas string) *crypt.Crypt {
-	if _crypt == nil {
-		_crypt = make(map[string]*crypt.Crypt)
-	}
+func resetRsa() {
+	log.Println("Resetting RSA")
+	_cryptLock.Lock()
+	defer _cryptLock.Unlock()
+	_crypt = make(map[string]*crypt.Crypt)
+}
 
-	config := getConfig()
+func getCrypt(paas string) *crypt.Crypt {
+	_cryptLock.RLock()
+	defer _cryptLock.RUnlock()
 	if c, exists := _crypt[paas]; exists {
+		return c
+	}
+	return nil
+}
+
+func getRsa(paas string) *crypt.Crypt {
+	config := getConfig()
+	if _fw == nil {
+		log.Println("Starting watcher")
+		_fw = utils.NewFileWatcher(config.PrivateKeyPath, config.PublicKeyPath)
+	}
+	// It is crucial that we have this first and nil check on _crypt later
+	if _fw.WasTriggered() {
+		log.Println("Files changed")
+		resetRsa()
+	} else if _crypt == nil {
+		log.Println("crypt empty")
+		resetRsa()
+	}
+	if c := getCrypt(paas); c != nil {
 		return c
 	}
 
@@ -48,6 +76,8 @@ func getRsa(paas string) *crypt.Crypt {
 		panic(fmt.Errorf("unable to create a crypt: %w", err))
 	}
 
+	_cryptLock.Lock()
+	defer _cryptLock.Unlock()
 	_crypt[paas] = c
 	return c
 }
@@ -171,6 +201,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := SetupRouter()
+
 	ep := getConfig().Endpoint
 	log.Printf("Listening on: %s", ep)
 	err := router.Run(ep)
