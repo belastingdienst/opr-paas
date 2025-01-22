@@ -8,6 +8,10 @@ package controller
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha512"
+	"encoding/base64"
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -16,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func TestHashData(t *testing.T) {
@@ -41,7 +46,6 @@ var _ = Describe("Secret controller", func() {
 	})
 
 	When("reconciling a PaasNS with no secrets", Ordered, func() {
-		paas := &api.Paas{}
 		pns := &api.PaasNS{
 			ObjectMeta: metav1.ObjectMeta{Name: "foo"},
 			Spec: api.PaasNSSpec{
@@ -49,21 +53,64 @@ var _ = Describe("Secret controller", func() {
 			},
 		}
 
-		var err error
-		BeforeAll(func() {
-			err = reconciler.ReconcileSecrets(ctx, paas, pns)
-		})
-
 		It("should not return an error", func() {
+			err := reconciler.ReconcileSecrets(ctx, &api.Paas{}, pns)
+
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should not create any secrets", func() {
-			var secrets corev1.SecretList
-			err := k8sClient.List(ctx, &secrets)
+			secrets := &corev1.SecretList{}
+			err := k8sClient.List(ctx, secrets, client.InNamespace("my-paas-foo"))
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(secrets.Items).To(BeZero())
+		})
+	})
+
+	When("reconciling a PaasNS with an SshSecrets value", Ordered, func() {
+		paas := &api.Paas{ObjectMeta: metav1.ObjectMeta{
+			Name: "my-paas",
+			UID:  "abc", // Needed or owner references fail
+		}}
+		var pns *api.PaasNS
+		BeforeAll(func() {
+			encrypted, err := rsa.EncryptOAEP(sha512.New(), rand.Reader, pubkey, []byte("some encrypted string"), []byte("my-paas"))
+			Expect(err).NotTo(HaveOccurred())
+
+			pns = &api.PaasNS{
+				ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "my-paas"},
+				Spec: api.PaasNSSpec{
+					Paas: "my-paas",
+					SshSecrets: map[string]string{
+						"probably a git repo.git": base64.StdEncoding.EncodeToString(encrypted),
+					},
+				},
+			}
+			err = k8sClient.Create(ctx, &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{Name: "my-paas"},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Create(ctx, &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{Name: "my-paas-foo"},
+			})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should not return an error", func() {
+			err := reconciler.ReconcileSecrets(ctx, paas, pns)
+
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should create a secret with the decrypted data", func() {
+			secrets := &corev1.SecretList{}
+			err := k8sClient.List(ctx, secrets, client.InNamespace("my-paas-foo"))
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(len(secrets.Items)).To(Equal(1))
+			Expect(secrets.Items[0].Data["url"]).To(Equal([]byte("probably a git repo.git")))
+			Expect(secrets.Items[0].Data["sshPrivateKey"]).To(Equal([]byte("some encrypted string")))
 		})
 	})
 })
