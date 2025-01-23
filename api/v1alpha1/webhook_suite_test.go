@@ -13,24 +13,24 @@ import (
 	"net"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"testing"
 	"time"
 
+	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	admissionv1 "k8s.io/api/admission/v1"
-
-	// +kubebuilder:scaffold:imports
 	apimachineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	// +kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -51,11 +51,16 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
+	log.Logger = log.Level(zerolog.DebugLevel).
+		Output(zerolog.ConsoleWriter{Out: GinkgoWriter})
+	ctrl.SetLogger(zerologr.New(&log.Logger))
 
 	ctx, cancel = context.WithCancel(context.TODO())
 
 	By("bootstrapping test environment")
+	binDirs, _ := filepath.Glob(filepath.Join("..", "..", "bin", "k8s",
+		fmt.Sprintf("*-%s-%s", runtime.GOOS, runtime.GOARCH)))
+	slices.Sort(binDirs)
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "manifests", "crd", "bases")},
 		ErrorIfCRDPathMissing: false,
@@ -65,10 +70,7 @@ var _ = BeforeSuite(func() {
 		// default path defined in controller-runtime which is /usr/local/kubebuilder/.
 		// Note that you must have the required binaries setup under the bin directory to perform
 		// the tests directly. When we run make test it will be setup and used automatically.
-		// The version must match the version as setup in the bin directory. Assumed it is installed
-		// via `make test`, make sure the version matches the K8S version as defined in the Makefile.
-		BinaryAssetsDirectory: filepath.Join("..", "..", "bin", "k8s",
-			fmt.Sprintf("1.31.0-%s-%s", runtime.GOOS, runtime.GOARCH)),
+		BinaryAssetsDirectory: binDirs[len(binDirs)-1],
 
 		WebhookInstallOptions: envtest.WebhookInstallOptions{
 			Paths: []string{filepath.Join("..", "..", "manifests", "webhook")},

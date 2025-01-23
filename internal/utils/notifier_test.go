@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	timeout = 200 * time.Microsecond
+	timeout = 1 * time.Millisecond
 )
 
 func Test_FileChanged(t *testing.T) {
@@ -33,6 +33,7 @@ func Test_FileChanged(t *testing.T) {
 		}
 	}
 
+	time.Sleep(timeout)
 	require.True(t, fw.WasTriggered(), "fileWatcher was triggered after creating 3 files")
 
 	// add file
