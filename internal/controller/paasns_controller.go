@@ -382,6 +382,15 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 	ctx = setLogComponent(ctx, "paasns")
 	logger := log.Ctx(ctx)
 
+	config := GetConfig()
+	// If PaasNs is related to a capability, remove it from appSet
+	if _, exists := config.Capabilities[paasns.Name]; exists {
+		if err := r.finalizeAppSetCap(ctx, paasns); err != nil {
+			err = fmt.Errorf("cannot remove paas from capability ApplicationSet belonging to Paas %s: %s", paasns.Spec.Paas, err.Error())
+			return err
+		}
+	}
+
 	paas, nss, err := r.paasFromPaasNs(ctx, paasns)
 	if err != nil {
 		err = fmt.Errorf("cannot find Paas %s: %s", paasns.Spec.Paas, err.Error())
