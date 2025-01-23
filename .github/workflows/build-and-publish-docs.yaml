@@ -19,13 +19,13 @@ jobs:
     steps:
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@8410ad0602e1e429cee44a835ae9f77f654a6694 # v4.0.0
         
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages --depth=1
 
       - name: Set up Go for generating API doc
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
 
       - name: Generate API document
         env:
@@ -36,7 +36,7 @@ jobs:
         working-directory: ${{ github.workspace }}
 
       - name: Set up Python runtime
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
@@ -44,7 +44,7 @@ jobs:
             requirements.txt
 
       - name: Set up build cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           key: mkdocs-material-${{ hashfiles('.cache/**') }}
           path: .cache
@@ -82,7 +82,7 @@ jobs:
           mike --version
           
       - name: Save build cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           key: mkdocs-material-${{ hashfiles('.cache/**') }}
           path: .cache
