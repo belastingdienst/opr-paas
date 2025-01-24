@@ -10,6 +10,11 @@ on:
     - cron: '23 0 * * *'  # Run daily at 23 past midnight UTC (23 chosen randomly)
   workflow_dispatch:  # Allow manual triggering
 
+# In order to update cache, needs `write` permission, see:
+# https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps?apiVersion=2022-11-28#repository-permissions-for-actions
+permissions:
+  actions: write
+
 jobs:
   update-trivy-db:
     runs-on: ubuntu-latest
