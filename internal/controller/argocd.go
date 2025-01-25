@@ -32,7 +32,7 @@ func (r *PaasReconciler) EnsureArgoCD(
 	namespace := fmt.Sprintf("%s-%s", paas.Name, "argocd")
 
 	defaultPolicy := GetConfig().ArgoPermissions.DefaultPolicy
-	policy := GetConfig().ArgoPermissions.FromGroups(paas.Spec.Groups.Names())
+	policy := GetConfig().ArgoPermissions.FromGroups(paas.GroupNames())
 	scopes := "[groups]"
 
 	argo := &argocd.ArgoCD{

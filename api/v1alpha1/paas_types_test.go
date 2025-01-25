@@ -190,6 +190,22 @@ func TestPaas_GroupKey2GroupName(t *testing.T) {
 	assert.Equal(t, "paas-test", paas.GroupKey2GroupName("test"), "Test is a group of users thus prefixed by Paas name")
 }
 
+func TestPaas_GroupNames(t *testing.T) {
+	paas := Paas{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "paas",
+		},
+		Spec: PaasSpec{
+			Groups: testGroups,
+		},
+	}
+	groupNames := paas.GroupNames()
+	assert.Len(t, groupNames, 3, "Three group names found")
+	assert.Contains(t, groupNames, "test2", "cn=test1 is a query group thus returning Key2Name value.")
+	assert.Contains(t, groupNames, "paas-test", "Test is a group of users thus prefixed by Paas name")
+	assert.Contains(t, groupNames, "test4", "cn=test3 is a query group thus returning Key2Name value.")
+}
+
 func TestPaasGroups_Names(t *testing.T) {
 	output := testGroups.Names()
 	assert.NotNil(t, output)
