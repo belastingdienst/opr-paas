@@ -84,11 +84,13 @@ func Test_FileChanged(t *testing.T) {
 	if err := os.WriteFile(filePath, []byte("recreated file data"), 0o600); err != nil {
 		panic(fmt.Errorf("unable to write to extra temp file: %w", err))
 	}
+	time.Sleep(timeout)
 	require.True(t, fw.WasTriggered(), "fileWatcher was triggered after removing file")
 
 	if err := os.WriteFile(filePath, []byte("recreated file data again"), 0o600); err != nil {
 		panic(fmt.Errorf("unable to write to extra temp file: %w", err))
 	}
+	time.Sleep(timeout)
 	require.True(t, fw.WasTriggered(), "fileWatcher was triggered after recreating file")
 }
 
@@ -126,11 +128,13 @@ func Test_LinkChanged(t *testing.T) {
 	if err := os.Symlink(filePath, symlinkPath); err != nil {
 		panic(fmt.Errorf("unable to create symlink: %w", err))
 	}
-	// !!! known behaviour. fsnotifier does not track symlinks themselves, but files they point to
+	time.Sleep(timeout)
+	// !!! known behavior. fsnotifier does not track symlinks themselves, but files they point to
 	require.False(t, fw.WasTriggered(), "fileWatcher is not triggered after removing symlink")
 
 	if err := os.WriteFile(filePath, []byte("recreated symlink data"), 0o600); err != nil {
 		panic(fmt.Errorf("unable to write to extra temp file: %w", err))
 	}
+	time.Sleep(timeout)
 	require.True(t, fw.WasTriggered(), "fileWatcher was triggered after recreating symlink")
 }
