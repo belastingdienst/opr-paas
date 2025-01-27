@@ -8,6 +8,7 @@ import (
 )
 
 type FileWatcher struct {
+	watcher   *fsnotify.Watcher
 	files     []string
 	count     int
 	lastCount int
@@ -28,41 +29,52 @@ func NewFileWatcher(paths ...string) *FileWatcher {
 func (fw *FileWatcher) WasTriggered() bool {
 	if fw.lastCount != fw.count {
 		fw.lastCount = fw.count
+		// kubernetes removes and creates a file when a mounted secret or configmap is changed
+		// refresh will re-add the newly created files after they have been changed
+		// Notes from fsnotify.Watcher.Add():
+		// - A path can only be watched once; watching it more than once is a no-op and will not return an error.
+		// - Paths that do not yet exist on the filesystem cannot be watched.
+		// - A watch will be automatically removed if the watched path is deleted or renamed. T
+		fw.refresh()
 		return true
 	}
 	return false
 }
 
-func (fw *FileWatcher) watch() error {
-	w, err := fsnotify.NewWatcher()
-	if err != nil {
-		return fmt.Errorf("issue %w while creating a watcher for these files: %v", err, fw.files)
-	}
-	defer w.Close()
-
-	go fw.watchLoop(w)
-
+func (fw *FileWatcher) refresh() (err error) {
 	for _, p := range fw.files {
-		err = w.Add(p)
+		err = fw.watcher.Add(p)
 		if err != nil {
 			return fmt.Errorf("%q: %w", p, err)
 		}
 	}
+	return nil
+}
+
+func (fw *FileWatcher) watch() (err error) {
+	fw.watcher, err = fsnotify.NewWatcher()
+	if err != nil {
+		return fmt.Errorf("issue %w while creating a watcher for these files: %v", err, fw.files)
+	}
+	defer fw.watcher.Close()
+
+	go fw.watchLoop()
+	fw.refresh()
 
 	<-make(chan struct{}) // Block forever
 	return nil
 }
 
 // watchLoop is the inner function which loops until a change is noticed and then runs callBack func
-func (fw *FileWatcher) watchLoop(w *fsnotify.Watcher) {
+func (fw *FileWatcher) watchLoop() {
 	for {
 		select {
-		case err, ok := <-w.Errors:
+		case err, ok := <-fw.watcher.Errors:
 			if !ok { // Channel was closed (i.e. Watcher.Close() was called).
 				return
 			}
 			log.Printf("ERROR: %s", err)
-		case e, ok := <-w.Events:
+		case e, ok := <-fw.watcher.Events:
 			if !ok { // Channel was closed (i.e. Watcher.Close() was called).
 				return
 			}
