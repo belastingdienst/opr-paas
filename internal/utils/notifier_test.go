@@ -106,7 +106,9 @@ func Test_LinkChanged(t *testing.T) {
 		panic(fmt.Errorf("unable to create extra temp file: %w", err))
 	}
 	symlinkPath := filepath.Join(tmpDir, "symlink")
-	os.Symlink(filePath, symlinkPath)
+	if err := os.Symlink(filePath, symlinkPath); err != nil {
+		panic(fmt.Errorf("unable to create symlink: %w", err))
+	}
 
 	fw := NewFileWatcher(symlinkPath)
 	time.Sleep(timeout)
@@ -121,7 +123,9 @@ func Test_LinkChanged(t *testing.T) {
 
 	os.Remove(symlinkPath)
 	time.Sleep(timeout)
-	os.Symlink(filePath, symlinkPath)
+	if err := os.Symlink(filePath, symlinkPath); err != nil {
+		panic(fmt.Errorf("unable to create symlink: %w", err))
+	}
 	// !!! known behaviour. fsnotifier does not track symlinks themselves, but files they point to
 	require.False(t, fw.WasTriggered(), "fileWatcher is not triggered after removing symlink")
 

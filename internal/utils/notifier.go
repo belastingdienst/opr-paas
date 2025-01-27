@@ -31,17 +31,17 @@ func (fw *FileWatcher) WasTriggered() bool {
 		fw.lastCount = fw.count
 		// kubernetes removes and creates a file when a mounted secret or configmap is changed
 		// refresh will re-add the newly created files after they have been changed
-		// Notes from fsnotify.Watcher.Add():
-		// - A path can only be watched once; watching it more than once is a no-op and will not return an error.
-		// - Paths that do not yet exist on the filesystem cannot be watched.
-		// - A watch will be automatically removed if the watched path is deleted or renamed. T
-		fw.refresh()
+		_ = fw.Refresh()
 		return true
 	}
 	return false
 }
 
-func (fw *FileWatcher) refresh() (err error) {
+func (fw *FileWatcher) Refresh() (err error) {
+	// Notes from fsnotify.Watcher.Add():
+	// - A path can only be watched once; watching it more than once is a no-op and will not return an error.
+	// - Paths that do not yet exist on the filesystem cannot be watched.
+	// - A watch will be automatically removed if the watched path is deleted or renamed. T
 	for _, p := range fw.files {
 		err = fw.watcher.Add(p)
 		if err != nil {
@@ -59,7 +59,9 @@ func (fw *FileWatcher) watch() (err error) {
 	defer fw.watcher.Close()
 
 	go fw.watchLoop()
-	fw.refresh()
+	if err = fw.Refresh(); err != nil {
+		return err
+	}
 
 	<-make(chan struct{}) // Block forever
 	return nil
