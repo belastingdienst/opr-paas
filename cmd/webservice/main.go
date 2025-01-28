@@ -201,10 +201,10 @@ func SetupRouter() *gin.Engine {
 	}
 
 	// Insert a middleware to set the X-Content-Type-Options header.
-	// router.Use(func(c *gin.Context) {
-	// 	c.Header("X-Content-Type-Options", "nosniff")
-	// 	c.Next()
-	// })
+	router.Use(func(c *gin.Context) {
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Next()
+	})
 
 	router.GET("/version", version)
 	router.POST("/v1/encrypt", v1Encrypt)
