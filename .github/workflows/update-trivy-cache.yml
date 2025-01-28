@@ -23,6 +23,9 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
+      - name: Install ORAS
+        run: snap install oras --classic
+
       - name: Download and extract the vulnerability DB
         run: |
           mkdir -p $GITHUB_WORKSPACE/.cache/trivy/db
