@@ -15,19 +15,23 @@ import (
 )
 
 const (
-	publicEnv           = "PAAS_PUBLIC_KEY_PATH"
-	privateKeyEnv       = "PAAS_PRIVATE_KEYS_PATH"
-	defaultPublicPath   = "/secrets/paas/publicKey"
-	defaultPrivatePath  = "/secrets/paas/privateKeys"
-	endpointEnv         = "PAAS_ENDPOINT"
-	defaultEndpointPort = 8080
+	publicEnv            = "PAAS_PUBLIC_KEY_PATH"
+	privateKeyEnv        = "PAAS_PRIVATE_KEYS_PATH"
+	defaultPublicPath    = "/secrets/paas/publicKey"
+	defaultPrivatePath   = "/secrets/paas/privateKeys"
+	endpointEnv          = "PAAS_ENDPOINT"
+	defaultEndpointPort  = 8080
+	allowedOriginEnv     = "PAAS_WS_ALLOWED_ORIGIN"
+	allowedAllOriginsEnv = "PAAS_WS_ALLOW_ALL_ORIGINS"
 )
 
 type WSConfig struct {
 	PublicKeyPath string
 	// comma separated list of privateKeyPaths
-	PrivateKeyPath string
-	Endpoint       string
+	PrivateKeyPath  string
+	Endpoint        string
+	AllowedOrigin   string
+	AllowAllOrigins string
 }
 
 func formatEndpoint(endpoint string) string {
@@ -68,17 +72,36 @@ func formatEndpoint(endpoint string) string {
 	return fmt.Sprintf("%s:%d", endpoint, defaultEndpointPort)
 }
 
-func NewWSConfig() WSConfig {
-	var config WSConfig
+func NewWSConfig() (config WSConfig) {
+
 	config.PublicKeyPath = os.Getenv(publicEnv)
 	if config.PublicKeyPath == "" {
 		config.PublicKeyPath = defaultPublicPath
 	}
+
 	config.PrivateKeyPath = os.Getenv(privateKeyEnv)
 	if config.PrivateKeyPath == "" {
 		config.PrivateKeyPath = defaultPrivatePath
 	}
+
 	config.Endpoint = formatEndpoint(os.Getenv(endpointEnv))
+	config.AllowedOrigin = os.Getenv(allowedOriginEnv)
+	config.AllowAllOrigins = os.Getenv(allowedAllOriginsEnv)
 
 	return config
+}
+
+func (config WSConfig) Validate() (valid bool, msg string) {
+
+	if !strings.EqualFold(config.AllowAllOrigins, "true") {
+		if config.AllowedOrigin == "" {
+			return false, "must specify an origin if allowAllOrigins is not set to true"
+		}
+
+		if !strings.Contains(config.AllowedOrigin, "http://") && !strings.Contains(config.AllowedOrigin, "https://") {
+			return false, "must contain either http:// or https:// for AllowedOrigin"
+		}
+	}
+
+	return true, "no issues detected"
 }

@@ -11,7 +11,65 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
+
+type ConfigTestSuite struct {
+	suite.Suite
+	// add fields if needed
+}
+
+func (s *ConfigTestSuite) SetupTest() {
+}
+
+func TestConfigTestSuite(t *testing.T) {
+	suite.Run(t, new(ConfigTestSuite))
+}
+
+func (s *ConfigTestSuite) TestCorsConfiguration() {
+
+	s.T().Run("must not validate with empty AllowAllOrigins and empty AllowedOrigin", func(t *testing.T) {
+		config := NewWSConfig()
+
+		assert.Empty(t, config.AllowAllOrigins)
+		assert.Empty(t, config.AllowedOrigin)
+
+		valid, msg := config.Validate()
+		assert.False(t, valid)
+		assert.Equal(t, "must specify an origin if allowAllOrigins is not set to true", msg)
+
+	})
+
+	s.T().Run("must validate with AllowAllOrigins is true", func(t *testing.T) {
+		config := NewWSConfig()
+
+		config.AllowAllOrigins = "true"
+		assert.Empty(t, config.AllowedOrigin)
+
+		valid, msg := config.Validate()
+		assert.True(t, valid)
+		assert.Equal(t, "no issues detected", msg)
+
+		config.AllowedOrigin = "http://www.example.com"
+		assert.NotEmpty(t, config.AllowedOrigin)
+
+		valid, msg = config.Validate()
+		assert.Equal(t, "no issues detected", msg)
+
+	})
+
+	s.T().Run("must validate with AllowAllOrigins not true and AllowedOrigin set", func(t *testing.T) {
+		config := NewWSConfig()
+		config.AllowedOrigin = "http://www.example.com"
+
+		assert.Empty(t, config.AllowAllOrigins)
+		assert.NotEmpty(t, config.AllowedOrigin)
+
+		valid, msg := config.Validate()
+		assert.True(t, valid)
+		assert.Equal(t, "no issues detected", msg)
+	})
+}
 
 func Test_formatEndpoint(t *testing.T) {
 	// test: empty endpoint

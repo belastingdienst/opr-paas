@@ -34,6 +34,11 @@ func getConfig() *WSConfig {
 		config := NewWSConfig()
 		_config = &config
 	}
+
+	if valid, msg := _config.Validate(); !valid {
+		log.Fatalf("configuration invalid: %s", msg)
+	}
+
 	return _config
 }
 
@@ -170,10 +175,19 @@ func SetupRouter() *gin.Engine {
 	// - GET,POST, PUT, HEAD methods
 	// - Credentials share disabled
 	// - Preflight requests cached for 12 hours
+	// Use default config as base
 	config := cors.DefaultConfig()
-	config.AllowMethods = []string{"GET", "POST"}
-	// config.AllowOrigins = []string{"http://bla.com"}
-	config.AllowAllOrigins = true
+
+	// Override default config where needed
+	config.AllowMethods = []string{"GET", "POST", "HEAD", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Type"}
+	if getConfig().AllowedOrigin != "" && !strings.EqualFold(getConfig().AllowAllOrigins, "true") {
+		config.AllowOrigins = []string{getConfig().AllowedOrigin}
+	}
+
+	if strings.EqualFold(getConfig().AllowAllOrigins, "true") {
+		config.AllowAllOrigins = true
+	}
 
 	router.Use(
 		cors.New(config),
@@ -185,6 +199,12 @@ func SetupRouter() *gin.Engine {
 	if err != nil {
 		panic(fmt.Errorf("setTrustedProxies %w", err))
 	}
+
+	// Insert a middleware to set the X-Content-Type-Options header.
+	// router.Use(func(c *gin.Context) {
+	// 	c.Header("X-Content-Type-Options", "nosniff")
+	// 	c.Next()
+	// })
 
 	router.GET("/version", version)
 	router.POST("/v1/encrypt", v1Encrypt)

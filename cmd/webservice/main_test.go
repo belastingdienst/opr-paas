@@ -33,6 +33,9 @@ func performRequest(r http.Handler, method, path string) *httptest.ResponseRecor
 }
 
 func Test_getConfig(t *testing.T) {
+	// Allow all origins for test
+	t.Setenv(allowedAllOriginsEnv, "true")
+
 	// Reset config if any test before set config
 	_config = nil
 	_crypt = nil
@@ -46,8 +49,10 @@ func Test_getConfig(t *testing.T) {
 	assert.Equal(t, "/secrets/paas/publicKey", config.PublicKeyPath)
 
 	_config = &WSConfig{
-		PublicKeyPath: "/some/weird/path",
-		Endpoint:      ":3000",
+		PublicKeyPath:   "/some/weird/path",
+		Endpoint:        ":3000",
+		AllowAllOrigins: "false",
+		AllowedOrigin:   "http://example.com",
 	}
 
 	config = getConfig()
@@ -61,6 +66,9 @@ func Test_getConfig(t *testing.T) {
 }
 
 func Test_getRSA(t *testing.T) {
+	// Allow all origins for test
+	t.Setenv(allowedAllOriginsEnv, "true")
+
 	// Reset config if any test before set config
 	_config = nil
 	_crypt = nil
@@ -125,6 +133,9 @@ func Test_getRSA(t *testing.T) {
 }
 
 func Test_version(t *testing.T) {
+	// Allow all origins for test
+	t.Setenv(allowedAllOriginsEnv, "true")
+
 	expected := gin.H{
 		"version": v.PaasVersion,
 	}
@@ -143,6 +154,9 @@ func Test_version(t *testing.T) {
 }
 
 func Test_healthz(t *testing.T) {
+	// Allow all origins for test
+	t.Setenv(allowedAllOriginsEnv, "true")
+
 	expected := gin.H{
 		"message": "healthy",
 	}
@@ -161,6 +175,9 @@ func Test_healthz(t *testing.T) {
 }
 
 func Test_readyz(t *testing.T) {
+	// Allow all origins for test
+	t.Setenv(allowedAllOriginsEnv, "true")
+
 	expected := gin.H{
 		"message": "ready",
 	}
@@ -179,6 +196,9 @@ func Test_readyz(t *testing.T) {
 }
 
 func Test_v1CheckPaas(t *testing.T) {
+	// Allow all origins for test
+	t.Setenv(allowedAllOriginsEnv, "true")
+
 	// Reset config if any test before set config
 	_config = nil
 	_crypt = nil
@@ -268,6 +288,9 @@ func Test_v1CheckPaas(t *testing.T) {
 }
 
 func Test_v1CheckPaasInternalServerError(t *testing.T) {
+	// Allow all origins for test
+	t.Setenv(allowedAllOriginsEnv, "true")
+
 	// Reset config if any test before get config
 	_config = nil
 	_crypt = nil
