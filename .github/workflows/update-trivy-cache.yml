@@ -23,7 +23,7 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      - uses: oras-project/setup-oras@677529b4e7c38e3295e0883a2ee8a536e3a860f4 # v1.2.2
+      - uses: oras-project/setup-oras@5c0b487ce3fe0ce3ab0d034e63669e426e294e4d # v1.2.2
 
       - name: Download and extract the vulnerability DB
         run: |
