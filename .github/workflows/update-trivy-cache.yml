@@ -23,8 +23,7 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      - name: Install ORAS
-        run: snap install oras --classic
+      - uses: oras-project/setup-oras@677529b4e7c38e3295e0883a2ee8a536e3a860f4
 
       - name: Download and extract the vulnerability DB
         run: |
