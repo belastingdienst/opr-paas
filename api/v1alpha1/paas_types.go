@@ -212,6 +212,13 @@ func (p Paas) GroupKey2GroupName(groupKey string) string {
 	}
 }
 
+func (p Paas) GroupNames() (groupNames []string) {
+	for groupKey := range p.Spec.Groups {
+		groupNames = append(groupNames, p.GroupKey2GroupName(groupKey))
+	}
+	return groupNames
+}
+
 func (pgs PaasGroups) LdapQueries() []string {
 	var queries []string
 	for _, group := range pgs {
