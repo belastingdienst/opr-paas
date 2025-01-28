@@ -30,41 +30,41 @@ func (s *ConfigTestSuite) TestCorsConfiguration() {
 	s.Run("must not validate with empty AllowAllOrigins and empty AllowedOrigin", func() {
 		config := NewWSConfig()
 
-		assert.Empty(s.T(), config.AllowAllOrigins)
-		assert.Empty(s.T(), config.AllowedOrigin)
+		s.Empty(config.AllowAllOrigins)
+		s.Empty(config.AllowedOrigin)
 
 		valid, msg := config.Validate()
-		assert.False(s.T(), valid)
-		assert.Equal(s.T(), "must specify an origin if allowAllOrigins is not set to true", msg)
+		s.False(valid)
+		s.Equal("must specify an origin if allowAllOrigins is not set to true", msg)
 	})
 
 	s.Run("must validate with AllowAllOrigins is true", func() {
 		config := NewWSConfig()
 
 		config.AllowAllOrigins = "true"
-		assert.Empty(s.T(), config.AllowedOrigin)
+		s.Empty(config.AllowedOrigin)
 
 		valid, msg := config.Validate()
-		assert.True(s.T(), valid)
-		assert.Equal(s.T(), "no issues detected", msg)
+		s.True(valid)
+		s.Equal("no issues detected", msg)
 
 		config.AllowedOrigin = "http://www.example.com"
-		assert.NotEmpty(s.T(), config.AllowedOrigin)
+		s.NotEmpty(config.AllowedOrigin)
 
 		_, msg = config.Validate()
-		assert.Equal(s.T(), "no issues detected", msg)
+		s.Equal("no issues detected", msg)
 	})
 
 	s.Run("must validate with AllowAllOrigins not true and AllowedOrigin set", func() {
 		config := NewWSConfig()
 		config.AllowedOrigin = "http://www.example.com"
 
-		assert.Empty(s.T(), config.AllowAllOrigins)
-		assert.NotEmpty(s.T(), config.AllowedOrigin)
+		s.Empty(config.AllowAllOrigins)
+		s.NotEmpty(config.AllowedOrigin)
 
 		valid, msg := config.Validate()
-		assert.True(s.T(), valid)
-		assert.Equal(s.T(), "no issues detected", msg)
+		s.True(valid)
+		s.Equal("no issues detected", msg)
 	})
 }
 
