@@ -73,7 +73,6 @@ func formatEndpoint(endpoint string) string {
 }
 
 func NewWSConfig() (config WSConfig) {
-
 	config.PublicKeyPath = os.Getenv(publicEnv)
 	if config.PublicKeyPath == "" {
 		config.PublicKeyPath = defaultPublicPath
@@ -92,7 +91,6 @@ func NewWSConfig() (config WSConfig) {
 }
 
 func (config WSConfig) Validate() (valid bool, msg string) {
-
 	if !strings.EqualFold(config.AllowAllOrigins, "true") {
 		if config.AllowedOrigin == "" {
 			return false, "must specify an origin if allowAllOrigins is not set to true"

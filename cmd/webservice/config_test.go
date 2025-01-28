@@ -27,47 +27,44 @@ func TestConfigTestSuite(t *testing.T) {
 }
 
 func (s *ConfigTestSuite) TestCorsConfiguration() {
-
-	s.T().Run("must not validate with empty AllowAllOrigins and empty AllowedOrigin", func(t *testing.T) {
+	s.Run("must not validate with empty AllowAllOrigins and empty AllowedOrigin", func() {
 		config := NewWSConfig()
 
-		assert.Empty(t, config.AllowAllOrigins)
-		assert.Empty(t, config.AllowedOrigin)
+		assert.Empty(s.T(), config.AllowAllOrigins)
+		assert.Empty(s.T(), config.AllowedOrigin)
 
 		valid, msg := config.Validate()
-		assert.False(t, valid)
-		assert.Equal(t, "must specify an origin if allowAllOrigins is not set to true", msg)
-
+		assert.False(s.T(), valid)
+		assert.Equal(s.T(), "must specify an origin if allowAllOrigins is not set to true", msg)
 	})
 
-	s.T().Run("must validate with AllowAllOrigins is true", func(t *testing.T) {
+	s.Run("must validate with AllowAllOrigins is true", func() {
 		config := NewWSConfig()
 
 		config.AllowAllOrigins = "true"
-		assert.Empty(t, config.AllowedOrigin)
+		assert.Empty(s.T(), config.AllowedOrigin)
 
 		valid, msg := config.Validate()
-		assert.True(t, valid)
-		assert.Equal(t, "no issues detected", msg)
+		assert.True(s.T(), valid)
+		assert.Equal(s.T(), "no issues detected", msg)
 
 		config.AllowedOrigin = "http://www.example.com"
-		assert.NotEmpty(t, config.AllowedOrigin)
+		assert.NotEmpty(s.T(), config.AllowedOrigin)
 
-		valid, msg = config.Validate()
-		assert.Equal(t, "no issues detected", msg)
-
+		_, msg = config.Validate()
+		assert.Equal(s.T(), "no issues detected", msg)
 	})
 
-	s.T().Run("must validate with AllowAllOrigins not true and AllowedOrigin set", func(t *testing.T) {
+	s.Run("must validate with AllowAllOrigins not true and AllowedOrigin set", func() {
 		config := NewWSConfig()
 		config.AllowedOrigin = "http://www.example.com"
 
-		assert.Empty(t, config.AllowAllOrigins)
-		assert.NotEmpty(t, config.AllowedOrigin)
+		assert.Empty(s.T(), config.AllowAllOrigins)
+		assert.NotEmpty(s.T(), config.AllowedOrigin)
 
 		valid, msg := config.Validate()
-		assert.True(t, valid)
-		assert.Equal(t, "no issues detected", msg)
+		assert.True(s.T(), valid)
+		assert.Equal(s.T(), "no issues detected", msg)
 	})
 }
 
