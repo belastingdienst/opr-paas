@@ -198,46 +198,31 @@ func (r *PaasReconciler) ensureAppSetCap(
 		entry := fields
 		entries[entry.Key()] = entry
 	}
-	// log.Info(fmt.Sprintf("entries: %s", entries.AsString()))
-	if json, err := entries.AsJSON(); err != nil {
+	if jsonentries, err := entries.AsJSON(); err != nil {
 		return err
 	} else {
-		listGen.List.Elements = json
+		listGen.List.Elements = jsonentries
 	}
 
 	appSet.Spec.Generators = clearGenerators(appSet.Spec.Generators)
 	return r.Patch(ctx, appSet, patch)
 }
 
-// finalizeAppSetCaps ensures the list entries in the AppSets are removed for each capability in the Paas
-func (r *PaasReconciler) finalizeAppSetCaps(
+// finalizeAppSetCap ensures the list entries in the AppSet is removed for the capability of this PaasNs
+func (r *PaasNSReconciler) finalizeAppSetCap(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
-) error {
-	for capName := range paas.Spec.Capabilities {
-		if err := r.finalizeAppSetCap(ctx, paas, capName); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// finalizeAppSetCap ensures the list entry for the capability is removed
-func (r *PaasReconciler) finalizeAppSetCap(
-	ctx context.Context,
-	paas *v1alpha1.Paas,
-	capability string,
+	paasns *v1alpha1.PaasNS,
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := GetConfig().CapabilityK8sName(capability)
+	asNamespacedName := GetConfig().CapabilityK8sName(paasns.Name)
 	ctx = setLogComponent(ctx, "appset")
-	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset", capability)
+	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset", paasns.Name)
 	err := r.Get(ctx, asNamespacedName, as)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
 	if err != nil {
-		// Applicationset does not exixt
+		// Applicationset does not exist
 		return nil
 	}
 	patch := client.MergeFrom(as.DeepCopy())
@@ -247,13 +232,12 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
 		return err
 	} else {
-		delete(entries, paas.Name)
+		delete(entries, paasns.Spec.Paas)
 	}
-	if json, err := entries.AsJSON(); err != nil {
+	if jsonentries, err := entries.AsJSON(); err != nil {
 		return err
 	} else {
-		listGen.List.Elements = json
+		listGen.List.Elements = jsonentries
 	}
-
 	return r.Patch(ctx, as, patch)
 }
