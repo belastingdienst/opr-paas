@@ -61,3 +61,35 @@ func Test_formatEndpoint(t *testing.T) {
 	require.PanicsWithError(t, "port -12 not in valid RFC range (0-65363)", func() { formatEndpoint("my.valid.host:-12") }, "Should panic due to invalid port number")
 	require.PanicsWithError(t, "port 70123 not in valid RFC range (0-65363)", func() { formatEndpoint("my.valid.host:70123") }, "Should panic due to invalid port number")
 }
+
+func TestGetOriginsAsSlice(t *testing.T) {
+	t.Run("empty origins env must return empty slice", func(t *testing.T) {
+		assert.Empty(t, getOriginsAsSlice(""))
+	})
+
+	t.Run("* origins env must return slice with single entry", func(t *testing.T) {
+		result := getOriginsAsSlice("*")
+		assert.NotEmpty(t, result)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "*", result[0])
+	})
+
+	t.Run("multiple origins env must be separated by commas", func(t *testing.T) {
+		result := getOriginsAsSlice("https://example1.com,https://example2.com")
+		assert.NotEmpty(t, result)
+		assert.Len(t, result, 2)
+		assert.Equal(t, "https://example1.com", result[0])
+		assert.Equal(t, "https://example2.com", result[1])
+
+		result = getOriginsAsSlice("https://example1.com , https://example2.com")
+		assert.NotEmpty(t, result)
+		assert.Len(t, result, 2)
+		assert.Equal(t, "https://example1.com", result[0])
+		assert.Equal(t, "https://example2.com", result[1])
+
+		result = getOriginsAsSlice("https://example1.com https://example2.com")
+		assert.NotEmpty(t, result)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "https://example1.com https://example2.com", result[0])
+	})
+}

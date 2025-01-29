@@ -34,6 +34,7 @@ func getConfig() *WSConfig {
 		config := NewWSConfig()
 		_config = &config
 	}
+
 	return _config
 }
 
@@ -166,14 +167,28 @@ func readyz(c *gin.Context) {
 
 func SetupRouter() *gin.Engine {
 	router := gin.New()
-	// - No origin allowed by default
-	// - GET,POST, PUT, HEAD methods
-	// - Credentials share disabled
-	// - Preflight requests cached for 12 hours
+
+	// CORS
+	// Use default config as base
 	config := cors.DefaultConfig()
-	config.AllowMethods = []string{"GET", "POST"}
-	// config.AllowOrigins = []string{"http://bla.com"}
-	config.AllowAllOrigins = true
+
+	// Override default config where needed
+	config.AllowMethods = []string{"GET", "POST", "HEAD", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Type"}
+	// Ensure closed default
+	config.AllowAllOrigins = false
+	config.AllowOrigins = nil
+	if len(getConfig().AllowedOrigins) > 0 {
+		if len(getConfig().AllowedOrigins) == 1 && getConfig().AllowedOrigins[0] == "*" {
+			config.AllowAllOrigins = true
+		} else {
+			config.AllowOrigins = getConfig().AllowedOrigins
+		}
+	}
+
+	if err := config.Validate(); err != nil {
+		panic(fmt.Errorf("cors config invalid: %w", err))
+	}
 
 	router.Use(
 		cors.New(config),
@@ -185,6 +200,14 @@ func SetupRouter() *gin.Engine {
 	if err != nil {
 		panic(fmt.Errorf("setTrustedProxies %w", err))
 	}
+
+	// Insert the X-Content-Type-Options and CSP headers.
+	router.Use(func(c *gin.Context) {
+		cspString := buildCSP(strings.Join(getConfig().AllowedOrigins, " "))
+		c.Header("Content-Security-Policy", cspString)
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Next()
+	})
 
 	router.GET("/version", version)
 	router.POST("/v1/encrypt", v1Encrypt)
@@ -209,4 +232,32 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("router go boom: %w", err))
 	}
+}
+
+// buildCSP returns a Content-Security-Policy string.
+// If externalHosts is non-empty, we append it to script-src, style-src, etc.
+// externalHosts should a space-separated list of http:// and/or https:// urls
+func buildCSP(externalHosts string) string {
+	defaultSrc := "default-src 'none'"
+	scriptSrc := "script-src 'self'"
+	styleSrc := "style-src 'self'"
+	imgSrc := "img-src 'self'"
+	connectSrc := "connect-src 'self'"
+	fontSrc := "font-src 'self'"
+	objectSrc := "object-src 'none'"
+
+	// If we have a non-empty external host, append it to each directive that needs it.
+	if externalHosts != "" {
+		scriptSrc += " " + externalHosts
+		styleSrc += " " + externalHosts
+		imgSrc += " " + externalHosts
+		connectSrc += " " + externalHosts
+		fontSrc += " " + externalHosts
+	}
+
+	// Combine them into one directive string
+	return fmt.Sprintf(
+		"%s; %s; %s; %s; %s; %s; %s",
+		defaultSrc, scriptSrc, styleSrc, imgSrc, connectSrc, fontSrc, objectSrc,
+	)
 }

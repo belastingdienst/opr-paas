@@ -1,17 +1,27 @@
+/*
+Copyright 2025, Tax Administration of The Netherlands.
+Licensed under the EUPL 1.2.
+See LICENSE.md for details.
+*/
+
 package main
 
 import (
 	"os"
 	"testing"
 
-	v1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	v1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/crypt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestCheckPaas(t *testing.T) {
+	// Allow all origins for testing
+	t.Setenv(allowedOriginsEnv, "*")
+
 	// generate private/public keys
 	priv, err := os.CreateTemp("", "private")
 	require.NoError(t, err, "Creating tempfile for private key")

@@ -21,6 +21,7 @@ const (
 	defaultPrivatePath  = "/secrets/paas/privateKeys"
 	endpointEnv         = "PAAS_ENDPOINT"
 	defaultEndpointPort = 8080
+	allowedOriginsEnv   = "PAAS_WS_ALLOWED_ORIGINS" // comma separated
 )
 
 type WSConfig struct {
@@ -28,6 +29,7 @@ type WSConfig struct {
 	// comma separated list of privateKeyPaths
 	PrivateKeyPath string
 	Endpoint       string
+	AllowedOrigins []string
 }
 
 func formatEndpoint(endpoint string) string {
@@ -68,17 +70,41 @@ func formatEndpoint(endpoint string) string {
 	return fmt.Sprintf("%s:%d", endpoint, defaultEndpointPort)
 }
 
-func NewWSConfig() WSConfig {
-	var config WSConfig
+func NewWSConfig() (config WSConfig) {
 	config.PublicKeyPath = os.Getenv(publicEnv)
 	if config.PublicKeyPath == "" {
 		config.PublicKeyPath = defaultPublicPath
 	}
+
 	config.PrivateKeyPath = os.Getenv(privateKeyEnv)
 	if config.PrivateKeyPath == "" {
 		config.PrivateKeyPath = defaultPrivatePath
 	}
+
 	config.Endpoint = formatEndpoint(os.Getenv(endpointEnv))
+	value := os.Getenv(allowedOriginsEnv)
+	if strings.TrimSpace(value) != "" {
+		config.AllowedOrigins = getOriginsAsSlice(value)
+	}
 
 	return config
+}
+
+// getOriginsAsSlice turns the given value of and env var into a slice of strings.
+// It trims spaces from each value and ignores empty values.
+func getOriginsAsSlice(value string) []string {
+	if value == "*" {
+		return []string{"*"}
+	}
+
+	// Split by commas and trim spaces
+	parts := strings.Split(value, ",")
+	var result []string
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }
