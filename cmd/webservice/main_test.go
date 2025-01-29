@@ -131,6 +131,17 @@ func Test_getRSA(t *testing.T) {
 	assert.Len(t, encrypted, 684)
 }
 
+func TestNoSniffIsSet(t *testing.T) {
+	// Allow all origins for test
+	t.Setenv(allowedOriginsEnv, "*")
+
+	router := SetupRouter()
+	w := performRequest(router, "GET", "/version")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, w.Header().Get("X-Content-Type-Options"), "nosniff")
+
+}
+
 func Test_version(t *testing.T) {
 	// Allow all origins for test
 	t.Setenv(allowedOriginsEnv, "*")
