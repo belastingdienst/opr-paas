@@ -171,10 +171,8 @@ func readyz(c *gin.Context) {
 
 func SetupRouter() *gin.Engine {
 	router := gin.New()
-	// - No origin allowed by default
-	// - GET,POST, PUT, HEAD methods
-	// - Credentials share disabled
-	// - Preflight requests cached for 12 hours
+
+	// CORS
 	// Use default config as base
 	config := cors.DefaultConfig()
 
@@ -199,6 +197,13 @@ func SetupRouter() *gin.Engine {
 	if err != nil {
 		panic(fmt.Errorf("setTrustedProxies %w", err))
 	}
+
+	// Insert CSP
+	router.Use(func(c *gin.Context) {
+		cspString := buildCSP(getConfig().AllowedOrigin)
+		c.Header("Content-Security-Policy", cspString)
+		c.Next()
+	})
 
 	// Insert a middleware to set the X-Content-Type-Options header.
 	router.Use(func(c *gin.Context) {
@@ -229,4 +234,31 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("router go boom: %w", err))
 	}
+}
+
+// buildCSP returns a Content-Security-Policy string.
+// If externalHost is non-empty, we append it to script-src, style-src, etc.
+func buildCSP(externalHost string) string {
+	defaultSrc := "default-src 'none'"
+	scriptSrc := "script-src 'self'"
+	styleSrc := "style-src 'self'"
+	imgSrc := "img-src 'self'"
+	connectSrc := "connect-src 'self'"
+	fontSrc := "font-src 'self'"
+	objectSrc := "object-src 'none'"
+
+	// If we have a non-empty external host, append it to each directive that needs it.
+	if externalHost != "" {
+		scriptSrc += " " + externalHost
+		styleSrc += " " + externalHost
+		imgSrc += " " + externalHost
+		connectSrc += " " + externalHost
+		fontSrc += " " + externalHost
+	}
+
+	// Combine them into one directive string
+	return fmt.Sprintf(
+		"%s; %s; %s; %s; %s; %s; %s",
+		defaultSrc, scriptSrc, styleSrc, imgSrc, connectSrc, fontSrc, objectSrc,
+	)
 }
