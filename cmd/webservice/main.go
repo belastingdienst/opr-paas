@@ -35,10 +35,6 @@ func getConfig() *WSConfig {
 		_config = &config
 	}
 
-	if valid, msg := _config.Validate(); !valid {
-		log.Fatalf("configuration invalid: %s", msg)
-	}
-
 	return _config
 }
 
@@ -179,12 +175,19 @@ func SetupRouter() *gin.Engine {
 	// Override default config where needed
 	config.AllowMethods = []string{"GET", "POST", "HEAD", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Type"}
-	if getConfig().AllowedOrigin != "" && !strings.EqualFold(getConfig().AllowAllOrigins, "true") {
-		config.AllowOrigins = []string{getConfig().AllowedOrigin}
+	// Ensure closed default
+	config.AllowAllOrigins = false
+	config.AllowOrigins = nil
+	if len(getConfig().AllowedOrigins) > 0 {
+		if len(getConfig().AllowedOrigins) == 1 && getConfig().AllowedOrigins[0] == "*" {
+			config.AllowAllOrigins = true
+		} else {
+			config.AllowOrigins = getConfig().AllowedOrigins
+		}
 	}
 
-	if strings.EqualFold(getConfig().AllowAllOrigins, "true") {
-		config.AllowAllOrigins = true
+	if err := config.Validate(); err != nil {
+		panic(fmt.Errorf("cors config invalid: %w", err))
 	}
 
 	router.Use(
@@ -198,15 +201,10 @@ func SetupRouter() *gin.Engine {
 		panic(fmt.Errorf("setTrustedProxies %w", err))
 	}
 
-	// Insert CSP
+	// Insert the X-Content-Type-Options and CSP headers.
 	router.Use(func(c *gin.Context) {
-		cspString := buildCSP(getConfig().AllowedOrigin)
+		cspString := buildCSP(strings.Join(getConfig().AllowedOrigins, " "))
 		c.Header("Content-Security-Policy", cspString)
-		c.Next()
-	})
-
-	// Insert a middleware to set the X-Content-Type-Options header.
-	router.Use(func(c *gin.Context) {
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Next()
 	})
@@ -237,8 +235,9 @@ func main() {
 }
 
 // buildCSP returns a Content-Security-Policy string.
-// If externalHost is non-empty, we append it to script-src, style-src, etc.
-func buildCSP(externalHost string) string {
+// If externalHosts is non-empty, we append it to script-src, style-src, etc.
+// externalHosts should a space-separated list of http:// and/or https:// urls
+func buildCSP(externalHosts string) string {
 	defaultSrc := "default-src 'none'"
 	scriptSrc := "script-src 'self'"
 	styleSrc := "style-src 'self'"
@@ -248,12 +247,12 @@ func buildCSP(externalHost string) string {
 	objectSrc := "object-src 'none'"
 
 	// If we have a non-empty external host, append it to each directive that needs it.
-	if externalHost != "" {
-		scriptSrc += " " + externalHost
-		styleSrc += " " + externalHost
-		imgSrc += " " + externalHost
-		connectSrc += " " + externalHost
-		fontSrc += " " + externalHost
+	if externalHosts != "" {
+		scriptSrc += " " + externalHosts
+		styleSrc += " " + externalHosts
+		imgSrc += " " + externalHosts
+		connectSrc += " " + externalHosts
+		fontSrc += " " + externalHosts
 	}
 
 	// Combine them into one directive string

@@ -34,7 +34,7 @@ func performRequest(r http.Handler, method, path string) *httptest.ResponseRecor
 
 func Test_getConfig(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedAllOriginsEnv, "true")
+	t.Setenv(allowedOriginsEnv, "*")
 
 	// Reset config if any test before set config
 	_config = nil
@@ -49,10 +49,9 @@ func Test_getConfig(t *testing.T) {
 	assert.Equal(t, "/secrets/paas/publicKey", config.PublicKeyPath)
 
 	_config = &WSConfig{
-		PublicKeyPath:   "/some/weird/path",
-		Endpoint:        ":3000",
-		AllowAllOrigins: "false",
-		AllowedOrigin:   "http://example.com",
+		PublicKeyPath:  "/some/weird/path",
+		Endpoint:       ":3000",
+		AllowedOrigins: []string{"http://example.com"},
 	}
 
 	config = getConfig()
@@ -67,7 +66,7 @@ func Test_getConfig(t *testing.T) {
 
 func Test_getRSA(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedAllOriginsEnv, "true")
+	t.Setenv(allowedOriginsEnv, "*")
 
 	// Reset config if any test before set config
 	_config = nil
@@ -134,7 +133,7 @@ func Test_getRSA(t *testing.T) {
 
 func Test_version(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedAllOriginsEnv, "true")
+	t.Setenv(allowedOriginsEnv, "*")
 
 	expected := gin.H{
 		"version": v.PaasVersion,
@@ -155,7 +154,7 @@ func Test_version(t *testing.T) {
 
 func Test_healthz(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedAllOriginsEnv, "true")
+	t.Setenv(allowedOriginsEnv, "*")
 
 	expected := gin.H{
 		"message": "healthy",
@@ -176,7 +175,7 @@ func Test_healthz(t *testing.T) {
 
 func Test_readyz(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedAllOriginsEnv, "true")
+	t.Setenv(allowedOriginsEnv, "*")
 
 	expected := gin.H{
 		"message": "ready",
@@ -197,7 +196,7 @@ func Test_readyz(t *testing.T) {
 
 func Test_v1CheckPaas(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedAllOriginsEnv, "true")
+	t.Setenv(allowedOriginsEnv, "*")
 
 	// Reset config if any test before set config
 	_config = nil
@@ -289,7 +288,7 @@ func Test_v1CheckPaas(t *testing.T) {
 
 func Test_v1CheckPaasInternalServerError(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedAllOriginsEnv, "true")
+	t.Setenv(allowedOriginsEnv, "*")
 
 	// Reset config if any test before get config
 	_config = nil
@@ -317,4 +316,14 @@ func Test_v1CheckPaasInternalServerError(t *testing.T) {
 
 	assert.Equal(t, 500, w.Code)
 	assert.Equal(t, "", w.Body.String())
+}
+
+func TestBuildCSP(t *testing.T) {
+	externalHosts := ""
+	expected := "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'"
+	assert.Equal(t, expected, buildCSP(externalHosts))
+
+	externalHosts = "http://example.com"
+	expected = "default-src 'none'; script-src 'self' http://example.com; style-src 'self' http://example.com; img-src 'self' http://example.com; connect-src 'self' http://example.com; font-src 'self' http://example.com; object-src 'none'"
+	assert.Equal(t, expected, buildCSP(externalHosts))
 }

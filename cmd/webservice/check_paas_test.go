@@ -20,7 +20,7 @@ import (
 
 func TestCheckPaas(t *testing.T) {
 	// Allow all origins for testing
-	t.Setenv(allowedAllOriginsEnv, "true")
+	t.Setenv(allowedOriginsEnv, "*")
 
 	// generate private/public keys
 	priv, err := os.CreateTemp("", "private")

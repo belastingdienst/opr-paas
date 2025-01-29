@@ -11,62 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
-
-type ConfigTestSuite struct {
-	suite.Suite
-	// add fields if needed
-}
-
-func (s *ConfigTestSuite) SetupTest() {
-}
-
-func TestConfigTestSuite(t *testing.T) {
-	suite.Run(t, new(ConfigTestSuite))
-}
-
-func (s *ConfigTestSuite) TestCorsConfiguration() {
-	s.Run("must not validate with empty AllowAllOrigins and empty AllowedOrigin", func() {
-		config := NewWSConfig()
-
-		s.Empty(config.AllowAllOrigins)
-		s.Empty(config.AllowedOrigin)
-
-		valid, msg := config.Validate()
-		s.False(valid)
-		s.Equal("must specify an origin if allowAllOrigins is not set to true", msg)
-	})
-
-	s.Run("must validate with AllowAllOrigins is true", func() {
-		config := NewWSConfig()
-
-		config.AllowAllOrigins = "true"
-		s.Empty(config.AllowedOrigin)
-
-		valid, msg := config.Validate()
-		s.True(valid)
-		s.Equal("no issues detected", msg)
-
-		config.AllowedOrigin = "http://www.example.com"
-		s.NotEmpty(config.AllowedOrigin)
-
-		_, msg = config.Validate()
-		s.Equal("no issues detected", msg)
-	})
-
-	s.Run("must validate with AllowAllOrigins not true and AllowedOrigin set", func() {
-		config := NewWSConfig()
-		config.AllowedOrigin = "http://www.example.com"
-
-		s.Empty(config.AllowAllOrigins)
-		s.NotEmpty(config.AllowedOrigin)
-
-		valid, msg := config.Validate()
-		s.True(valid)
-		s.Equal("no issues detected", msg)
-	})
-}
 
 func Test_formatEndpoint(t *testing.T) {
 	// test: empty endpoint
@@ -115,4 +60,36 @@ func Test_formatEndpoint(t *testing.T) {
 	require.NotPanics(t, func() { formatEndpoint("my.valid.host:3000") }, "Should NOT panic since port number is valid")
 	require.PanicsWithError(t, "port -12 not in valid RFC range (0-65363)", func() { formatEndpoint("my.valid.host:-12") }, "Should panic due to invalid port number")
 	require.PanicsWithError(t, "port 70123 not in valid RFC range (0-65363)", func() { formatEndpoint("my.valid.host:70123") }, "Should panic due to invalid port number")
+}
+
+func TestGetOriginsAsSlice(t *testing.T) {
+	t.Run("empty origins env must return empty slice", func(t *testing.T) {
+		assert.Empty(t, getOriginsAsSlice(""))
+	})
+
+	t.Run("* origins env must return slice with single entry", func(t *testing.T) {
+		result := getOriginsAsSlice("*")
+		assert.NotEmpty(t, result)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "*", result[0])
+	})
+
+	t.Run("multiple origins env must be separated by commas", func(t *testing.T) {
+		result := getOriginsAsSlice("https://example1.com,https://example2.com")
+		assert.NotEmpty(t, result)
+		assert.Len(t, result, 2)
+		assert.Equal(t, "https://example1.com", result[0])
+		assert.Equal(t, "https://example2.com", result[1])
+
+		result = getOriginsAsSlice("https://example1.com , https://example2.com")
+		assert.NotEmpty(t, result)
+		assert.Len(t, result, 2)
+		assert.Equal(t, "https://example1.com", result[0])
+		assert.Equal(t, "https://example2.com", result[1])
+
+		result = getOriginsAsSlice("https://example1.com https://example2.com")
+		assert.NotEmpty(t, result)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "https://example1.com https://example2.com", result[0])
+	})
 }
