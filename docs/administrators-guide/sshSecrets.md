@@ -74,14 +74,14 @@ Another option is to run the webservice. To enable the webservice enable the web
 After that you can replace the publicKey data in the paas-sshsecrets-publickey ConfigMap,
 k8s changes the mount and the webservice automatically picks up the file changes and uses the new key.
 
-!!! warning
+!!! warning "Warning: starting v1.4.0"
 
-    When deploying the webservice application, you will be required to add an environment
-    variable called `PAAS_WS_ALLOWED_ORIGINS` in which you either give `*` or one or more
-    CORS related origins, comman separated.
+    When deploying the webservice, you will be required to add an environment variable
+    called `PAAS_WS_ALLOWED_ORIGINS` in which you either give `*` or one or more
+    CORS related origins, comma separated.
 
-    By default, the webservice will be deployed using `http://www.example.com` as a value
-    and will not work for you.
+    By default, the webservice will be deployed using `http://www.example.com` as
+    a value. This will not work for you.
 
 ### Reencryption
 
