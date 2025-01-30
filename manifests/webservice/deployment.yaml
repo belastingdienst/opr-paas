@@ -27,6 +27,8 @@ spec:
           environment:
             - name: PAAS_PUBLIC_KEY_PATH
               value: /secrets/paas/publicKey
+            - name: PAAS_WS_ALLOWED_ORIGINS
+              value: http://www.example.com
           image: webservice:latest
           imagePullPolicy: Always
           name: webservice
