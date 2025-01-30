@@ -1,6 +1,6 @@
 ---
 title: Branding
-summary: Our logo and how to use it.
+summary: Our branding assets (logo) and how to use it.
 authors:
   - hikarukin
 date: 2025-01-30

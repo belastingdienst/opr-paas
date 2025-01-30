@@ -10,6 +10,8 @@ edit_uri: edit/main/docs
 theme:
   name: material
   custom_dir: mkdocs_overrides
+  logo: about/branding/paas-logo-v1-180x180px.png
+  favicon: about/branding/paas-logo-v1-32x32px.png
   language: en
   hljs_languages:
     - yaml
