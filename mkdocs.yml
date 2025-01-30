@@ -10,6 +10,8 @@ edit_uri: edit/main/docs
 theme:
   name: material
   custom_dir: mkdocs_overrides
+  logo: about/branding/paas-logo-v1-180x180px.png
+  favicon: about/branding/paas-logo-v1-32x32px.png
   language: en
   hljs_languages:
     - yaml
@@ -42,6 +44,7 @@ markdown_extensions:
   - attr_list
   - def_list
   - footnotes
+  - md_in_html
   - toc:
       title: On this page
       permalink: true
@@ -76,6 +79,7 @@ nav:
   - User Guide: user-guide/
   - Developer Guide: development-guide/
   - About:
+    - Branding: about/branding/
     - Contributing: about/contributing.md
     - Code of Conduct: about/code-of-conduct.md
     - License: about/license.md
