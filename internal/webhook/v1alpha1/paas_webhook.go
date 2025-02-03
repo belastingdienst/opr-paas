@@ -11,22 +11,33 @@ import (
 	"fmt"
 
 	apiv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/google/uuid"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// TODO(portly-halicore-76): replace logger.
-// nolint:unused
-// log is for logging in this package.
-var Paaslog = logf.Log.WithName("Paas-resource")
+func setRequestLogger(ctx context.Context, obj client.Object) (context.Context, *zerolog.Logger) {
+	logger := log.With().
+		Any("webhook", obj.GetObjectKind().GroupVersionKind()).
+		Dict("object", zerolog.Dict().
+			Str("name", obj.GetName()).
+			Str("namespace", obj.GetNamespace()),
+		).
+		Str("requestId", uuid.NewString()).
+		Logger()
+
+	return logger.WithContext(ctx), &logger
+}
 
 // SetupPaasWebhookWithManager registers the webhook for Paas in the manager.
 func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).For(&apiv1alpha1.Paas{}).
-		WithValidator(&PaasCustomValidator{}).
+		WithValidator(&PaasCustomValidator{client: mgr.GetClient()}).
 		Complete()
 }
 
@@ -41,7 +52,7 @@ func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
 // as this struct is used only for temporary operations and does not need to be deeply copied.
 // +kubebuilder:object:generate=false
 type PaasCustomValidator struct {
-	// TODO(portly-halicore-76): Add more fields as needed for validation
+	client client.Client
 }
 
 var _ webhook.CustomValidator = &PaasCustomValidator{}
@@ -52,9 +63,20 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
 	}
-	Paaslog.Info("Validation for Paas upon creation", "name", paas.GetName())
+	ctx, logger := setRequestLogger(ctx, paas)
+	logger.Info().Msg("starting validation webhook for creation")
 
-	// TODO(portly-halicore-76): fill in your validation logic upon object creation.
+	config, err := v.getConfig(ctx)
+	if err != nil {
+		logger.Err(err).Send()
+		return nil, err
+	}
+
+	for name := range paas.Spec.Capabilities {
+		if _, ok := config.Capabilities[name]; !ok {
+			return nil, fmt.Errorf("capability %s not configured", name)
+		}
+	}
 
 	return nil, nil
 }
@@ -65,7 +87,8 @@ func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object for the newObj but got %T", newObj)
 	}
-	Paaslog.Info("Validation for Paas upon update", "name", paas.GetName())
+	_, logger := setRequestLogger(ctx, paas)
+	logger.Info().Msg("starting validation webhook for update")
 
 	// TODO(portly-halicore-76): fill in your validation logic upon object update.
 
@@ -75,13 +98,26 @@ func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj
 // TODO(portly-halicore-76): determine whether this can be left out
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Paas.
 func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	Paas, ok := obj.(*apiv1alpha1.Paas)
+	paas, ok := obj.(*apiv1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
 	}
-	Paaslog.Info("Validation for Paas upon deletion", "name", Paas.GetName())
+	_, logger := setRequestLogger(ctx, paas)
+	logger.Info().Msg("starting validation webhook for deletion")
 
 	// TODO(portly-halicore-76): fill in your validation logic upon object deletion.
 
 	return nil, nil
+}
+
+func (v *PaasCustomValidator) getConfig(ctx context.Context) (*apiv1alpha1.PaasConfigSpec, error) {
+	configs := &apiv1alpha1.PaasConfigList{}
+	err := v.client.List(ctx, configs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve PaasConfig list: %w", err)
+	} else if len(configs.Items) != 1 {
+		return nil, fmt.Errorf("invalid number of PaasConfigs: %d", len(configs.Items))
+	}
+
+	return &configs.Items[0].Spec, nil
 }
