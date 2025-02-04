@@ -121,6 +121,9 @@ func main() {
 		if err = webhookv1alpha1.SetupPaasWebhookWithManager(mgr); err != nil {
 			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create webhook")
 		}
+		if err = webhookv1alpha1.SetupPaasConfigWebhookWithManager(mgr); err != nil {
+			log.Fatal().Err(err).Str("webhook", "PaasConfig").Msg("unable to create webhook")
+		}
 	}
 	if err = (&controller.PaasNSReconciler{
 		Client: mgr.GetClient(),
