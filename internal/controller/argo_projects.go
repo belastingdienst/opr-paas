@@ -10,6 +10,7 @@ import (
 	"context"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/rs/zerolog/log"
@@ -73,7 +74,7 @@ func (r *PaasReconciler) BackendAppProject(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: GetConfig().ClusterWideArgoCDNamespace,
+			Namespace: config.GetConfig().ClusterWideArgoCDNamespace,
 			Labels:    paas.ClonedLabels(),
 			// Only removes appProject when apps no longer reference appProject
 			Finalizers: []string{
