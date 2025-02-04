@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -19,7 +20,7 @@ import (
 
 // SetupPaasConfigWebhookWithManager registers the webhook for PaasConfig in the manager.
 func SetupPaasConfigWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(&PaasConfig{}).
+	return ctrl.NewWebhookManagedBy(mgr).For(&v1alpha1.PaasConfig{}).
 		WithValidator(&PaasConfigCustomValidator{}).
 		Complete()
 }
@@ -41,7 +42,7 @@ var _ webhook.CustomValidator = &PaasConfigCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
 func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	paasconfig, ok := obj.(*PaasConfig)
+	paasconfig, ok := obj.(*v1alpha1.PaasConfig)
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object but got %T", obj)
 	}
@@ -55,7 +56,7 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
 func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	paasconfig, ok := newObj.(*PaasConfig)
+	paasconfig, ok := newObj.(*v1alpha1.PaasConfig)
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object for the newObj but got %T", newObj)
 	}
@@ -71,7 +72,7 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, 
 // TODO(portly-halicore-76): determine whether this can be left out
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
 func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	paasconfig, ok := obj.(*PaasConfig)
+	paasconfig, ok := obj.(*v1alpha1.PaasConfig)
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object but got %T", obj)
 	}

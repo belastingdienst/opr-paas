@@ -7,20 +7,21 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("PaasConfig Webhook", func() {
 	var (
-		obj       *PaasConfig
-		oldObj    *PaasConfig
+		obj       *v1alpha1.PaasConfig
+		oldObj    *v1alpha1.PaasConfig
 		validator PaasConfigCustomValidator
 	)
 
 	BeforeEach(func() {
-		obj = &PaasConfig{}
-		oldObj = &PaasConfig{}
+		obj = &v1alpha1.PaasConfig{}
+		oldObj = &v1alpha1.PaasConfig{}
 		validator = PaasConfigCustomValidator{}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
