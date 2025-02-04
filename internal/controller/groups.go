@@ -12,6 +12,7 @@ import (
 	"reflect"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	userv1 "github.com/openshift/api/user/v1"
@@ -103,12 +104,12 @@ func (r *PaasReconciler) backendGroup(
 			Annotations: map[string]string{
 				ldapUidAnnotationKey: group.Query,
 				ldapUrlAnnotationKey: fmt.Sprintf("%s:%d",
-					GetConfig().LDAP.Host,
-					GetConfig().LDAP.Port,
+					config.GetConfig().LDAP.Host,
+					config.GetConfig().LDAP.Port,
 				),
 			},
 		}
-		g.ObjectMeta.Labels[ldapHostLabelKey] = GetConfig().LDAP.Host
+		g.ObjectMeta.Labels[ldapHostLabelKey] = config.GetConfig().LDAP.Host
 	} else {
 		g.ObjectMeta = metav1.ObjectMeta{
 			Name:   groupName,

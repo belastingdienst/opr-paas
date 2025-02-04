@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 
+	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
@@ -28,8 +29,8 @@ func (r *PaasNSReconciler) getRsaPrivateKeys(
 	ctx = setLogComponent(ctx, "rolebinding")
 	logger := log.Ctx(ctx)
 	rsaSecret := &corev1.Secret{}
-	config := GetConfig()
-	namespacedName := config.DecryptKeysSecret
+	cfg := config.GetConfig()
+	namespacedName := cfg.DecryptKeysSecret
 
 	err := r.Get(ctx, types.NamespacedName{
 		Name:      namespacedName.Name,

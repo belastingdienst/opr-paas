@@ -35,6 +35,7 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/controller"
 	"github.com/belastingdienst/opr-paas/internal/version"
+	webhookv1alpha1 "github.com/belastingdienst/opr-paas/internal/webhook/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -117,7 +118,7 @@ func main() {
 	}
 	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = v1alpha1.SetupPaasWebhookWithManager(mgr); err != nil {
+		if err = webhookv1alpha1.SetupPaasWebhookWithManager(mgr); err != nil {
 			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create webhook")
 		}
 	}
