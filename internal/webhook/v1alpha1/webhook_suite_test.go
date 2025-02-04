@@ -59,11 +59,11 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
 
 	By("bootstrapping test environment")
-	binDirs, _ := filepath.Glob(filepath.Join("..", "..", "bin", "k8s",
+	binDirs, _ := filepath.Glob(filepath.Join("..", "..", "..", "bin", "k8s",
 		fmt.Sprintf("*-%s-%s", runtime.GOOS, runtime.GOARCH)))
 	slices.Sort(binDirs)
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "manifests", "crd", "bases")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "manifests", "crd", "bases")},
 		ErrorIfCRDPathMissing: false,
 
 		// The BinaryAssetsDirectory is only required if you want to run the tests directly
@@ -74,7 +74,7 @@ var _ = BeforeSuite(func() {
 		BinaryAssetsDirectory: binDirs[len(binDirs)-1],
 
 		WebhookInstallOptions: envtest.WebhookInstallOptions{
-			Paths: []string{filepath.Join("..", "..", "manifests", "webhook")},
+			Paths: []string{filepath.Join("..", "..", "..", "manifests", "webhook")},
 		},
 	}
 
