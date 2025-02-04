@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	apiv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -84,7 +85,7 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	scheme := apimachineryruntime.NewScheme()
-	err = AddToScheme(scheme)
+	err = apiv1alpha1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = admissionv1.AddToScheme(scheme)

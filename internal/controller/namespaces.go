@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
@@ -93,14 +94,14 @@ func BackendNamespace(
 		Spec: corev1.NamespaceSpec{},
 	}
 	logger.Info().Msgf("setting Quotagroup %s", quota)
-	ns.ObjectMeta.Labels[GetConfig().QuotaLabel] = quota
+	ns.ObjectMeta.Labels[config.GetConfig().QuotaLabel] = quota
 
 	argoNameSpace := fmt.Sprintf("%s-argocd", paas.ManagedByPaas())
 	logger.Info().Msg("setting managed_by_label")
-	ns.ObjectMeta.Labels[GetConfig().ManagedByLabel] = argoNameSpace
+	ns.ObjectMeta.Labels[config.GetConfig().ManagedByLabel] = argoNameSpace
 
 	logger.Info().Msg("setting requestor_label")
-	ns.ObjectMeta.Labels[GetConfig().RequestorLabel] = paas.Spec.Requestor
+	ns.ObjectMeta.Labels[config.GetConfig().RequestorLabel] = paas.Spec.Requestor
 
 	logger.Info().Str("Paas", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
 	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {
@@ -149,7 +150,7 @@ func (r *PaasNSReconciler) ReconcileNamespaces(
 ) (err error) {
 	nsName := paasns.NamespaceName()
 	var nsQuota string
-	if config, exists := GetConfig().Capabilities[paasns.Name]; !exists {
+	if config, exists := config.GetConfig().Capabilities[paasns.Name]; !exists {
 		nsQuota = paas.Name
 	} else if !config.QuotaSettings.Clusterwide {
 		nsQuota = nsName

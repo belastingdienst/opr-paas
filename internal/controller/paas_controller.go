@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -98,7 +99,7 @@ func (r *PaasReconciler) GetPaas(
 	// TODO(portly-halicore-76) Move to admission webhook once available
 	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
 	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
-	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
+	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig()) {
 		logger.Error().Msg("no config found")
 		err = r.setErrorCondition(ctx, paas, fmt.Errorf("please reach out to your system administrator as there is no Paasconfig available to reconcile against"))
 		if err != nil {
