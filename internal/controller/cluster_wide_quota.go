@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -68,7 +69,7 @@ func (r *PaasReconciler) UpdateClusterWideQuotaResources(
 	var allPaasResources paas_quota.QuotaLists
 	if capabilityName, err := ClusterWideCapabilityName(quota.ObjectMeta.Name); err != nil {
 		return err
-	} else if config, exists := GetConfig().Capabilities[capabilityName]; !exists {
+	} else if config, exists := config.GetConfig().Capabilities[capabilityName]; !exists {
 		return fmt.Errorf("missing capability config for %s", capabilityName)
 	} else if !config.QuotaSettings.Clusterwide {
 		return fmt.Errorf("running UpdateClusterWideQuota for non-clusterwide quota %s", quota.ObjectMeta.Name)
@@ -102,7 +103,7 @@ func backendClusterWideQuota(
 			Selector: quotav1.ClusterResourceQuotaSelector{
 				LabelSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						GetConfig().QuotaLabel: quotaName,
+						config.GetConfig().QuotaLabel: quotaName,
 					},
 				},
 			},
@@ -166,7 +167,7 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 	var quota *quotav1.ClusterResourceQuota
 	var exists bool
 	quotaName := ClusterWideQuotaName(capabilityName)
-	if config, exists := GetConfig().Capabilities[capabilityName]; !exists {
+	if config, exists := config.GetConfig().Capabilities[capabilityName]; !exists {
 		return fmt.Errorf("capability %s does not seem to exist in configuration", capabilityName)
 	} else if !config.QuotaSettings.Clusterwide {
 		return nil
@@ -206,7 +207,7 @@ func (r *PaasReconciler) removeFromClusterWideQuota(ctx context.Context, paas *v
 	quotaName := fmt.Sprintf("%s%s", cwqPrefix, capabilityName)
 	var capConfig v1alpha1.ConfigCapability
 	var exists bool
-	if capConfig, exists = GetConfig().Capabilities[capabilityName]; !exists {
+	if capConfig, exists = config.GetConfig().Capabilities[capabilityName]; !exists {
 		// If a Paas was created with a capability that was nog yet configured, we should be able to delete it.
 		// Returning an error would block deletion.
 		return nil

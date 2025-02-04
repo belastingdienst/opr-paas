@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/rs/zerolog/log"
@@ -67,7 +68,7 @@ func (r *PaasReconciler) backendArgoApp(
 	namespace := fmt.Sprintf("%s-%s", paas.Name, "argocd")
 	argoConfig := paas.Spec.Capabilities["argocd"]
 	argoConfig.SetDefaults()
-	fields, err := argoConfig.CapExtraFields(GetConfig().Capabilities["argocd"].CustomFields)
+	fields, err := argoConfig.CapExtraFields(config.GetConfig().Capabilities["argocd"].CustomFields)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +93,7 @@ func (r *PaasReconciler) backendArgoApp(
 					Group:        "argoproj.io",
 					JSONPointers: []string{"/spec/generators"},
 					Kind:         "ApplicationSet",
-					Name:         GetConfig().ExcludeAppSetName,
+					Name:         config.GetConfig().ExcludeAppSetName,
 				},
 			},
 			Project: "default",

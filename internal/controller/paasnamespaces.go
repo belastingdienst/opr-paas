@@ -10,6 +10,7 @@ import (
 	"context"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -40,7 +41,7 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 	}
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("defining")
-	pns.ObjectMeta.Labels[GetConfig().RequestorLabel] = paas.Spec.Requestor
+	pns.ObjectMeta.Labels[config.GetConfig().RequestorLabel] = paas.Spec.Requestor
 
 	logger.Info().Msg("setting Owner")
 

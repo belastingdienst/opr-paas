@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -73,7 +74,7 @@ func setupPaasSys() {
 	pubkey = &privkey.PublicKey
 
 	// Set the PaasConfig so reconcilers know where to find our fixtures
-	SetConfig(api.PaasConfig{Spec: api.PaasConfigSpec{
+	config.SetConfig(api.PaasConfig{Spec: api.PaasConfigSpec{
 		DecryptKeysSecret: api.NamespacedName{
 			Name:      "keys",
 			Namespace: "paas-system",

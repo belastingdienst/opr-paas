@@ -12,6 +12,7 @@ import (
 	"reflect"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 
 	"github.com/rs/zerolog/log"
 	rbac "k8s.io/api/rbac/v1"
@@ -171,7 +172,7 @@ func (r *PaasReconciler) reconcileRolebindings(
 
 		// Guarantee use of value for current iteration when referencing
 		paasns := paasns
-		for _, roleList := range GetConfig().RoleMappings {
+		for _, roleList := range config.GetConfig().RoleMappings {
 			for _, role := range roleList {
 				roles[role] = []string{}
 			}
@@ -181,7 +182,7 @@ func (r *PaasReconciler) reconcileRolebindings(
 			logger.Info().Msgf("defining Rolebindings for Group %s", groupKey)
 			// Convert the groupKey to a groupName to map the rolebinding subjects to a group
 			groupName := paas.GroupKey2GroupName(groupKey)
-			for _, mappedRole := range GetConfig().RoleMappings.Roles(groupRoles) {
+			for _, mappedRole := range config.GetConfig().RoleMappings.Roles(groupRoles) {
 				if role, exists := roles[mappedRole]; exists {
 					roles[mappedRole] = append(role, groupName)
 				} else {
@@ -222,7 +223,7 @@ func (r *PaasNSReconciler) ReconcileRolebindings(
 	for groupKey, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
 		// Convert the groupKey to a groupName to map the rolebinding subjects to a group
 		groupName := paas.GroupKey2GroupName(groupKey)
-		for _, mappedRole := range GetConfig().RoleMappings.Roles(groupRoles) {
+		for _, mappedRole := range config.GetConfig().RoleMappings.Roles(groupRoles) {
 			if role, exists := roles[mappedRole]; exists {
 				roles[mappedRole] = append(role, groupName)
 			} else {

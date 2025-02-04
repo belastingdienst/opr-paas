@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 
+	apiv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -24,7 +25,7 @@ var Paaslog = logf.Log.WithName("Paas-resource")
 
 // SetupPaasWebhookWithManager registers the webhook for Paas in the manager.
 func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(&Paas{}).
+	return ctrl.NewWebhookManagedBy(mgr).For(&apiv1alpha1.Paas{}).
 		WithValidator(&PaasCustomValidator{}).
 		Complete()
 }
@@ -47,7 +48,7 @@ var _ webhook.CustomValidator = &PaasCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
 func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	paas, ok := obj.(*Paas)
+	paas, ok := obj.(*apiv1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
 	}
@@ -60,7 +61,7 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
 func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	paas, ok := newObj.(*Paas)
+	paas, ok := newObj.(*apiv1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object for the newObj but got %T", newObj)
 	}
@@ -74,7 +75,7 @@ func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj
 // TODO(portly-halicore-76): determine whether this can be left out
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Paas.
 func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	Paas, ok := obj.(*Paas)
+	Paas, ok := obj.(*apiv1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
 	}
