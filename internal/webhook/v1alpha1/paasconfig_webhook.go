@@ -13,7 +13,9 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
@@ -21,7 +23,7 @@ import (
 // SetupPaasConfigWebhookWithManager registers the webhook for PaasConfig in the manager.
 func SetupPaasConfigWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).For(&v1alpha1.PaasConfig{}).
-		WithValidator(&PaasConfigCustomValidator{}).
+		WithValidator(&PaasConfigCustomValidator{client: mgr.GetClient()}).
 		Complete()
 }
 
@@ -36,22 +38,30 @@ func SetupPaasConfigWebhookWithManager(mgr ctrl.Manager) error {
 // as this struct is used only for temporary operations and does not need to be deeply copied.
 // +kubebuilder:object:generate=false
 type PaasConfigCustomValidator struct {
+	client client.Client
 }
 
 var _ webhook.CustomValidator = &PaasConfigCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
-func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (warn admission.Warnings, err error) {
+	var allErrs field.ErrorList
+
 	paasconfig, ok := obj.(*v1alpha1.PaasConfig)
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object but got %T", obj)
 	}
 
-	ctx = setLogComponent(ctx, "paasconfig_webhook_validate_create")
-	logger := log.Ctx(ctx)
+	_, logger := setRequestLogger(ctx, paasconfig)
+
 	logger.Info().Msgf("Validation for creation of PaasConfig %s", paasconfig.GetName())
 
-	return nil, nil
+	// Deny creation from secondary or more PaasConfig resources
+	if flderr := validateNoPaasConfigExists(ctx, v.client); flderr != nil {
+		allErrs = append(allErrs, flderr)
+	}
+
+	return warn, allErrs.ToAggregate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
@@ -83,4 +93,23 @@ func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runt
 	// TODO(portly-halicore-76): fill in your validation logic upon object deletion.
 
 	return nil, nil
+}
+
+func validateNoPaasConfigExists(ctx context.Context, client client.Client) *field.Error {
+	var list v1alpha1.PaasConfigList
+
+	ctx = setLogComponent(ctx, "webhook_paasconfig_validateNoPaasConfigExists")
+	logger := log.Ctx(ctx)
+
+	if err := client.List(ctx, &list); err != nil {
+		err = fmt.Errorf("failed to retrieve PaasConfigList: %w", err)
+		logger.Error().Msg(err.Error())
+		return field.InternalError(&field.Path{}, err)
+	}
+
+	if len(list.Items) > 0 {
+		return field.Forbidden(&field.Path{}, "another PaasConfig resource already exists")
+	}
+
+	return nil
 }
