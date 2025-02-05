@@ -15,7 +15,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -67,12 +70,21 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 	_, logger := setRequestLogger(ctx, paas)
 	logger.Info().Msg("starting validation webhook for creation")
 
+	var allErrs field.ErrorList
 	conf := config.GetConfig()
 	if err := v.validateCaps(conf, paas.Spec.Capabilities); err != nil {
-		return nil, err
+		allErrs = append(allErrs, err)
 	}
 
-	return nil, nil
+	if len(allErrs) == 0 {
+		return nil, nil
+	}
+
+	return nil, apierrors.NewInvalid(
+		schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "Paas"},
+		paas.Name,
+		allErrs,
+	)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
@@ -108,10 +120,14 @@ func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Ob
 }
 
 // validateCaps returns an error if any of the passed capabilities is not configured.
-func (v *PaasCustomValidator) validateCaps(conf v1alpha1.PaasConfigSpec, caps v1alpha1.PaasCapabilities) error {
+func (v *PaasCustomValidator) validateCaps(conf v1alpha1.PaasConfigSpec, caps v1alpha1.PaasCapabilities) *field.Error {
 	for name := range caps {
 		if _, ok := conf.Capabilities[name]; !ok {
-			return fmt.Errorf("capability %s not configured", name)
+			return field.Invalid(
+				field.NewPath("spec").Child("capabilities"),
+				name,
+				"capability not configured",
+			)
 		}
 	}
 

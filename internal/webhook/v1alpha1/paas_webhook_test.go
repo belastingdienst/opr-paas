@@ -47,7 +47,8 @@ var _ = Describe("Paas Webhook", func() {
 				},
 			}
 
-			Expect(validator.ValidateCreate(ctx, obj)).Error().To(MatchError("capability foo not configured"))
+			Expect(validator.ValidateCreate(ctx, obj)).Error().
+				To(MatchError(ContainSubstring("capability not configured")))
 		})
 
 		//It("Should admit creation if all required fields are present", func() {
@@ -66,7 +67,8 @@ var _ = Describe("Paas Webhook", func() {
 			}}
 
 			Expect(validator.ValidateCreate(ctx, oldObj)).Error().ToNot(HaveOccurred())
-			Expect(validator.ValidateUpdate(ctx, oldObj, obj)).Error().To(MatchError("capability foo not configured"))
+			Expect(validator.ValidateUpdate(ctx, oldObj, obj)).Error().
+				To(MatchError(ContainSubstring("capability not configured")))
 		})
 
 		// It("Should validate updates correctly", func() {
