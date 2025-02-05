@@ -10,7 +10,8 @@ import (
 	"context"
 	"fmt"
 
-	apiv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -36,7 +37,7 @@ func setRequestLogger(ctx context.Context, obj client.Object) (context.Context, 
 
 // SetupPaasWebhookWithManager registers the webhook for Paas in the manager.
 func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(&apiv1alpha1.Paas{}).
+	return ctrl.NewWebhookManagedBy(mgr).For(&v1alpha1.Paas{}).
 		WithValidator(&PaasCustomValidator{client: mgr.GetClient()}).
 		Complete()
 }
@@ -59,23 +60,16 @@ var _ webhook.CustomValidator = &PaasCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
 func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	paas, ok := obj.(*apiv1alpha1.Paas)
+	paas, ok := obj.(*v1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
 	}
-	ctx, logger := setRequestLogger(ctx, paas)
+	_, logger := setRequestLogger(ctx, paas)
 	logger.Info().Msg("starting validation webhook for creation")
 
-	config, err := v.getConfig(ctx)
-	if err != nil {
-		logger.Err(err).Send()
+	conf := config.GetConfig()
+	if err := v.validateCaps(conf, paas.Spec.Capabilities); err != nil {
 		return nil, err
-	}
-
-	for name := range paas.Spec.Capabilities {
-		if _, ok := config.Capabilities[name]; !ok {
-			return nil, fmt.Errorf("capability %s not configured", name)
-		}
 	}
 
 	return nil, nil
@@ -83,14 +77,17 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
 func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	paas, ok := newObj.(*apiv1alpha1.Paas)
+	paas, ok := newObj.(*v1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object for the newObj but got %T", newObj)
 	}
 	_, logger := setRequestLogger(ctx, paas)
 	logger.Info().Msg("starting validation webhook for update")
 
-	// TODO(portly-halicore-76): fill in your validation logic upon object update.
+	conf := config.GetConfig()
+	if err := v.validateCaps(conf, paas.Spec.Capabilities); err != nil {
+		return nil, err
+	}
 
 	return nil, nil
 }
@@ -98,7 +95,7 @@ func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj
 // TODO(portly-halicore-76): determine whether this can be left out
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Paas.
 func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	paas, ok := obj.(*apiv1alpha1.Paas)
+	paas, ok := obj.(*v1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
 	}
@@ -110,14 +107,13 @@ func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Ob
 	return nil, nil
 }
 
-func (v *PaasCustomValidator) getConfig(ctx context.Context) (*apiv1alpha1.PaasConfigSpec, error) {
-	configs := &apiv1alpha1.PaasConfigList{}
-	err := v.client.List(ctx, configs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve PaasConfig list: %w", err)
-	} else if len(configs.Items) != 1 {
-		return nil, fmt.Errorf("invalid number of PaasConfigs: %d", len(configs.Items))
+// validateCaps returns an error if any of the passed capabilities is not configured.
+func (v *PaasCustomValidator) validateCaps(conf v1alpha1.PaasConfigSpec, caps v1alpha1.PaasCapabilities) error {
+	for name := range caps {
+		if _, ok := conf.Capabilities[name]; !ok {
+			return fmt.Errorf("capability %s not configured", name)
+		}
 	}
 
-	return &configs.Items[0].Spec, nil
+	return nil
 }
