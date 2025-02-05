@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -52,7 +53,7 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 		return nil, fmt.Errorf("expected a PaasConfig object but got %T", obj)
 	}
 
-	_, logger := setRequestLogger(ctx, paasconfig)
+	_, logger := logging.SetWebhookLogger(ctx, paasconfig)
 
 	logger.Info().Msgf("Validation for creation of PaasConfig %s", paasconfig.GetName())
 
@@ -70,7 +71,7 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, 
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object for the newObj but got %T", newObj)
 	}
-	ctx = setLogComponent(ctx, "paasconfig_webhook_validate_update")
+	ctx = logging.SetLogComponent(ctx, "paasconfig_webhook_validate_update")
 	logger := log.Ctx(ctx)
 	logger.Info().Msgf("Validation for update of PaasConfig %s", paasconfig.GetName())
 
@@ -86,7 +87,7 @@ func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runt
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object but got %T", obj)
 	}
-	ctx = setLogComponent(ctx, "paasconfig_webhook_validate_update")
+	ctx = logging.SetLogComponent(ctx, "paasconfig_webhook_validate_update")
 	logger := log.Ctx(ctx)
 	logger.Info().Msgf("Validation for deletion of PaasConfig %s", paasconfig.GetName())
 
@@ -98,7 +99,7 @@ func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runt
 func validateNoPaasConfigExists(ctx context.Context, client client.Client) *field.Error {
 	var list v1alpha1.PaasConfigList
 
-	ctx = setLogComponent(ctx, "webhook_paasconfig_validateNoPaasConfigExists")
+	ctx = logging.SetLogComponent(ctx, "webhook_paasconfig_validateNoPaasConfigExists")
 	logger := log.Ctx(ctx)
 
 	if err := client.List(ctx, &list); err != nil {
