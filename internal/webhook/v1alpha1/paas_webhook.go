@@ -73,7 +73,7 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 	var allErrs field.ErrorList
 	conf := config.GetConfig()
 	if err := v.validateCaps(conf, paas.Spec.Capabilities); err != nil {
-		allErrs = append(allErrs, err)
+		allErrs = append(allErrs, err...)
 	}
 
 	if len(allErrs) == 0 {
@@ -96,12 +96,21 @@ func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj
 	_, logger := setRequestLogger(ctx, paas)
 	logger.Info().Msg("starting validation webhook for update")
 
+	var allErrs field.ErrorList
 	conf := config.GetConfig()
 	if err := v.validateCaps(conf, paas.Spec.Capabilities); err != nil {
-		return nil, err
+		allErrs = append(allErrs, err...)
 	}
 
-	return nil, nil
+	if len(allErrs) == 0 {
+		return nil, nil
+	}
+
+	return nil, apierrors.NewInvalid(
+		schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "Paas"},
+		paas.Name,
+		allErrs,
+	)
 }
 
 // TODO(portly-halicore-76): determine whether this can be left out
@@ -120,16 +129,18 @@ func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Ob
 }
 
 // validateCaps returns an error if any of the passed capabilities is not configured.
-func (v *PaasCustomValidator) validateCaps(conf v1alpha1.PaasConfigSpec, caps v1alpha1.PaasCapabilities) *field.Error {
+func (v *PaasCustomValidator) validateCaps(conf v1alpha1.PaasConfigSpec, caps v1alpha1.PaasCapabilities) []*field.Error {
+	errs := make([]*field.Error, 0)
+
 	for name := range caps {
 		if _, ok := conf.Capabilities[name]; !ok {
-			return field.Invalid(
+			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("capabilities"),
 				name,
 				"capability not configured",
-			)
+			))
 		}
 	}
 
-	return nil
+	return errs
 }

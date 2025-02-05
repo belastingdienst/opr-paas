@@ -51,6 +51,20 @@ var _ = Describe("Paas Webhook", func() {
 				To(MatchError(ContainSubstring("capability not configured")))
 		})
 
+		It("Should deny creation and return multiple field errors when multiple unconfigured capabilities are set", func() {
+			obj = &v1alpha1.Paas{
+				Spec: v1alpha1.PaasSpec{
+					Capabilities: v1alpha1.PaasCapabilities{
+						"foo": v1alpha1.PaasCapability{},
+						"bar": v1alpha1.PaasCapability{},
+					},
+				},
+			}
+
+			_, err := validator.ValidateCreate(ctx, obj)
+			Expect(err).Error().To(MatchError(ContainSubstring("Invalid value: \"foo\"")))
+			Expect(err).Error().To(MatchError(ContainSubstring("Invalid value: \"bar\"")))
+		})
 		//It("Should admit creation if all required fields are present", func() {
 		//	By("simulating an invalid creation scenario")
 		//	Expect(validator.ValidateCreate(ctx, obj)).To(BeNil())
