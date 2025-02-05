@@ -7,8 +7,6 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
-	"context"
-
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -22,20 +20,17 @@ var _ = Describe("PaasConfig Webhook", func() {
 		obj       *v1alpha1.PaasConfig
 		oldObj    *v1alpha1.PaasConfig
 		validator PaasConfigCustomValidator
-		ctx       context.Context
 		scheme    *runtime.Scheme
 		cl        client.Client
 	)
 
 	BeforeEach(func() {
-		existing := &v1alpha1.PaasConfig{}
 		scheme = runtime.NewScheme()
 		Expect(v1alpha1.AddToScheme(scheme)).To(Succeed())
 
 		// Create a fake client that already has the existing PaasConfig
 		cl = fake.NewClientBuilder().
 			WithScheme(scheme).
-			WithObjects(existing).
 			Build()
 
 		obj = &v1alpha1.PaasConfig{}
@@ -52,9 +47,22 @@ var _ = Describe("PaasConfig Webhook", func() {
 	When("creating a PaasConfig under Validating Webhook", func() {
 		Context("and a PaasConfig resource already exists", func() {
 			It("should deny creation", func() {
+				existing := &v1alpha1.PaasConfig{}
+				scheme = runtime.NewScheme()
+				Expect(v1alpha1.AddToScheme(scheme)).To(Succeed())
+
+				// Create a fake client that already has the existing PaasConfig
+				cl = fake.NewClientBuilder().
+					WithScheme(scheme).
+					WithObjects(existing).
+					Build()
+
+				validator = PaasConfigCustomValidator{client: cl}
 				obj = &v1alpha1.PaasConfig{}
 
-				Expect(validator.ValidateCreate(ctx, obj)).Error().To(HaveOccurred())
+				warn, err := validator.ValidateCreate(ctx, obj)
+				Expect(warn, err).Error().To(HaveOccurred())
+				Expect(err.Error()).To(Equal("[]: Forbidden: another PaasConfig resource already exists"))
 			})
 		})
 
