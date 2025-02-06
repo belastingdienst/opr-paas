@@ -12,7 +12,6 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/logging"
-	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -71,8 +70,7 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, 
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object for the newObj but got %T", newObj)
 	}
-	ctx = logging.SetLogComponent(ctx, "paasconfig_webhook_validate_update")
-	logger := log.Ctx(ctx)
+	_, logger := logging.GetLogComponent(ctx, "paasconfig_webhook_validate_update")
 	logger.Info().Msgf("Validation for update of PaasConfig %s", paasconfig.GetName())
 
 	// TODO(portly-halicore-76): fill in your validation logic upon object update.
@@ -87,8 +85,7 @@ func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runt
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object but got %T", obj)
 	}
-	ctx = logging.SetLogComponent(ctx, "paasconfig_webhook_validate_update")
-	logger := log.Ctx(ctx)
+	_, logger := logging.GetLogComponent(ctx, "paasconfig_webhook_validate_update")
 	logger.Info().Msgf("Validation for deletion of PaasConfig %s", paasconfig.GetName())
 
 	// TODO(portly-halicore-76): fill in your validation logic upon object deletion.
@@ -99,8 +96,7 @@ func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runt
 func validateNoPaasConfigExists(ctx context.Context, client client.Client) *field.Error {
 	var list v1alpha1.PaasConfigList
 
-	ctx = logging.SetLogComponent(ctx, "webhook_paasconfig_validateNoPaasConfigExists")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateNoPaasConfigExists")
 
 	if err := client.List(ctx, &list); err != nil {
 		err = fmt.Errorf("failed to retrieve PaasConfigList: %w", err)
