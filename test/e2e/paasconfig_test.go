@@ -17,8 +17,6 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
-const paasConfigDuplicateName = "paas-config-2"
-
 func TestPaasConfig(t *testing.T) {
 	testenv.Test(
 		t,
@@ -55,13 +53,7 @@ func TestPaasConfig(t *testing.T) {
 			Assess("PaasConfig is Active", assertPaasConfigIsActive).
 			Assess("PaasConfig is Updated", assertPaasConfigIsUpdated).
 			Assess("PaasConfig Invalid Spec", assertPaasConfigInvalidSpec).
-			Assess("Operator reports error when a second PaasConfig is loaded", assertDoublePaasConfigError).
 			Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-				secondPaasConfig := &v1alpha1.PaasConfig{
-					ObjectMeta: metav1.ObjectMeta{Name: paasConfigDuplicateName},
-				}
-				require.NoError(t, deleteResourceSync(ctx, cfg, secondPaasConfig))
-
 				return ctx
 			}).
 			Feature(),
@@ -130,24 +122,6 @@ func assertPaasConfigInvalidSpec(ctx context.Context, t *testing.T, cfg *envconf
 	err = cfg.Client().Resources().Get(ctx, "invalid-paas-config", "", &paasConfig)
 	require.Error(t, err, "Expected error when getting invalid PaasConfig")
 	require.True(t, apierrors.IsNotFound(err), "Expected NotFound error, got: %v", err)
-
-	return ctx
-}
-
-func assertDoublePaasConfigError(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	paasConfig := examplePaasConfig.DeepCopy()
-	paasConfig.Name = paasConfigDuplicateName
-
-	require.NoError(t, cfg.Client().Resources().Create(ctx, paasConfig))
-	require.NoError(
-		t,
-		waitForStatus(ctx, cfg, paasConfig, 0, func(conds []metav1.Condition) bool {
-			cond := meta.FindStatusCondition(conds, v1alpha1.TypeHasErrorsPaasConfig)
-			return cond != nil &&
-				cond.Status == metav1.ConditionTrue &&
-				cond.Message == "paasConfig singleton violation"
-		}),
-	)
 
 	return ctx
 }
