@@ -130,34 +130,6 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
-	configList := &v1alpha1.PaasConfigList{}
-	if err := pcr.List(ctx, configList); err != nil {
-		logger.Err(err).Msg("error listing PaasConfigs")
-		err := pcr.setErrorCondition(ctx, cfg, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update PaasConfig status")
-			return errResult, nil
-		}
-		return errResult, nil
-	}
-
-	// Enforce singleton pattern
-	// TODO(portly-halicore-76) move to admission webhook when available
-	for _, existingConfig := range configList.Items {
-		if meta.IsStatusConditionPresentAndEqual(existingConfig.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) && existingConfig.ObjectMeta.Name != cfg.Name {
-			// There is already another config which is the active one so we don't allow adding a new one
-			singletonErr := fmt.Errorf("paasConfig singleton violation")
-			logger.Err(singletonErr).Msg("more than one PaasConfig instance found")
-			err := pcr.setErrorCondition(ctx, cfg, singletonErr)
-			if err != nil {
-				logger.Err(err).Msg("failed to update PaasConfig status")
-				return errResult, nil
-			}
-			// don't reconcile this one again as that won't change anything.
-			return ctrl.Result{}, nil
-		}
-	}
-
 	// As there can be reasons why we reconcile again, we check if there is a diff in the desired state vs GetConfig()
 	if reflect.DeepEqual(cfg.Spec, config.GetConfig()) {
 		logger.Debug().Msg("Config already equals desired state")
@@ -197,24 +169,6 @@ func (pcr *PaasConfigReconciler) setSuccesfullCondition(ctx context.Context, con
 		Type:   v1alpha1.TypeHasErrorsPaasConfig,
 		Status: metav1.ConditionFalse, Reason: "Reconciling", ObservedGeneration: config.Generation,
 		Message: fmt.Sprintf("Reconciled (%s) successfully", config.Name),
-	})
-
-	if err := pcr.Status().Update(ctx, config); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (pcr *PaasConfigReconciler) setErrorCondition(ctx context.Context, config *v1alpha1.PaasConfig, err error) error {
-	meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{
-		Type:   v1alpha1.TypeActivePaasConfig,
-		Status: metav1.ConditionFalse, Reason: "ReconcilingError", ObservedGeneration: config.Generation,
-		Message: fmt.Sprintf("Reconciling (%s) failed", config.Name),
-	})
-	meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{
-		Type:   v1alpha1.TypeHasErrorsPaasConfig,
-		Status: metav1.ConditionTrue, Reason: "ReconcilingError", ObservedGeneration: config.Generation,
-		Message: err.Error(),
 	})
 
 	if err := pcr.Status().Update(ctx, config); err != nil {
