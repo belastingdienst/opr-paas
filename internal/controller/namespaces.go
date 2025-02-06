@@ -12,6 +12,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
@@ -79,7 +80,7 @@ func BackendNamespace(
 	quota string,
 	scheme *runtime.Scheme,
 ) (*corev1.Namespace, error) {
-	setLogComponent(ctx, "namespace")
+	ctx, _ = logging.GetLogComponent(ctx, "namespace")
 	logger := log.Ctx(ctx)
 	logger.Info().Msgf("defining %s Namespace", name)
 	ns := &corev1.Namespace{

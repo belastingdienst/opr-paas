@@ -11,6 +11,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/rs/zerolog/log"
@@ -25,8 +26,8 @@ func (r *PaasReconciler) EnsureAppProject(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "appproject")
-	log.Ctx(ctx).Info().Msg("creating Argo Project")
+	ctx, logger := logging.GetLogComponent(ctx, "appproject")
+	logger.Info().Msg("creating Argo Project")
 	project, err := r.BackendAppProject(ctx, paas)
 	if err != nil {
 		return err

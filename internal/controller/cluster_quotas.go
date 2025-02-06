@@ -12,10 +12,10 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
-	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
@@ -71,8 +71,7 @@ func (r *PaasReconciler) backendQuota(
 	} else {
 		quotaName = fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, suffix)
 	}
-	ctx = setLogComponent(ctx, "quota")
-	logger := log.Ctx(ctx)
+	_, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("defining quota")
 	// matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	quota := &quotav1.ClusterResourceQuota{
@@ -147,8 +146,7 @@ func (r *PaasReconciler) BackendUnneededQuotas(
 }
 
 func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha1.Paas, quotaName string) error {
-	ctx = setLogComponent(ctx, "quota")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
 	if err := r.Get(ctx, types.NamespacedName{
@@ -166,8 +164,7 @@ func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha
 }
 
 func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1alpha1.PaasNS) error {
-	ctx = setLogComponent(ctx, "quota")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
 	if err := r.Get(ctx, types.NamespacedName{
@@ -206,8 +203,7 @@ func (r *PaasReconciler) ReconcileQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (err error) {
-	ctx = setLogComponent(ctx, "quota")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("creating quotas for Paas")
 	// Create quotas if needed
 	if quotas, err := r.BackendEnabledQuotas(ctx, paas); err != nil {

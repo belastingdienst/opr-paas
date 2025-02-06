@@ -12,6 +12,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/rs/zerolog/log"
@@ -31,8 +32,7 @@ func (r *PaasReconciler) EnsureArgoApp(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "argoapp")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "argoapp")
 	namespace := fmt.Sprintf("%s-%s", paas.Name, "argocd")
 	namespacedName := types.NamespacedName{
 		Namespace: namespace,
