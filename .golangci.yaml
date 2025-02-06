@@ -8,6 +8,7 @@ linters:
   enable:
     - errcheck
     - errorlint
+    - ginkgolinter
     - gocritic
     - gofumpt
     - goimports
