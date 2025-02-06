@@ -108,7 +108,7 @@ var _ = Describe("Secret controller", func() {
 			err := k8sClient.List(ctx, secrets, client.InNamespace("my-paas-foo"))
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(len(secrets.Items)).To(Equal(1))
+			Expect(secrets.Items).To(HaveLen(1))
 			Expect(secrets.Items[0].Data["url"]).To(Equal([]byte("probably a git repo.git")))
 			Expect(secrets.Items[0].Data["sshPrivateKey"]).To(Equal([]byte("some encrypted string")))
 		})
