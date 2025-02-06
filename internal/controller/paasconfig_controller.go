@@ -176,21 +176,3 @@ func (pcr *PaasConfigReconciler) setSuccesfullCondition(ctx context.Context, con
 	}
 	return nil
 }
-
-func (pcr *PaasConfigReconciler) setErrorCondition(ctx context.Context, config *v1alpha1.PaasConfig, err error) error {
-	meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{
-		Type:   v1alpha1.TypeActivePaasConfig,
-		Status: metav1.ConditionFalse, Reason: "ReconcilingError", ObservedGeneration: config.Generation,
-		Message: fmt.Sprintf("Reconciling (%s) failed", config.Name),
-	})
-	meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{
-		Type:   v1alpha1.TypeHasErrorsPaasConfig,
-		Status: metav1.ConditionTrue, Reason: "ReconcilingError", ObservedGeneration: config.Generation,
-		Message: err.Error(),
-	})
-
-	if err := pcr.Status().Update(ctx, config); err != nil {
-		return err
-	}
-	return nil
-}
