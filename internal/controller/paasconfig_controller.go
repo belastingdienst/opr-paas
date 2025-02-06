@@ -20,6 +20,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -61,8 +62,8 @@ func (r *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	cfg := &v1alpha1.PaasConfig{}
-	ctx, logger := setRequestLogger(ctx, cfg, pcr.Scheme, req)
-	ctx = setLogComponent(ctx, "paasconfig")
+	ctx, _ = logging.SetControllerLogger(ctx, cfg, pcr.Scheme, req)
+	ctx, logger := logging.GetLogComponent(ctx, "paasconfig")
 
 	errResult := reconcile.Result{
 		Requeue:      true,

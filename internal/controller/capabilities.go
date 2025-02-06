@@ -14,8 +14,8 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
-	"github.com/rs/zerolog/log"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -164,8 +164,8 @@ func (r *PaasReconciler) ensureAppSetCap(
 			Namespace: namespacedName.Namespace,
 		},
 	}
-	ctx = setLogComponent(ctx, "appset")
-	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset", capName)
+	ctx, logger := logging.GetLogComponent(ctx, "appset")
+	logger.Info().Msgf("reconciling %s Applicationset", capName)
 	err = r.Get(ctx, namespacedName, appSet)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
@@ -217,8 +217,8 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
 	asNamespacedName := config.GetConfig().CapabilityK8sName(paasns.Name)
-	ctx = setLogComponent(ctx, "appset")
-	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset", paasns.Name)
+	ctx, logger := logging.GetLogComponent(ctx, "appset")
+	logger.Info().Msgf("reconciling %s Applicationset", paasns.Name)
 	err := r.Get(ctx, asNamespacedName, as)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
