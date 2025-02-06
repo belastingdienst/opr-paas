@@ -13,9 +13,7 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
-	"github.com/google/uuid"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,19 +25,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
-
-func setRequestLogger(ctx context.Context, obj client.Object) (context.Context, *zerolog.Logger) {
-	logger := log.With().
-		Any("webhook", obj.GetObjectKind().GroupVersionKind()).
-		Dict("object", zerolog.Dict().
-			Str("name", obj.GetName()).
-			Str("namespace", obj.GetNamespace()),
-		).
-		Str("requestId", uuid.NewString()).
-		Logger()
-
-	return logger.WithContext(ctx), &logger
-}
 
 // SetupPaasWebhookWithManager registers the webhook for Paas in the manager.
 func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
@@ -70,7 +55,7 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
 	}
-	_, logger := setRequestLogger(ctx, paas)
+	ctx, logger := logging.SetWebhookLogger(ctx, paas)
 	logger.Info().Msg("starting validation webhook for creation")
 
 	return v.validate(ctx, paas)
@@ -82,7 +67,7 @@ func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object for the newObj but got %T", newObj)
 	}
-	_, logger := setRequestLogger(ctx, paas)
+	ctx, logger := logging.SetWebhookLogger(ctx, paas)
 	logger.Info().Msg("starting validation webhook for update")
 
 	return v.validate(ctx, paas)
@@ -94,7 +79,7 @@ func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Ob
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
 	}
-	_, logger := setRequestLogger(ctx, paas)
+	_, logger := logging.SetWebhookLogger(ctx, paas)
 	logger.Info().Msg("starting validation webhook for deletion")
 
 	// No validation needed for deletion.
