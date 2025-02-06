@@ -14,8 +14,8 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/groups"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 
-	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,8 +47,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "ldapgroup")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "ldapgroup")
 	logger.Info().Msg("creating ldap groups for PAAS object ")
 	// See if group already exists and create if it doesn't
 	namespacedName := config.GetConfig().GroupSyncList
@@ -95,8 +94,7 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 	ctx context.Context,
 	cleanedLdapQueries []string,
 ) error {
-	ctx = setLogComponent(ctx, "ldapgroup")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "ldapgroup")
 	cm := &corev1.ConfigMap{}
 	wlConfigMap := config.GetConfig().GroupSyncList
 	err := r.Get(ctx, types.NamespacedName{Name: wlConfigMap.Name, Namespace: wlConfigMap.Namespace}, cm)

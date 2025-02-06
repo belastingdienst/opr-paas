@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
@@ -241,8 +242,7 @@ func (r *PaasNSReconciler) ReconcileSecrets(
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 ) error {
-	ctx = setLogComponent(ctx, "secret")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "secret")
 	logger.Debug().Msg("reconciling Ssh Secrets")
 	desiredSecrets, err := r.BackendSecrets(ctx, paasns, paas)
 	if err != nil {
