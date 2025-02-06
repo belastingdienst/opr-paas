@@ -13,6 +13,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	userv1 "github.com/openshift/api/user/v1"
@@ -143,7 +144,7 @@ func (r *PaasReconciler) FinalizeGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "group")
+	ctx, _ = logging.GetLogComponent(ctx, "group")
 	existingGroups, err := r.getExistingGroups(ctx, paas)
 	if err != nil {
 		return err
@@ -165,8 +166,7 @@ func (r *PaasReconciler) ReconcileGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "group")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "group")
 	logger.Info().Msg("reconciling groups for Paas")
 	desiredGroups, err := r.backendGroups(ctx, paas)
 	if err != nil {

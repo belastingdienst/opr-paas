@@ -11,6 +11,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -113,8 +114,7 @@ func (r *PaasReconciler) ReconcilePaasNss(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "paasns")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "paasns")
 	logger.Info().Msg("creating default namespace to hold PaasNs resources for Paas object")
 	if ns, err := BackendNamespace(ctx, paas, paas.Name, paas.Name, r.Scheme); err != nil {
 		logger.Err(err).Msgf("failure while defining namespace %s", paas.Name)
