@@ -134,7 +134,9 @@ jobs:
           go-version: ${{ env.GOLANG_VERSION }}
         # https://github.com/marketplace/actions/kubernetes-kind-cluster#example-workflow
       - name: Kubernetes KinD Cluster
-        uses: container-tools/kind-action@0ad70e2299366b0e1552c7240f4e4567148f723e # v2.0.4
+        run: |
+          go install sigs.k8s.io/kind@v0.26.0
+          kind create cluster
       - name: Test kind setup successfully
         run: |
           kubectl cluster-info
