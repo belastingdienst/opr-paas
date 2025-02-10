@@ -90,6 +90,10 @@ func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Ob
 func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	conf := config.GetConfig()
+	// Check for uninitialized config
+	if conf.DecryptKeysSecret.Name == "" {
+		return nil, apierrors.NewInternalError(fmt.Errorf("uninitialized PaasConfig"))
+	}
 	if errs := v.validateCaps(conf, paas.Spec.Capabilities); errs != nil {
 		allErrs = append(allErrs, errs...)
 	}

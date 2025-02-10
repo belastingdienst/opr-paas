@@ -36,7 +36,6 @@ func TestPaasConfig(t *testing.T) {
 				return ctx
 			}).
 			Assess("Operator reports error when no PaasConfig is loaded", assertOperatorErrorWithoutPaasConfig).
-			Assess("Paas reconciliation resumes once PaasConfig is loaded", assertPaasReconciliationResumed).
 			Assess("Paas reconciliation is triggered after PaasConfig is updated", assertPaasReconciliationAfterConfigUpdate).
 			Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 				deletePaasSync(ctx, "foo", t, cfg)
@@ -141,35 +140,25 @@ func assertOperatorErrorWithoutPaasConfig(ctx context.Context, t *testing.T, cfg
 		},
 	}
 
-	require.NoError(t, cfg.Client().Resources().Create(ctx, paas))
-	require.NoError(
-		t,
-		waitForStatus(ctx, cfg, paas, 0, func(conds []metav1.Condition) bool {
-			cond := meta.FindStatusCondition(conds, v1alpha1.TypeHasErrorsPaas)
-			return cond != nil &&
-				cond.Status == metav1.ConditionTrue &&
-				cond.Message == "please reach out to your system administrator as there is no Paasconfig available to reconcile against"
-		}),
-	)
-
-	return ctx
-}
-
-func assertPaasReconciliationResumed(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	paasConfig := examplePaasConfig.DeepCopy()
-	require.NoError(t, createSync(ctx, cfg, paasConfig, v1alpha1.TypeActivePaasConfig))
-
-	paas := getPaas(ctx, "foo", t, cfg)
-	// Because the spec is not being changed between the failed and resumed reconciliation, the generation of the Paas resource is
-	// not incremented. Thus we pass the initial generation (i.e. 0), as `waitForCondition` waits to observe a generation change
-	// before matching the condition.
-	require.NoError(t, waitForCondition(ctx, cfg, paas, 0, v1alpha1.TypeReadyPaas))
+	err = cfg.Client().Resources().Create(ctx, paas)
+	require.True(t, apierrors.IsInternalError(err))
 
 	return ctx
 }
 
 func assertPaasReconciliationAfterConfigUpdate(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	paasConfig := getOrFail(ctx, "paas-config", cfg.Namespace(), &v1alpha1.PaasConfig{}, t, cfg)
+	paasConfig := examplePaasConfig.DeepCopy()
+	require.NoError(t, createSync(ctx, cfg, paasConfig, v1alpha1.TypeActivePaasConfig))
+
+	paas := &v1alpha1.Paas{
+		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
+		Spec: v1alpha1.PaasSpec{
+			Requestor: "paas-user",
+			Quota:     make(quota.Quota),
+		},
+	}
+	require.NoError(t, createSync(ctx, cfg, paas, v1alpha1.TypeReadyPaas))
+
 	ns := getOrFail(ctx, "foo", cfg.Namespace(), &v1.Namespace{}, t, cfg)
 	assert.Equal(t, "paas-user", ns.Labels["o.lbl"])
 	assert.Equal(t, "foo", ns.Labels["q.lbl"])
