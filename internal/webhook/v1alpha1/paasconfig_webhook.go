@@ -58,7 +58,6 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 	}
 
 	_, logger := logging.SetWebhookLogger(ctx, paasconfig)
-
 	logger.Info().Msgf("validation for creation of PaasConfig %s", paasconfig.GetName())
 
 	// Deny creation from secondary or more PaasConfig resources
@@ -71,45 +70,51 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 		allErrs = append(allErrs, flderr...)
 	}
 
-	// Ensure LDAP.Host is syntactically valid string, connection check is not done
-	if valid, err := validate.Hostname(paasconfig.Spec.LDAP.Host); !valid {
-		logger.Error().Msg(err.Error())
-		path := field.NewPath("PaasConfig").Child("Spec").Child("LDAP")
-		allErrs = append(allErrs, field.Invalid(path, paasconfig.Spec.LDAP.Host, err.Error()))
+	return warn, apierrors.NewInvalid(
+		schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "PaasConfig"},
+		paasconfig.Name,
+		allErrs,
+	)
+}
+
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
+func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (warn admission.Warnings, err error) {
+	var allErrs field.ErrorList
+
+	paasconfig, ok := newObj.(*v1alpha1.PaasConfig)
+	if !ok {
+		return nil, fmt.Errorf("expected a PaasConfig object but got %T", newObj)
 	}
+
+	_, logger := logging.SetWebhookLogger(ctx, paasconfig)
+	logger.Info().Msgf("validation for update of PaasConfig %s", paasconfig.GetName())
+
+	// Ensure all required fields and values are there
+	if flderr := validatePaasConfigSpec(ctx, v.client, paasconfig.Spec); flderr != nil {
+		allErrs = append(allErrs, flderr...)
+	}
+
+	// TODO(hikarukin): figure out what we need to check on update specifically
+	logger.Debug().Msgf("old PaasConfig: %v", oldObj.(*v1alpha1.PaasConfig))
 
 	return warn, apierrors.NewInvalid(
 		schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "PaasConfig"},
 		paasconfig.Name,
 		allErrs,
 	)
-
-}
-
-// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
-func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	paasconfig, ok := newObj.(*v1alpha1.PaasConfig)
-	if !ok {
-		return nil, fmt.Errorf("expected a PaasConfig object for the newObj but got %T", newObj)
-	}
-	_, logger := logging.GetLogComponent(ctx, "paasconfig_webhook_validate_update")
-	logger.Info().Msgf("validation for update of PaasConfig %s", paasconfig.GetName())
-
-	// TODO(portly-halicore-76): fill in your validation logic upon object update.
-
-	return nil, nil
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
-func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (warn admission.Warnings, err error) {
 	paasconfig, ok := obj.(*v1alpha1.PaasConfig)
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object but got %T", obj)
 	}
 
-	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateUpdate")
-	logger.Info().Msgf("Validation for deletion of PaasConfig %s", paasconfig.GetName())
+	_, logger := logging.SetWebhookLogger(ctx, paasconfig)
+	logger.Info().Msgf("validation for deletion of PaasConfig %s", paasconfig.GetName())
 
+	// Nothing to validate for deletion
 	return nil, nil
 }
 
@@ -133,10 +138,34 @@ func validateNoPaasConfigExists(ctx context.Context, client client.Client) *fiel
 	return nil
 }
 
-func validatePaasConfigSpec(ctx context.Context, client client.Client, spec v1alpha1.PaasConfigSpec) field.ErrorList {
+func validatePaasConfigSpec(ctx context.Context, client client.Client, spec v1alpha1.PaasConfigSpec) (warn admission.Warnings, allErrs field.ErrorList) {
 	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validatePaasConfig")
-	var allErrs field.ErrorList
 	childPath := field.NewPath("spec")
+
+	// Ensure we generate some warnings if deprecated items are used
+	if spec.ArgoPermissions != "" {
+		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("argopermissions"), "deprecated")))
+	}
+	if spec.ExcludeAppSetName != "" {
+		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("excludeappsetname"), "deprecated")))
+	}
+	if spec.GroupSyncListKey != "" {
+		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("groupsynclistkey"), "deprecated")))
+	}
+	if spec.GroupSyncList != "" {
+		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("groupsynclist"), "deprecated")))
+	}
+
+	// Ensure LDAP.Host is syntactically valid string, connection check is not done
+	if spec.LDAP.Host != "" {
+		if valid, err := validate.Hostname(spec.LDAP.Host); !valid {
+			allErrs = append(allErrs, field.Invalid(
+				childPath.Child("LDAP"),
+				spec.LDAP.Host,
+				err.Error(),
+			))
+		}
+	}
 
 	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, client, spec.DecryptKeysSecret, childPath)...)
 	allErrs = append(allErrs, validateCapabilities(spec.Capabilities, childPath)...)
@@ -145,7 +174,7 @@ func validatePaasConfigSpec(ctx context.Context, client client.Client, spec v1al
 		logger.Error().Strs("validation_errors", formatFieldErrors(allErrs)).Msg("encountered errors during validation of PaasConfig")
 	}
 
-	return allErrs
+	return warn, allErrs
 }
 
 func validateCapabilities(capabilities v1alpha1.ConfigCapabilities, rootPath *field.Path) field.ErrorList {
