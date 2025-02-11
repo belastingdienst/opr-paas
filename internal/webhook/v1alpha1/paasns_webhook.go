@@ -9,7 +9,6 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
@@ -65,8 +64,8 @@ func nssFromNs(ctx context.Context, c client.Client, ns string) (map[string]int,
 	return nss, nil
 }
 
-// nsFromPaas accepts a Paas and returns a list of all namespaces managed by this Paas
-// nsFromPaas uses nsFromNs which is recursive.
+// nssFromPaas accepts a Paas and returns a list of all namespaces managed by this Paas
+// nssFromPaas uses nssFromNs which is recursive.
 func nssFromPaas(ctx context.Context, c client.Client, paas *v1alpha1.Paas) (map[string]int, error) {
 	finalNss := make(map[string]int)
 	finalNss[paas.Name] = 1
@@ -94,14 +93,14 @@ func (v *PaasNSCustomValidator) ValidateCreate(ctx context.Context, obj runtime.
 		}
 	}
 
-	ctx, logger := logging.SetWebhookLogger(ctx, paasns)
+	ctx, logger = logging.SetWebhookLogger(ctx, paasns)
 	logger.Info().Msgf("starting validation webhook for create")
 
 	paas, err := getPaas(ctx, v.client, paasns.Spec.Paas)
 	if err != nil {
-		// code to Err when the referenced Paas does not exists
+		// code to Err when the referenced Paas does not exist
 		errs = append(errs, &field.Error{
-			Type:     field.ErrorTypeInvalid,
+			Type:     field.ErrorTypeTypeInvalid,
 			Field:    field.NewPath("spec").Child("paas").String(),
 			BadValue: paasns.Spec.Paas,
 			Detail:   fmt.Errorf("paas %s does not exist: %w", paasns.Spec.Paas, err).Error(),
@@ -111,21 +110,21 @@ func (v *PaasNSCustomValidator) ValidateCreate(ctx context.Context, obj runtime.
 
 	if nss, err := nssFromPaas(ctx, v.client, paas); err != nil {
 		errs = append(errs, &field.Error{
-			Type:     field.ErrorTypeInternal,
+			Type:     field.ErrorTypeInvalid,
 			Field:    field.NewPath("spec").Child("paas").String(),
 			BadValue: paasns.Spec.Paas,
 			Detail:   fmt.Errorf("cannot get nss for this paas: %w", err).Error(),
 		})
 	} else if _, exists := nss[paasns.Namespace]; !exists {
 		errs = append(errs, &field.Error{
-			Type:     field.ErrorTypeInternal,
+			Type:     field.ErrorTypeInvalid,
 			Field:    field.NewPath("spec").Child("paas").String(),
 			BadValue: paasns.Spec.Paas,
 			Detail:   fmt.Errorf("paasns not in namespace belonging to paas %s", paas.Name).Error(),
 		})
 	}
 
-	errs = append(errs, compareGroups(paasns.Spec.Groups, paas.GroupNames())...)
+	errs = append(errs, compareGroups(paasns.Spec.Groups, paas.Spec.Groups.Names())...)
 
 	// Code to Err when an sshSecret can't be decrypted
 	var validated validatedSecrets
@@ -144,50 +143,66 @@ func (v *PaasNSCustomValidator) ValidateCreate(ctx context.Context, obj runtime.
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
 func (v *PaasNSCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (w admission.Warnings, err error) {
-	var errs field.ErrorList
-	oldPaasns, ok := oldObj.(*v1alpha1.PaasNS)
-	if !ok {
-		return nil, fmt.Errorf("expected a PaasNS object but got %T", oldObj)
-	}
-
-	newPaasns, ok := newObj.(*v1alpha1.PaasNS)
-	if !ok {
-		return nil, fmt.Errorf("expected a PaasNS object but got %T", newObj)
-	}
-
-	_, logger := logging.SetWebhookLogger(ctx, oldPaasns)
-	logger.Info().Msgf("starting validation webhook for update")
-
-	if oldPaasns.Spec.Paas != newPaasns.Spec.Paas {
-		return w, fmt.Errorf("cannot update PaasNs.Spec.Paas field on existing PaasNs")
-	}
-
-	paas, err := getPaas(ctx, v.client, newPaasns.Spec.Paas)
-	if err != nil {
-		return nil, fmt.Errorf("paas %s does not exist: %w", newPaasns.Spec.Paas, err)
-	}
-	if reflect.DeepEqual(oldPaasns.Spec.Groups, newPaasns.Spec.Groups) {
-		// Err when a sshSecret can't be decrypted
-		errs = append(errs, compareGroups(newPaasns.Spec.Groups, paas.GroupNames())...)
-	}
-
-	// Err when an sshSecret can't be decrypted
-	if reflect.DeepEqual(oldPaasns.Spec.SshSecrets, newPaasns.Spec.SshSecrets) {
-		var validated validatedSecrets
-		// We don't have to validate what is in the Paas (already validated by Paas webhook)
-		validated.appendFromPaas(*paas)
-		// We don't have to validate what is in the previous PaasNs definition (already validated before)
-		validated.appendFromPaasNS(*oldPaasns)
-		getRsaFunc := func() (cr *crypt.Crypt, err error) {
-			return getRsa(ctx, v.client, newPaasns.Spec.Paas)
+	/*
+		var errs field.ErrorList
+		oldPaasns, ok := oldObj.(*v1alpha1.PaasNS)
+		if !ok {
+			return nil, &field.Error{
+				Type:   field.ErrorTypeTypeInvalid,
+				Detail: fmt.Errorf("expected a PaasNS object but got %T", oldObj).Error(),
+			}
 		}
-		errs = append(errs, validated.compareSecrets(newPaasns.Spec.SshSecrets, getRsaFunc)...)
-	}
 
-	if len(errs) > 0 {
-		return w, errs.ToAggregate()
-	}
+		newPaasns, ok := newObj.(*v1alpha1.PaasNS)
+		if !ok {
+			return nil, &field.Error{
+				Type:   field.ErrorTypeTypeInvalid,
+				Detail: fmt.Errorf("expected a PaasNS object but got %T", newObj).Error(),
+			}
+		}
 
+		ctx, logger := logging.SetWebhookLogger(ctx, oldPaasns)
+		logger.Info().Msgf("starting validation webhook for update")
+
+		if oldPaasns.Spec.Paas != newPaasns.Spec.Paas {
+			return w, fmt.Errorf("updates to PaasNs.Spec.Paas field are not allowed")
+		}
+
+		paas, err := getPaas(ctx, v.client, newPaasns.Spec.Paas)
+		if err != nil {
+			return nil, fmt.Errorf("paas %s does not exist: %w", newPaasns.Spec.Paas, err)
+		}
+		if oldPaasns.Spec.Paas != newPaasns.Name {
+			errs = append(errs, &field.Error{
+				Type:     field.ErrorTypeNotSupported,
+				Field:    field.NewPath("spec").Child("paas").String(),
+				BadValue: newPaasns.Spec.Paas,
+				Detail:   "field is immutable",
+			})
+		}
+
+		if !reflect.DeepEqual(oldPaasns.Spec.Groups, newPaasns.Spec.Groups) {
+			// Err when a sshSecret can't be decrypted
+			errs = append(errs, compareGroups(newPaasns.Spec.Groups, paas.GroupNames())...)
+		}
+
+		// Err when an sshSecret can't be decrypted
+		if !reflect.DeepEqual(oldPaasns.Spec.SshSecrets, newPaasns.Spec.SshSecrets) {
+			var validated validatedSecrets
+			// We don't have to validate what is in the Paas (already validated by Paas webhook)
+			validated.appendFromPaas(*paas)
+			// We don't have to validate what is in the previous PaasNs definition (already validated before)
+			validated.appendFromPaasNS(*oldPaasns)
+			getRsaFunc := func() (cr *crypt.Crypt, err error) {
+				return getRsa(ctx, v.client, newPaasns.Spec.Paas)
+			}
+			errs = append(errs, validated.compareSecrets(newPaasns.Spec.SshSecrets, getRsaFunc)...)
+		}
+
+		if len(errs) > 0 {
+			return w, errs.ToAggregate()
+		}
+	*/
 	return nil, nil
 }
 
@@ -196,9 +211,9 @@ func (v *PaasNSCustomValidator) ValidateDelete(ctx context.Context, obj runtime.
 	return nil, nil
 }
 
-func getPaas(ctx context.Context, _client client.Client, name string) (paas *v1alpha1.Paas, err error) {
+func getPaas(ctx context.Context, c client.Client, name string) (paas *v1alpha1.Paas, err error) {
 	paas = &v1alpha1.Paas{}
-	err = _client.Get(ctx, client.ObjectKey{
+	err = c.Get(ctx, client.ObjectKey{
 		Name: name,
 	}, paas)
 	if err != nil {
@@ -220,7 +235,7 @@ func compareGroups(subGroups []string, superGroups []string) (errs field.ErrorLi
 	for _, group := range subGroups {
 		if _, exists := uqSuperGroups[group]; !exists {
 			errs = append(errs, &field.Error{
-				Type:     field.ErrorTypeInternal,
+				Type:     field.ErrorTypeInvalid,
 				Field:    field.NewPath("spec").Child("groups").Key(group).String(),
 				BadValue: group,
 				Detail:   fmt.Errorf("group %s does not exist in paas", group).Error(),

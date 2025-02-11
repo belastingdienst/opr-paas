@@ -23,6 +23,8 @@ var (
 	decryptPrivateKeys *crypt.CryptPrivateKeys
 )
 
+// TODO: devotional-phoenix-97: We should refine this code and the entire crypt implementation including caching.
+
 // resetCrypts removes all crypts and resets decryptSecretPrivateKeys
 func resetCrypts() {
 	crypts = make(map[string]*crypt.Crypt)

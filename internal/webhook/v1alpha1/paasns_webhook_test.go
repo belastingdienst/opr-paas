@@ -4,8 +4,6 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-//revive:disable:dot-imports
-
 package v1alpha1
 
 import (

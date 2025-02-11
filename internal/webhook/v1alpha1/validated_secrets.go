@@ -66,7 +66,7 @@ func (vs validatedSecrets) compareSecrets(unvalidated map[string]string, getRsaF
 		}
 		if crypt, err := getRsaFunc(); err != nil {
 			errs = append(errs, &field.Error{
-				Type:   field.ErrorTypeInternal,
+				Type:   field.ErrorTypeInvalid,
 				Field:  field.NewPath("spec").Child("sshSecrets").Key(secretName).String(),
 				Detail: fmt.Errorf("failed to get crypt: %w", err).Error(),
 			})
