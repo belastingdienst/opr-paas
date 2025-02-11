@@ -9,6 +9,8 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+	"net"
+	"regexp"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/logging"
@@ -66,6 +68,15 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 		allErrs = append(allErrs, *flderr...)
 	}
 
+	// Ensure LDAP.Host is syntactically valid string, connection check is not done
+	if flderr := validateLDAPHostSyntax(ctx, paasconfig.Spec.LDAP.Host); flderr != nil {
+		allErrs = append(allErrs, flderr)
+	}
+
+	if flderr := validateCapabilities(ctx, paasconfig.Spec.Capabilities); flderr != nil {
+		allErrs = append(allErrs, *flderr...)
+	}
+
 	return warn, allErrs.ToAggregate()
 }
 
@@ -83,7 +94,6 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, 
 	return nil, nil
 }
 
-// TODO(portly-halicore-76): determine whether this can be left out
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
 func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	paasconfig, ok := obj.(*v1alpha1.PaasConfig)
@@ -154,3 +164,174 @@ func validatePaasConfig(ctx context.Context, config v1alpha1.PaasConfigSpec) *fi
 
 	return &allErrs
 }
+
+func validateCapabilities(ctx context.Context, caps v1alpha1.ConfigCapabilities) *field.ErrorList {
+	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validatePaasConfig")
+	var allErrs field.ErrorList
+
+	for name, capability := range caps {
+		// Ensure valid quotasettings
+		allErrs = append(allErrs, *validateQuotaSettings(ctx, capability.QuotaSettings)...)
+
+		// For our custom fields
+		for fieldName, field := range capability.CustomFields {
+			// Can't set both Required and Default
+			if field.Required && field.Default != "" {
+				msg := "custom field has both Required and Default set, which is invalid"
+				logger.Error().Msg(msg)
+				allErrs = append(allErrs, field.Invalid(field.NewPath("ConfigCapability").Child("CustomField"), fieldName, msg))
+			}
+
+			// Must have compilable regex
+			if field.Validation != "" {
+				_, err := regexp.Compile(field.Validation)
+				if err != nil {
+					msg := fmt.Sprintf("custom field '%s' in capability '%s' has an invalid regex pattern", fieldName, name)
+					logger.Error().Msg(msg)
+					allErrs = append(allErrs, field.Invalid(
+						field.NewPath("ConfigCapability").Child("CustomField").Child("Validation"),
+						fieldName,
+						msg))
+				}
+			}
+		}
+	}
+
+	return &allErrs
+}
+
+func validateQuotaSettings(ctx context.Context, qs v1alpha1.ConfigQuotaSettings) *field.ErrorList {
+	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateQuotaSettings")
+	var allErrs field.ErrorList
+
+	// Ensure DefQuota is set
+	if qs.DefQuota == nil {
+		logger.Error().Msg("capability is missing required DefQuota")
+		allErrs = append(allErrs, field.Required(
+			field.NewPath("ConfigCapability").Child("QuotaSettings").Child("DefQuota"),
+			"field is required"))
+	}
+
+	// Ensure Ratio is sane
+	if qs.Ratio < 0.0 || qs.Ratio > 1.0 {
+		logger.Error().Msg("capability has an invalid Ratio, must be between 0.0 and 1.0")
+		allErrs = append(allErrs, field.Invalid(
+			field.NewPath("ConfigCapability").Child("QuotaSettings").Child("Ratio"),
+			qs.Ratio,
+			"field is required"))
+	}
+
+	for resourceName, defQuantity := range qs.DefQuota {
+		// Ensure DefQuota does not exceed MaxQuota
+		if maxQuantity, exists := qs.MaxQuotas[resourceName]; exists {
+			if defQuantity.Cmp(maxQuantity) > 0 {
+				msg := fmt.Sprintf("capability has DefQuota %s exceeding MaxQuota %s for resource %s", defQuantity.String(), maxQuantity.String(), resourceName)
+				logger.Error().Msg(msg)
+				allErrs = append(allErrs, field.Invalid(
+					field.NewPath("ConfigCapability").Child("QuotaSettings").Child("DefQuota"),
+					qs.DefQuota,
+					fmt.Sprintf("value of DefQuota exceeds MaxQuota for resource %s", resourceName)))
+			}
+		}
+
+		// DefQuota should not be lower than MinQuota
+		if minQuantity, exists := qs.MinQuotas[resourceName]; exists {
+			if defQuantity.Cmp(minQuantity) < 0 {
+				logger.Error().Msg(fmt.Sprintf("capability has DefQuota %s lower than MinQuota %s for resource %s", defQuantity.String(), minQuantity.String(), resourceName))
+			}
+		}
+	}
+
+	// Ensure MinQuota does not exceed MaxQuota
+	for resourceName, minQuantity := range qs.MinQuotas {
+		if maxQuantity, exists := qs.MaxQuotas[resourceName]; exists {
+			if minQuantity.Cmp(maxQuantity) > 0 {
+				logger.Error().Msg(fmt.Sprintf("capability has MinQuota %s exceeding MaxQuota %s for resource %s", minQuantity.String(), maxQuantity.String(), resourceName))
+				allErrs = append(allErrs, field.Invalid(
+					field.NewPath("ConfigCapability").Child("QuotaSettings").Child("MinQuotas"),
+					minQuantity,
+					fmt.Sprintf("value of MinQuota exceeds MaxQuota for resource %s", resourceName)))
+			}
+		}
+	}
+
+	// If Clusterwide is set to true, there should be no Min/Max quotas per namespace.
+	if qs.Clusterwide {
+		if len(qs.MinQuotas) > 0 || len(qs.MaxQuotas) > 0 {
+			logger.Error().Msg("capability is marked as clusterwide but has MinQuotas or MaxQuotas defined, which is inconsistent")
+			allErrs = append(allErrs, field.Invalid(
+				field.NewPath("ConfigCapability").Child("QuotaSettings").Child("ClusterWide"),
+				qs.Clusterwide,
+				"capability is marked as clusterwide but has MinQuotas or MaxQuotas defined, which is inconsistent"))
+		}
+	}
+
+	// If DefQuota, MinQuotas, or MaxQuotas are provided, ensure they aren't empty maps.
+	if qs.DefQuota != nil && len(qs.DefQuota) == 0 {
+		msg := fmt.Errorf("capability has an empty DefQuota map, which is invalid")
+		logger.Error().Msg(msg.Error())
+		allErrs = append(allErrs, field.Invalid(
+			field.NewPath("ConfigCapability").Child("QuotaSettings").Child("DefQuota"),
+			qs.DefQuota,
+			msg.Error()))
+	}
+	if qs.MinQuotas != nil && len(qs.MinQuotas) == 0 {
+		msg := fmt.Errorf("capability has an empty MinQuotas map, which is invalid")
+		logger.Error().Msg(msg.Error())
+		allErrs = append(allErrs, field.Invalid(
+			field.NewPath("ConfigCapability").Child("QuotaSettings").Child("MinQuotas"),
+			qs.DefQuota,
+			msg.Error()))
+	}
+	if qs.MaxQuotas != nil && len(qs.MaxQuotas) == 0 {
+		msg := fmt.Errorf("capability has an empty MaxQuotas map, which is invalid")
+		logger.Error().Msg(msg.Error())
+		allErrs = append(allErrs, field.Invalid(
+			field.NewPath("ConfigCapability").Child("QuotaSettings").Child("MaxQuotas"),
+			qs.DefQuota,
+			msg.Error()))
+	}
+
+	// Every key in MinQuotas and MaxQuotas should exist in DefQuota to avoid inconsistencies.
+	for resourceName := range qs.MinQuotas {
+		if _, exists := qs.DefQuota[resourceName]; !exists {
+			msg := fmt.Errorf("capability has MinQuota for resource %s that does not exist in DefQuota", resourceName)
+			logger.Error().Msg(msg.Error())
+			allErrs = append(allErrs, field.Invalid(
+				field.NewPath("ConfigCapability").Child("QuotaSettings").Child("MinQuotas"),
+				resourceName,
+				msg.Error()))
+		}
+	}
+	for resourceName := range qs.MaxQuotas {
+		if _, exists := qs.DefQuota[resourceName]; !exists {
+			msg := fmt.Errorf("capability has MaxQuota for resource %s that does not exist in DefQuota", resourceName)
+			logger.Error().Msg(msg.Error())
+			allErrs = append(allErrs, field.Invalid(
+				field.NewPath("ConfigCapability").Child("QuotaSettings").Child("MaxQuotas"),
+				resourceName,
+				msg.Error()))
+		}
+	}
+
+	return &allErrs
+}
+
+func validateLDAPHostSyntax(ctx context.Context, ldapHost string) *field.Error {
+	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateLDAPHostSyntax")
+
+	// checks if the input string is a valid hostname according to RFC 1035
+	hostnameRegex := `^([a-zA-Z0-9][a-zA-Z0-9\-]{0,62}\.)+[a-zA-Z]{2,}$`
+	match, _ := regexp.MatchString(hostnameRegex, ldapHost)
+
+	// ParseIP checks if the input string is a valid IPv4 or IPv6 address
+	if net.ParseIP(ldapHost) == nil && !match {
+		logger.Error().Msg("invalid host name / ip address for ldap host field")
+		return field.Invalid(field.NewPath("").Child("LDAP").Child("Host"), ldapHost, "hostname invalid")
+	}
+
+	return nil
+}
+
+// func validateRoleMappings(ctx context.Context, config v1alpha1.PaasConfigSpec) *field.ErrorList     {}
+// func validateDecryptKeyExists(ctx context.Context, config v1alpha1.PaasConfigSpec) *field.ErrorList {}
