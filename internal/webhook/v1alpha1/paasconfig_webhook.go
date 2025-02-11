@@ -14,7 +14,10 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"github.com/belastingdienst/opr-paas/internal/validate"
+	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -64,8 +67,8 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 	}
 
 	// Ensure all required fields and values are there
-	if flderr := validatePaasConfig(ctx, paasconfig.Spec); flderr != nil {
-		allErrs = append(allErrs, *flderr...)
+	if flderr := validatePaasConfigSpec(ctx, v.client, paasconfig.Spec); flderr != nil {
+		allErrs = append(allErrs, flderr...)
 	}
 
 	// Ensure LDAP.Host is syntactically valid string, connection check is not done
@@ -75,11 +78,12 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 		allErrs = append(allErrs, field.Invalid(path, paasconfig.Spec.LDAP.Host, err.Error()))
 	}
 
-	if flderr := validateCapabilities(ctx, paasconfig.Spec.Capabilities); flderr != nil {
-		allErrs = append(allErrs, *flderr...)
-	}
+	return warn, apierrors.NewInvalid(
+		schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "PaasConfig"},
+		paasconfig.Name,
+		allErrs,
+	)
 
-	return warn, allErrs.ToAggregate()
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
@@ -109,10 +113,12 @@ func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runt
 	return nil, nil
 }
 
-func validateNoPaasConfigExists(ctx context.Context, client client.Client) *field.Error {
-	var list v1alpha1.PaasConfigList
+//----- actual checks
 
+func validateNoPaasConfigExists(ctx context.Context, client client.Client) *field.Error {
 	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateNoPaasConfigExists")
+
+	var list v1alpha1.PaasConfigList
 
 	if err := client.List(ctx, &list); err != nil {
 		err = fmt.Errorf("failed to retrieve PaasConfigList: %w", err)
@@ -127,147 +133,89 @@ func validateNoPaasConfigExists(ctx context.Context, client client.Client) *fiel
 	return nil
 }
 
-func validatePaasConfig(ctx context.Context, config v1alpha1.PaasConfigSpec) *field.ErrorList {
+func validatePaasConfigSpec(ctx context.Context, client client.Client, spec v1alpha1.PaasConfigSpec) field.ErrorList {
 	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validatePaasConfig")
 	var allErrs field.ErrorList
+	childPath := field.NewPath("spec")
 
-	if config.DecryptKeysSecret.Name == "" {
-		logger.Error().Msg("DecryptKeysSecret is required and must have name")
-		allErrs = append(allErrs, field.Required(field.NewPath("DecryptKeysSecret").Child("Name"), "field is required"))
+	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, client, spec.DecryptKeysSecret, childPath)...)
+	allErrs = append(allErrs, validateCapabilities(spec.Capabilities, childPath)...)
+
+	if len(allErrs) > 0 {
+		logger.Error().Strs("validation_errors", formatFieldErrors(allErrs)).Msg("encountered errors during validation of PaasConfig")
 	}
 
-	if config.DecryptKeysSecret.Namespace == "" {
-		logger.Error().Msg("DecryptKeysSecret is required and must have namespace")
-		allErrs = append(allErrs, field.Required(field.NewPath("DecryptKeysSecret").Child("Namespace"), "field is required"))
-	}
-
-	// TODO: remove once GroupSyncList is removed
-	if config.GroupSyncList.Name == "" {
-		logger.Error().Msg("GroupSyncList is required and must have name")
-		allErrs = append(allErrs, field.Required(field.NewPath("GroupSyncList").Child("Name"), "field is required"))
-	}
-
-	// TODO: remove once GroupSyncList is removed
-	if config.GroupSyncList.Namespace == "" {
-		logger.Error().Msg("GroupSyncList is required and must have namespace")
-		allErrs = append(allErrs, field.Required(field.NewPath("GroupSyncList").Child("Namespace"), "field is required"))
-	}
-
-	if len(config.ClusterWideArgoCDNamespace) < 1 {
-		logger.Error().Msg("ClusterWideArgoCDNamespace is required and must have at least 1 character")
-		allErrs = append(allErrs, field.Invalid(field.NewPath("ClusterWideArgoCDNamespace"), config.ClusterWideArgoCDNamespace, "field is required and must have at least 1 character"))
-	}
-
-	// TODO: remove once ExcludeAppSetName is removed
-	if len(config.ExcludeAppSetName) < 1 {
-		logger.Error().Msg("ExcludeAppSetName is required and must have at least 1 character")
-		allErrs = append(allErrs, field.Invalid(field.NewPath("ExcludeAppSetName"), config.ExcludeAppSetName, "field is required and must have at least 1 character"))
-	}
-
-	return &allErrs
+	return allErrs
 }
 
-func validateCapabilities(ctx context.Context, caps v1alpha1.ConfigCapabilities) *field.ErrorList {
-	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validatePaasConfig")
+func validateCapabilities(capabilities v1alpha1.ConfigCapabilities, rootPath *field.Path) field.ErrorList {
+	childPath := rootPath.Child("capabilities")
+
 	var allErrs field.ErrorList
 
-	for name, capability := range caps {
-		// Ensure valid quotasettings
-		allErrs = append(allErrs, *validateQuotaSettings(ctx, capability.QuotaSettings)...)
-
-		// For our custom fields
-		for fieldName, customField := range capability.CustomFields {
-			// Can't set both Required and Default
-			if customField.Required && customField.Default != "" {
-				msg := "custom field has both Required and Default set, which is invalid"
-				logger.Error().Msg(msg)
-				allErrs = append(allErrs, field.Invalid(field.NewPath("ConfigCapability").Child("CustomField"), fieldName, msg))
-			}
-
-			if customField.Validation != "" {
-				// Must have compilable regex
-				if valid, err := validate.StringIsRegex(customField.Validation); !valid {
-					msg := fmt.Sprintf("custom field '%s' in capability '%s' has an invalid regex pattern", fieldName, name)
-					logger.Error().Msg(msg)
-					allErrs = append(allErrs, field.Invalid(
-						field.NewPath("ConfigCapability").Child("CustomField").Child("Validation"),
-						fieldName,
-						err.Error()))
-				}
-
-				// Default field must conform to regex validation
-				if customField.Default != "" {
-					if matched, err := regexp.Match(customField.Validation, []byte(customField.Default)); err != nil {
-						msg := fmt.Errorf("could not validate value %s: %s", customField.Default, err.Error())
-						logger.Error().Msg(msg.Error())
-						allErrs = append(allErrs, field.InternalError(field.NewPath("ConfigCapability").Child("CustomField").Child("Default"), msg))
-					} else if !matched {
-						msg := fmt.Sprintf("invalid value %s (does not match %s)", customField.Default, customField.Validation)
-						logger.Error().Msg(msg)
-						allErrs = append(allErrs, field.Invalid(
-							field.NewPath("ConfigCapability").Child("CustomField").Child("Default"),
-							fieldName,
-							msg))
-					}
-				}
-			}
-		}
+	for name, capability := range capabilities {
+		allErrs = append(allErrs, validateCapability(name, capability, childPath)...)
 	}
 
-	return &allErrs
+	return allErrs
 }
 
-func validateQuotaSettings(ctx context.Context, qs v1alpha1.ConfigQuotaSettings) *field.ErrorList {
-	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateQuotaSettings")
+func validateCapability(name string, cap v1alpha1.ConfigCapability, rootPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
+	childPath := rootPath.Key(name)
 
-	// Ensure DefQuota is set
-	if qs.DefQuota == nil {
-		logger.Error().Msg("capability is missing required DefQuota")
-		allErrs = append(allErrs, field.Required(
-			field.NewPath("ConfigCapability").Child("QuotaSettings").Child("DefQuota"),
-			"field is required"))
-	}
+	allErrs = append(allErrs, validateQuotaSettings(cap.QuotaSettings, childPath)...)
+	allErrs = append(allErrs, validateCustomFields(cap.CustomFields, childPath)...)
 
-	// Ensure Ratio is sane
-	if qs.Ratio < 0.0 || qs.Ratio > 1.0 {
-		logger.Error().Msg("capability has an invalid Ratio, must be between 0.0 and 1.0")
-		allErrs = append(allErrs, field.Invalid(
-			field.NewPath("ConfigCapability").Child("QuotaSettings").Child("Ratio"),
-			qs.Ratio,
-			"field is required"))
-	}
+	return allErrs
+}
+
+func validateQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	childPath := rootPath.Child("quotasettings")
 
 	for resourceName, defQuantity := range qs.DefQuota {
 		// Ensure DefQuota does not exceed MaxQuota
 		if maxQuantity, exists := qs.MaxQuotas[resourceName]; exists {
 			if defQuantity.Cmp(maxQuantity) > 0 {
-				msg := fmt.Sprintf("capability has DefQuota %s exceeding MaxQuota %s for resource %s", defQuantity.String(), maxQuantity.String(), resourceName)
-				logger.Error().Msg(msg)
 				allErrs = append(allErrs, field.Invalid(
-					field.NewPath("ConfigCapability").Child("QuotaSettings").Child("DefQuota"),
+					childPath.Child("defquota").Key(string(resourceName)),
 					qs.DefQuota,
-					fmt.Sprintf("value of DefQuota exceeds MaxQuota for resource %s", resourceName)))
+					"value of DefQuota exceeds MaxQuota"))
 			}
 		}
 
 		// DefQuota should not be lower than MinQuota
 		if minQuantity, exists := qs.MinQuotas[resourceName]; exists {
 			if defQuantity.Cmp(minQuantity) < 0 {
-				logger.Error().Msg(fmt.Sprintf("capability has DefQuota %s lower than MinQuota %s for resource %s", defQuantity.String(), minQuantity.String(), resourceName))
+				allErrs = append(allErrs, field.Invalid(
+					childPath.Child("defquota").Key(string(resourceName)),
+					qs.DefQuota,
+					"value of DefQuota is lower than MinQuota"))
 			}
 		}
 	}
 
-	// Ensure MinQuota does not exceed MaxQuota
 	for resourceName, minQuantity := range qs.MinQuotas {
+		// Ensure MinQuota does not exceed MaxQuota
 		if maxQuantity, exists := qs.MaxQuotas[resourceName]; exists {
 			if minQuantity.Cmp(maxQuantity) > 0 {
-				logger.Error().Msg(fmt.Sprintf("capability has MinQuota %s exceeding MaxQuota %s for resource %s", minQuantity.String(), maxQuantity.String(), resourceName))
 				allErrs = append(allErrs, field.Invalid(
-					field.NewPath("ConfigCapability").Child("QuotaSettings").Child("MinQuotas"),
+					childPath.Child("minquotas").Key(string(resourceName)),
 					minQuantity,
-					fmt.Sprintf("value of MinQuota exceeds MaxQuota for resource %s", resourceName)))
+					"value of MinQuota exceeds MaxQuota"))
+			}
+		}
+	}
+
+	for resourceName, maxQuantity := range qs.MaxQuotas {
+		// Ensure MaxQuota is not less than MinQuota
+		if minQuantity, exists := qs.MinQuotas[resourceName]; exists {
+			if maxQuantity.Cmp(minQuantity) > 0 {
+				allErrs = append(allErrs, field.Invalid(
+					childPath.Child("maxquotas").Key(string(resourceName)),
+					maxQuantity,
+					"value of MaxQuota is less than MinQuota"))
 			}
 		}
 	}
@@ -275,64 +223,138 @@ func validateQuotaSettings(ctx context.Context, qs v1alpha1.ConfigQuotaSettings)
 	// If Clusterwide is set to true, there should be no Min/Max quotas per namespace.
 	if qs.Clusterwide {
 		if len(qs.MinQuotas) > 0 || len(qs.MaxQuotas) > 0 {
-			logger.Error().Msg("capability is marked as clusterwide but has MinQuotas or MaxQuotas defined, which is inconsistent")
 			allErrs = append(allErrs, field.Invalid(
-				field.NewPath("ConfigCapability").Child("QuotaSettings").Child("ClusterWide"),
+				childPath.Child("ClusterWide"),
 				qs.Clusterwide,
-				"capability is marked as clusterwide but has MinQuotas or MaxQuotas defined, which is inconsistent"))
+				"marked as clusterwide but has MinQuotas / MaxQuotas defined"))
 		}
 	}
 
 	// If DefQuota, MinQuotas, or MaxQuotas are provided, ensure they aren't empty maps.
 	if qs.DefQuota != nil && len(qs.DefQuota) == 0 {
-		msg := fmt.Errorf("capability has an empty DefQuota map, which is invalid")
-		logger.Error().Msg(msg.Error())
 		allErrs = append(allErrs, field.Invalid(
-			field.NewPath("ConfigCapability").Child("QuotaSettings").Child("DefQuota"),
+			childPath.Child("defquota"),
 			qs.DefQuota,
-			msg.Error()))
+			"empty DefQuota map is invalid"))
 	}
 	if qs.MinQuotas != nil && len(qs.MinQuotas) == 0 {
-		msg := fmt.Errorf("capability has an empty MinQuotas map, which is invalid")
-		logger.Error().Msg(msg.Error())
 		allErrs = append(allErrs, field.Invalid(
-			field.NewPath("ConfigCapability").Child("QuotaSettings").Child("MinQuotas"),
-			qs.DefQuota,
-			msg.Error()))
+			childPath.Child("minquotas"),
+			qs.MinQuotas,
+			"empty MinQuotas map is invalid"))
 	}
 	if qs.MaxQuotas != nil && len(qs.MaxQuotas) == 0 {
-		msg := fmt.Errorf("capability has an empty MaxQuotas map, which is invalid")
-		logger.Error().Msg(msg.Error())
 		allErrs = append(allErrs, field.Invalid(
-			field.NewPath("ConfigCapability").Child("QuotaSettings").Child("MaxQuotas"),
-			qs.DefQuota,
-			msg.Error()))
+			childPath.Child("maxquotas"),
+			qs.MaxQuotas,
+			"empty MaxQuotas map is invalid"))
 	}
 
 	// Every key in MinQuotas and MaxQuotas should exist in DefQuota to avoid inconsistencies.
 	for resourceName := range qs.MinQuotas {
 		if _, exists := qs.DefQuota[resourceName]; !exists {
-			msg := fmt.Errorf("capability has MinQuota for resource %s that does not exist in DefQuota", resourceName)
-			logger.Error().Msg(msg.Error())
 			allErrs = append(allErrs, field.Invalid(
-				field.NewPath("ConfigCapability").Child("QuotaSettings").Child("MinQuotas"),
-				resourceName,
-				msg.Error()))
+				childPath.Child("minquotas").Key(resourceName.String()),
+				qs.MinQuotas,
+				"resource key does not exist in DefQuota"))
 		}
 	}
 	for resourceName := range qs.MaxQuotas {
 		if _, exists := qs.DefQuota[resourceName]; !exists {
-			msg := fmt.Errorf("capability has MaxQuota for resource %s that does not exist in DefQuota", resourceName)
-			logger.Error().Msg(msg.Error())
 			allErrs = append(allErrs, field.Invalid(
-				field.NewPath("ConfigCapability").Child("QuotaSettings").Child("MaxQuotas"),
-				resourceName,
-				msg.Error()))
+				childPath.Child("maxquotas").Key(resourceName.String()),
+				qs.MaxQuotas,
+				"resource key does not exist in DefQuota"))
 		}
 	}
 
-	return &allErrs
+	return allErrs
+}
+
+func validateCustomFields(customfields map[string]v1alpha1.ConfigCustomField, rootPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	childPath := rootPath.Child("customfields")
+
+	for name, cf := range customfields {
+		allErrs = append(allErrs, validateCustomField(name, cf, childPath)...)
+	}
+
+	return allErrs
+}
+
+func validateCustomField(name string, customfield v1alpha1.ConfigCustomField, rootPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	childPath := rootPath.Child("customfields").Key(name)
+
+	// Can't set both Required and Default
+	if customfield.Required && customfield.Default != "" {
+		allErrs = append(allErrs, field.Invalid(
+			childPath,
+			"",
+			"both Required and Default are set",
+		))
+	}
+
+	if customfield.Validation != "" {
+		// Must have compilable regex
+		if valid, err := validate.StringIsRegex(customfield.Validation); !valid {
+			allErrs = append(allErrs, field.Invalid(
+				childPath.Child("validation"),
+				name,
+				err.Error()))
+		}
+
+		// Default field must conform to regex validation
+		if customfield.Default != "" {
+			if matched, err := regexp.Match(customfield.Validation, []byte(customfield.Default)); err != nil {
+				allErrs = append(allErrs, field.InternalError(
+					childPath.Child("default"),
+					fmt.Errorf("error trying to validate using regex: %s", err.Error()),
+				),
+				)
+			} else if !matched {
+				allErrs = append(allErrs, field.Invalid(
+					childPath.Child("default"),
+					customfield.Default,
+					fmt.Sprintf("value does not match %s", customfield.Validation)))
+			}
+		}
+	}
+
+	return allErrs
+}
+
+// validateDecryptKeysSecret ensures that the referenced Secret exists in the cluster.
+func validateDecryptKeysSecretExists(ctx context.Context, k8sclient client.Client, secretRef v1alpha1.NamespacedName, rootPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+	childPath := rootPath.Child("decryptkeyssecret")
+
+	if secretRef.Name == "" || secretRef.Namespace == "" {
+		allErrs = append(allErrs, field.Required(childPath, "DecryptKeysSecret is required and must have both name and namespace"))
+		return allErrs
+	}
+
+	// Query the Kubernetes API to check if the Secret exists
+	secret := &v1.Secret{}
+	err := k8sclient.Get(ctx, client.ObjectKey{Namespace: secretRef.Namespace, Name: secretRef.Name}, secret)
+	if err != nil {
+		allErrs = append(allErrs, field.NotFound(
+			childPath,
+			fmt.Sprintf("%s/%s", secretRef.Namespace, secretRef.Name),
+		))
+	}
+
+	return allErrs
 }
 
 // func validateRoleMappings(ctx context.Context, config v1alpha1.PaasConfigSpec) *field.ErrorList     {}
 // func validateDecryptKeyExists(ctx context.Context, config v1alpha1.PaasConfigSpec) *field.ErrorList {}
+
+// Convert field.ErrorList to a slice of strings for logging purposes
+func formatFieldErrors(allErrs field.ErrorList) []string {
+	var errs []string
+	for _, err := range allErrs {
+		errs = append(errs, err.Error())
+	}
+	return errs
+}
