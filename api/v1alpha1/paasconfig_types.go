@@ -81,6 +81,7 @@ type PaasConfigSpec struct {
 	ArgoPermissions ConfigArgoPermissions `json:"argopermissions"`
 
 	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
+	// Deprecated: ArgoCD specific code will be removed from the operator
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	ClusterWideArgoCDNamespace string `json:"clusterwide_argocd_namespace"`
