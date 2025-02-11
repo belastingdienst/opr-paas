@@ -36,6 +36,7 @@ func (r *PaasReconciler) EnsureAppProject(
 		Name:      project.Name,
 		Namespace: project.Namespace,
 	}
+
 	// See if appProject exists and create if it doesn't
 	found := &argo.AppProject{}
 	err = r.Get(ctx, namespacedName, found)
