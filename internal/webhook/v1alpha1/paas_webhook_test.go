@@ -114,31 +114,77 @@ var _ = Describe("Paas Webhook", func() {
 			Expect(causes).To(HaveLen(2))
 		})
 
-		//It("Should admit creation if all required fields are present", func() {
-		//	By("simulating an invalid creation scenario")
-		//	Expect(validator.ValidateCreate(ctx, obj)).To(BeNil())
-		//})
+		It("Should warn when a group contains both users and a query", func() {
+			obj = &v1alpha1.Paas{
+				Spec: v1alpha1.PaasSpec{
+					Groups: map[string]v1alpha1.PaasGroup{
+						"foo": {
+							Users: []string{"bar"},
+							Query: "baz",
+						},
+					},
+				},
+			}
+
+			warnings, _ := validator.ValidateCreate(ctx, obj)
+			Expect(warnings).To(ContainElement("spec.groups[foo] contains both users and query, the users will be ignored"))
+		})
+
+		It("Should not warn when a group contains just users", func() {
+			obj = &v1alpha1.Paas{
+				Spec: v1alpha1.PaasSpec{
+					Groups: map[string]v1alpha1.PaasGroup{
+						"foo": {
+							Users: []string{"bar"},
+						},
+					},
+				},
+			}
+
+			warnings, _ := validator.ValidateCreate(ctx, obj)
+			Expect(warnings).To(BeEmpty())
+		})
 	})
 
 	Context("When updating a Paas under Validating Webhook", func() {
 		It("Should deny creation when a capability is set that is not configured", func() {
-			oldObj = &v1alpha1.Paas{Spec: v1alpha1.PaasSpec{
-				Capabilities: v1alpha1.PaasCapabilities{},
-			}}
 			obj = &v1alpha1.Paas{Spec: v1alpha1.PaasSpec{
 				Capabilities: v1alpha1.PaasCapabilities{"foo": v1alpha1.PaasCapability{}},
 			}}
 
-			Expect(validator.ValidateCreate(ctx, oldObj)).Error().ToNot(HaveOccurred())
-			Expect(validator.ValidateUpdate(ctx, oldObj, obj)).Error().
+			Expect(validator.ValidateUpdate(ctx, nil, obj)).Error().
 				To(MatchError(ContainSubstring("capability not configured")))
 		})
 
-		// It("Should validate updates correctly", func() {
-		//     By("simulating a valid update scenario")
-		//     oldObj.SomeRequiredField = "updated_value"
-		//     obj.SomeRequiredField = "updated_value"
-		//     Expect(validator.ValidateUpdate(ctx, oldObj, obj)).To(BeNil())
-		// })
+		It("Should generate a warning when updating a Paas with a group that contains both users and a queries", func() {
+			obj = &v1alpha1.Paas{
+				Spec: v1alpha1.PaasSpec{
+					Groups: map[string]v1alpha1.PaasGroup{
+						"foo": {
+							Users: []string{"bar"},
+							Query: "baz",
+						},
+					},
+				},
+			}
+
+			warnings, _ := validator.ValidateUpdate(ctx, nil, obj)
+			Expect(warnings).To(ContainElement("spec.groups[foo] contains both users and query, the users will be ignored"))
+		})
+
+		It("Should not warn when updating a Paas with a group that contains just users", func() {
+			obj = &v1alpha1.Paas{
+				Spec: v1alpha1.PaasSpec{
+					Groups: map[string]v1alpha1.PaasGroup{
+						"foo": {
+							Users: []string{"bar"},
+						},
+					},
+				},
+			}
+
+			warnings, _ := validator.ValidateUpdate(ctx, nil, obj)
+			Expect(warnings).To(BeEmpty())
+		})
 	})
 })
