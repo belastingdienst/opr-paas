@@ -9,6 +9,8 @@ package v1alpha1
 //revive:disable:dot-imports
 
 import (
+	"fmt"
+
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -56,6 +58,7 @@ var _ = Describe("Creating a PaasConfig", func() {
 
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn, err).Error().To(HaveOccurred())
+				fmt.Printf("%s", err.Error())
 				Expect(err.Error()).To(Equal("[]: Forbidden: another PaasConfig resource already exists"))
 			})
 		})
@@ -70,17 +73,5 @@ var _ = Describe("Creating a PaasConfig", func() {
 				})
 			})
 		})
-
-		//It("Should admit creation if all required fields are present", func() {
-		//	By("simulating an invalid creation scenario")
-		//	Expect(validator.ValidateCreate(ctx, obj)).To(BeNil())
-		//})
-		//
-		// It("Should validate updates correctly", func() {
-		//     By("simulating a valid update scenario")
-		//     oldObj.SomeRequiredField = "updated_value"
-		//     obj.SomeRequiredField = "updated_value"
-		//     Expect(validator.ValidateUpdate(ctx, oldObj, obj)).To(BeNil())
-		// })
 	})
 })

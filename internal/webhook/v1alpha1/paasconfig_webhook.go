@@ -66,7 +66,8 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 	}
 
 	// Ensure all required fields and values are there
-	if flderr := validatePaasConfigSpec(ctx, v.client, paasconfig.Spec); flderr != nil {
+	if warnings, flderr := validatePaasConfigSpec(ctx, v.client, paasconfig.Spec); flderr != nil {
+		warn = append(warn, warnings...)
 		allErrs = append(allErrs, flderr...)
 	}
 
@@ -90,7 +91,8 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, 
 	logger.Info().Msgf("validation for update of PaasConfig %s", paasconfig.GetName())
 
 	// Ensure all required fields and values are there
-	if flderr := validatePaasConfigSpec(ctx, v.client, paasconfig.Spec); flderr != nil {
+	if warnings, flderr := validatePaasConfigSpec(ctx, v.client, paasconfig.Spec); flderr != nil {
+		warn = append(warn, warnings...)
 		allErrs = append(allErrs, flderr...)
 	}
 
@@ -143,17 +145,17 @@ func validatePaasConfigSpec(ctx context.Context, client client.Client, spec v1al
 	childPath := field.NewPath("spec")
 
 	// Ensure we generate some warnings if deprecated items are used
-	if spec.ArgoPermissions != "" {
-		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("argopermissions"), "deprecated")))
+	if spec.ArgoPermissions.Header != "" {
+		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("argopermissions"), "deprecated"))
 	}
 	if spec.ExcludeAppSetName != "" {
-		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("excludeappsetname"), "deprecated")))
+		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("excludeappsetname"), "deprecated"))
 	}
 	if spec.GroupSyncListKey != "" {
-		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("groupsynclistkey"), "deprecated")))
+		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("groupsynclistkey"), "deprecated"))
 	}
-	if spec.GroupSyncList != "" {
-		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("groupsynclist"), "deprecated")))
+	if spec.GroupSyncList.Name != "" {
+		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("groupsynclist"), "deprecated"))
 	}
 
 	// Ensure LDAP.Host is syntactically valid string, connection check is not done
@@ -375,9 +377,6 @@ func validateDecryptKeysSecretExists(ctx context.Context, k8sclient client.Clien
 
 	return allErrs
 }
-
-// func validateRoleMappings(ctx context.Context, config v1alpha1.PaasConfigSpec) *field.ErrorList     {}
-// func validateDecryptKeyExists(ctx context.Context, config v1alpha1.PaasConfigSpec) *field.ErrorList {}
 
 // Convert field.ErrorList to a slice of strings for logging purposes
 func formatFieldErrors(allErrs field.ErrorList) []string {
