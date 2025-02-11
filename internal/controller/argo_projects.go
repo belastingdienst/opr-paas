@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -27,7 +28,7 @@ func (r *PaasReconciler) EnsureAppProject(
 	paas *v1alpha1.Paas,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "appproject")
-	logger.Info().Msg("creating Argo Project")
+	logger.Info().Msg("Creating Argo Project")
 	project, err := r.BackendAppProject(ctx, paas)
 	if err != nil {
 		return err
@@ -36,7 +37,8 @@ func (r *PaasReconciler) EnsureAppProject(
 		Name:      project.Name,
 		Namespace: project.Namespace,
 	}
-
+	bla := fmt.Errorf("Test error")
+	fmt.Printf("%v", bla)
 	// See if appProject exists and create if it doesn't
 	found := &argo.AppProject{}
 	err = r.Get(ctx, namespacedName, found)

@@ -6,6 +6,8 @@ See LICENSE.md for details.
 
 package v1alpha1
 
+//revive:disable:dot-imports
+
 import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
@@ -15,7 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var _ = Describe("PaasConfig Webhook", func() {
+var _ = Describe("Creating a PaasConfig", func() {
 	var (
 		obj       *v1alpha1.PaasConfig
 		oldObj    *v1alpha1.PaasConfig
@@ -25,17 +27,9 @@ var _ = Describe("PaasConfig Webhook", func() {
 	)
 
 	BeforeEach(func() {
-		scheme = runtime.NewScheme()
-		Expect(v1alpha1.AddToScheme(scheme)).To(Succeed())
-
-		// Create a fake client that already has the existing PaasConfig
-		cl = fake.NewClientBuilder().
-			WithScheme(scheme).
-			Build()
-
 		obj = &v1alpha1.PaasConfig{}
 		oldObj = &v1alpha1.PaasConfig{}
-		validator = PaasConfigCustomValidator{client: cl}
+		validator = PaasConfigCustomValidator{client: k8sClient}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
 		Expect(obj).NotTo(BeNil(), "Expected obj to be initialized")
@@ -63,6 +57,17 @@ var _ = Describe("PaasConfig Webhook", func() {
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn, err).Error().To(HaveOccurred())
 				Expect(err.Error()).To(Equal("[]: Forbidden: another PaasConfig resource already exists"))
+			})
+		})
+
+		Context("and no PaasConfig already exists", func() {
+			Context("and the new PaasConfig does not have one or more required fields", func() {
+				It("should deny creation", func() {
+					warn, err := validator.ValidateCreate(ctx, obj)
+					Expect(warn, err).Error().To(HaveOccurred())
+					Expect(err).To(HaveLen(4))
+					Expect(err.Error()).To(Equal("[]: Forbidden: another PaasConfig resource already exists"))
+				})
 			})
 		})
 

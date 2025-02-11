@@ -54,11 +54,16 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 
 	_, logger := logging.SetWebhookLogger(ctx, paasconfig)
 
-	logger.Info().Msgf("Validation for creation of PaasConfig %s", paasconfig.GetName())
+	logger.Info().Msgf("validation for creation of PaasConfig %s", paasconfig.GetName())
 
 	// Deny creation from secondary or more PaasConfig resources
 	if flderr := validateNoPaasConfigExists(ctx, v.client); flderr != nil {
 		allErrs = append(allErrs, flderr)
+	}
+
+	// Ensure all required fields and values are there
+	if flderr := validatePaasConfig(ctx, paasconfig.Spec); flderr != nil {
+		allErrs = append(allErrs, *flderr...)
 	}
 
 	return warn, allErrs.ToAggregate()
@@ -71,7 +76,7 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, 
 		return nil, fmt.Errorf("expected a PaasConfig object for the newObj but got %T", newObj)
 	}
 	_, logger := logging.GetLogComponent(ctx, "paasconfig_webhook_validate_update")
-	logger.Info().Msgf("Validation for update of PaasConfig %s", paasconfig.GetName())
+	logger.Info().Msgf("validation for update of PaasConfig %s", paasconfig.GetName())
 
 	// TODO(portly-halicore-76): fill in your validation logic upon object update.
 
@@ -85,10 +90,9 @@ func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runt
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object but got %T", obj)
 	}
-	_, logger := logging.GetLogComponent(ctx, "paasconfig_webhook_validate_update")
-	logger.Info().Msgf("Validation for deletion of PaasConfig %s", paasconfig.GetName())
 
-	// TODO(portly-halicore-76): fill in your validation logic upon object deletion.
+	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateUpdate")
+	logger.Info().Msgf("Validation for deletion of PaasConfig %s", paasconfig.GetName())
 
 	return nil, nil
 }
@@ -109,4 +113,44 @@ func validateNoPaasConfigExists(ctx context.Context, client client.Client) *fiel
 	}
 
 	return nil
+}
+
+func validatePaasConfig(ctx context.Context, config v1alpha1.PaasConfigSpec) *field.ErrorList {
+	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validatePaasConfig")
+	var allErrs field.ErrorList
+
+	if config.DecryptKeysSecret.Name == "" {
+		logger.Error().Msg("DecryptKeysSecret is required and must have name")
+		allErrs = append(allErrs, field.Required(field.NewPath("DecryptKeysSecret").Child("Name"), "field is required"))
+	}
+
+	if config.DecryptKeysSecret.Namespace == "" {
+		logger.Error().Msg("DecryptKeysSecret is required and must have namespace")
+		allErrs = append(allErrs, field.Required(field.NewPath("DecryptKeysSecret").Child("Namespace"), "field is required"))
+	}
+
+	// TODO: remove once GroupSyncList is removed
+	if config.GroupSyncList.Name == "" {
+		logger.Error().Msg("GroupSyncList is required and must have name")
+		allErrs = append(allErrs, field.Required(field.NewPath("GroupSyncList").Child("Name"), "field is required"))
+	}
+
+	// TODO: remove once GroupSyncList is removed
+	if config.GroupSyncList.Namespace == "" {
+		logger.Error().Msg("GroupSyncList is required and must have namespace")
+		allErrs = append(allErrs, field.Required(field.NewPath("GroupSyncList").Child("Namespace"), "field is required"))
+	}
+
+	if len(config.ClusterWideArgoCDNamespace) < 1 {
+		logger.Error().Msg("ClusterWideArgoCDNamespace is required and must have at least 1 character")
+		allErrs = append(allErrs, field.Invalid(field.NewPath("ClusterWideArgoCDNamespace"), config.ClusterWideArgoCDNamespace, "field is required and must have at least 1 character"))
+	}
+
+	// TODO: remove once ExcludeAppSetName is removed
+	if len(config.ExcludeAppSetName) < 1 {
+		logger.Error().Msg("ExcludeAppSetName is required and must have at least 1 character")
+		allErrs = append(allErrs, field.Invalid(field.NewPath("ExcludeAppSetName"), config.ExcludeAppSetName, "field is required and must have at least 1 character"))
+	}
+
+	return &allErrs
 }
