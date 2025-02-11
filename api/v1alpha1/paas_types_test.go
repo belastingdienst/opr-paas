@@ -290,7 +290,7 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 		},
 	}
 	fields, err = pc.CapExtraFields(map[string]ConfigCustomField{})
-	assert.Equal(t, "Custom field not_in_config is not configured in capability config", err.Error())
+	assert.Equal(t, "custom field not_in_config is not configured in capability config", err.Error())
 	assert.Nil(t, fields, "not_in_config should return nilmap for fields")
 
 	// required_field key not being set throws error
@@ -300,7 +300,7 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 	fields, err = pc.CapExtraFields(map[string]ConfigCustomField{
 		"required_key": {Required: true},
 	})
-	assert.Equal(t, "Value required_key is required", err.Error())
+	assert.Equal(t, "value required_key is required", err.Error())
 	assert.Nil(t, fields, "required_field should return nilmap for fields")
 
 	// validation errors throw issues
@@ -314,7 +314,7 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 			Validation: "^valid_value$",
 		},
 	})
-	assert.Equal(t, "Invalid value invalid_value (does not match ^valid_value$)", err.Error())
+	assert.Equal(t, "invalid value invalid_value (does not match ^valid_value$)", err.Error())
 	assert.Nil(t, fields, "invalid_value should return nilmap for fields")
 }
 
