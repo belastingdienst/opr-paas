@@ -9,11 +9,11 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-	"net"
 	"regexp"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/logging"
+	"github.com/belastingdienst/opr-paas/internal/validate"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -69,8 +69,10 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 	}
 
 	// Ensure LDAP.Host is syntactically valid string, connection check is not done
-	if flderr := validateLDAPHostSyntax(ctx, paasconfig.Spec.LDAP.Host); flderr != nil {
-		allErrs = append(allErrs, flderr)
+	if valid, err := validate.Hostname(paasconfig.Spec.LDAP.Host); !valid {
+		logger.Error().Msg(err.Error())
+		path := field.NewPath("PaasConfig").Child("Spec").Child("LDAP")
+		allErrs = append(allErrs, field.Invalid(path, paasconfig.Spec.LDAP.Host, err.Error()))
 	}
 
 	if flderr := validateCapabilities(ctx, paasconfig.Spec.Capabilities); flderr != nil {
@@ -174,24 +176,39 @@ func validateCapabilities(ctx context.Context, caps v1alpha1.ConfigCapabilities)
 		allErrs = append(allErrs, *validateQuotaSettings(ctx, capability.QuotaSettings)...)
 
 		// For our custom fields
-		for fieldName, field := range capability.CustomFields {
+		for fieldName, customField := range capability.CustomFields {
 			// Can't set both Required and Default
-			if field.Required && field.Default != "" {
+			if customField.Required && customField.Default != "" {
 				msg := "custom field has both Required and Default set, which is invalid"
 				logger.Error().Msg(msg)
 				allErrs = append(allErrs, field.Invalid(field.NewPath("ConfigCapability").Child("CustomField"), fieldName, msg))
 			}
 
-			// Must have compilable regex
-			if field.Validation != "" {
-				_, err := regexp.Compile(field.Validation)
-				if err != nil {
+			if customField.Validation != "" {
+				// Must have compilable regex
+				if valid, err := validate.StringIsRegex(customField.Validation); !valid {
 					msg := fmt.Sprintf("custom field '%s' in capability '%s' has an invalid regex pattern", fieldName, name)
 					logger.Error().Msg(msg)
 					allErrs = append(allErrs, field.Invalid(
 						field.NewPath("ConfigCapability").Child("CustomField").Child("Validation"),
 						fieldName,
-						msg))
+						err.Error()))
+				}
+
+				// Default field must conform to regex validation
+				if customField.Default != "" {
+					if matched, err := regexp.Match(customField.Validation, []byte(customField.Default)); err != nil {
+						msg := fmt.Errorf("could not validate value %s: %s", customField.Default, err.Error())
+						logger.Error().Msg(msg.Error())
+						allErrs = append(allErrs, field.InternalError(field.NewPath("ConfigCapability").Child("CustomField").Child("Default"), msg))
+					} else if !matched {
+						msg := fmt.Sprintf("invalid value %s (does not match %s)", customField.Default, customField.Validation)
+						logger.Error().Msg(msg)
+						allErrs = append(allErrs, field.Invalid(
+							field.NewPath("ConfigCapability").Child("CustomField").Child("Default"),
+							fieldName,
+							msg))
+					}
 				}
 			}
 		}
@@ -315,22 +332,6 @@ func validateQuotaSettings(ctx context.Context, qs v1alpha1.ConfigQuotaSettings)
 	}
 
 	return &allErrs
-}
-
-func validateLDAPHostSyntax(ctx context.Context, ldapHost string) *field.Error {
-	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateLDAPHostSyntax")
-
-	// checks if the input string is a valid hostname according to RFC 1035
-	hostnameRegex := `^([a-zA-Z0-9][a-zA-Z0-9\-]{0,62}\.)+[a-zA-Z]{2,}$`
-	match, _ := regexp.MatchString(hostnameRegex, ldapHost)
-
-	// ParseIP checks if the input string is a valid IPv4 or IPv6 address
-	if net.ParseIP(ldapHost) == nil && !match {
-		logger.Error().Msg("invalid host name / ip address for ldap host field")
-		return field.Invalid(field.NewPath("").Child("LDAP").Child("Host"), ldapHost, "hostname invalid")
-	}
-
-	return nil
 }
 
 // func validateRoleMappings(ctx context.Context, config v1alpha1.PaasConfigSpec) *field.ErrorList     {}
