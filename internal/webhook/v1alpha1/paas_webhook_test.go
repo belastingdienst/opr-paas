@@ -114,6 +114,42 @@ var _ = Describe("Paas Webhook", func() {
 			Expect(causes).To(HaveLen(2))
 		})
 
+		It("Should deny creation when a capability custom field is not configured", func() {
+			conf := config.GetConfig()
+			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
+				CustomFields: map[string]v1alpha1.ConfigCustomField{
+					"bar": {},
+				},
+			}
+			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
+
+			obj = &v1alpha1.Paas{
+				Spec: v1alpha1.PaasSpec{
+					Capabilities: v1alpha1.PaasCapabilities{
+						"foo": v1alpha1.PaasCapability{
+							CustomFields: map[string]string{
+								"bar": "baz",
+								"baz": "qux",
+							},
+						},
+					},
+				},
+			}
+			_, err := validator.ValidateCreate(ctx, obj)
+
+			var serr *apierrors.StatusError
+			Expect(errors.As(err, &serr)).To(BeTrue())
+			causes := serr.Status().Details.Causes
+			Expect(causes).To(HaveLen(1))
+			Expect(causes).To(ContainElements(
+				metav1.StatusCause{
+					Type:    metav1.CauseTypeFieldValueInvalid,
+					Message: "Invalid value: \"baz\": custom field not configured",
+					Field:   "spec.capabilities[foo].custom_fields",
+				},
+			))
+		})
+
 		It("Should warn when a group contains both users and a query", func() {
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
