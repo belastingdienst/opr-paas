@@ -21,6 +21,7 @@ import (
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	userv1 "github.com/openshift/api/user/v1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
@@ -92,7 +93,7 @@ var _ = BeforeSuite(func() {
 		fmt.Sprintf("*-%s-%s", runtime.GOOS, runtime.GOARCH)))
 	slices.Sort(binDirs)
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "manifests", "crd", "bases")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "manifests", "crd", "bases"), filepath.Join("..", "..", "test", "e2e", "manifests", "openshift")},
 		ErrorIfCRDPathMissing: true,
 
 		// The BinaryAssetsDirectory is only required if you want to run the tests directly
@@ -109,6 +110,9 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	err = api.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = userv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
