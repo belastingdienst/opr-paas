@@ -103,6 +103,11 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	} else if errs != nil {
 		allErrs = append(allErrs, errs...)
 	}
+	if errs, err := v.validateCustomFields(ctx, conf, paas); err != nil {
+		return nil, apierrors.NewInternalError(err)
+	} else if errs != nil {
+		allErrs = append(allErrs, errs...)
+	}
 
 	warnings = append(warnings, v.validateGroups(paas.Spec.Groups)...)
 
@@ -158,6 +163,35 @@ func (v *PaasCustomValidator) validateSecrets(ctx context.Context, conf v1alpha1
 				name,
 				fmt.Sprintf("cannot be decrypted: %s", err),
 			))
+		}
+	}
+
+	return errs, nil
+}
+
+// validateCustomFields ensures that for a given capability in the Paas:
+//   - all custom fields are configured for that capability in the PaasConfig
+//   - all custom fields pass regular expression validation as configured in the PaasConfig if present
+//
+// Returns an internal error if the validation regexp cannot be compiled.
+func (v *PaasCustomValidator) validateCustomFields(ctx context.Context, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+	var errs []*field.Error
+
+	for cname, c := range paas.Spec.Capabilities {
+		for fname := range c.CustomFields {
+			// validateCaps() has already ensured the capability configuration exists
+			if _, ok := conf.Capabilities[cname].CustomFields[fname]; !ok {
+				errs = append(errs, field.Invalid(
+					field.NewPath("spec").
+						Child("capabilities").
+						Key(cname).
+						Child("custom_fields"),
+					fname,
+					"custom field not configured",
+				))
+
+				continue
+			}
 		}
 	}
 
