@@ -9,6 +9,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -29,6 +30,7 @@ func (r *PaasReconciler) EnsureGroup(
 	paas *v1alpha1.Paas,
 	group *userv1.Group,
 ) error {
+	var changed bool
 	logger := log.Ctx(ctx)
 	// See if group already exists and create if it doesn't
 	found := &userv1.Group{}
@@ -54,6 +56,13 @@ func (r *PaasReconciler) EnsureGroup(
 			logger.Err(err).Msg("error while setting owner reference")
 			return err
 		}
+		changed = true
+	}
+	if !reflect.DeepEqual(group.Users, found.Users) {
+		found.Users = group.Users
+		changed = true
+	}
+	if changed {
 		return r.Update(ctx, found)
 	}
 	return nil
