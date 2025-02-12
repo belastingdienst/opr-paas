@@ -150,6 +150,43 @@ var _ = Describe("Paas Webhook", func() {
 			))
 		})
 
+		It("Should deny creation when a custom field does not match validation regex", func() {
+			conf := config.GetConfig()
+			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
+				CustomFields: map[string]v1alpha1.ConfigCustomField{
+					"bar": {Validation: "^\\d+$"}, // Must be an integer
+					"baz": {Validation: "^\\w+$"}, // Must not be whitespace
+				},
+			}
+			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
+
+			obj = &v1alpha1.Paas{
+				Spec: v1alpha1.PaasSpec{
+					Capabilities: v1alpha1.PaasCapabilities{
+						"foo": v1alpha1.PaasCapability{
+							CustomFields: map[string]string{
+								"bar": "notinteger123",
+								"baz": "word",
+							},
+						},
+					},
+				},
+			}
+			_, err := validator.ValidateCreate(ctx, obj)
+
+			var serr *apierrors.StatusError
+			Expect(errors.As(err, &serr)).To(BeTrue())
+			causes := serr.Status().Details.Causes
+			Expect(causes).To(HaveLen(1))
+			Expect(causes).To(ContainElements(
+				metav1.StatusCause{
+					Type:    metav1.CauseTypeFieldValueInvalid,
+					Message: "Invalid value: \"notinteger123\": does not match regular expression /^\\d+$/",
+					Field:   "spec.capabilities[foo].custom_fields[bar]",
+				},
+			))
+		})
+
 		It("Should warn when a group contains both users and a query", func() {
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
