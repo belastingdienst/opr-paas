@@ -61,8 +61,14 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 	logger.Info().Msgf("validation for creation of PaasConfig %s", paasconfig.GetName())
 
 	// Deny creation from secondary or more PaasConfig resources
-	if flderr := validateNoPaasConfigExists(ctx, v.client); flderr != nil {
-		allErrs = append(allErrs, flderr)
+	if warnings, flderr := validateNoPaasConfigExists(ctx, v.client); flderr != nil {
+		warn = append(warn, warnings...)
+		allErrs = append(allErrs, flderr...)
+		return warn, apierrors.NewInvalid(
+			schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "PaasConfig"},
+			paasconfig.Name,
+			allErrs,
+		)
 	}
 
 	// Ensure all required fields and values are there
@@ -88,7 +94,7 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, 
 	}
 
 	_, logger := logging.SetWebhookLogger(ctx, paasconfig)
-	logger.Info().Msgf("validation for update of PaasConfig %s", paasconfig.GetName())
+	logger.Info().Msgf("validation for updating of PaasConfig %s", paasconfig.GetName())
 
 	// Ensure all required fields and values are there
 	if warnings, flderr := validatePaasConfigSpec(ctx, v.client, paasconfig.Spec); flderr != nil {
@@ -122,22 +128,24 @@ func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runt
 
 //----- actual checks
 
-func validateNoPaasConfigExists(ctx context.Context, client client.Client) *field.Error {
+func validateNoPaasConfigExists(ctx context.Context, client client.Client) (warn admission.Warnings, allErrs field.ErrorList) {
 	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateNoPaasConfigExists")
+	childPath := field.NewPath("spec")
 
 	var list v1alpha1.PaasConfigList
 
 	if err := client.List(ctx, &list); err != nil {
 		err = fmt.Errorf("failed to retrieve PaasConfigList: %w", err)
 		logger.Error().Msg(err.Error())
-		return field.InternalError(&field.Path{}, err)
+		allErrs = append(allErrs, field.InternalError(childPath, err))
+		return nil, allErrs
 	}
 
 	if len(list.Items) > 0 {
-		return field.Forbidden(&field.Path{}, "another PaasConfig resource already exists")
+		allErrs = append(allErrs, field.Forbidden(childPath, "another PaasConfig resource already exists"))
 	}
 
-	return nil
+	return nil, allErrs
 }
 
 func validatePaasConfigSpec(ctx context.Context, client client.Client, spec v1alpha1.PaasConfigSpec) (warn admission.Warnings, allErrs field.ErrorList) {
