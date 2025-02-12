@@ -6,6 +6,9 @@ See LICENSE.md for details.
 
 package v1alpha1
 
+// Excuse Ginkgo use from revive errors
+//revive:disable:dot-imports
+
 import (
 	"crypto/rand"
 	"crypto/rsa"
