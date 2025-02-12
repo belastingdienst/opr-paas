@@ -139,8 +139,14 @@ func (r *PaasReconciler) ensureAppSetCaps(
 			if err := r.ensureAppSetCap(ctx, paas, capName); err != nil {
 				return err
 			}
+		} else {
+			if err := r.finalizeAppSetCap(ctx, paas.GetName(), capName); err != nil {
+				err = fmt.Errorf("cannot remove paas from capability ApplicationSet belonging to Paas %s: %s", paas.GetName(), err.Error())
+				return err
+			}
 		}
 	}
+
 	return nil
 }
 
@@ -210,15 +216,16 @@ func (r *PaasReconciler) ensureAppSetCap(
 }
 
 // finalizeAppSetCap ensures the list entries in the AppSet is removed for the capability of this PaasNs
-func (r *PaasNSReconciler) finalizeAppSetCap(
+func (r *PaasReconciler) finalizeAppSetCap(
 	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
+	paasName string,
+	capability string,
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := config.GetConfig().CapabilityK8sName(paasns.Name)
+	asNamespacedName := config.GetConfig().CapabilityK8sName(capability)
 	ctx, logger := logging.GetLogComponent(ctx, "appset")
-	logger.Info().Msgf("reconciling %s Applicationset", paasns.Name)
+	logger.Info().Msgf("reconciling %s Applicationset", capability)
 	err := r.Get(ctx, asNamespacedName, as)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
@@ -233,7 +240,7 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
 		return err
 	} else {
-		delete(entries, paasns.Spec.Paas)
+		delete(entries, paasName)
 	}
 	if jsonentries, err := entries.AsJSON(); err != nil {
 		return err
