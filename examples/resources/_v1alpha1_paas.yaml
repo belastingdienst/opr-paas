@@ -21,6 +21,14 @@ spec:
         - paa
     appart:
       query: CN=appatest,OU=paas,OU=clusters,OU=corp,DC=prod,DC=acme,DC=org
+      users:
+        - test
+      roles:
+        - viewer
+    appart2:
+      query: CN=appatest,OU=paas,OU=clusters,OU=corp,DC=prod,DC=acme,DC=org
+      users:
+        - test
       roles:
         - viewer
   quota:

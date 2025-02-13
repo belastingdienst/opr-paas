@@ -31,7 +31,7 @@ func TestCheckPaas(t *testing.T) {
 	require.NoError(t, err, "Creating tempfile for public key")
 	defer os.Remove(pub.Name()) // clean up
 
-	crypt.NewGeneratedCrypt(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
+	crypt.GenerateKeyPair(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
 	getConfig()
 	_config.PublicKeyPath = pub.Name()
 	_config.PrivateKeyPath = priv.Name()
