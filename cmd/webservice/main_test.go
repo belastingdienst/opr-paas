@@ -246,7 +246,10 @@ func Test_v1CheckPaas(t *testing.T) {
 			Spec: v1alpha1.PaasSpec{
 				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
 				Capabilities: v1alpha1.PaasCapabilities{
-					"sso": v1alpha1.PaasCapability{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted}},
+					"sso": v1alpha1.PaasCapability{
+						Enabled:    true,
+						SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+					},
 				},
 			},
 		},
@@ -276,7 +279,10 @@ func Test_v1CheckPaas(t *testing.T) {
 			Spec: v1alpha1.PaasSpec{
 				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
 				Capabilities: v1alpha1.PaasCapabilities{
-					"sso": v1alpha1.PaasCapability{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted}},
+					"sso": v1alpha1.PaasCapability{
+						Enabled:    true,
+						SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+					},
 				},
 			},
 		},
@@ -290,7 +296,8 @@ func Test_v1CheckPaas(t *testing.T) {
 	response2 := RestCheckPaasResult{
 		PaasName:  "testPaas2",
 		Decrypted: false,
-		Error:     "testPaas2: .spec.sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys , testPaas2: .spec.capabilities[sso].sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys",
+		// revive:disable-next-line
+		Error: "testPaas2: .spec.sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys , testPaas2: .spec.capabilities[sso].sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys",
 	}
 	response2Json, _ := json.MarshalIndent(response2, "", "    ")
 	assert.JSONEq(t, string(response2Json), w.Body.String())
@@ -330,10 +337,12 @@ func Test_v1CheckPaasInternalServerError(t *testing.T) {
 
 func TestBuildCSP(t *testing.T) {
 	externalHosts := ""
+	// revive:disable-next-line
 	expected := "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'"
 	assert.Equal(t, expected, buildCSP(externalHosts))
 
 	externalHosts = "http://example.com"
+	// revive:disable-next-line
 	expected = "default-src 'none'; script-src 'self' http://example.com; style-src 'self' http://example.com; img-src 'self' http://example.com; connect-src 'self' http://example.com; font-src 'self' http://example.com; object-src 'none'"
 	assert.Equal(t, expected, buildCSP(externalHosts))
 }

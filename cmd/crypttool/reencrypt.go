@@ -67,7 +67,13 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 			reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 			if err != nil {
 				errNum += 1
-				logrus.Errorf("failed to decrypt/reencrypt %s.spec.sshSecrets[%s] in %s: %v", paasName, key, fileName, err)
+				logrus.Errorf(
+					"failed to decrypt/reencrypt %s.spec.sshSecrets[%s] in %s: %v",
+					paasName,
+					key,
+					fileName,
+					err,
+				)
 				continue
 			}
 
@@ -82,14 +88,28 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 				reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 				if err != nil {
 					errNum += 1
-					logrus.Errorf("failed to decrypt/reencrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %v", paasName, capName, key, fileName, err)
+					logrus.Errorf(
+						"failed to decrypt/reencrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %v",
+						paasName,
+						capName,
+						key,
+						fileName,
+						err,
+					)
 					continue
 				}
 
 				cap.SetSshSecret(key, reencrypted)
-				// Use replaceAll as same secret can occur multiple times and use TrimSpace to prevent removal of newlines.
+				// Use replaceAll as same secret can occur multiple times
+				// Use TrimSpace to prevent removal of newlines.
 				paasAsString = strings.ReplaceAll(paasAsString, strings.TrimSpace(secret), reencrypted)
-				logrus.Infof("successfully reencrypted %s.spec.capabilities[%s].sshSecrets[%s] in file %s", paasName, capName, key, fileName)
+				logrus.Infof(
+					"successfully reencrypted %s.spec.capabilities[%s].sshSecrets[%s] in file %s",
+					paasName,
+					capName,
+					key,
+					fileName,
+				)
 			}
 		}
 
@@ -129,6 +149,7 @@ func reencryptCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "reencrypt [command options]",
 		Short: "reencrypt using old private key to decrypt and new public key to encrypt",
+		//revive:disable-next-line
 		Long: `reencrypt can parse yaml/json files with paas objects, decrypt the sshSecrets with the previous private key,
 reencrypt with the new public key and write back the paas to the file in either yaml or json format.`,
 		RunE: func(command *cobra.Command, args []string) error {
@@ -141,14 +162,21 @@ reencrypt with the new public key and write back the paas to the file in either 
 				return reencryptFiles(privateKeyFiles, publicKeyFile, outputFormat, files)
 			}
 		},
-		Args:    cobra.MinimumNArgs(1),
+		Args: cobra.MinimumNArgs(1),
+		//revive:disable-next-line
 		Example: `crypttool reencrypt --privateKeyFiles "/tmp/priv" --publicKeyFile "/tmp/pub" [file or dir] ([file or dir]...)`,
 	}
 
 	flags := cmd.Flags()
 	flags.StringVar(&privateKeyFiles, "privateKeyFiles", "", "The file to read the private key from")
 	flags.StringVar(&publicKeyFile, "publicKeyFile", "", "The file to read the public key from")
-	flags.StringVar(&outputFormat, "outputFormat", "auto", "The outputformat for writing a paas, either yaml (machine formatted), json (machine formatted), auto (which will use input format as output, machine formatted) or preserved (which will use the input format and preserve the original syntax including for example comments) ")
+	flags.StringVar(
+		&outputFormat,
+		"outputFormat",
+		"auto",
+		//revive:disable-next-line
+		"The outputformat for writing a paas, either yaml (machine formatted), json (machine formatted), auto (which will use input format as output, machine formatted) or preserved (which will use the input format and preserve the original syntax including for example comments) ",
+	)
 
 	if err := viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles")); err != nil {
 		logrus.Errorf("key binding for privatekeyfiles failed: %v", err)

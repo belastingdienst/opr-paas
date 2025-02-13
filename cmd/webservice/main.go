@@ -122,7 +122,8 @@ func v1CheckPaas(c *gin.Context) {
 	rsa := getRsa(input.Paas.Name)
 	err := CheckPaas(rsa, &input.Paas)
 	if err != nil {
-		if strings.Contains(err.Error(), "unable to decrypt data with any of the private keys") || strings.Contains(err.Error(), "base64") {
+		if strings.Contains(err.Error(), "unable to decrypt data with any of the private keys") ||
+			strings.Contains(err.Error(), "base64") {
 			output := RestCheckPaasResult{
 				PaasName:  input.Paas.Name,
 				Decrypted: false,

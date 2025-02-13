@@ -118,7 +118,8 @@ func updateClusterRoleBindingForRemovedSA(
 	var newSubjects []rbac.Subject
 
 	for _, subject := range crb.Subjects {
-		if nsRe.MatchString(subject.Namespace) && (subject.Kind == "ServiceAccount") && (subject.Name == sa || sa == "") {
+		if nsRe.MatchString(subject.Namespace) && (subject.Kind == "ServiceAccount") &&
+			(subject.Name == sa || sa == "") {
 			// Subject is this sa, don't keep.
 			changed = true
 			continue

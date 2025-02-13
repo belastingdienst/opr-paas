@@ -28,7 +28,8 @@ type ApplicationSpec struct {
 
 type IgnoreDifferences []ResourceIgnoreDifferences
 
-// ResourceIgnoreDifferences contains resource filter and list of json paths which should be ignored during comparison with live state.
+// ResourceIgnoreDifferences contains resource filter and list of json paths
+// which should be ignored during comparison with live state.
 type ResourceIgnoreDifferences struct {
 	Group        string   `json:"group,omitempty" protobuf:"bytes,1,opt,name=group"`
 	Kind         string   `json:"kind" protobuf:"bytes,2,opt,name=kind"`
@@ -60,18 +61,21 @@ type SyncPolicy struct {
 
 // SyncPolicyAutomated controls the behavior of an automated sync
 type SyncPolicyAutomated struct {
-	// SelfHeal specifies whether to revert resources back to their desired state upon modification in the cluster (default: false)
+	// SelfHeal specifies whether to revert resources back to their desired state
+	// upon modification in the cluster (default: false)
 	SelfHeal bool `json:"selfHeal,omitempty" protobuf:"bytes,2,opt,name=selfHeal"`
 }
 
 // ApplicationDestination holds information about the application's destination
 type ApplicationDestination struct {
-	// Server specifies the URL of the target cluster's Kubernetes control plane API. This must be set if Name is not set.
+	// Server specifies the URL of the target cluster's Kubernetes control plane API.
+	// This must be set if Name is not set.
 	Server string `json:"server,omitempty" protobuf:"bytes,1,opt,name=server"`
 	// Namespace specifies the target namespace for the application's resources.
 	// The namespace will only be set for namespace-scoped resources that have not set a value for .metadata.namespace
 	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
-	// Name is an alternate way of specifying the target cluster by its symbolic name. This must be set if Server is not set.
+	// Name is an alternate way of specifying the target cluster by its symbolic name.
+	// This must be set if Server is not set.
 	Name string `json:"name,omitempty" protobuf:"bytes,3,opt,name=name"`
 }
 

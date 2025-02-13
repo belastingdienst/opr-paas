@@ -185,7 +185,12 @@ func TestPaas_GroupKey2GroupName(t *testing.T) {
 	}
 	assert.Equal(t, "", paas.GroupKey2GroupName("testers"), "Key not present in Paas")
 	assert.NotNil(t, paas.GroupKey2GroupName("cn=test1"), "")
-	assert.Equal(t, "test2", paas.GroupKey2GroupName("cn=test1"), "cn=test1 is a query group thus returning Key2Name value.")
+	assert.Equal(
+		t,
+		"test2",
+		paas.GroupKey2GroupName("cn=test1"),
+		"cn=test1 is a query group thus returning Key2Name value.",
+	)
 	assert.NotNil(t, paas.GroupKey2GroupName("test"), "Test is a present")
 	assert.Equal(t, "paas-test", paas.GroupKey2GroupName("test"), "Test is a group of users thus prefixed by Paas name")
 }

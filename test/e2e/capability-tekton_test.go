@@ -51,7 +51,11 @@ func TestCapabilityTekton(t *testing.T) {
 func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapabilityTekton, t, cfg)
 	tpaasns := getOrFail(ctx, "tekton", paasWithCapabilityTekton, &api.PaasNS{}, t, cfg)
-	require.NoError(t, waitForCondition(ctx, cfg, tpaasns, 0, api.TypeReadyPaasNs), "Tekton PaasNS reconciliation succeeds")
+	require.NoError(
+		t,
+		waitForCondition(ctx, cfg, tpaasns, 0, api.TypeReadyPaasNs),
+		"Tekton PaasNS reconciliation succeeds",
+	)
 
 	namespace := getOrFail(ctx, paasWithCapabilityTekton, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
 	applicationSet := getOrFail(ctx, TektonApplicationSet, asTektonNamespace, &argo.ApplicationSet{}, t, cfg)

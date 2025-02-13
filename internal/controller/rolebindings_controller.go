@@ -202,7 +202,12 @@ func (r *PaasReconciler) reconcileRolebindings(
 				return err
 			}
 			if err := ensureRoleBinding(ctx, r, paas, rb); err != nil {
-				err = fmt.Errorf("failure while creating/updating rolebinding %s/%s: %s", rb.Namespace, rb.Name, err.Error())
+				err = fmt.Errorf(
+					"failure while creating/updating rolebinding %s/%s: %s",
+					rb.Namespace,
+					rb.Name,
+					err.Error(),
+				)
 				return err
 			}
 		}

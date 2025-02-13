@@ -29,6 +29,7 @@ func SetupPaasConfigWebhookWithManager(mgr ctrl.Manager) error {
 
 // NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
 // Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
+// revive:disable-line
 // +kubebuilder:webhook:path=/validate-cpet-belastingdienst-nl-v1alpha1-paasconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=cpet.belastingdienst.nl,resources=paasconfig,verbs=create;update,versions=v1alpha1,name=vpaasconfig-v1alpha1.kb.io,admissionReviewVersions=v1
 
 // PaasConfigCustomValidator struct is responsible for validating the PaasConfig resource
@@ -44,7 +45,10 @@ type PaasConfigCustomValidator struct {
 var _ webhook.CustomValidator = &PaasConfigCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
-func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (warn admission.Warnings, err error) {
+func (v *PaasConfigCustomValidator) ValidateCreate(
+	ctx context.Context,
+	obj runtime.Object,
+) (warn admission.Warnings, err error) {
 	var allErrs field.ErrorList
 
 	paasconfig, ok := obj.(*v1alpha1.PaasConfig)
@@ -65,7 +69,10 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
-func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *PaasConfigCustomValidator) ValidateUpdate(
+	ctx context.Context,
+	oldObj, newObj runtime.Object,
+) (admission.Warnings, error) {
 	paasconfig, ok := newObj.(*v1alpha1.PaasConfig)
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object for the newObj but got %T", newObj)
@@ -80,7 +87,10 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, 
 
 // TODO(portly-halicore-76): determine whether this can be left out
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
-func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *PaasConfigCustomValidator) ValidateDelete(
+	ctx context.Context,
+	obj runtime.Object,
+) (admission.Warnings, error) {
 	paasconfig, ok := obj.(*v1alpha1.PaasConfig)
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object but got %T", obj)

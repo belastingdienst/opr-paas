@@ -10,7 +10,7 @@ storage.nfs: 100GiB
 Multiple Paas'es could have multiple CLusterwide quota's, each with it's own list of items.
 QuotaLists are meant to bring them (across Paas'es an even across capabilities) in maps of lists of quantities.
 After collecting the info, QuotaLists can summarize (e.a. min, max, sum all values, sum largest two values, etc.).
-And QuotaLists can combine these summarizing techniques to calculate the optimal value for eacht quotum (key, value pair).
+QuotaLists can combine these summarizing techniques to calculate the optimal value for each quotum (key, value pair).
 */
 
 import (

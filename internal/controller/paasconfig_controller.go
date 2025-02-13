@@ -103,7 +103,11 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 				return errResult, nil
 			}
 			// Reset Config if this was the active config
-			if meta.IsStatusConditionPresentAndEqual(cfg.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) {
+			if meta.IsStatusConditionPresentAndEqual(
+				cfg.Status.Conditions,
+				v1alpha1.TypeActivePaasConfig,
+				metav1.ConditionTrue,
+			) {
 				config.SetConfig(v1alpha1.PaasConfig{})
 			}
 
@@ -111,7 +115,10 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			meta.SetStatusCondition(&cfg.Status.Conditions, metav1.Condition{
 				Type:   v1alpha1.TypeDegradedPaasConfig,
 				Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: cfg.Generation,
-				Message: fmt.Sprintf("Finalizer operations for PaasConfig %s name were successfully accomplished", cfg.Name),
+				Message: fmt.Sprintf(
+					"Finalizer operations for PaasConfig %s name were successfully accomplished",
+					cfg.Name,
+				),
 			})
 
 			if err := pcr.Status().Update(ctx, cfg); err != nil {

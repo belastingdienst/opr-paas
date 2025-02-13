@@ -133,12 +133,12 @@ func (c *Crypt) EncryptRsa(secret []byte) (encryptedBytes []byte, err error) {
 				finish = msgLen
 			}
 
-			encryptedBlockBytes, err := rsa.EncryptOAEP(hash, random, publicKey, secret[start:finish], c.encryptionContext)
+			encryptedBlock, err := rsa.EncryptOAEP(hash, random, publicKey, secret[start:finish], c.encryptionContext)
 			if err != nil {
 				return nil, err
 			}
 
-			encryptedBytes = append(encryptedBytes, encryptedBlockBytes...)
+			encryptedBytes = append(encryptedBytes, encryptedBlock...)
 		}
 		return encryptedBytes, nil
 	}

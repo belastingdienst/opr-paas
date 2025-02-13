@@ -196,8 +196,14 @@ func (r *PaasReconciler) ReconcileGroups(
 }
 
 // deleteObsoleteGroups delete groups which are no longer desired from a Paas desired state.
-// If a Group is marked as an LDAP group, and there is no Paas referencing it, the LDAP query is added to a list of to be removedLdapGroups.
-func (r *PaasReconciler) deleteObsoleteGroups(ctx context.Context, paas *v1alpha1.Paas, desiredGroups []*userv1.Group, existingGroups []*userv1.Group) (removedLdapGroups []string, err error) {
+// If a Group is marked as an LDAP group, and there is no Paas referencing it,
+// the LDAP query is added to a list of to be removedLdapGroups.
+func (r *PaasReconciler) deleteObsoleteGroups(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	desiredGroups []*userv1.Group,
+	existingGroups []*userv1.Group,
+) (removedLdapGroups []string, err error) {
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("deleting obsolete groups")
 	for _, existingGroup := range existingGroups {
@@ -237,7 +243,10 @@ func isGroupInGroups(group *userv1.Group, groups []*userv1.Group) bool {
 }
 
 // getExistingGroups returns all groups owned by the specified Paas
-func (r *PaasReconciler) getExistingGroups(ctx context.Context, paas *v1alpha1.Paas) (existingGroups []*userv1.Group, err error) {
+func (r *PaasReconciler) getExistingGroups(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+) (existingGroups []*userv1.Group, err error) {
 	logger := log.Ctx(ctx)
 	var groups userv1.GroupList
 	listOpts := []client.ListOption{

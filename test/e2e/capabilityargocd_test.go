@@ -28,6 +28,7 @@ const (
 	paasArgoGitRevision = "main"
 	paasRequestor       = "paas-requestor"
 	// String `dummysecret` encrypted with fixtures/crypt/pub/publicKey0
+	// revive:disable-next-line
 	paasArgoSecret = "mPNADW4KlAYmiBSXfgyoP6G0h/8prFQNH7VBFXB3xiZ8wij2sRIgKekVUC3N9cHk73wkuewoH2fyM0BH2P1xKvSP4v4wwzq+fJC6qxx+d/lucrfnBHWCpsAr646OVYyoH8Er6PpBrPxM+OXCjVsXhd/8CGA32VzcUKSrAWBVWTgXpJ4/X/9gez865AmZkfFf2WBImYgs5Q/rH/mPP1jxl3WP10g51FLi4XG1qn2XdLRzBKXRKluh+PvMRYgqZ8QKl2Yd2HWj1SkzXrtayB7197r0fQ6t4cwpn8mqy30GQhsw6NEPSkcYakukOX2PYeRIVCwmMl3uEe9X1y7fesQVBMnq1loQJRpd7kBUj6EErnKNZ9Qa8tOXYLMME2tzsaYWz+rxhczCaMv9r55EGBENRB0K6VMY4jfC4NKkcVwgZm182/Z1wzOnPbhSKAoaSYUXVrsNfjuzlvQGJmaNF4onDgJdVpqJxkEH98E3q+NMlSYhIzZDph1RDjHmUm2aoAhx2W9zle+LsOWHLgogPHRwY+N7NRII5SBEnw99miCAQVqHnpEk0uITzny0G5AuoS9aKmVhbUNNR1TgZ6u2dFjrkbnZB0GKilJhVENM+oE8Fbq7Q4Qa9wtk/GK1myPNvY7ARbw1tfvbcpJT/NtKnEKsho/OVzfHn15W3niNVpXrZgs=" //nolint:gosec
 )
 
@@ -67,7 +68,11 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		Name:      "argocd",
 		Namespace: paasWithArgo,
 	}}
-	require.NoError(t, waitForCondition(ctx, cfg, argopaasns, 0, api.TypeReadyPaasNs), "ArgoCD PaasNS reconciliation succeeds")
+	require.NoError(
+		t,
+		waitForCondition(ctx, cfg, argopaasns, 0, api.TypeReadyPaasNs),
+		"ArgoCD PaasNS reconciliation succeeds",
+	)
 
 	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
 	entries, _ := getApplicationSetListEntries(argoAppSet)
@@ -83,7 +88,11 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		"subservice":   "capability",
 	}, entries[0], "ApplicationSet List generator contains the correct parameters")
 
-	assert.NotNil(t, getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")
+	assert.NotNil(
+		t,
+		getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg),
+		"ArgoCD namespace created",
+	)
 
 	// Assert ArgoCD creation
 	argocd := getOrFail(ctx, "argocd", paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
@@ -100,14 +109,29 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		Path:           paasArgoGitPath,
 		TargetRevision: paasArgoGitRevision,
 	}, *applications[0].Spec.Source, "Application source matches Git properties from Paas")
-	assert.Equal(t, "whatever", applications[0].Spec.IgnoreDifferences[0].Name, "`exclude_appset_name` configuration is included in IgnoreDifferences")
+	assert.Equal(
+		t,
+		"whatever",
+		applications[0].Spec.IgnoreDifferences[0].Name,
+		"`exclude_appset_name` configuration is included in IgnoreDifferences",
+	)
 
 	secrets := listOrFail(ctx, paasArgoNs, &corev1.SecretList{}, t, cfg).Items
 	assert.Len(t, secrets, 1)
-	assert.Equal(t, "dummysecret", string(secrets[0].Data["sshPrivateKey"]), "SSH secret is created in ArgoCD namespace")
+	assert.Equal(
+		t,
+		"dummysecret",
+		string(secrets[0].Data["sshPrivateKey"]),
+		"SSH secret is created in ArgoCD namespace",
+	)
 
 	crq := getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &quotav1.ClusterResourceQuota{}, t, cfg)
-	assert.Equal(t, "q.lbl="+paasArgoNs, metav1.FormatLabelSelector(crq.Spec.Selector.LabelSelector), "Quota selects ArgoCD namespace via selector set to `quota_label` configuration")
+	assert.Equal(
+		t,
+		"q.lbl="+paasArgoNs,
+		metav1.FormatLabelSelector(crq.Spec.Selector.LabelSelector),
+		"Quota selects ArgoCD namespace via selector set to `quota_label` configuration",
+	)
 	assert.Equal(t, corev1.ResourceList{
 		corev1.ResourceLimitsCPU:                                  resource.MustParse("5"),
 		corev1.ResourceRequestsCPU:                                resource.MustParse("1"),
@@ -156,7 +180,11 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		"subservice":   "capability",
 	}, entries[0], "ApplicationSet List generator contains the correct parameters")
 
-	assert.NotNil(t, getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")
+	assert.NotNil(
+		t,
+		getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg),
+		"ArgoCD namespace created",
+	)
 
 	// Assert ArgoCD unchanged
 	argocd := getOrFail(ctx, "argocd", paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
@@ -174,7 +202,12 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		Path:           paasArgoGitPath,
 		TargetRevision: updatedRevision,
 	}, *applications[0].Spec.Source, "Application source matches Git properties from Paas")
-	assert.Equal(t, "whatever", applications[0].Spec.IgnoreDifferences[0].Name, "`exclude_appset_name` configuration is included in IgnoreDifferences")
+	assert.Equal(
+		t,
+		"whatever",
+		applications[0].Spec.IgnoreDifferences[0].Name,
+		"`exclude_appset_name` configuration is included in IgnoreDifferences",
+	)
 
 	return ctx
 }
@@ -196,7 +229,12 @@ func assertArgoCRB(ctx context.Context, t *testing.T, cfg *envconf.Config) conte
 	extra_role_binding := getOrFail(ctx, "paas-admin", "", &rbac.ClusterRoleBinding{}, t, cfg)
 	assert.Len(t, extra_role_binding.Subjects, 1, "ClusterRoleBinding contains one subject")
 	assert.Equal(t, paasArgoNs, extra_role_binding.Subjects[0].Namespace, "Subject is from correct namespace")
-	assert.Equal(t, "argo-service-argocd-application-controller", extra_role_binding.Subjects[0].Name, "Subject is as defined in capability extra_permissions")
+	assert.Equal(
+		t,
+		"argo-service-argocd-application-controller",
+		extra_role_binding.Subjects[0].Name,
+		"Subject is as defined in capability extra_permissions",
+	)
 
 	return ctx
 }

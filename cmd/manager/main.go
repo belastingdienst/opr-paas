@@ -70,7 +70,12 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.BoolVar(&pretty, "pretty", false, "Pretty-print logging output")
 	flag.BoolVar(&debug, "debug", false, "Log all debug messages")
-	flag.StringVar(&componentDebugList, "component-debug", "", "Comma-separated list of components to log debug messages for.")
+	flag.StringVar(
+		&componentDebugList,
+		"component-debug",
+		"",
+		"Comma-separated list of components to log debug messages for.",
+	)
 	flag.BoolVar(&splitLogOutput, "split-log-output", false, "Send error logs to stderr, and the rest to stdout.")
 
 	flag.Parse()

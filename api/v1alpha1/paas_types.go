@@ -23,7 +23,9 @@ const (
 	TypeReadyPaas = "Ready"
 	// TypeHasErrorsPaas represents the status used when the Paas reconciliation holds errors.
 	TypeHasErrorsPaas = "HasErrors"
-	// TypeDegradedPaas represents the status used when the Paas is deleted and the finalizer operations are yet to occur.
+	// revive:disable-next-line
+	// TypeDegradedPaas represents the status used when the Paas is deleted
+	// and the finalizer operations are yet to occur.
 	TypeDegradedPaas = "Degraded"
 )
 
@@ -50,8 +52,8 @@ type PaasSpec struct {
 	// Namespaces can be used to define extra namespaces to be created as part of this Paas project
 	// +kubebuilder:validation:Optional
 	Namespaces []string `json:"namespaces"`
-	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
-	// They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
+	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket.
+	// They must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
 	// +kubebuilder:validation:Optional
 	SshSecrets map[string]string `json:"sshSecrets"`
 
@@ -318,7 +320,7 @@ type PaasCapability struct {
 	// +kubebuilder:validation:Optional
 	Quota paas_quota.Quota `json:"quota"`
 	// You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket
-	// They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
+	// They must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
 	// +kubebuilder:validation:Optional
 	SshSecrets map[string]string `json:"sshSecrets"`
 	// You can enable extra permissions for the service accounts belonging to this capability
@@ -327,7 +329,9 @@ type PaasCapability struct {
 	ExtraPermissions bool `json:"extra_permissions"`
 }
 
-func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomField) (fields map[string]string, err error) {
+func (pc *PaasCapability) CapExtraFields(
+	fieldConfig map[string]ConfigCustomField,
+) (fields map[string]string, err error) {
 	// TODO: remove argocd specific fields
 	fields = map[string]string{
 		"git_url":      pc.GitUrl,
@@ -390,6 +394,8 @@ func (pc *PaasCapability) SetSshSecret(key string, value string) {
 	pc.SshSecrets[key] = value
 }
 
+// revive:disable:line-length-limit
+
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
 	// Deprecated: use paasns.status.conditions instead
@@ -401,6 +407,8 @@ type PaasStatus struct {
 	// +kubebuilder:validation:Optional
 	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
+
+// revive:enable:line-length-limit
 
 // Deprecated: use paas.status.conditions instead
 func (ps *PaasStatus) Truncate() {

@@ -58,7 +58,10 @@ func (vs *validatedSecrets) Is(hash validatedHash) bool {
 // compareSecrets can check all secrets from a PaasNS.
 // It first checks against the secrets in the validated struct,
 // and if not present in there it uses the getRsaFunc to get a crypt and try decrypting the secret
-func (vs validatedSecrets) compareSecrets(unvalidated map[string]string, getRsaFunc func() (*crypt.Crypt, error)) (errs field.ErrorList) {
+func (vs validatedSecrets) compareSecrets(
+	unvalidated map[string]string,
+	getRsaFunc func() (*crypt.Crypt, error),
+) (errs field.ErrorList) {
 	// Err when an sshSecret can't be decrypted
 	for secretName, secret := range unvalidated {
 		if vs.Is(hashFromString(secret)) {
