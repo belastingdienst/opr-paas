@@ -85,7 +85,7 @@ func Test_getRSA(t *testing.T) {
 	defer os.Remove(pub.Name()) // clean up
 
 	t.Log("generating new keys and creating crypt")
-	crypt.NewGeneratedCrypt(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
+	crypt.GenerateKeyPair(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
 
 	// test: non-existing public key should panic
 	getConfig()
@@ -225,7 +225,7 @@ func Test_v1CheckPaas(t *testing.T) {
 	t.Setenv("PAAS_PRIVATE_KEYS_PATH", priv.Name()) //nolint:errcheck // this is fine in test
 
 	// Generate keyPair to be used during test
-	crypt.NewGeneratedCrypt(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
+	crypt.GenerateKeyPair(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
 
 	// Encrypt secret for test
 	rsa := getRsa("testPaas")
