@@ -259,16 +259,6 @@ func validateQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *field.Path
 		}
 	}
 
-	// If Clusterwide is set to true, there should be no Min/Max quotas per namespace.
-	if qs.Clusterwide {
-		if len(qs.MinQuotas) > 0 || len(qs.MaxQuotas) > 0 {
-			allErrs = append(allErrs, field.Invalid(
-				childPath.Child("ClusterWide"),
-				qs.Clusterwide,
-				"marked as clusterwide but has MinQuotas / MaxQuotas defined"))
-		}
-	}
-
 	// If DefQuota, MinQuotas, or MaxQuotas are provided, ensure they aren't empty maps.
 	if qs.DefQuota != nil && len(qs.DefQuota) == 0 {
 		allErrs = append(allErrs, field.Invalid(
