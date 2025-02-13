@@ -158,7 +158,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 			Namespace: "paas-system",
 		},
 		LDAP: v1alpha1.ConfigLdap{
-			Host: "my-ldap-host",
+			Host: "ldap.example.com",
 			Port: 13,
 		},
 		ManagedByLabel: "argocd.argoproj.io/manby",
