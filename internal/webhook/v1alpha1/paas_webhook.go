@@ -89,6 +89,7 @@ func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Ob
 
 func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas) (admission.Warnings, error) {
 	var allErrs field.ErrorList
+	var warnings []string
 	conf := config.GetConfig()
 	// Check for uninitialized config
 	if conf.DecryptKeysSecret.Name == "" {
@@ -103,15 +104,19 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 		allErrs = append(allErrs, errs...)
 	}
 
-	if len(allErrs) == 0 {
-		return nil, nil
-	}
+	warnings = append(warnings, v.validateGroups(paas.Spec.Groups)...)
 
-	return nil, apierrors.NewInvalid(
-		schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "Paas"},
-		paas.Name,
-		allErrs,
-	)
+	if len(allErrs) == 0 && len(warnings) == 0 {
+		return nil, nil
+	} else if len(allErrs) == 0 {
+		return warnings, nil
+	} else {
+		return warnings, apierrors.NewInvalid(
+			schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "Paas"},
+			paas.Name,
+			allErrs,
+		)
+	}
 }
 
 // validateCaps returns an error if any of the passed capabilities is not configured.
@@ -157,4 +162,16 @@ func (v *PaasCustomValidator) validateSecrets(ctx context.Context, conf v1alpha1
 	}
 
 	return errs, nil
+}
+
+// validateGroups returns a warning for any of the passed groups which contain both users and a query.
+func (v *PaasCustomValidator) validateGroups(groups v1alpha1.PaasGroups) (warnings []string) {
+	for key, grp := range groups {
+		if len(grp.Query) > 0 && len(grp.Users) > 0 {
+			warnings = append(warnings, fmt.Sprintf(
+				"%s contains both users and query, the users will be ignored", field.NewPath("spec").Child("groups").Key(key)))
+		}
+	}
+
+	return warnings
 }
