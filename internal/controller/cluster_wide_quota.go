@@ -34,7 +34,7 @@ func (r *PaasReconciler) FetchAllPaasCapabilityResources(
 ) (resources paas_quota.QuotaLists, err error) {
 	capabilityName, err := ClusterWideCapabilityName(quota.Name)
 	if err != nil {
-		return
+		return paas_quota.QuotaLists{}, err
 	}
 	paas := &v1alpha1.Paas{}
 	resources = paas_quota.NewQuotaLists()
@@ -59,7 +59,7 @@ func (r *PaasReconciler) FetchAllPaasCapabilityResources(
 			resources.Append(paasCap.Quotas().MergeWith(defaults))
 		}
 	}
-	return
+	return resources, nil
 }
 
 func (r *PaasReconciler) UpdateClusterWideQuotaResources(
@@ -122,9 +122,9 @@ func ClusterWideQuotaName(capabilityName string) string {
 func ClusterWideCapabilityName(quotaName string) (capabilityName string, err error) {
 	var found bool
 	if capabilityName, found = strings.CutPrefix(quotaName, cwqPrefix); !found {
-		err = fmt.Errorf("failed to remove prefix")
+		_ = fmt.Errorf("failed to remove prefix")
 	}
-	return
+	return capabilityName, nil
 }
 
 func (r *PaasReconciler) FinalizeClusterWideQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
@@ -233,10 +233,7 @@ func (r *PaasReconciler) removeFromClusterWideQuota(ctx context.Context, paas *v
 	}
 	quota.OwnerReferences = paas.WithoutMe(quota.OwnerReferences)
 	if len(quota.OwnerReferences) < 1 {
-		if err = r.Delete(ctx, quota); err != nil {
-			return err
-		}
-		return nil
+		return r.Delete(ctx, quota)
 	}
 	if err := r.UpdateClusterWideQuotaResources(ctx, quota); err != nil {
 		return err

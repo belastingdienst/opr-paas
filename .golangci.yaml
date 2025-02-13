@@ -17,6 +17,7 @@ linters:
     - govet
     - ineffassign
     - misspell
+    - revive
     - staticcheck
     - testifylint
     - unused
@@ -37,5 +38,13 @@ linters-settings:
     enable-all: true
     disable:
       - go-require
+  revive:
+    enable-all-rules: true
+    rules:
+      - name: line-length-limit
+        severity: warning
+        disabled: false
+        exclude: ['']
+        arguments: [120]
 run:
   timeout: 50m
