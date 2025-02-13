@@ -42,8 +42,8 @@ type PaasNSReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-func (pr PaasNSReconciler) GetScheme() *runtime.Scheme {
-	return pr.Scheme
+func (r PaasNSReconciler) GetScheme() *runtime.Scheme {
+	return r.Scheme
 }
 
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paasns,verbs=get;list;watch;create;update;patch;delete
@@ -167,7 +167,7 @@ func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS)
 			return nil, err
 		}
 	}
-	return
+	return paas, nil
 }
 
 // For more details, check Reconcile and its Result here:
