@@ -25,7 +25,7 @@ linters-settings:
   gocritic:
     disabled-checks:
       - appendAssign
-      - assignOp  # Keep it disabled for readability
+      - assignOp # Keep it disabled for readability
       - badCond
       - commentFormatting
       - exitAfterDefer
