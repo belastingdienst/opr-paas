@@ -73,7 +73,10 @@ func (r *PaasReconciler) UpdateClusterWideQuotaResources(
 		return fmt.Errorf("missing capability config for %s", capabilityName)
 	} else if !config.QuotaSettings.Clusterwide {
 		return fmt.Errorf("running UpdateClusterWideQuota for non-clusterwide quota %s", quota.ObjectMeta.Name)
-	} else if allPaasResources, err = r.FetchAllPaasCapabilityResources(ctx, quota, config.QuotaSettings.DefQuota); err != nil {
+	} else if allPaasResources, err = r.FetchAllPaasCapabilityResources(ctx,
+		quota,
+		config.QuotaSettings.DefQuota,
+	); err != nil {
 		return err
 	} else {
 		quota.Spec.Quota.Hard = corev1.ResourceList(allPaasResources.OptimalValues(
@@ -202,7 +205,11 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 	return nil
 }
 
-func (r *PaasReconciler) removeFromClusterWideQuota(ctx context.Context, paas *v1alpha1.Paas, capabilityName string) error {
+func (r *PaasReconciler) removeFromClusterWideQuota(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	capabilityName string,
+) error {
 	var quota *quotav1.ClusterResourceQuota
 	quotaName := fmt.Sprintf("%s%s", cwqPrefix, capabilityName)
 	var capConfig v1alpha1.ConfigCapability

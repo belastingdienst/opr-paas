@@ -35,6 +35,8 @@ func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
+// revive:disable:line-length-limit
+
 // NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
 // Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
 // +kubebuilder:webhook:path=/validate-cpet-belastingdienst-nl-v1alpha1-paas,mutating=false,failurePolicy=fail,sideEffects=None,groups=cpet.belastingdienst.nl,resources=paas,verbs=create;update,versions=v1alpha1,name=vpaas-v1alpha1.kb.io,admissionReviewVersions=v1
@@ -45,6 +47,9 @@ func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
 // +kubebuilder:object:generate=false
+
+// revive:enable:line-length-limit
+
 type PaasCustomValidator struct {
 	client client.Client
 }
@@ -64,7 +69,10 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
-func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *PaasCustomValidator) ValidateUpdate(
+	ctx context.Context,
+	oldObj, newObj runtime.Object,
+) (admission.Warnings, error) {
 	paas, ok := newObj.(*v1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object for the newObj but got %T", newObj)
@@ -89,7 +97,12 @@ func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Ob
 	return nil, nil
 }
 
-type paasSpecValidator func(context.Context, client.Client, v1alpha1.PaasConfigSpec, *v1alpha1.Paas) ([]*field.Error, error)
+type paasSpecValidator func(
+	context.Context,
+	client.Client,
+	v1alpha1.PaasConfigSpec,
+	*v1alpha1.Paas,
+) ([]*field.Error, error)
 
 func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas) (admission.Warnings, error) {
 	var allErrs field.ErrorList
@@ -131,7 +144,12 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 }
 
 // validateCaps returns an error if any of the passed capabilities is not configured.
-func validateCaps(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func validateCaps(
+	ctx context.Context,
+	client client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
 	var errs []*field.Error
 
 	for name := range paas.Spec.Capabilities {
@@ -148,7 +166,12 @@ func validateCaps(ctx context.Context, client client.Client, conf v1alpha1.PaasC
 }
 
 // validateGroupNames returns an error if any of the passed capabilities is not configured.
-func validateGroupNames(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func validateGroupNames(
+	ctx context.Context,
+	client client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
 	var errs []*field.Error
 
 	for name := range paas.Spec.Groups {
@@ -164,7 +187,12 @@ func validateGroupNames(ctx context.Context, client client.Client, conf v1alpha1
 	return errs, nil
 }
 
-func validateSecrets(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func validateSecrets(
+	ctx context.Context,
+	client client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
 	decryptRes := &corev1.Secret{}
 	if err := client.Get(ctx, types.NamespacedName{
 		Name:      conf.DecryptKeysSecret.Name,
@@ -197,7 +225,12 @@ func validateSecrets(ctx context.Context, client client.Client, conf v1alpha1.Pa
 //   - all custom fields pass regular expression validation as configured in the PaasConfig if present
 //
 // Returns an internal error if the validation regexp cannot be compiled.
-func validateCustomFields(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func validateCustomFields(
+	ctx context.Context,
+	client client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
 	var errs []*field.Error
 
 	for cname, c := range paas.Spec.Capabilities {
@@ -221,14 +254,16 @@ func (v *PaasCustomValidator) validateGroups(groups v1alpha1.PaasGroups) (warnin
 	for key, grp := range groups {
 		if len(grp.Query) > 0 && len(grp.Users) > 0 {
 			warnings = append(warnings, fmt.Sprintf(
-				"%s contains both users and query, the users will be ignored", field.NewPath("spec").Child("groups").Key(key)))
+				"%s contains both users and query, the users will be ignored",
+				field.NewPath("spec").Child("groups").Key(key),
+			))
 		}
 	}
 
 	return warnings
 }
 
-// validateQuota returns a warning when limits are configured higher than requests for the Paas quota or capability quotas.
+// validateQuota returns a warning when higher limits are configured than requests for the Paas / capability quotas.
 func (v *PaasCustomValidator) validateQuota(paas *v1alpha1.Paas) (warnings []string) {
 	quotas := map[*field.Path]quota.Quota{
 		field.NewPath("spec", "quota"): paas.Spec.Quota,
@@ -243,14 +278,16 @@ func (v *PaasCustomValidator) validateQuota(paas *v1alpha1.Paas) (warnings []str
 		limc, limcok := q[corev1.ResourceLimitsCPU]
 
 		if reqcok && limcok && reqc.Cmp(limc) > 0 {
-			warnings = append(warnings, fmt.Sprintf("%s CPU resource request (%s) higher than limit (%s)", f, reqc.String(), limc.String()))
+			warnings = append(warnings,
+				fmt.Sprintf("%s CPU resource request (%s) higher than limit (%s)", f, reqc.String(), limc.String()))
 		}
 
 		reqm, reqmok := q[corev1.ResourceRequestsMemory]
 		limm, limmok := q[corev1.ResourceLimitsMemory]
 
 		if reqmok && limmok && reqm.Cmp(limm) > 0 {
-			warnings = append(warnings, fmt.Sprintf("%s memory resource request (%s) higher than limit (%s)", f, reqm.String(), limm.String()))
+			warnings = append(warnings,
+				fmt.Sprintf("%s memory resource request (%s) higher than limit (%s)", f, reqm.String(), limm.String()))
 		}
 	}
 
