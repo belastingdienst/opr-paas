@@ -22,6 +22,7 @@ type AppProject struct {
 
 type AppProjectSpec struct {
 	// ClusterResourceWhitelist contains list of whitelisted cluster level resources
+	// revive:disable-next-line
 	ClusterResourceWhitelist []metav1.GroupKind `json:"clusterResourceWhitelist,omitempty" protobuf:"bytes,5,opt,name=clusterResourceWhitelist"`
 	// SourceRepos contains list of repository URLs which can be used for deployment
 	SourceRepos []string `json:"sourceRepos,omitempty" protobuf:"bytes,1,name=sourceRepos"`

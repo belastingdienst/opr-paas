@@ -72,7 +72,11 @@ func setupPaasSys() {
 			Name:      "keys",
 			Namespace: "paas-system",
 		},
-		Data: map[string][]byte{"privatekey0": pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privkey)})},
+		Data: map[string][]byte{
+			"privatekey0": pem.EncodeToMemory(
+				&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privkey)},
+			),
+		},
 	})
 	Expect(err).NotTo(HaveOccurred())
 

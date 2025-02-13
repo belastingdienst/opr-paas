@@ -27,9 +27,10 @@ func SetupPaasNsWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
+//revive:disable-line
 // +kubebuilder:webhook:path=/validate-cpet-belastingdienst-nl-v1alpha1-paasns,mutating=false,failurePolicy=fail,sideEffects=None,groups=cpet.belastingdienst.nl,resources=paasns,verbs=create;update,versions=v1alpha1,name=vpaasns-v1alpha1.kb.io,admissionReviewVersions=v1
 
-// PaasNSCustomValidator struct is responsible for validating the PaasNS resource when it is created, updated, or deleted.
+// PaasNSCustomValidator struct is used for validating the PaasNS resource when it is created, updated, or deleted.
 // +kubebuilder:object:generate=false
 type PaasNSCustomValidator struct {
 	client client.Client
@@ -80,7 +81,10 @@ func nssFromPaas(ctx context.Context, c client.Client, paas *v1alpha1.Paas) (map
 }
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
-func (v *PaasNSCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (w admission.Warnings, err error) {
+func (v *PaasNSCustomValidator) ValidateCreate(
+	ctx context.Context,
+	obj runtime.Object,
+) (w admission.Warnings, err error) {
 	var errs field.ErrorList
 	paasns, ok := obj.(*v1alpha1.PaasNS)
 	ctx, logger := logging.SetWebhookLogger(ctx, paasns)
@@ -142,7 +146,11 @@ func (v *PaasNSCustomValidator) ValidateCreate(ctx context.Context, obj runtime.
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
-func (v *PaasNSCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (w admission.Warnings, err error) {
+func (v *PaasNSCustomValidator) ValidateUpdate(
+	ctx context.Context,
+	oldObj,
+	newObj runtime.Object,
+) (w admission.Warnings, err error) {
 	/*
 		var errs field.ErrorList
 		oldPaasns, ok := oldObj.(*v1alpha1.PaasNS)

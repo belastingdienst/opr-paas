@@ -54,6 +54,7 @@ type Reconciler interface {
 	Delete(context.Context, client.Object, ...client.DeleteOption) error
 }
 
+//revive:disable:line-length-limit
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paas,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paas/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paas/finalizers,verbs=update
@@ -65,6 +66,7 @@ type Reconciler interface {
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings;clusterrolebindings,verbs=create;delete;get;list;patch;update;watch
 // It is advised to reduce the scope of this permission by stating the resourceNames of the roles you would like Paas to bind to, in your deployment role.yaml
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=bind
+//revive:enable:line-length-limit
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -84,7 +86,16 @@ func (r *PaasReconciler) GetPaas(
 	}
 
 	// Started reconciling, reset status
-	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{Type: v1alpha1.TypeReadyPaas, Status: metav1.ConditionUnknown, ObservedGeneration: paas.Generation, Reason: "Reconciling", Message: "Starting reconciliation"})
+	meta.SetStatusCondition(
+		&paas.Status.Conditions,
+		metav1.Condition{
+			Type:               v1alpha1.TypeReadyPaas,
+			Status:             metav1.ConditionUnknown,
+			ObservedGeneration: paas.Generation,
+			Reason:             "Reconciling",
+			Message:            "Starting reconciliation",
+		},
+	)
 	meta.RemoveStatusCondition(&paas.Status.Conditions, v1alpha1.TypeHasErrorsPaas)
 	if err = r.Status().Update(ctx, paas); err != nil {
 		logger.Err(err).Msg("failed to update Paas status")
@@ -98,10 +109,18 @@ func (r *PaasReconciler) GetPaas(
 
 	// TODO(portly-halicore-76) Move to admission webhook once available
 	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
-	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
+	// this is only an issue when object is being removed, finalizers will not be removed
+	// causing the object to be in limbo.
 	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig()) {
 		logger.Error().Msg("no config found")
-		err = r.setErrorCondition(ctx, paas, fmt.Errorf("please reach out to your system administrator as there is no Paasconfig available to reconcile against"))
+		err = r.setErrorCondition(
+			ctx,
+			paas,
+			fmt.Errorf(
+				//revive:disable-next-line
+				"please reach out to your system administrator as there is no Paasconfig available to reconcile against",
+			),
+		)
 		if err != nil {
 			logger.Err(err).Msg("failed to update Paas status")
 			return nil, err

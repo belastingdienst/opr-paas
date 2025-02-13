@@ -30,7 +30,13 @@ func CheckPaas(crypt *crypt.Crypt, paas *v1alpha1.Paas) error {
 			logrus.Error(errMessage)
 			allErrors = append(allErrors, errMessage.Error())
 		} else {
-			logrus.Infof("%s: .spec.sshSecrets[%s], checksum: %s, len %d", paas.Name, key, hashData(decrypted), len(decrypted))
+			logrus.Infof(
+				"%s: .spec.sshSecrets[%s], checksum: %s, len %d",
+				paas.Name,
+				key,
+				hashData(decrypted),
+				len(decrypted),
+			)
 		}
 	}
 
@@ -39,11 +45,23 @@ func CheckPaas(crypt *crypt.Crypt, paas *v1alpha1.Paas) error {
 		for key, secret := range capability.GetSshSecrets() {
 			decrypted, err := crypt.Decrypt(secret)
 			if err != nil {
-				errMessage := fmt.Errorf("%s: .spec.capabilities[%s].sshSecrets[%s], error: %w", paas.Name, capName, key, err)
+				errMessage := fmt.Errorf(
+					"%s: .spec.capabilities[%s].sshSecrets[%s], error: %w",
+					paas.Name,
+					capName,
+					key,
+					err,
+				)
 				logrus.Error(errMessage)
 				allErrors = append(allErrors, errMessage.Error())
 			} else {
-				logrus.Infof("%s: .spec.capabilities[%s].sshSecrets[%s], checksum: %s, len %d.", paas.Name, capName, key, hashData(decrypted), len(decrypted))
+				logrus.Infof("%s: .spec.capabilities[%s].sshSecrets[%s], checksum: %s, len %d.",
+					paas.Name,
+					capName,
+					key,
+					hashData(decrypted),
+					len(decrypted),
+				)
 			}
 		}
 	}

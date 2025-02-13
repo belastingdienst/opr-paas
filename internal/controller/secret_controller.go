@@ -176,7 +176,11 @@ func (r *PaasNSReconciler) BackendSecrets(
 }
 
 // deleteObsoleteSecrets deletes any secrets from the existingSecrets which is not listed in the desired secrets.
-func (r *PaasNSReconciler) deleteObsoleteSecrets(ctx context.Context, existingSecrets []*corev1.Secret, desiredSecrets []*corev1.Secret) error {
+func (r *PaasNSReconciler) deleteObsoleteSecrets(
+	ctx context.Context,
+	existingSecrets []*corev1.Secret,
+	desiredSecrets []*corev1.Secret,
+) error {
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("deleting obsolete secrets")
 
@@ -195,7 +199,8 @@ func (r *PaasNSReconciler) deleteObsoleteSecrets(ctx context.Context, existingSe
 	return nil
 }
 
-// isSecretInDesiredSecrets checks if a given secret exists in the desiredSecrets slice by comparing names and namespaces.
+// isSecretInDesiredSecrets checks if a given secret exists in the desiredSecrets slice
+// by comparing names and namespaces.
 func isSecretInDesiredSecrets(secret *corev1.Secret, desiredSecrets []*corev1.Secret) bool {
 	for _, desiredSecret := range desiredSecrets {
 		if secret.Name == desiredSecret.Name && secret.Namespace == desiredSecret.Namespace {
@@ -206,7 +211,11 @@ func isSecretInDesiredSecrets(secret *corev1.Secret, desiredSecrets []*corev1.Se
 }
 
 // getExistingSecrets retrieves all secrets owned by this Paas in it's enabled namespaces
-func (r *PaasNSReconciler) getExistingSecrets(ctx context.Context, paas *v1alpha1.Paas, paasns *v1alpha1.PaasNS) ([]*corev1.Secret, error) {
+func (r *PaasNSReconciler) getExistingSecrets(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	paasns *v1alpha1.PaasNS,
+) ([]*corev1.Secret, error) {
 	var existingSecrets []*corev1.Secret
 	logger := log.Ctx(ctx)
 	// Check in NamespaceName

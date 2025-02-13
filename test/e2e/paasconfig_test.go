@@ -36,6 +36,7 @@ func TestPaasConfig(t *testing.T) {
 				return ctx
 			}).
 			Assess("Operator reports error when no PaasConfig is loaded", assertOperatorErrorWithoutPaasConfig).
+			// revive:disable-next-line
 			Assess("Paas reconciliation is triggered after PaasConfig is updated", assertPaasReconciliationAfterConfigUpdate).
 			Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 				deletePaasSync(ctx, "foo", t, cfg)

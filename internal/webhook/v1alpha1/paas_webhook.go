@@ -35,6 +35,7 @@ func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
 
 // NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
 // Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
+// revive:disable-line
 // +kubebuilder:webhook:path=/validate-cpet-belastingdienst-nl-v1alpha1-paas,mutating=false,failurePolicy=fail,sideEffects=None,groups=cpet.belastingdienst.nl,resources=paas,verbs=create;update,versions=v1alpha1,name=vpaas-v1alpha1.kb.io,admissionReviewVersions=v1
 
 // PaasCustomValidator struct is responsible for validating the Paas resource
@@ -62,7 +63,10 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
-func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *PaasCustomValidator) ValidateUpdate(
+	ctx context.Context,
+	oldObj, newObj runtime.Object,
+) (admission.Warnings, error) {
 	paas, ok := newObj.(*v1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object for the newObj but got %T", newObj)
@@ -199,7 +203,9 @@ func (v *PaasCustomValidator) validateGroups(groups v1alpha1.PaasGroups) (warnin
 	for key, grp := range groups {
 		if len(grp.Query) > 0 && len(grp.Users) > 0 {
 			warnings = append(warnings, fmt.Sprintf(
-				"%s contains both users and query, the users will be ignored", field.NewPath("spec").Child("groups").Key(key)))
+				"%s contains both users and query, the users will be ignored",
+				field.NewPath("spec").Child("groups").Key(key),
+			))
 		}
 	}
 

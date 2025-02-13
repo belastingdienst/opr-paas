@@ -63,24 +63,33 @@ var _ = Describe("Paas Webhook", func() {
 				To(MatchError(ContainSubstring("capability not configured")))
 		})
 
-		It("Should deny creation and return multiple field errors when multiple unconfigured capabilities are set", func() {
-			obj = &v1alpha1.Paas{
-				Spec: v1alpha1.PaasSpec{
-					Capabilities: v1alpha1.PaasCapabilities{
-						"foo": v1alpha1.PaasCapability{},
-						"bar": v1alpha1.PaasCapability{},
+		It(
+			"Should deny creation and return multiple field errors when multiple unconfigured capabilities are set",
+			func() {
+				obj = &v1alpha1.Paas{
+					Spec: v1alpha1.PaasSpec{
+						Capabilities: v1alpha1.PaasCapabilities{
+							"foo": v1alpha1.PaasCapability{},
+							"bar": v1alpha1.PaasCapability{},
+						},
 					},
-				},
-			}
+				}
 
-			_, err := validator.ValidateCreate(ctx, obj)
-			Expect(err).Error().To(MatchError(ContainSubstring("Invalid value: \"foo\"")))
-			Expect(err).Error().To(MatchError(ContainSubstring("Invalid value: \"bar\"")))
-		})
+				_, err := validator.ValidateCreate(ctx, obj)
+				Expect(err).Error().To(MatchError(ContainSubstring("Invalid value: \"foo\"")))
+				Expect(err).Error().To(MatchError(ContainSubstring("Invalid value: \"bar\"")))
+			},
+		)
 
 		It("Should deny creation when a secret is set that cannot be decrypted", func() {
 			const paasName = "my-paas"
-			encrypted, err := rsa.EncryptOAEP(sha512.New(), rand.Reader, pubkey, []byte("some encrypted string"), []byte(paasName))
+			encrypted, err := rsa.EncryptOAEP(
+				sha512.New(),
+				rand.Reader,
+				pubkey,
+				[]byte("some encrypted string"),
+				[]byte(paasName),
+			)
 			Expect(err).NotTo(HaveOccurred())
 
 			obj = &v1alpha1.Paas{
@@ -101,12 +110,14 @@ var _ = Describe("Paas Webhook", func() {
 			causes := serr.Status().Details.Causes
 			Expect(causes).To(ContainElements(
 				metav1.StatusCause{
-					Type:    metav1.CauseTypeFieldValueInvalid,
+					Type: metav1.CauseTypeFieldValueInvalid,
+					// revive:disable-next-line
 					Message: "Invalid value: \"invalid base64\": cannot be decrypted: illegal base64 data at input byte 8",
 					Field:   "spec.sshSecrets",
 				},
 				metav1.StatusCause{
-					Type:    metav1.CauseTypeFieldValueInvalid,
+					Type: metav1.CauseTypeFieldValueInvalid,
+					// revive:disable-next-line
 					Message: "Invalid value: \"invalid secret\": cannot be decrypted: unable to decrypt data with any of the private keys",
 					Field:   "spec.sshSecrets",
 				},
@@ -231,7 +242,9 @@ var _ = Describe("Paas Webhook", func() {
 			}
 
 			warnings, _ := validator.ValidateCreate(ctx, obj)
-			Expect(warnings).To(ContainElement("spec.groups[foo] contains both users and query, the users will be ignored"))
+			Expect(
+				warnings,
+			).To(ContainElement("spec.groups[foo] contains both users and query, the users will be ignored"))
 		})
 
 		It("Should not warn when a group contains just users", func() {
@@ -260,21 +273,26 @@ var _ = Describe("Paas Webhook", func() {
 				To(MatchError(ContainSubstring("capability not configured")))
 		})
 
-		It("Should generate a warning when updating a Paas with a group that contains both users and a queries", func() {
-			obj = &v1alpha1.Paas{
-				Spec: v1alpha1.PaasSpec{
-					Groups: map[string]v1alpha1.PaasGroup{
-						"foo": {
-							Users: []string{"bar"},
-							Query: "baz",
+		It(
+			"Should generate a warning when updating a Paas with a group that contains both users and a queries",
+			func() {
+				obj = &v1alpha1.Paas{
+					Spec: v1alpha1.PaasSpec{
+						Groups: map[string]v1alpha1.PaasGroup{
+							"foo": {
+								Users: []string{"bar"},
+								Query: "baz",
+							},
 						},
 					},
-				},
-			}
+				}
 
-			warnings, _ := validator.ValidateUpdate(ctx, nil, obj)
-			Expect(warnings).To(ContainElement("spec.groups[foo] contains both users and query, the users will be ignored"))
-		})
+				warnings, _ := validator.ValidateUpdate(ctx, nil, obj)
+				Expect(
+					warnings,
+				).To(ContainElement("spec.groups[foo] contains both users and query, the users will be ignored"))
+			},
+		)
 
 		It("Should not warn when updating a Paas with a group that contains just users", func() {
 			obj = &v1alpha1.Paas{
