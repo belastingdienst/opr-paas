@@ -56,26 +56,26 @@ func NewGeneratedCrypt(privateKeyPath string, publicKeyPath string, context stri
 	c := Crypt{
 		encryptionContext: []byte(context),
 	}
-	if privateKey, err := rsa.GenerateKey(rand.Reader, 4096); err != nil {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
 		return nil, fmt.Errorf("unable to generate private key: %w", err)
-	} else {
-		pk := CryptPrivateKey{
-			privateKey:     privateKey,
-			privateKeyPath: privateKeyPath,
-		}
-		c.privateKeys = CryptPrivateKeys{&pk}
-		if err := pk.writePrivateKey(); err != nil {
-			return nil, err
-		}
-
-		c.publicKeyPath = publicKeyPath
-		c.publicKey = &privateKey.PublicKey
-		if err := c.writePublicKey(); err != nil {
-			return nil, err
-		}
-
-		return &c, nil
 	}
+	pk := CryptPrivateKey{
+		privateKey:     privateKey,
+		privateKeyPath: privateKeyPath,
+	}
+	c.privateKeys = CryptPrivateKeys{&pk}
+	if err := pk.writePrivateKey(); err != nil {
+		return nil, err
+	}
+
+	c.publicKeyPath = publicKeyPath
+	c.publicKey = &privateKey.PublicKey
+	if err := c.writePublicKey(); err != nil {
+		return nil, err
+	}
+
+	return &c, nil
 }
 
 func (c *Crypt) writePublicKey() error {
@@ -83,23 +83,24 @@ func (c *Crypt) writePublicKey() error {
 	if c.publicKeyPath == "" {
 		return fmt.Errorf("cannot write public key without a specified path")
 	}
-	if publicKeyBytes, err := x509.MarshalPKIXPublicKey(c.publicKey); err != nil {
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(c.publicKey)
+	if err != nil {
 		return fmt.Errorf("unable to marshal public key: %w", err)
-	} else {
-		publicKeyPEM := pem.EncodeToMemory(&pem.Block{
-			Type:  "RSA PUBLIC KEY",
-			Bytes: publicKeyBytes,
-		})
+	}
+	publicKeyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PUBLIC KEY",
+		Bytes: publicKeyBytes,
+	})
 
-		if err = os.WriteFile(c.publicKeyPath, publicKeyPEM, FileModeUserReadWrite); err != nil {
-			return fmt.Errorf("unable to write public key: %w", err)
-		}
+	if err = os.WriteFile(c.publicKeyPath, publicKeyPEM, FileModeUserReadWrite); err != nil {
+		return fmt.Errorf("unable to write public key: %w", err)
 	}
 	fmt.Printf("Public key written to %s\n", c.publicKeyPath)
 	return nil
 }
 
-func (c *Crypt) getPublicKey() (*rsa.PublicKey, error) {
+func (c *Crypt) getPublicKey() (publicRsaKey *rsa.PublicKey, err error) {
+	var ok bool
 	if c.publicKey != nil {
 		return c.publicKey, nil
 	}
@@ -112,45 +113,44 @@ func (c *Crypt) getPublicKey() (*rsa.PublicKey, error) {
 		return nil, fmt.Errorf("cannot decode public key")
 	} else if publicKey, err := x509.ParsePKIXPublicKey(publicKeyBlock.Bytes); err != nil {
 		return nil, fmt.Errorf("public key invalid: %w", err)
-	} else if publicRsaKey, ok := publicKey.(*rsa.PublicKey); !ok {
+	} else if publicRsaKey, ok = publicKey.(*rsa.PublicKey); !ok {
 		return nil, fmt.Errorf("public key not rsa public key")
-	} else {
-		c.publicKey = publicRsaKey
 	}
+	c.publicKey = publicRsaKey
 	return c.publicKey, nil
 }
 
 func (c *Crypt) EncryptRsa(secret []byte) (encryptedBytes []byte, err error) {
-	if publicKey, err := c.getPublicKey(); err != nil {
+	publicKey, err := c.getPublicKey()
+	if err != nil {
 		return nil, err
-	} else {
-		random := rand.Reader
-		hash := sha512.New()
-		msgLen := len(secret)
-		step := publicKey.Size() - 2*hash.Size() - 2
-		for start := 0; start < msgLen; start += step {
-			finish := start + step
-			if finish > msgLen {
-				finish = msgLen
-			}
-
-			encryptedBlock, err := rsa.EncryptOAEP(hash, random, publicKey, secret[start:finish], c.encryptionContext)
-			if err != nil {
-				return nil, err
-			}
-
-			encryptedBytes = append(encryptedBytes, encryptedBlock...)
-		}
-		return encryptedBytes, nil
 	}
+	random := rand.Reader
+	hash := sha512.New()
+	msgLen := len(secret)
+	step := publicKey.Size() - 2*hash.Size() - 2
+	for start := 0; start < msgLen; start += step {
+		finish := start + step
+		if finish > msgLen {
+			finish = msgLen
+		}
+
+		encryptedBlock, err := rsa.EncryptOAEP(hash, random, publicKey, secret[start:finish], c.encryptionContext)
+		if err != nil {
+			return nil, err
+		}
+
+		encryptedBytes = append(encryptedBytes, encryptedBlock...)
+	}
+	return encryptedBytes, nil
 }
 
 func (c *Crypt) Encrypt(secret []byte) (encrypted string, err error) {
-	if asymEncrypted, err := c.EncryptRsa(secret); err != nil {
+	asymEncrypted, err := c.EncryptRsa(secret)
+	if err != nil {
 		return "", err
-	} else {
-		return base64.StdEncoding.EncodeToString(asymEncrypted), nil
 	}
+	return base64.StdEncoding.EncodeToString(asymEncrypted), nil
 }
 
 func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
@@ -168,14 +168,14 @@ func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
 }
 
 func (c Crypt) Decrypt(b64 string) ([]byte, error) {
+	var decrypted []byte
 	// Removing all characters that do not comply to base64 encoding (mainly \n and ' ')
 	re := regexp.MustCompile("[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=]")
 	b64 = re.ReplaceAllLiteralString(b64, "")
 	if asymEncrypted, err := base64.StdEncoding.DecodeString(b64); err != nil {
 		return nil, err
-	} else if decrypted, err := c.DecryptRsa(asymEncrypted); err != nil {
+	} else if decrypted, err = c.DecryptRsa(asymEncrypted); err != nil {
 		return nil, err
-	} else {
-		return decrypted, nil
 	}
+	return decrypted, nil
 }

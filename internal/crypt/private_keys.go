@@ -19,18 +19,17 @@ type CryptPrivateKeys []*CryptPrivateKey
 func NewPrivateKeysFromFiles(privateKeyPaths []string) (CryptPrivateKeys, error) {
 	var privateKeys CryptPrivateKeys
 
-	if files, err := utils.PathToFileList(privateKeyPaths); err != nil {
+	files, err := utils.PathToFileList(privateKeyPaths)
+	if err != nil {
 		return nil, fmt.Errorf("could not find files in '%v': %w", privateKeyPaths, err)
-	} else {
-		for _, file := range files {
-			if pk, err := NewPrivateKeyFromFile(file); err != nil {
-				return nil, fmt.Errorf("invalid private key file %s", file)
-			} else {
-				privateKeys = append(privateKeys, pk)
-			}
-		}
 	}
-
+	for _, file := range files {
+		pk, err := NewPrivateKeyFromFile(file)
+		if err != nil {
+			return nil, fmt.Errorf("invalid private key file %s", file)
+		}
+		privateKeys = append(privateKeys, pk)
+	}
 	return privateKeys, nil
 }
 
@@ -39,13 +38,12 @@ func NewPrivateKeysFromSecretData(privateKeyData map[string][]byte) (CryptPrivat
 	var privateKeys CryptPrivateKeys
 
 	for name, value := range privateKeyData {
-		if privateKey, err := NewPrivateKeyFromPem(name, value); err != nil {
+		privateKey, err := NewPrivateKeyFromPem(name, value)
+		if err != nil {
 			return nil, err
-		} else {
-			privateKeys = append(privateKeys, privateKey)
 		}
+		privateKeys = append(privateKeys, privateKey)
 	}
-
 	return privateKeys, nil
 }
 
@@ -53,11 +51,10 @@ func NewPrivateKeysFromSecretData(privateKeyData map[string][]byte) (CryptPrivat
 func (pks CryptPrivateKeys) Compare(other CryptPrivateKeys) (same bool) {
 	if len(pks) != len(other) {
 		return false
-	} else {
-		for index, key := range pks {
-			if !key.privateKey.Equal(other[index]) {
-				return false
-			}
+	}
+	for index, key := range pks {
+		if !key.privateKey.Equal(other[index]) {
+			return false
 		}
 	}
 	return true
@@ -128,38 +125,40 @@ func (pk *CryptPrivateKey) getPrivateKey() (privateKey *rsa.PrivateKey, err erro
 	}
 
 	// load privateKey from privateKeyPem
-	if privateKeyBlock, _ := pem.Decode(pk.privateKeyPem); privateKeyBlock == nil {
+	privateKeyBlock, _ := pem.Decode(pk.privateKeyPem)
+	if privateKeyBlock == nil {
 		return nil, fmt.Errorf("cannot decode private key")
 		// sanity check if the privatekey is a valid one
-	} else if privateRsaKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes); err != nil {
-		return nil, fmt.Errorf("private key invalid: %w", err)
-	} else {
-		pk.privateKey = privateRsaKey
-		return pk.privateKey, nil
 	}
+	privateRsaKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("private key invalid: %w", err)
+	}
+	pk.privateKey = privateRsaKey
+	return pk.privateKey, nil
 }
 
 func (pk *CryptPrivateKey) DecryptRsa(data []byte, encryptionContext []byte) (decryptedBytes []byte, err error) {
-	if privateKey, err := pk.getPrivateKey(); err != nil {
+	privateKey, err := pk.getPrivateKey()
+	if err != nil {
 		return nil, err
-	} else {
-		hash := sha512.New()
-		msgLen := len(data)
-		step := privateKey.Size()
-		random := rand.Reader
-
-		for start := 0; start < msgLen; start += step {
-			finish := start + step
-			if finish > msgLen {
-				finish = msgLen
-			}
-
-			decryptedBlockBytes, err := rsa.DecryptOAEP(hash, random, privateKey, data[start:finish], encryptionContext)
-			if err != nil {
-				return nil, err
-			}
-			decryptedBytes = append(decryptedBytes, decryptedBlockBytes...)
-		}
-		return decryptedBytes, nil
 	}
+	hash := sha512.New()
+	msgLen := len(data)
+	step := privateKey.Size()
+	random := rand.Reader
+
+	for start := 0; start < msgLen; start += step {
+		finish := start + step
+		if finish > msgLen {
+			finish = msgLen
+		}
+
+		decryptedBlockBytes, err := rsa.DecryptOAEP(hash, random, privateKey, data[start:finish], encryptionContext)
+		if err != nil {
+			return nil, err
+		}
+		decryptedBytes = append(decryptedBytes, decryptedBlockBytes...)
+	}
+	return decryptedBytes, nil
 }

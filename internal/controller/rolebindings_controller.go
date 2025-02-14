@@ -50,16 +50,14 @@ func ensureRoleBinding(
 			Any("subject", rb.Subjects).
 			Msg("creating RoleBinding")
 		err = r.Create(ctx, rb)
-
 		if err != nil {
 			// Creating the rolebinding failed
 			logger.Err(err).Msg("error creating rolebinding")
 			return err
-		} else {
-			// Creating the rolebinding was successful and return
-			logger.Info().Msg("created rolebinding")
-			return nil
 		}
+		// Creating the rolebinding was successful and return
+		logger.Info().Msg("created rolebinding")
+		return nil
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
 		logger.Err(err).Msg("error getting rolebinding")
@@ -156,9 +154,8 @@ func finalizeRoleBinding(
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
 		return err
-	} else {
-		return r.Delete(ctx, rb)
 	}
+	return r.Delete(ctx, rb)
 }
 
 // reconcileRolebindings is used by the Paas reconciler to reconcile RB's

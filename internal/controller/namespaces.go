@@ -41,10 +41,9 @@ func EnsureNamespace(
 		if err = r.Create(ctx, ns); err != nil {
 			// creating the namespace failed
 			return err
-		} else {
-			// creating the namespace was successful
-			return nil
 		}
+		// creating the namespace was successful
+		return nil
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
 		return err
@@ -138,9 +137,8 @@ func (r *PaasNSReconciler) FinalizeNamespace(
 	} else if err = r.Delete(ctx, found); err != nil {
 		// deleting the namespace failed
 		return err
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func (r *PaasNSReconciler) ReconcileNamespaces(

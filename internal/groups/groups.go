@@ -61,13 +61,13 @@ func (gs *Groups) Add(other *Groups) bool {
 
 func NewGroup(query string) *Group {
 	// CN=gkey,OU=org_unit,DC=example,DC=org
-	if cn := strings.Split(string(query), ",")[0]; !strings.ContainsAny(cn, "=") {
+	cn := strings.Split(string(query), ",")[0]
+	if !strings.ContainsAny(cn, "=") {
 		return nil
-	} else {
-		return &Group{
-			Key:   strings.SplitN(cn, "=", 2)[1],
-			Query: query,
-		}
+	}
+	return &Group{
+		Key:   strings.SplitN(cn, "=", 2)[1],
+		Query: query,
 	}
 }
 

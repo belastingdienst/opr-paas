@@ -41,7 +41,8 @@ func (r *PaasReconciler) EnsureArgoApp(
 
 	// See if argo application exists and create if it doesn't
 	found := &argo.Application{}
-	if argoApp, err := r.backendArgoApp(ctx, paas); err != nil {
+	argoApp, err := r.backendArgoApp(ctx, paas)
+	if err != nil {
 		return err
 	} else if err := r.Get(ctx, namespacedName, found); err == nil {
 		logger.Info().Msg("argo Application already exists, updating")
@@ -51,10 +52,9 @@ func (r *PaasReconciler) EnsureArgoApp(
 	} else if !kerrors.IsNotFound(err) {
 		logger.Err(err).Msg("could not retrieve info of Argo Application")
 		return err
-	} else {
-		logger.Info().Msg("creating Argo Application")
-		return r.Create(ctx, argoApp)
 	}
+	logger.Info().Msg("creating Argo Application")
+	return r.Create(ctx, argoApp)
 }
 
 // backendArgoApp is code for creating a ArgoApp

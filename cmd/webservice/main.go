@@ -92,16 +92,16 @@ func v1Encrypt(c *gin.Context) {
 	}
 	secret := []byte(input.Secret)
 	if _, err := ssh.ParsePrivateKey(secret); err == nil {
-		if encrypted, err := getRsa(input.PaasName).Encrypt(secret); err != nil {
+		encrypted, err := getRsa(input.PaasName).Encrypt(secret)
+		if err != nil {
 			return
-		} else {
-			output := RestEncryptResult{
-				PaasName:  input.PaasName,
-				Encrypted: encrypted,
-				Valid:     true,
-			}
-			c.IndentedJSON(http.StatusOK, output)
 		}
+		output := RestEncryptResult{
+			PaasName:  input.PaasName,
+			Encrypted: encrypted,
+			Valid:     true,
+		}
+		c.IndentedJSON(http.StatusOK, output)
 	} else {
 		output := RestEncryptResult{
 			PaasName:  input.PaasName,
@@ -131,18 +131,16 @@ func v1CheckPaas(c *gin.Context) {
 			}
 			c.IndentedJSON(http.StatusUnprocessableEntity, output)
 			return
-		} else {
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
 		}
-	} else {
-		output := RestCheckPaasResult{
-			PaasName:  input.Paas.Name,
-			Decrypted: true,
-			Error:     "",
-		}
-		c.IndentedJSON(http.StatusOK, output)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
 	}
+	output := RestCheckPaasResult{
+		PaasName:  input.Paas.Name,
+		Decrypted: true,
+		Error:     "",
+	}
+	c.IndentedJSON(http.StatusOK, output)
 }
 
 // version returns the operator version this webservice is built for

@@ -39,9 +39,8 @@ func getClusterRoleBinding(
 		return backendClusterRoleBinding(role), nil
 	} else if err != nil {
 		return nil, err
-	} else {
-		return found, nil
 	}
+	return found, nil
 }
 
 func updateClusterRoleBinding(

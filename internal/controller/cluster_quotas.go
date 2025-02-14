@@ -39,23 +39,21 @@ func (r *PaasReconciler) EnsureQuota(
 		if err = r.Create(ctx, quota); err != nil {
 			// creating the quota failed
 			return err
-		} else {
-			// creating the quota was successful
-			return nil
 		}
+		// creating the quota was successful
+		return nil
 	} else if err != nil {
 		// Error that isn't due to the quota not existing
 		return err
-	} else {
-		// Update the quota
-		found.OwnerReferences = quota.OwnerReferences
-		found.Spec = quota.Spec
-		if err = r.Update(ctx, found); err != nil {
-			// updating the quota failed
-			return err
-		}
-		return nil
 	}
+	// Update the quota
+	found.OwnerReferences = quota.OwnerReferences
+	found.Spec = quota.Spec
+	if err = r.Update(ctx, found); err != nil {
+		// updating the quota failed
+		return err
+	}
+	return nil
 }
 
 // backendQuota is a code for Creating Quota
@@ -155,10 +153,9 @@ func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, quotaName str
 	} else if err != nil {
 		logger.Err(err).Msg("error retrieving info")
 		return err
-	} else {
-		logger.Info().Msg("deleting")
-		return r.Delete(ctx, obj)
 	}
+	logger.Info().Msg("deleting")
+	return r.Delete(ctx, obj)
 }
 
 func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1alpha1.PaasNS) error {

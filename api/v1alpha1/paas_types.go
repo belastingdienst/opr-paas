@@ -93,8 +93,8 @@ func (p Paas) GetNsSshSecrets(ns string) (secrets map[string]string) {
 
 func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 	ns = make(map[string]bool)
-	for name, cap := range p.Spec.Capabilities {
-		if cap.IsEnabled() {
+	for name, capability := range p.Spec.Capabilities {
+		if capability.IsEnabled() {
 			ns[name] = true
 		}
 	}
@@ -155,13 +155,13 @@ type PaasGroup struct {
 }
 
 func (pg PaasGroup) Name(defName string) string {
-	if name := strings.Split(pg.Query, ",")[0]; len(name) == 0 {
+	name := strings.Split(pg.Query, ",")[0]
+	if len(name) == 0 {
 		return defName
 	} else if strings.Contains(name, "=") {
 		return strings.Split(name, "=")[1]
-	} else {
-		return name
 	}
+	return name
 }
 
 type PaasGroups map[string]PaasGroup
@@ -190,11 +190,11 @@ func (pgs PaasGroups) Roles() map[string][]string {
 }
 
 func (pgs PaasGroups) Key2Name(key string) string {
-	if group, exists := pgs[key]; !exists {
+	group, exists := pgs[key]
+	if !exists {
 		return ""
-	} else {
-		return group.Name(key)
 	}
+	return group.Name(key)
 }
 
 func (pgs PaasGroups) Names() (groups []string) {
@@ -209,9 +209,8 @@ func (p Paas) GroupKey2GroupName(groupKey string) string {
 		return ""
 	} else if len(group.Query) > 0 {
 		return group.Name(groupKey)
-	} else {
-		return fmt.Sprintf("%s-%s", p.Name, p.Spec.Groups.Key2Name(groupKey))
 	}
+	return fmt.Sprintf("%s-%s", p.Name, p.Spec.Groups.Key2Name(groupKey))
 }
 
 func (p Paas) GroupNames() (groupNames []string) {
@@ -252,8 +251,8 @@ func (pcs PaasCapabilities) AsPrefixedMap(prefix string) PaasCapabilities {
 		return pcs
 	}
 	caps := make(PaasCapabilities)
-	for name, cap := range pcs {
-		caps[fmt.Sprintf("%s-%s", prefix, name)] = cap
+	for name, capability := range pcs {
+		caps[fmt.Sprintf("%s-%s", prefix, name)] = capability
 	}
 	return caps
 }
@@ -266,35 +265,35 @@ func (pcs PaasCapabilities) IsCap(name string) bool {
 	return true
 }
 
-func (pcs PaasCapabilities) GetCapability(capability string) (cap PaasCapability, err error) {
-	if cap, exists := pcs[capability]; !exists {
-		return cap, fmt.Errorf("capability %s does not exist", capability)
-	} else {
-		return cap, nil
+func (pcs PaasCapabilities) GetCapability(capName string) (capability PaasCapability, err error) {
+	var exists bool
+	if capability, exists = pcs[capName]; !exists {
+		return PaasCapability{}, fmt.Errorf("capability %s does not exist", capName)
 	}
+	return capability, nil
 }
 
-func (pcs PaasCapabilities) AddCapSshSecret(capability string, key string, value string) (err error) {
-	if cap, err := pcs.GetCapability(capability); err != nil {
+func (pcs PaasCapabilities) AddCapSshSecret(capName string, key string, value string) (err error) {
+	cap, err := pcs.GetCapability(capName)
+	if err != nil {
 		return err
-	} else {
-		if cap.SshSecrets == nil {
-			cap.SshSecrets = map[string]string{key: value}
-		} else {
-			cap.SshSecrets[key] = value
-		}
-		pcs[capability] = cap
 	}
+	if cap.SshSecrets == nil {
+		cap.SshSecrets = map[string]string{key: value}
+	} else {
+		cap.SshSecrets[key] = value
+	}
+	pcs[capName] = cap
 	return nil
 }
 
-func (pcs PaasCapabilities) ResetCapSshSecret(capability string) (err error) {
-	if cap, err := pcs.GetCapability(capability); err != nil {
+func (pcs PaasCapabilities) ResetCapSshSecret(capName string) (err error) {
+	cap, err := pcs.GetCapability(capName)
+	if err != nil {
 		return err
-	} else {
-		cap.SshSecrets = nil
-		pcs[capability] = cap
 	}
+	cap.SshSecrets = nil
+	pcs[capName] = cap
 	return nil
 }
 

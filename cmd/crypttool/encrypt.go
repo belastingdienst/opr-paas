@@ -30,9 +30,8 @@ func encryptCmd() *cobra.Command {
 			}
 			if dataFile == "" {
 				return crypt.EncryptFromStdin(publicKeyFile, paasName)
-			} else {
-				return crypt.EncryptFile(publicKeyFile, paasName, dataFile)
 			}
+			return crypt.EncryptFile(publicKeyFile, paasName, dataFile)
 		},
 		Example: `crypttool encrypt --publicKeyFile "/tmp/pub" --dataFile "/tmp/decrypted" --paas my-paas`,
 	}
