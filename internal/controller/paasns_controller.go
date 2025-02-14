@@ -287,7 +287,7 @@ func (r *PaasNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				predicate.LabelChangedPredicate{},
 			))).
 		Watches(&v1alpha1.PaasConfig{},
-			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []ctrl.Request {
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, _ client.Object) []ctrl.Request {
 				paasnses := &v1alpha1.PaasNSList{}
 				if err := mgr.GetClient().List(ctx, paasnses); err != nil {
 					mgr.GetLogger().Error(err, "while listing paasnses")
@@ -379,25 +379,23 @@ func (r *PaasNSReconciler) paasFromPaasNs(
 	}
 	if paasns.Namespace == paas.Name {
 		return paas, r.nssFromPaas(ctx, paas), nil
-	} else {
-		namespaces = r.nssFromPaas(ctx, paas)
-		if _, exists := namespaces[paasns.Namespace]; exists {
-			return paas, namespaces, nil
-		} else {
-			var nss []string
-			for key := range namespaces {
-				nss = append(nss, key)
-			}
-			err = fmt.Errorf(
-				"PaasNs %s claims to come from paas %s, but %s is not in the list of namespaces coming from %s (%s)",
-				types.NamespacedName{Name: paasns.Name, Namespace: paasns.Namespace},
-				paas.Name,
-				paasns.Namespace,
-				paas.Name,
-				strings.Join(nss, ", "))
-			return nil, map[string]int{}, err
-		}
 	}
+	namespaces = r.nssFromPaas(ctx, paas)
+	if _, exists := namespaces[paasns.Namespace]; exists {
+		return paas, namespaces, nil
+	}
+	var nss []string
+	for key := range namespaces {
+		nss = append(nss, key)
+	}
+	err = fmt.Errorf(
+		"PaasNs %s claims to come from paas %s, but %s is not in the list of namespaces coming from %s (%s)",
+		types.NamespacedName{Name: paasns.Name, Namespace: paasns.Namespace},
+		paas.Name,
+		paasns.Namespace,
+		paas.Name,
+		strings.Join(nss, ", "))
+	return nil, map[string]int{}, err
 }
 
 func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) error {

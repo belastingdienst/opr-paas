@@ -33,7 +33,7 @@ func (l *logSink) Index(i int) string {
 	return ""
 }
 
-func (l *logSink) Count(i int) int {
+func (l *logSink) Count(_ int) int {
 	return len(l.logs)
 }
 

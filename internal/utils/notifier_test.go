@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	timeout = 10 * time.Millisecond
+	timeout               = 10 * time.Millisecond
+	FileModeUserReadWrite = 0o600
 )
 
 func Test_FolderChanged(t *testing.T) {
@@ -28,7 +29,7 @@ func Test_FolderChanged(t *testing.T) {
 	for _, filename := range []string{"f1", "f2", "f3"} {
 		path := filepath.Join(tmpDir, filename)
 		t.Logf("writing file %s", path)
-		if err := os.WriteFile(path, []byte(filename), 0o600); err != nil {
+		if err := os.WriteFile(path, []byte(filename), FileModeUserReadWrite); err != nil {
 			panic(fmt.Errorf("unable to create temp file: %w", err))
 		}
 	}
@@ -39,7 +40,7 @@ func Test_FolderChanged(t *testing.T) {
 	// add file
 	path := filepath.Join(tmpDir, "extra")
 	t.Logf("writing file %s", path)
-	if err := os.WriteFile(path, []byte("extra file data"), 0o600); err != nil {
+	if err := os.WriteFile(path, []byte("extra file data"), FileModeUserReadWrite); err != nil {
 		panic(fmt.Errorf("unable to create extra temp file: %w", err))
 	}
 
@@ -49,7 +50,7 @@ func Test_FolderChanged(t *testing.T) {
 	// change file
 	path = filepath.Join(tmpDir, "extra")
 	t.Logf("writing file %s", path)
-	if err := os.WriteFile(path, []byte("other extra file data"), 0o600); err != nil {
+	if err := os.WriteFile(path, []byte("other extra file data"), FileModeUserReadWrite); err != nil {
 		panic(fmt.Errorf("unable to create extra temp file: %w", err))
 	}
 	time.Sleep(timeout)
@@ -66,7 +67,7 @@ func Test_FileChanged(t *testing.T) {
 	// add file
 	filePath := filepath.Join(tmpDir, "extra")
 	t.Logf("writing file %s", filePath)
-	if err := os.WriteFile(filePath, []byte("initial file data"), 0o600); err != nil {
+	if err := os.WriteFile(filePath, []byte("initial file data"), FileModeUserReadWrite); err != nil {
 		panic(fmt.Errorf("unable to create extra temp file: %w", err))
 	}
 	fw := NewFileWatcher(filePath)
@@ -74,20 +75,20 @@ func Test_FileChanged(t *testing.T) {
 	require.False(t, fw.WasTriggered(), "fileWatcher was not triggered after init")
 
 	t.Logf("writing file %s", filePath)
-	if err := os.WriteFile(filePath, []byte("other file data"), 0o600); err != nil {
+	if err := os.WriteFile(filePath, []byte("other file data"), FileModeUserReadWrite); err != nil {
 		panic(fmt.Errorf("unable to write to extra temp file: %w", err))
 	}
 	time.Sleep(timeout)
 	require.True(t, fw.WasTriggered(), "fileWatcher was triggered after writing to file")
 
-	os.Remove(filePath)
-	if err := os.WriteFile(filePath, []byte("recreated file data"), 0o600); err != nil {
+	_ = os.Remove(filePath)
+	if err := os.WriteFile(filePath, []byte("recreated file data"), FileModeUserReadWrite); err != nil {
 		panic(fmt.Errorf("unable to write to extra temp file: %w", err))
 	}
 	time.Sleep(timeout)
 	require.True(t, fw.WasTriggered(), "fileWatcher was triggered after removing file")
 
-	if err := os.WriteFile(filePath, []byte("recreated file data again"), 0o600); err != nil {
+	if err := os.WriteFile(filePath, []byte("recreated file data again"), FileModeUserReadWrite); err != nil {
 		panic(fmt.Errorf("unable to write to extra temp file: %w", err))
 	}
 	time.Sleep(timeout)
@@ -104,7 +105,7 @@ func Test_LinkChanged(t *testing.T) {
 	// add file
 	filePath := filepath.Join(tmpDir, "extra")
 	t.Logf("writing file %s", filePath)
-	if err := os.WriteFile(filePath, []byte("initial file data"), 0o600); err != nil {
+	if err := os.WriteFile(filePath, []byte("initial file data"), FileModeUserReadWrite); err != nil {
 		panic(fmt.Errorf("unable to create extra temp file: %w", err))
 	}
 	symlinkPath := filepath.Join(tmpDir, "symlink")
@@ -117,13 +118,13 @@ func Test_LinkChanged(t *testing.T) {
 	require.False(t, fw.WasTriggered(), "fileWatcher was not triggered after init")
 
 	t.Logf("writing to symlink %s", symlinkPath)
-	if err := os.WriteFile(symlinkPath, []byte("other symlink data"), 0o600); err != nil {
+	if err := os.WriteFile(symlinkPath, []byte("other symlink data"), FileModeUserReadWrite); err != nil {
 		panic(fmt.Errorf("unable to write to symlink: %w", err))
 	}
 	time.Sleep(timeout)
 	require.True(t, fw.WasTriggered(), "fileWatcher was triggered after writing to symlink")
 
-	os.Remove(symlinkPath)
+	_ = os.Remove(symlinkPath)
 	time.Sleep(timeout)
 	if err := os.Symlink(filePath, symlinkPath); err != nil {
 		panic(fmt.Errorf("unable to create symlink: %w", err))
@@ -132,7 +133,7 @@ func Test_LinkChanged(t *testing.T) {
 	// !!! known behavior. fsnotifier does not track symlinks themselves, but files they point to
 	require.False(t, fw.WasTriggered(), "fileWatcher is not triggered after removing symlink")
 
-	if err := os.WriteFile(filePath, []byte("recreated symlink data"), 0o600); err != nil {
+	if err := os.WriteFile(filePath, []byte("recreated symlink data"), FileModeUserReadWrite); err != nil {
 		panic(fmt.Errorf("unable to write to extra temp file: %w", err))
 	}
 	time.Sleep(timeout)

@@ -290,7 +290,7 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			))).
 		Watches(
 			&v1alpha1.PaasConfig{},
-			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, _ client.Object) []reconcile.Request {
 				// Enqueue all Paas objects
 				var reqs []reconcile.Request
 				var paasList v1alpha1.PaasList

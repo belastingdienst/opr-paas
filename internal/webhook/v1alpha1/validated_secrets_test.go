@@ -38,7 +38,14 @@ func TestValidatedSecretsFromPaas(t *testing.T) {
 	}
 	validated.appendFromPaas(paas)
 	assert.Len(t, validated.v, 6, "duplicated keys should be there only once")
-	for _, secret := range []string{"paasSecret1", "paasSecret2", "cap1secret1", "cap1secret2", "cap2secret1", "cap2secret2"} {
+	for _, secret := range []string{
+		"paasSecret1",
+		"paasSecret2",
+		"cap1secret1",
+		"cap1secret2",
+		"cap2secret1",
+		"cap2secret2",
+	} {
 		assert.True(t, validated.Is(hashFromString(secret)), "secret '%s' should be validated", secret)
 	}
 	assert.False(t, validated.Is(hashFromString("invalid")), "secret 'invalid' should not be validated")

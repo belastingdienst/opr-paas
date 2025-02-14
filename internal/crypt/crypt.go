@@ -79,6 +79,7 @@ func NewGeneratedCrypt(privateKeyPath string, publicKeyPath string, context stri
 }
 
 func (c *Crypt) writePublicKey() error {
+	const FileModeUserReadWrite = 0o600
 	if c.publicKeyPath == "" {
 		return fmt.Errorf("cannot write public key without a specified path")
 	}
@@ -90,7 +91,7 @@ func (c *Crypt) writePublicKey() error {
 			Bytes: publicKeyBytes,
 		})
 
-		if err = os.WriteFile(c.publicKeyPath, publicKeyPEM, 0o600); err != nil {
+		if err = os.WriteFile(c.publicKeyPath, publicKeyPEM, FileModeUserReadWrite); err != nil {
 			return fmt.Errorf("unable to write public key: %w", err)
 		}
 	}

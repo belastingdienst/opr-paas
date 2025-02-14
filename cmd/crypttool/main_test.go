@@ -26,7 +26,7 @@ func TestRequireSubcommand(t *testing.T) {
 		cmd.CommandPath(),
 	)
 	out := requireSubcommand(cmd, args)
-	assert.EqualErrorf(
+	require.EqualErrorf(
 		t,
 		out,
 		expectedErrorMsg,
