@@ -120,13 +120,12 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 		return nil, nil
 	} else if len(allErrs) == 0 {
 		return warnings, nil
-	} else {
-		return warnings, apierrors.NewInvalid(
-			schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "Paas"},
-			paas.Name,
-			allErrs,
-		)
 	}
+	return warnings, apierrors.NewInvalid(
+		schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "Paas"},
+		paas.Name,
+		allErrs,
+	)
 }
 
 // validateCaps returns an error if any of the passed capabilities is not configured.

@@ -47,12 +47,11 @@ func (r *PaasNSReconciler) EnsureSecret(
 	} else if err != nil {
 		// Error that isn't due to the secret not existing
 		return err
-	} else {
-		if err = r.Update(ctx, secret); err != nil {
-			return err
-		}
-		return nil
 	}
+	if err = r.Update(ctx, secret); err != nil {
+		return err
+	}
+	return nil
 }
 
 func hashData(original string) string {
@@ -142,12 +141,12 @@ func (r *PaasNSReconciler) getSecrets(
 		if err != nil {
 			return nil, err
 		}
-		if decrypted, err := rsa.Decrypt(encryptedSecretData); err != nil {
+		decrypted, err := rsa.Decrypt(encryptedSecretData)
+		if err != nil {
 			return nil, fmt.Errorf("failed to decrypt secret %s: %s", secret, err.Error())
-		} else {
-			secret.Data["sshPrivateKey"] = decrypted
-			secrets = append(secrets, secret)
 		}
+		secret.Data["sshPrivateKey"] = decrypted
+		secrets = append(secrets, secret)
 	}
 	return secrets, nil
 }

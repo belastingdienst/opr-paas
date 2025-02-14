@@ -67,25 +67,26 @@ func (r *PaasReconciler) UpdateClusterWideQuotaResources(
 	quota *quotav1.ClusterResourceQuota,
 ) (err error) {
 	var allPaasResources paas_quota.QuotaLists
+	var conf v1alpha1.ConfigCapability
+	var exists bool
 	if capabilityName, err := ClusterWideCapabilityName(quota.ObjectMeta.Name); err != nil {
 		return err
-	} else if config, exists := config.GetConfig().Capabilities[capabilityName]; !exists {
+	} else if conf, exists = config.GetConfig().Capabilities[capabilityName]; !exists {
 		return fmt.Errorf("missing capability config for %s", capabilityName)
-	} else if !config.QuotaSettings.Clusterwide {
+	} else if !conf.QuotaSettings.Clusterwide {
 		return fmt.Errorf("running UpdateClusterWideQuota for non-clusterwide quota %s", quota.ObjectMeta.Name)
 	} else if allPaasResources, err = r.FetchAllPaasCapabilityResources(ctx,
 		quota,
-		config.QuotaSettings.DefQuota,
+		conf.QuotaSettings.DefQuota,
 	); err != nil {
 		return err
-	} else {
-		quota.Spec.Quota.Hard = corev1.ResourceList(allPaasResources.OptimalValues(
-			config.QuotaSettings.Ratio,
-			config.QuotaSettings.MinQuotas,
-			config.QuotaSettings.MaxQuotas,
-		))
-		return nil
 	}
+	quota.Spec.Quota.Hard = corev1.ResourceList(allPaasResources.OptimalValues(
+		conf.QuotaSettings.Ratio,
+		conf.QuotaSettings.MinQuotas,
+		conf.QuotaSettings.MaxQuotas,
+	))
+	return nil
 }
 
 // backendQuota is a code for Creating Quota
@@ -170,14 +171,13 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 	var quota *quotav1.ClusterResourceQuota
 	var exists bool
 	quotaName := ClusterWideQuotaName(capabilityName)
-	if config, exists := config.GetConfig().Capabilities[capabilityName]; !exists {
+	config, exists := config.GetConfig().Capabilities[capabilityName]
+	if !exists {
 		return fmt.Errorf("capability %s does not seem to exist in configuration", capabilityName)
 	} else if !config.QuotaSettings.Clusterwide {
 		return nil
-	} else {
-		quota = backendClusterWideQuota(quotaName,
-			config.QuotaSettings.MinQuotas)
 	}
+	quota = backendClusterWideQuota(quotaName, config.QuotaSettings.MinQuotas)
 
 	err := r.Get(ctx, types.NamespacedName{Name: quotaName}, quota)
 	if err != nil && !errors.IsNotFound(err) {
@@ -218,10 +218,9 @@ func (r *PaasReconciler) removeFromClusterWideQuota(
 		// If a Paas was created with a capability that was nog yet configured, we should be able to delete it.
 		// Returning an error would block deletion.
 		return nil
-	} else {
-		quota = backendClusterWideQuota(quotaName,
-			capConfig.QuotaSettings.MinQuotas)
 	}
+	quota = backendClusterWideQuota(quotaName, capConfig.QuotaSettings.MinQuotas)
+
 	err := r.Get(ctx, types.NamespacedName{
 		Name: quotaName,
 	}, quota)

@@ -156,11 +156,11 @@ reencrypt with the new public key and write back the paas to the file in either 
 			if debug {
 				logrus.SetLevel(logrus.DebugLevel)
 			}
-			if files, err := utils.PathToFileList(args); err != nil {
+			files, err := utils.PathToFileList(args)
+			if err != nil {
 				return err
-			} else {
-				return reencryptFiles(privateKeyFiles, publicKeyFile, outputFormat, files)
 			}
+			return reencryptFiles(privateKeyFiles, publicKeyFile, outputFormat, files)
 		},
 		Args: cobra.MinimumNArgs(1),
 		//revive:disable-next-line

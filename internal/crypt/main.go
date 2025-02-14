@@ -13,45 +13,48 @@ import (
 )
 
 func encrypt(publicKey string, paasName string, data []byte) error {
+	var encrypted string
 	if c, err := NewCryptFromFiles([]string{}, publicKey, paasName); err != nil {
 		return err
-	} else if encrypted, err := c.Encrypt(data); err != nil {
+	} else if encrypted, err = c.Encrypt(data); err != nil {
 		return fmt.Errorf("failed to encrypt: %w", err)
-	} else {
-		fmt.Println(encrypted)
 	}
+	fmt.Println(encrypted)
+
 	return nil
 }
 
 func DecryptFromStdin(privateKeys []string, paasName string) error {
-	if data, err := io.ReadAll(os.Stdin); err != nil {
+	data, err := io.ReadAll(os.Stdin)
+	if err != nil {
 		return err
-	} else {
-		if c, err := NewCryptFromFiles(privateKeys, "", paasName); err != nil {
-			return err
-		} else if encrypted, err := c.Decrypt(string(data)); err != nil {
-			return fmt.Errorf("failed to decrypt: %w", err)
-		} else {
-			fmt.Println(string(encrypted))
-			return nil
-		}
 	}
+	c, err := NewCryptFromFiles(privateKeys, "", paasName)
+	if err != nil {
+		return err
+	}
+	encrypted, err := c.Decrypt(string(data))
+	if err != nil {
+		return fmt.Errorf("failed to decrypt: %w", err)
+	}
+	fmt.Println(string(encrypted))
+	return nil
 }
 
 func EncryptFromStdin(publicKey string, paasName string) error {
-	if data, err := io.ReadAll(os.Stdin); err != nil {
+	data, err := io.ReadAll(os.Stdin)
+	if err != nil {
 		return err
-	} else {
-		return encrypt(publicKey, paasName, data)
 	}
+	return encrypt(publicKey, paasName, data)
 }
 
 func EncryptFile(publicKey string, paasName string, path string) error {
-	if data, err := os.ReadFile(path); err != nil {
+	data, err := os.ReadFile(path)
+	if err != nil {
 		return err
-	} else {
-		return encrypt(publicKey, paasName, data)
 	}
+	return encrypt(publicKey, paasName, data)
 }
 
 func GenerateKeyPair(privateKey string, publicKey string) error {

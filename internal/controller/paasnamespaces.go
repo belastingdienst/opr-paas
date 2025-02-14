@@ -122,22 +122,22 @@ func (r *PaasReconciler) ReconcilePaasNss(
 	} else if err = EnsureNamespace(r.Client, ctx, paas, ns, r.Scheme); err != nil {
 		logger.Err(err).Msgf("failure while creating namespace %s", paas.Name)
 		return err
-	} else {
-		logger.Info().Msg("creating PaasNs resources for Paas object")
-		for nsName := range paas.AllEnabledNamespaces() {
-			pns, err := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Keys(), paas.GetNsSshSecrets(nsName))
-			if err != nil {
-				logger.Err(err).Msgf("failure while creating PaasNs %s",
-					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace})
-				return err
-			}
-			if err = r.ensurePaasNs(ctx, paas, pns); err != nil {
-				logger.Err(err).Msgf("failure while creating PaasNs %s",
-					types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace})
-				return err
-			}
+	}
+	logger.Info().Msg("creating PaasNs resources for Paas object")
+	for nsName := range paas.AllEnabledNamespaces() {
+		pns, err := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Keys(), paas.GetNsSshSecrets(nsName))
+		if err != nil {
+			logger.Err(err).Msgf("failure while creating PaasNs %s",
+				types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace})
+			return err
+		}
+		if err = r.ensurePaasNs(ctx, paas, pns); err != nil {
+			logger.Err(err).Msgf("failure while creating PaasNs %s",
+				types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace})
+			return err
 		}
 	}
+
 	logger.Info().Msg("cleaning obsolete namespaces ")
 	if err := r.FinalizePaasNss(ctx, paas); err != nil {
 		return err
