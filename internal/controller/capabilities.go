@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"strings"
 
+	"sigs.k8s.io/yaml"
+
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
@@ -183,6 +185,13 @@ func (r *PaasReconciler) ensureAppSetCap(
 	fields["paas"] = paas.Name
 	fields["service"] = service
 	fields["subservice"] = subService
+	// TODO (portly-halicore-76) make this configurable via customfields using go-template
+	// TODO (portly-halicore-76) add a unittest for this
+	groupsAsYaml, err := yaml.Marshal(paas.Spec.Groups)
+	if err != nil {
+		return err
+	}
+	fields["groups"] = string(groupsAsYaml)
 	patch := client.MergeFrom(appSet.DeepCopy())
 	if listGen = getListGen(appSet.Spec.Generators); listGen == nil {
 		// create the list
