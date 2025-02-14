@@ -53,7 +53,7 @@ func TestPaasConfig(t *testing.T) {
 			Assess("PaasConfig is Active", assertPaasConfigIsActive).
 			Assess("PaasConfig is Updated", assertPaasConfigIsUpdated).
 			Assess("PaasConfig Invalid Spec", assertPaasConfigInvalidSpec).
-			Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+			Teardown(func(ctx context.Context, _ *testing.T, _ *envconf.Config) context.Context {
 				return ctx
 			}).
 			Feature(),

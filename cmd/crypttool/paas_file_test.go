@@ -32,7 +32,7 @@ func TestReadPaasFile(t *testing.T) {
 	// invalid path
 	paas, typeString, err := readPaasFile("invalid/path")
 	expectedErrorMsg := "open invalid/path: no such file or directory"
-	assert.EqualErrorf(
+	require.EqualErrorf(
 		t,
 		err,
 		expectedErrorMsg,
@@ -49,7 +49,7 @@ func TestReadPaasFile(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, paas)
 	assert.Empty(t, typeString)
-	assert.EqualErrorf(
+	require.EqualErrorf(
 		t,
 		err,
 		expectedErrorMsg,
@@ -64,7 +64,7 @@ func TestReadPaasFile(t *testing.T) {
 	require.Error(t, err)
 	assert.Nil(t, paas)
 	assert.Empty(t, typeString)
-	assert.EqualErrorf(
+	require.EqualErrorf(
 		t,
 		err,
 		expectedErrorMsg,

@@ -71,7 +71,7 @@ func (v *PaasConfigCustomValidator) ValidateCreate(
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
 func (v *PaasConfigCustomValidator) ValidateUpdate(
 	ctx context.Context,
-	oldObj, newObj runtime.Object,
+	_, newObj runtime.Object,
 ) (admission.Warnings, error) {
 	paasconfig, ok := newObj.(*v1alpha1.PaasConfig)
 	if !ok {

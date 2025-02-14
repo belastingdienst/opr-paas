@@ -375,17 +375,17 @@ func ActivePaasConfigUpdated() predicate.Predicate {
 		},
 
 		// Disallow create events
-		CreateFunc: func(e event.CreateEvent) bool {
+		CreateFunc: func(_ event.CreateEvent) bool {
 			return false
 		},
 
 		// Disallow delete events
-		DeleteFunc: func(e event.DeleteEvent) bool {
+		DeleteFunc: func(_ event.DeleteEvent) bool {
 			return false
 		},
 
 		// Disallow generic events (e.g., external triggers)
-		GenericFunc: func(e event.GenericEvent) bool {
+		GenericFunc: func(_ event.GenericEvent) bool {
 			return false
 		},
 	}

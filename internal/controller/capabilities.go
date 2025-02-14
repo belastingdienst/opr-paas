@@ -115,7 +115,7 @@ func getListGen(generators []appv1.ApplicationSetGenerator) *appv1.ApplicationSe
 	return nil
 }
 
-func splitToService(paasName string) (string, string) {
+func splitToService(paasName string) (name string, service string) {
 	parts := strings.SplitN(paasName, "-", 3)
 	if len(parts) < 2 {
 		return paasName, ""

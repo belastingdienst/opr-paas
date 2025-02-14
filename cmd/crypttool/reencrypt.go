@@ -152,7 +152,7 @@ func reencryptCmd() *cobra.Command {
 		//revive:disable-next-line
 		Long: `reencrypt can parse yaml/json files with paas objects, decrypt the sshSecrets with the previous private key,
 reencrypt with the new public key and write back the paas to the file in either yaml or json format.`,
-		RunE: func(command *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			if debug {
 				logrus.SetLevel(logrus.DebugLevel)
 			}

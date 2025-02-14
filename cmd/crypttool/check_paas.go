@@ -146,7 +146,7 @@ func checkPaasCmd() *cobra.Command {
 		Short: "check secrets in paas yaml files",
 		//revive:disable-next-line
 		Long: `check-paas can parse yaml/json files with paas objects, decrypt the sshSecrets and display length and checksum.`,
-		RunE: func(command *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			if debug {
 				logrus.SetLevel(logrus.DebugLevel)
 			}

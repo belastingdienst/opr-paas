@@ -114,31 +114,31 @@ func main() {
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		log.Fatal().Err(err).Str("controller", "PaasConfig").Msg("unable to create controller")
+		log.Fatal().Err(err).Str("controller", "PaasConfig").Msg("unable to create PaasConfig controller")
 	}
 	if err = (&controller.PaasReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		log.Fatal().Err(err).Str("controller", "Paas").Msg("unable to create controller")
+		log.Fatal().Err(err).Str("controller", "Paas").Msg("unable to create Paas controller")
 	}
 	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = webhookv1alpha1.SetupPaasWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create webhook")
+			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create Paas webhook")
 		}
 		if err = webhookv1alpha1.SetupPaasConfigWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "PaasConfig").Msg("unable to create webhook")
+			log.Fatal().Err(err).Str("webhook", "PaasConfig").Msg("unable to create PaasConfig webhook")
 		}
 		if err = webhookv1alpha1.SetupPaasNsWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "PaasNS").Msg("unable to create webhook")
+			log.Fatal().Err(err).Str("webhook", "PaasNS").Msg("unable to create PaasNs webhook")
 		}
 	}
 	if err = (&controller.PaasNSReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		log.Fatal().Err(err).Str("controller", "PaasNS").Msg("unable to create controller")
+		log.Fatal().Err(err).Str("controller", "PaasNS").Msg("unable to create PaasNs controller")
 	}
 	//+kubebuilder:scaffold:builder
 

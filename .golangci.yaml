@@ -41,10 +41,16 @@ linters-settings:
   revive:
     enable-all-rules: true
     rules:
+      - name: add-constant
+        arguments:
+          - allowStrs: '""'
+            allowInts: '0,1,2'
       - name: line-length-limit
         severity: warning
         disabled: false
         exclude: ['']
         arguments: [120]
+      #- name: cognitive-complexity
+      #  arguments: [20]
 run:
   timeout: 50m

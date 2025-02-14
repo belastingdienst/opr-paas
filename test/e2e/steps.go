@@ -40,7 +40,7 @@ func createPaasWithCondFn(name string, paasSpec api.PaasSpec, readyCondition str
 // earlier assertion failed causing the deletion step to be skipped).
 // Can be called as `.Teardown(teardownPaasFn("paas-name"))`
 func teardownPaasFn(paasName string) types.StepFunc {
-	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	return func(ctx context.Context, _ *testing.T, cfg *envconf.Config) context.Context {
 		paas := &api.Paas{ObjectMeta: metav1.ObjectMeta{Name: paasName}}
 
 		// Paas is deleted synchronously to prevent race conditions between test invocations
