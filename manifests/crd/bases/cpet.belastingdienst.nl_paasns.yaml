@@ -56,7 +56,7 @@ spec:
                 additionalProperties:
                   type: string
                 description: |-
-                  SshSecrets which should exist in the namespace created through this PaasNS,
+                  SSHSecrets which should exist in the namespace created through this PaasNS,
                   the values are the encrypted secrets through Crypt
                 type: object
             required:

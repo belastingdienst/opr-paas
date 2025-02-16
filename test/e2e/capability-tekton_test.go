@@ -128,8 +128,8 @@ func assertCapTektonDeleted(ctx context.Context, t *testing.T, cfg *envconf.Conf
 
 func assertTektonCRB(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	for _, crbName := range []string{"paas-view", "paas-alert-routing-edit"} {
-		argo_role_binding := getOrFail(ctx, crbName, "", &rbac.ClusterRoleBinding{}, t, cfg)
-		subjects := argo_role_binding.Subjects
+		argoRoleBinding := getOrFail(ctx, crbName, "", &rbac.ClusterRoleBinding{}, t, cfg)
+		subjects := argoRoleBinding.Subjects
 		assert.Len(t, subjects, 1, "ClusterRoleBinding %s contains one subject", crbName)
 		subject := subjects[0]
 		assert.Equal(t, "ServiceAccount", subject.Kind, "Subject is of type ServiceAccount")

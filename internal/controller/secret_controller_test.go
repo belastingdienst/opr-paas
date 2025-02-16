@@ -98,7 +98,7 @@ var _ = Describe("Secret controller", func() {
 				ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "my-paas"},
 				Spec: api.PaasNSSpec{
 					Paas: "my-paas",
-					SshSecrets: map[string]string{
+					SSHSecrets: map[string]string{
 						"probably a git repo.git": base64.StdEncoding.EncodeToString(encrypted),
 					},
 				},

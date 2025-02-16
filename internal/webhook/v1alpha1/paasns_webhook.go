@@ -136,7 +136,7 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 	getRsaFunc := func() (cr *crypt.Crypt, err error) {
 		return getRsa(ctx, v.client, paasns.Spec.Paas)
 	}
-	errs = append(errs, validated.compareSecrets(paasns.Spec.SshSecrets, getRsaFunc)...)
+	errs = append(errs, validated.compareSecrets(paasns.Spec.SSHSecrets, getRsaFunc)...)
 
 	if len(errs) == 0 {
 		return nil, nil
@@ -195,7 +195,7 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 		}
 
 		// Err when an sshSecret can't be decrypted
-		if !reflect.DeepEqual(oldPaasns.Spec.SshSecrets, newPaasns.Spec.SshSecrets) {
+		if !reflect.DeepEqual(oldPaasns.Spec.SSHSecrets, newPaasns.Spec.SSHSecrets) {
 			var validated validatedSecrets
 			// We don't have to validate what is in the Paas (already validated by Paas webhook)
 			validated.appendFromPaas(*paas)
@@ -204,7 +204,7 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 			getRsaFunc := func() (cr *crypt.Crypt, err error) {
 				return getRsa(ctx, v.client, newPaasns.Spec.Paas)
 			}
-			errs = append(errs, validated.compareSecrets(newPaasns.Spec.SshSecrets, getRsaFunc)...)
+			errs = append(errs, validated.compareSecrets(newPaasns.Spec.SSHSecrets, getRsaFunc)...)
 		}
 
 		if len(errs) > 0 {

@@ -63,7 +63,7 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 			return err
 		}
 
-		for key, secret := range paas.Spec.SshSecrets {
+		for key, secret := range paas.Spec.SSHSecrets {
 			reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 			if err != nil {
 				errNum += 1
@@ -77,14 +77,14 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 				continue
 			}
 
-			paas.Spec.SshSecrets[key] = reencrypted
+			paas.Spec.SSHSecrets[key] = reencrypted
 			// Use replaceAll as same secret can occur multiple times and use TrimSpace to prevent removal of newlines.
 			paasAsString = strings.ReplaceAll(paasAsString, strings.TrimSpace(secret), reencrypted)
 			logrus.Infof("successfully reencrypted %s.spec.sshSecrets[%s] in file %s", paasName, key, fileName)
 		}
 
 		for capName, cap := range paas.Spec.Capabilities {
-			for key, secret := range cap.GetSshSecrets() {
+			for key, secret := range cap.GetSSHSecrets() {
 				reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 				if err != nil {
 					errNum += 1
@@ -99,7 +99,7 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 					continue
 				}
 
-				cap.SetSshSecret(key, reencrypted)
+				cap.SetSSHSecret(key, reencrypted)
 				// Use replaceAll as same secret can occur multiple times
 				// Use TrimSpace to prevent removal of newlines.
 				paasAsString = strings.ReplaceAll(paasAsString, strings.TrimSpace(secret), reencrypted)

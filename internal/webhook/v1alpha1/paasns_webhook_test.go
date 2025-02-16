@@ -126,7 +126,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				Groups: v1alpha1.PaasGroups{
 					groupName: v1alpha1.PaasGroup{},
 				},
-				SshSecrets: map[string]string{
+				SSHSecrets: map[string]string{
 					paasSecret: paasSecret,
 				},
 				Quota: quota.Quota{
@@ -150,7 +150,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			},
 			Spec: v1alpha1.PaasNSSpec{
 				Paas: paasName,
-				SshSecrets: map[string]string{
+				SSHSecrets: map[string]string{
 					"validSecret": validSecret,
 				},
 			},
@@ -214,7 +214,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			if err != nil {
 				Fail(fmt.Errorf("encrypting invalid paasns secret failed: %w", err).Error())
 			}
-			obj.Spec.SshSecrets["invalidSecret"] = invalidSecret
+			obj.Spec.SSHSecrets["invalidSecret"] = invalidSecret
 			warn, err := validator.ValidateCreate(ctx, obj)
 			Expect(warn, err).Error().To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("unable to decrypt data with any of the private keys"))

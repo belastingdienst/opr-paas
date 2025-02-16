@@ -1,16 +1,16 @@
 package quota
 
 /*
-QuotaLists is a type which is especially designed to collect and summarize information about quota.
+Quotas is a type which is especially designed to collect and summarize information about quota.
 Quota are basically maps with resource names as key and quantities as values, e.a.:
 cpu: 100m
 memory: 1GiB
 storage.nfs: 100GiB
 
 Multiple Paas'es could have multiple Clusterwide quota's, each with it's own list of items.
-QuotaLists are meant to bring them (across Paas'es an even across capabilities) in maps of lists of quantities.
-After collecting the info, QuotaLists can summarize (e.a. min, max, sum all values, sum largest two values, etc.).
-QuotaLists can combine these summarizing techniques to calculate the optimal value for each quotum (key, value pair).
+Quotas are meant to bring them (across Paas'es an even across capabilities) in maps of lists of quantities.
+After collecting the info, Quotas can summarize (e.a. min, max, sum all values, sum largest two values, etc.).
+Quotas can combine these summarizing techniques to calculate the optimal value for each quotum (key, value pair).
 */
 
 import (
@@ -21,18 +21,18 @@ import (
 )
 
 // map[paas][quotatype]value
-// type QuotaLists map[string]Quota
-type QuotaLists struct {
+// type Quotas map[string]Quota
+type Quotas struct {
 	list map[v1.ResourceName][]resourcev1.Quantity
 }
 
-func NewQuotaLists() QuotaLists {
-	return QuotaLists{
+func NewQuotas() Quotas {
+	return Quotas{
 		list: make(map[v1.ResourceName][]resourcev1.Quantity),
 	}
 }
 
-func (pcr *QuotaLists) Append(quotas Quota) {
+func (pcr *Quotas) Append(quotas Quota) {
 	for key, value := range quotas {
 		if values, exists := pcr.list[key]; exists {
 			pcr.list[key] = append(values, value)
@@ -42,7 +42,7 @@ func (pcr *QuotaLists) Append(quotas Quota) {
 	}
 }
 
-func (pcr QuotaLists) Sum() Quota {
+func (pcr Quotas) Sum() Quota {
 	quotaResources := make(Quota)
 	for key, values := range pcr.list {
 		var newValue resourcev1.Quantity
@@ -54,7 +54,7 @@ func (pcr QuotaLists) Sum() Quota {
 	return quotaResources
 }
 
-func (pcr QuotaLists) LargestTwo() Quota {
+func (pcr Quotas) LargestTwo() Quota {
 	quotaResources := make(Quota)
 	for key, values := range pcr.list {
 		if len(values) == 1 {
@@ -69,7 +69,7 @@ func (pcr QuotaLists) LargestTwo() Quota {
 	return quotaResources
 }
 
-func (pcr QuotaLists) Max() Quota {
+func (pcr Quotas) Max() Quota {
 	quotaResources := make(Quota)
 	for key, values := range pcr.list {
 		if len(values) < 1 {
@@ -82,7 +82,7 @@ func (pcr QuotaLists) Max() Quota {
 	return quotaResources
 }
 
-func (pcr QuotaLists) Min() Quota {
+func (pcr Quotas) Min() Quota {
 	quotaResources := make(Quota)
 	for key, values := range pcr.list {
 		if len(values) < 1 {
@@ -95,14 +95,14 @@ func (pcr QuotaLists) Min() Quota {
 	return quotaResources
 }
 
-func (pcr QuotaLists) OptimalValues(ratio float64, minQuotas Quota, maxQuotas Quota) Quota {
+func (pcr Quotas) OptimalValues(ratio float64, minQuotas Quota, maxQuotas Quota) Quota {
 	// Calculate resources with 3 different approaches and select largest value
-	approaches := NewQuotaLists()
+	approaches := NewQuotas()
 	approaches.Append(pcr.Sum().Resized(ratio))
 	approaches.Append(pcr.LargestTwo())
 	approaches.Append(minQuotas)
 	// Cap with max values from config
-	capped := NewQuotaLists()
+	capped := NewQuotas()
 	capped.Append(approaches.Max())
 	capped.Append(maxQuotas)
 	// return optimal values as derived from config and values
