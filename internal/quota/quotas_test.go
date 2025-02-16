@@ -3,36 +3,143 @@ package quota_test
 import (
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
+
 	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
 	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
-	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func TestPaasQuotas_QuotaWithDefaults(t *testing.T) {
-	testQuotas := map[corev1.ResourceName]resourcev1.Quantity{
-		"limits.cpu":      resourcev1.MustParse("3"),
-		"limits.memory":   resourcev1.MustParse("6Gi"),
-		"requests.cpu":    resourcev1.MustParse("800m"),
-		"requests.memory": resourcev1.MustParse("4Gi"),
+const (
+	kiB int64 = 1024
+	MiB       = kiB * kiB
+	GiB       = MiB * kiB
+)
+
+var (
+	testQuotas = []map[corev1.ResourceName]resource.Quantity{
+		{
+			"cpu":    resource.MustParse("3"),
+			"memory": resource.MustParse("6Gi"),
+			"block":  resource.MustParse("100Gi"),
+			"shared": resource.MustParse("100Gi"),
+		},
+		{
+			"cpu":    resource.MustParse("6"),
+			"memory": resource.MustParse("12Gi"),
+			"block":  resource.MustParse("100Gi"),
+		},
+		{
+			"cpu":    resource.MustParse("3"),
+			"memory": resource.MustParse("12Gi"),
+			"block":  resource.MustParse("100Gi"),
+		},
 	}
-	defaultQuotas := map[corev1.ResourceName]resourcev1.Quantity{
-		"limits.cpu":    resourcev1.MustParse("2"),
-		"limits.memory": resourcev1.MustParse("5Gi"),
-		"requests.cpu":  resourcev1.MustParse("700m"),
+	sum_cpu            int64   = 12000
+	sum_memory         int64   = 30 * GiB
+	min_cpu            int64   = 3000
+	min_memory         int64   = 6 * GiB
+	max_cpu            int64   = 6000
+	max_memory         int64   = 12 * GiB
+	largest_two_cpu    int64   = 9000
+	largest_two_memory int64   = 24 * GiB
+	ratio              float64 = 0.7 // 70%
+	optimal_shared     int64   = 100 * GiB
+	optimal_block      int64   = 210 * GiB
+
+	minQuota = map[corev1.ResourceName]resource.Quantity{
+		"cpu": resource.MustParse("10"),
 	}
-	quotas := make(paas_quota.Quota)
-	for key, value := range testQuotas {
-		quotas[key] = value
+
+	maxQuota = map[corev1.ResourceName]resource.Quantity{
+		"memory": resource.MustParse("9Gi"),
 	}
-	defaultedQuotas := quotas.MergeWith(defaultQuotas)
-	for key, value := range defaultedQuotas {
-		if original, exists := quotas[key]; exists {
-			assert.Equal(t, original, value)
-		}
+)
+
+func TestPaasQuotaLists_Sum(t *testing.T) {
+	quotas := paas_quota.NewQuotaLists()
+	for _, vals := range testQuotas {
+		quotas.Append(vals)
 	}
-	assert.Equal(t, defaultedQuotas["requests.memory"],
-		resourcev1.MustParse("4Gi"))
-	assert.NotEqual(t, defaultedQuotas["requests.cpu"],
-		resourcev1.MustParse("700m"))
+	sum := quotas.Sum()
+	cpu, exists := sum["cpu"]
+	assert.True(t, exists, "cpu should exist in sum")
+	assert.Equal(t, resource.DecimalSI, cpu.Format, "CPU Should have DecimalSI format")
+	assert.Equal(t, sum_cpu, cpu.MilliValue(), "sum should have 12000 milli cpu")
+	mem, exists := sum["memory"]
+	assert.True(t, exists, "memory should exist in sum")
+	assert.Equal(t, resource.BinarySI, mem.Format, "Memory should have BinarySI format")
+	assert.Equal(t, sum_memory, mem.Value(), "sum should have sum 30 GiB memory")
+}
+
+func TestPaasQuotaLists_Min(t *testing.T) {
+	quotas := paas_quota.NewQuotaLists()
+	for _, vals := range testQuotas {
+		quotas.Append(vals)
+	}
+	min := quotas.Min()
+	cpu, exists := min["cpu"]
+	assert.True(t, exists, "cpu should exist in min")
+	assert.Equal(t, resource.DecimalSI, cpu.Format)
+	assert.Equal(t, min_cpu, cpu.MilliValue())
+	mem, exists := min["memory"]
+	assert.True(t, exists, "memory should exist in min")
+	assert.Equal(t, resource.BinarySI, mem.Format)
+	assert.Equal(t, min_memory, mem.Value())
+}
+
+func TestPaasQuotaLists_Max(t *testing.T) {
+	quotas := paas_quota.NewQuotaLists()
+	for _, vals := range testQuotas {
+		quotas.Append(vals)
+	}
+	max := quotas.Max()
+	cpu, exists := max["cpu"]
+	assert.True(t, exists, "cpu should exist in max")
+	assert.Equal(t, resource.DecimalSI, cpu.Format)
+	assert.Equal(t, max_cpu, cpu.MilliValue())
+	mem, exists := max["memory"]
+	assert.True(t, exists)
+	assert.Equal(t, resource.BinarySI, mem.Format)
+	assert.Equal(t, max_memory, mem.Value())
+}
+
+func TestPaasQuotaLists_LargestTwo(t *testing.T) {
+	quotas := paas_quota.NewQuotaLists()
+	for _, vals := range testQuotas {
+		quotas.Append(vals)
+	}
+	lt := quotas.LargestTwo()
+	cpu, exists := lt["cpu"]
+	assert.True(t, exists, "cpu should exist in max")
+	assert.Equal(t, resource.DecimalSI, cpu.Format)
+	assert.Equal(t, largest_two_cpu, cpu.MilliValue())
+	mem, exists := lt["memory"]
+	assert.True(t, exists, "memory should exist in max")
+	assert.Equal(t, resource.BinarySI, mem.Format)
+	assert.Equal(t, largest_two_memory, mem.Value())
+}
+
+func TestPaasQuotaLists_OptimalValues(t *testing.T) {
+	quotas := paas_quota.NewQuotaLists()
+	for _, vals := range testQuotas {
+		quotas.Append(vals)
+	}
+	min := minQuota
+	max := maxQuota
+	optimal := quotas.OptimalValues(
+		ratio,
+		min,
+		max,
+	)
+	cpu := optimal["cpu"]
+	min_cpu := min["cpu"]
+	assert.Equal(t, min_cpu.Value(), cpu.Value())
+	mem := optimal["memory"]
+	max_mem := max["memory"]
+	assert.Equal(t, max_mem.Value(), mem.Value())
+	block := optimal["block"]
+	assert.Equal(t, optimal_block, block.Value())
+	shared := optimal["shared"]
+	assert.Equal(t, optimal_shared, shared.Value())
 }
