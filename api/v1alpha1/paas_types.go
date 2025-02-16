@@ -55,7 +55,7 @@ type PaasSpec struct {
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket.
 	// They must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
 	// +kubebuilder:validation:Optional
-	SshSecrets map[string]string `json:"sshSecrets"`
+	SSHSecrets map[string]string `json:"sshSecrets"`
 
 	// Indicated by which 3rd party Paas's ArgoCD this Paas is managed
 	// +kubebuilder:validation:Optional
@@ -78,13 +78,13 @@ func (p Paas) PrefixedBoolMap(m map[string]bool) map[string]bool {
 	return newMap
 }
 
-func (p Paas) GetNsSshSecrets(ns string) (secrets map[string]string) {
+func (p Paas) GetNsSSHSecrets(ns string) (secrets map[string]string) {
 	secrets = make(map[string]string)
-	for key, value := range p.Spec.SshSecrets {
+	for key, value := range p.Spec.SSHSecrets {
 		secrets[key] = value
 	}
-	if cap, exists := p.Spec.Capabilities[ns]; exists {
-		for key, value := range cap.GetSshSecrets() {
+	if capability, exists := p.Spec.Capabilities[ns]; exists {
+		for key, value := range capability.GetSSHSecrets() {
 			secrets[key] = value
 		}
 	}
@@ -205,7 +205,8 @@ func (pgs PaasGroups) Names() (groups []string) {
 }
 
 func (p Paas) GroupKey2GroupName(groupKey string) string {
-	if group, exists := p.Spec.Groups[groupKey]; !exists {
+	group, exists := p.Spec.Groups[groupKey]
+	if !exists {
 		return ""
 	} else if len(group.Query) > 0 {
 		return group.Name(groupKey)
@@ -257,8 +258,8 @@ func (pcs PaasCapabilities) AsPrefixedMap(prefix string) PaasCapabilities {
 	return caps
 }
 
-func (pcs PaasCapabilities) IsCap(name string) bool {
-	if cap, exists := pcs[name]; !exists || !cap.IsEnabled() {
+func (pcs PaasCapabilities) IsCap(capName string) bool {
+	if capability, exists := pcs[capName]; !exists || !capability.IsEnabled() {
 		return false
 	}
 
@@ -267,33 +268,41 @@ func (pcs PaasCapabilities) IsCap(name string) bool {
 
 func (pcs PaasCapabilities) GetCapability(capName string) (capability PaasCapability, err error) {
 	var exists bool
-	if capability, exists = pcs[capName]; !exists {
+	capability, exists = pcs[capName]
+	if !exists {
 		return PaasCapability{}, fmt.Errorf("capability %s does not exist", capName)
 	}
 	return capability, nil
 }
 
-func (pcs PaasCapabilities) AddCapSshSecret(capName string, key string, value string) (err error) {
-	cap, err := pcs.GetCapability(capName)
+func (pcs PaasCapabilities) AddCapSSHSecret(capName string, key string, value string) (err error) {
+	capability, err := pcs.GetCapability(capName)
 	if err != nil {
 		return err
 	}
-	if cap.SshSecrets == nil {
-		cap.SshSecrets = map[string]string{key: value}
+	if capability.SSHSecrets == nil {
+		capability.SSHSecrets = map[string]string{key: value}
 	} else {
-		cap.SshSecrets[key] = value
+		capability.SSHSecrets[key] = value
 	}
-	pcs[capName] = cap
+	pcs[capName] = capability
+
+	if capability.SSHSecrets == nil {
+		capability.SSHSecrets = map[string]string{key: value}
+	} else {
+		capability.SSHSecrets[key] = value
+	}
+	pcs[capName] = capability
 	return nil
 }
 
-func (pcs PaasCapabilities) ResetCapSshSecret(capName string) (err error) {
-	cap, err := pcs.GetCapability(capName)
+func (pcs PaasCapabilities) ResetCapSSHSecret(capName string) (err error) {
+	capability, err := pcs.GetCapability(capName)
 	if err != nil {
 		return err
 	}
-	cap.SshSecrets = nil
-	pcs[capName] = cap
+	capability.SSHSecrets = nil
+	pcs[capName] = capability
 	return nil
 }
 
@@ -305,7 +314,7 @@ type PaasCapability struct {
 	Enabled bool `json:"enabled"`
 	// The URL that contains the Applications / Application Sets to be used by this capability
 	// +kubebuilder:validation:Optional
-	GitUrl string `json:"gitUrl"`
+	GitURL string `json:"gitUrl"`
 	// The revision of the git repo that contains the Applications / Application Sets to be used by this capability
 	// +kubebuilder:validation:Optional
 	GitRevision string `json:"gitRevision"`
@@ -321,7 +330,7 @@ type PaasCapability struct {
 	// You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket
 	// They must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
 	// +kubebuilder:validation:Optional
-	SshSecrets map[string]string `json:"sshSecrets"`
+	SSHSecrets map[string]string `json:"sshSecrets"`
 	// You can enable extra permissions for the service accounts belonging to this capability
 	// Exact definitions is configured in Paas Configmap
 	// +kubebuilder:validation:Optional
@@ -333,7 +342,7 @@ func (pc *PaasCapability) CapExtraFields(
 ) (fields map[string]string, err error) {
 	// TODO: remove argocd specific fields
 	fields = map[string]string{
-		"git_url":      pc.GitUrl,
+		"git_url":      pc.GitURL,
 		"git_revision": pc.GitRevision,
 		"git_path":     pc.GitPath,
 	}
@@ -385,12 +394,12 @@ func (pc PaasCapability) Quotas() (pq paas_quota.Quota) {
 	return pc.Quota
 }
 
-func (pc PaasCapability) GetSshSecrets() map[string]string {
-	return pc.SshSecrets
+func (pc PaasCapability) GetSSHSecrets() map[string]string {
+	return pc.SSHSecrets
 }
 
-func (pc *PaasCapability) SetSshSecret(key string, value string) {
-	pc.SshSecrets[key] = value
+func (pc *PaasCapability) SetSSHSecret(key string, value string) {
+	pc.SSHSecrets[key] = value
 }
 
 // revive:disable:line-length-limit

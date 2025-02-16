@@ -244,19 +244,19 @@ func Test_v1CheckPaas(t *testing.T) {
 				Name: "testPaas",
 			},
 			Spec: v1alpha1.PaasSpec{
-				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+				SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
 				Capabilities: v1alpha1.PaasCapabilities{
 					"sso": v1alpha1.PaasCapability{
 						Enabled:    true,
-						SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+						SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
 					},
 				},
 			},
 		},
 	}
-	checkPaasJson, _ := json.Marshal(validRequest)
+	checkPaasJSON, _ := json.Marshal(validRequest)
 
-	req, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(checkPaasJson)))
+	req, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(checkPaasJSON)))
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, 200, w.Code)
@@ -265,8 +265,8 @@ func Test_v1CheckPaas(t *testing.T) {
 		Decrypted: true,
 		Error:     "",
 	}
-	responseJson, _ := json.MarshalIndent(response, "", "    ")
-	assert.JSONEq(t, string(responseJson), w.Body.String())
+	responseJSON, _ := json.MarshalIndent(response, "", "    ")
+	assert.JSONEq(t, string(responseJSON), w.Body.String())
 
 	// Reset recorder
 	w = httptest.NewRecorder()
@@ -277,19 +277,19 @@ func Test_v1CheckPaas(t *testing.T) {
 				Name: "testPaas2",
 			},
 			Spec: v1alpha1.PaasSpec{
-				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
+				SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
 				Capabilities: v1alpha1.PaasCapabilities{
 					"sso": v1alpha1.PaasCapability{
 						Enabled:    true,
-						SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+						SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
 					},
 				},
 			},
 		},
 	}
-	invalidCheckPaasJson, _ := json.Marshal(invalidRequest)
+	invalidcheckPaasJSON, _ := json.Marshal(invalidRequest)
 
-	req2, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(invalidCheckPaasJson)))
+	req2, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(invalidcheckPaasJSON)))
 	router.ServeHTTP(w, req2)
 
 	assert.Equal(t, 422, w.Code)
@@ -299,8 +299,8 @@ func Test_v1CheckPaas(t *testing.T) {
 		// revive:disable-next-line
 		Error: "testPaas2: .spec.sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys , testPaas2: .spec.capabilities[sso].sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys",
 	}
-	response2Json, _ := json.MarshalIndent(response2, "", "    ")
-	assert.JSONEq(t, string(response2Json), w.Body.String())
+	response2JSON, _ := json.MarshalIndent(response2, "", "    ")
+	assert.JSONEq(t, string(response2JSON), w.Body.String())
 }
 
 func Test_v1CheckPaasInternalServerError(t *testing.T) {
@@ -322,13 +322,13 @@ func Test_v1CheckPaasInternalServerError(t *testing.T) {
 				Name: "testPaas",
 			},
 			Spec: v1alpha1.PaasSpec{
-				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
+				SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
 			},
 		},
 	}
-	checkPaasJson, _ := json.Marshal(validRequest)
+	checkPaasJSON, _ := json.Marshal(validRequest)
 
-	req, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(checkPaasJson)))
+	req, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(checkPaasJSON)))
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, 500, w.Code)

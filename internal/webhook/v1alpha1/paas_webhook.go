@@ -160,7 +160,7 @@ func validateSecrets(ctx context.Context, client client.Client, conf v1alpha1.Pa
 	rsa, _ := crypt.NewCryptFromKeys(keys, "", paas.Name)
 
 	var errs []*field.Error
-	for name, secret := range paas.Spec.SshSecrets {
+	for name, secret := range paas.Spec.SSHSecrets {
 		if _, err := rsa.Decrypt(secret); err != nil {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("sshSecrets"),

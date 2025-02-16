@@ -309,13 +309,13 @@ func (ccp ConfigCapPerm) ServiceAccounts() []string {
 	return sas
 }
 
-func (config PaasConfigSpec) CapabilityK8sName(capability string) (as types.NamespacedName) {
+func (config PaasConfigSpec) CapabilityK8sName(capName string) (as types.NamespacedName) {
 	as.Namespace = config.ClusterWideArgoCDNamespace
-	if cap, exists := config.Capabilities[capability]; exists {
-		as.Name = cap.AppSet
+	if capability, exists := config.Capabilities[capName]; exists {
+		as.Name = capability.AppSet
 		as.Namespace = config.ClusterWideArgoCDNamespace
 	} else {
-		as.Name = fmt.Sprintf("paas-%s", capability)
+		as.Name = fmt.Sprintf("paas-%s", capName)
 		as.Namespace = config.ClusterWideArgoCDNamespace
 	}
 	return as

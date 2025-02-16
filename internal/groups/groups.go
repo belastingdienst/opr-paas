@@ -14,7 +14,7 @@ import (
 // Simple struct to parse a string into a map of groups with key is cn so it will be unique
 // struct can add and struct can be changed back into a string.
 type Groups struct {
-	by_key map[string]Group
+	byKey map[string]Group
 }
 
 type Group struct {
@@ -24,22 +24,22 @@ type Group struct {
 
 func NewGroups() *Groups {
 	return &Groups{
-		by_key: make(map[string]Group),
+		byKey: make(map[string]Group),
 	}
 }
 
 func (gs *Groups) DeleteByKey(key string) bool {
-	if _, exists := gs.by_key[key]; exists {
-		delete(gs.by_key, key)
+	if _, exists := gs.byKey[key]; exists {
+		delete(gs.byKey, key)
 		return true
 	}
 	return false
 }
 
 func (gs *Groups) DeleteByQuery(query string) bool {
-	for key, value := range gs.by_key {
+	for key, value := range gs.byKey {
 		if value.Query == query {
-			delete(gs.by_key, key)
+			delete(gs.byKey, key)
 			return true
 		}
 	}
@@ -48,13 +48,13 @@ func (gs *Groups) DeleteByQuery(query string) bool {
 
 func (gs *Groups) Add(other *Groups) bool {
 	var changed bool
-	for key, value := range other.by_key {
-		if newVal, exists := gs.by_key[key]; !exists {
+	for key, value := range other.byKey {
+		if newVal, exists := gs.byKey[key]; !exists {
 			changed = true
 		} else if newVal != value {
 			changed = true
 		}
-		gs.by_key[key] = value
+		gs.byKey[key] = value
 	}
 	return changed
 }
@@ -75,7 +75,7 @@ func (gs *Groups) AddFromStrings(l []string) {
 	for _, query := range l {
 		group := NewGroup(query)
 		if group != nil {
-			gs.by_key[group.Key] = *group
+			gs.byKey[group.Key] = *group
 		}
 	}
 }
@@ -85,8 +85,8 @@ func (gs *Groups) AddFromString(s string) {
 }
 
 func (gs Groups) Keys() []string {
-	keys := make([]string, 0, len(gs.by_key))
-	for _, group := range gs.by_key {
+	keys := make([]string, 0, len(gs.byKey))
+	for _, group := range gs.byKey {
 		keys = append(keys, group.Key)
 	}
 	sort.Strings(keys)
@@ -94,8 +94,8 @@ func (gs Groups) Keys() []string {
 }
 
 func (gs Groups) Queries() []string {
-	queries := make([]string, 0, len(gs.by_key))
-	for _, group := range gs.by_key {
+	queries := make([]string, 0, len(gs.byKey))
+	for _, group := range gs.byKey {
 		queries = append(queries, group.Query)
 	}
 	sort.Strings(queries)

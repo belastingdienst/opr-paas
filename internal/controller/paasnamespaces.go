@@ -37,7 +37,7 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 		Spec: v1alpha1.PaasNSSpec{
 			Paas:       paas.Name,
 			Groups:     groups,
-			SshSecrets: secrets,
+			SSHSecrets: secrets,
 		},
 	}
 	logger := log.Ctx(ctx)
@@ -77,7 +77,7 @@ func (r *PaasReconciler) ensurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 
 	found.Spec.Paas = pns.Spec.Paas
 	found.Spec.Groups = pns.Spec.Groups
-	found.Spec.SshSecrets = pns.Spec.SshSecrets
+	found.Spec.SSHSecrets = pns.Spec.SSHSecrets
 	found.ObjectMeta.Labels = pns.ObjectMeta.Labels
 	logger.Info().Str("PaasNs", pns.Name).Msg("updating PaasNs")
 	return r.Update(ctx, found)
@@ -125,7 +125,7 @@ func (r *PaasReconciler) ReconcilePaasNss(
 	}
 	logger.Info().Msg("creating PaasNs resources for Paas object")
 	for nsName := range paas.AllEnabledNamespaces() {
-		pns, err := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Keys(), paas.GetNsSshSecrets(nsName))
+		pns, err := r.GetPaasNs(ctx, paas, nsName, paas.Spec.Groups.Keys(), paas.GetNsSSHSecrets(nsName))
 		if err != nil {
 			logger.Err(err).Msgf("failure while creating PaasNs %s",
 				types.NamespacedName{Name: pns.Name, Namespace: pns.Namespace})

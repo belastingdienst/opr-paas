@@ -116,8 +116,6 @@ linters-settings:
         disabled: true
       - name: var-declaration
         disabled: true
-      - name: var-naming
-        disabled: true
 
       #- name: cognitive-complexity
       #  arguments: [20]
