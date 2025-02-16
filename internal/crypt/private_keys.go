@@ -95,7 +95,7 @@ func NewPrivateKeyFromFile(privateKeyPath string) (*CryptPrivateKey, error) {
 
 // NewPrivateKeyFromPem returns a CryptPrivateKey from a privateKeyFilePath
 func NewPrivateKeyFromPem(privateKeyPath string, privateKeyPem []byte) (*CryptPrivateKey, error) {
-	var privateKey *rsa.PrivateKey = nil
+	var privateKey *rsa.PrivateKey
 	return &CryptPrivateKey{
 		privateKeyPath,
 		privateKeyPem,
