@@ -83,8 +83,8 @@ func (p Paas) GetNsSSHSecrets(ns string) (secrets map[string]string) {
 	for key, value := range p.Spec.SSHSecrets {
 		secrets[key] = value
 	}
-	if cap, exists := p.Spec.Capabilities[ns]; exists {
-		for key, value := range cap.GetSSHSecrets() {
+	if capability, exists := p.Spec.Capabilities[ns]; exists {
+		for key, value := range capability.GetSSHSecrets() {
 			secrets[key] = value
 		}
 	}
@@ -93,8 +93,8 @@ func (p Paas) GetNsSSHSecrets(ns string) (secrets map[string]string) {
 
 func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 	ns = make(map[string]bool)
-	for name, cap := range p.Spec.Capabilities {
-		if cap.IsEnabled() {
+	for name, capability := range p.Spec.Capabilities {
+		if capability.IsEnabled() {
 			ns[name] = true
 		}
 	}
@@ -252,48 +252,49 @@ func (pcs PaasCapabilities) AsPrefixedMap(prefix string) PaasCapabilities {
 		return pcs
 	}
 	caps := make(PaasCapabilities)
-	for name, cap := range pcs {
-		caps[fmt.Sprintf("%s-%s", prefix, name)] = cap
+	for name, capability := range pcs {
+		caps[fmt.Sprintf("%s-%s", prefix, name)] = capability
 	}
 	return caps
 }
 
-func (pcs PaasCapabilities) IsCap(name string) bool {
-	if cap, exists := pcs[name]; !exists || !cap.IsEnabled() {
+func (pcs PaasCapabilities) IsCap(capName string) bool {
+	if capability, exists := pcs[capName]; !exists || !capability.IsEnabled() {
 		return false
 	}
 
 	return true
 }
 
-func (pcs PaasCapabilities) GetCapability(capability string) (cap PaasCapability, err error) {
-	if cap, exists := pcs[capability]; !exists {
-		return cap, fmt.Errorf("capability %s does not exist", capability)
+func (pcs PaasCapabilities) GetCapability(capName string) (capability PaasCapability, err error) {
+	var exists bool
+	if capability, exists = pcs[capName]; !exists {
+		return capability, fmt.Errorf("capability %s does not exist", capName)
 	} else {
-		return cap, nil
+		return capability, nil
 	}
 }
 
-func (pcs PaasCapabilities) AddCapSSHSecret(capability string, key string, value string) (err error) {
-	if cap, err := pcs.GetCapability(capability); err != nil {
+func (pcs PaasCapabilities) AddCapSSHSecret(capName string, key string, value string) (err error) {
+	if capability, err := pcs.GetCapability(capName); err != nil {
 		return err
 	} else {
-		if cap.SSHSecrets == nil {
-			cap.SSHSecrets = map[string]string{key: value}
+		if capability.SSHSecrets == nil {
+			capability.SSHSecrets = map[string]string{key: value}
 		} else {
-			cap.SSHSecrets[key] = value
+			capability.SSHSecrets[key] = value
 		}
-		pcs[capability] = cap
+		pcs[capName] = capability
 	}
 	return nil
 }
 
-func (pcs PaasCapabilities) ResetCapSSHSecret(capability string) (err error) {
-	if cap, err := pcs.GetCapability(capability); err != nil {
+func (pcs PaasCapabilities) ResetCapSSHSecret(capName string) (err error) {
+	if capability, err := pcs.GetCapability(capName); err != nil {
 		return err
 	} else {
-		cap.SSHSecrets = nil
-		pcs[capability] = cap
+		capability.SSHSecrets = nil
+		pcs[capName] = capability
 	}
 	return nil
 }
