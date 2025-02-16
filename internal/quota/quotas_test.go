@@ -35,17 +35,17 @@ var (
 			"block":  resource.MustParse("100Gi"),
 		},
 	}
-	sumCPU           int64   = 12000
-	sumMemory        int64   = 30 * GiB
-	minCPU           int64   = 3000
-	minMemory        int64   = 6 * GiB
-	maxCPU           int64   = 6000
-	maxMemory        int64   = 12 * GiB
-	largestTwoCPU    int64   = 9000
-	largestTwoMemory int64   = 24 * GiB
-	ratio            float64 = 0.7 // 70%
-	optimalShared    int64   = 100 * GiB
-	optimalBlock     int64   = 210 * GiB
+	sumCPU           int64 = 12000
+	sumMemory              = 30 * GiB
+	minCPU           int64 = 3000
+	minMemory              = 6 * GiB
+	maxCPU           int64 = 6000
+	maxMemory              = 12 * GiB
+	largestTwoCPU    int64 = 9000
+	largestTwoMemory       = 24 * GiB
+	ratio                  = 0.7 // 70%
+	optimalShared          = 100 * GiB
+	optimalBlock           = 210 * GiB
 
 	minQuota = map[corev1.ResourceName]resource.Quantity{
 		"cpu": resource.MustParse("10"),
