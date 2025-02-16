@@ -34,10 +34,10 @@ type PaasNSSpec struct {
 	// `paas` get access to the namespace created by this PaasNS.
 	// +kubebuilder:validation:Optional
 	Groups []string `json:"groups"`
-	// SshSecrets which should exist in the namespace created through this PaasNS,
+	// SSHSecrets which should exist in the namespace created through this PaasNS,
 	// the values are the encrypted secrets through Crypt
 	// +kubebuilder:validation:Optional
-	SshSecrets map[string]string `json:"sshSecrets"`
+	SSHSecrets map[string]string `json:"sshSecrets"`
 }
 
 //+kubebuilder:object:root=true
