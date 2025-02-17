@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//revive:disable:dd-constant
+
 func TestMain_intersection(t *testing.T) {
 	l1 := []string{"v1", "v2", "v2", "v3", "v4"}
 	l2 := []string{"v2", "v2", "v3", "v5"}

@@ -27,9 +27,9 @@ import (
 const (
 	ldapUIDAnnotationKey = "openshift.io/ldap.uid"
 	ldapURLAnnotationKey = "openshift.io/ldap.url"
-	ldapHostLabelKey     = "openshift.io/ldap.host"
-	managedByLabelKey    = "app.kubernetes.io/managed-by"
-	managedByLabelValue  = "paas"
+	LdapHostLabelKey     = "openshift.io/ldap.host"
+	ManagedByLabelKey    = "app.kubernetes.io/managed-by"
+	ManagedByLabelValue  = "paas"
 )
 
 // EnsureGroup ensures Group presence
@@ -70,7 +70,7 @@ func (r *PaasReconciler) EnsureGroup(
 		changed = true
 	}
 
-	if _, exists := group.Labels[ldapHostLabelKey]; exists {
+	if _, exists := group.Labels[LdapHostLabelKey]; exists {
 		logger.Debug().Msg("group " + groupName + " is ldap group, not changing users")
 	} else if reflect.DeepEqual(group.Users, found.Users) {
 		logger.Debug().Msg("users for group " + groupName + " are as expected")
@@ -110,7 +110,7 @@ func (r *PaasReconciler) backendGroup(
 				),
 			},
 		}
-		g.ObjectMeta.Labels[ldapHostLabelKey] = config.GetConfig().LDAP.Host
+		g.ObjectMeta.Labels[LdapHostLabelKey] = config.GetConfig().LDAP.Host
 	} else {
 		g.ObjectMeta = metav1.ObjectMeta{
 			Name:   groupName,
@@ -118,7 +118,7 @@ func (r *PaasReconciler) backendGroup(
 		}
 		g.Users = group.Users
 	}
-	g.ObjectMeta.Labels[managedByLabelKey] = managedByLabelValue
+	g.ObjectMeta.Labels[ManagedByLabelKey] = ManagedByLabelValue
 
 	if err := controllerutil.SetOwnerReference(paas, g, r.Scheme); err != nil {
 		return nil, err

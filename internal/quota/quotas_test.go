@@ -1,5 +1,7 @@
 package quota_test
 
+//revive:disable:add-constant
+
 import (
 	"testing"
 
@@ -77,12 +79,12 @@ func TestPaasQuotas_Min(t *testing.T) {
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
-	min := quotas.Min()
-	cpu, exists := min["cpu"]
+	minQuotas := quotas.Min()
+	cpu, exists := minQuotas["cpu"]
 	assert.True(t, exists, "cpu should exist in min")
 	assert.Equal(t, resource.DecimalSI, cpu.Format)
 	assert.Equal(t, minCPU, cpu.MilliValue())
-	mem, exists := min["memory"]
+	mem, exists := minQuotas["memory"]
 	assert.True(t, exists, "memory should exist in min")
 	assert.Equal(t, resource.BinarySI, mem.Format)
 	assert.Equal(t, minMemory, mem.Value())
@@ -93,12 +95,12 @@ func TestPaasQuotas_Max(t *testing.T) {
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
-	max := quotas.Max()
-	cpu, exists := max["cpu"]
+	maxQuotas := quotas.Max()
+	cpu, exists := maxQuotas["cpu"]
 	assert.True(t, exists, "cpu should exist in max")
 	assert.Equal(t, resource.DecimalSI, cpu.Format)
 	assert.Equal(t, maxCPU, cpu.MilliValue())
-	mem, exists := max["memory"]
+	mem, exists := maxQuotas["memory"]
 	assert.True(t, exists)
 	assert.Equal(t, resource.BinarySI, mem.Format)
 	assert.Equal(t, maxMemory, mem.Value())
@@ -125,18 +127,16 @@ func TestPaasQuotas_OptimalValues(t *testing.T) {
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
-	min := minQuota
-	max := maxQuota
 	optimal := quotas.OptimalValues(
 		ratio,
-		min,
-		max,
+		minQuota,
+		maxQuota,
 	)
 	cpu := optimal["cpu"]
-	minCPU := min["cpu"]
+	minCPU := minQuota["cpu"]
 	assert.Equal(t, minCPU.Value(), cpu.Value())
 	mem := optimal["memory"]
-	maxMemory := max["memory"]
+	maxMemory := maxQuota["memory"]
 	assert.Equal(t, maxMemory.Value(), mem.Value())
 	block := optimal["block"]
 	assert.Equal(t, optimalBlock, block.Value())

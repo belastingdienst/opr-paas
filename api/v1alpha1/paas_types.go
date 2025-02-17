@@ -70,10 +70,14 @@ func (p Paas) ManagedByPaas() string {
 	return p.Name
 }
 
+func join(argv ...string) string {
+	return strings.Join(argv, "-")
+}
+
 func (p Paas) PrefixedBoolMap(m map[string]bool) map[string]bool {
 	newMap := make(map[string]bool)
 	for name, value := range m {
-		newMap[fmt.Sprintf("%s-%s", p.Name, name)] = value
+		newMap[join(p.Name, name)] = value
 	}
 	return newMap
 }
@@ -211,7 +215,7 @@ func (p Paas) GroupKey2GroupName(groupKey string) string {
 	} else if len(group.Query) > 0 {
 		return group.Name(groupKey)
 	}
-	return fmt.Sprintf("%s-%s", p.Name, p.Spec.Groups.Key2Name(groupKey))
+	return join(p.Name, p.Spec.Groups.Key2Name(groupKey))
 }
 
 func (p Paas) GroupNames() (groupNames []string) {
@@ -253,7 +257,7 @@ func (pcs PaasCapabilities) AsPrefixedMap(prefix string) PaasCapabilities {
 	}
 	caps := make(PaasCapabilities)
 	for name, capability := range pcs {
-		caps[fmt.Sprintf("%s-%s", prefix, name)] = capability
+		caps[join(prefix, name)] = capability
 	}
 	return caps
 }
@@ -268,9 +272,8 @@ func (pcs PaasCapabilities) IsCap(capName string) bool {
 
 func (pcs PaasCapabilities) GetCapability(capName string) (capability PaasCapability, err error) {
 	var exists bool
-	capability, exists = pcs[capName]
-	if !exists {
-		return PaasCapability{}, fmt.Errorf("capability %s does not exist", capName)
+	if capability, exists = pcs[capName]; !exists {
+		return capability, fmt.Errorf("capability %s does not exist", capName)
 	}
 	return capability, nil
 }
@@ -287,12 +290,6 @@ func (pcs PaasCapabilities) AddCapSSHSecret(capName string, key string, value st
 	}
 	pcs[capName] = capability
 
-	if capability.SSHSecrets == nil {
-		capability.SSHSecrets = map[string]string{key: value}
-	} else {
-		capability.SSHSecrets[key] = value
-	}
-	pcs[capName] = capability
 	return nil
 }
 
@@ -303,6 +300,7 @@ func (pcs PaasCapabilities) ResetCapSSHSecret(capName string) (err error) {
 	}
 	capability.SSHSecrets = nil
 	pcs[capName] = capability
+
 	return nil
 }
 

@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -24,6 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
+
+const quotaComponentName = "quota"
 
 // ensureQuota ensures Quota presence
 func (r *PaasReconciler) EnsureQuota(
@@ -67,9 +70,9 @@ func (r *PaasReconciler) backendQuota(
 	if suffix == "" {
 		quotaName = paas.ObjectMeta.Name
 	} else {
-		quotaName = fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, suffix)
+		quotaName = strings.Join([]string{paas.ObjectMeta.Name, suffix}, "-")
 	}
-	_, logger := logging.GetLogComponent(ctx, "quota")
+	_, logger := logging.GetLogComponent(ctx, quotaComponentName)
 	logger.Info().Msg("defining quota")
 	// matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	quota := &quotav1.ClusterResourceQuota{
@@ -133,17 +136,18 @@ func backendUnneededQuotas(
 ) (quotas []string) {
 	config := config.GetConfig()
 	for name, cap := range paas.Spec.Capabilities {
+		quota := strings.Join([]string{paas.Name, name}, "-")
 		if capConfig, exists := config.Capabilities[name]; !exists {
-			quotas = append(quotas, fmt.Sprintf("%s-%s", paas.Name, name))
+			quotas = append(quotas, quota)
 		} else if !cap.IsEnabled() || capConfig.QuotaSettings.Clusterwide {
-			quotas = append(quotas, fmt.Sprintf("%s-%s", paas.Name, name))
+			quotas = append(quotas, quota)
 		}
 	}
 	return quotas
 }
 
 func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, quotaName string) error {
-	ctx, logger := logging.GetLogComponent(ctx, "quota")
+	ctx, logger := logging.GetLogComponent(ctx, quotaComponentName)
 	logger.Info().Msg("finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
 	if err := r.Get(ctx, types.NamespacedName{
@@ -160,7 +164,7 @@ func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, quotaName str
 }
 
 func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1alpha1.PaasNS) error {
-	ctx, logger := logging.GetLogComponent(ctx, "quota")
+	ctx, logger := logging.GetLogComponent(ctx, quotaComponentName)
 	logger.Info().Msg("finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
 	if err := r.Get(ctx, types.NamespacedName{
@@ -198,7 +202,7 @@ func (r *PaasReconciler) ReconcileQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (err error) {
-	ctx, logger := logging.GetLogComponent(ctx, "quota")
+	ctx, logger := logging.GetLogComponent(ctx, quotaComponentName)
 	logger.Info().Msg("creating quotas for Paas")
 	// Create quotas if needed
 	quotas, err := r.BackendEnabledQuotas(ctx, paas)

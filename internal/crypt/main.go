@@ -12,6 +12,10 @@ import (
 	"os"
 )
 
+const (
+	FileModeUserReadWrite = 0o600
+)
+
 func encrypt(publicKey string, paasName string, data []byte) error {
 	var encrypted string
 	if c, err := NewCryptFromFiles([]string{}, publicKey, paasName); err != nil {

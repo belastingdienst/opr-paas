@@ -23,6 +23,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const allowedOriginsVal = "*"
+
 // Helper function for testing
 func performRequest(r http.Handler, method, path string) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest(method, path, nil)
@@ -34,7 +36,7 @@ func performRequest(r http.Handler, method, path string) *httptest.ResponseRecor
 
 func Test_getConfig(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	// Reset config if any test before set config
 	_config = nil
@@ -66,7 +68,7 @@ func Test_getConfig(t *testing.T) {
 
 func Test_getRSA(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	// Reset config if any test before set config
 	_config = nil
@@ -133,7 +135,7 @@ func Test_getRSA(t *testing.T) {
 
 func TestNoSniffIsSet(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	router := SetupRouter()
 	w := performRequest(router, "GET", "/version")
@@ -143,7 +145,7 @@ func TestNoSniffIsSet(t *testing.T) {
 
 func Test_version(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	expected := gin.H{
 		"version": v.PaasVersion,
@@ -164,7 +166,7 @@ func Test_version(t *testing.T) {
 
 func Test_healthz(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	expected := gin.H{
 		"message": "healthy",
@@ -185,7 +187,7 @@ func Test_healthz(t *testing.T) {
 
 func Test_readyz(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	expected := gin.H{
 		"message": "ready",
@@ -206,7 +208,7 @@ func Test_readyz(t *testing.T) {
 
 func Test_v1CheckPaas(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	// Reset config if any test before set config
 	_config = nil
@@ -259,7 +261,7 @@ func Test_v1CheckPaas(t *testing.T) {
 	req, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(checkPaasJSON)))
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	response := RestCheckPaasResult{
 		PaasName:  "testPaas",
 		Decrypted: true,
@@ -292,7 +294,7 @@ func Test_v1CheckPaas(t *testing.T) {
 	req2, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(invalidcheckPaasJSON)))
 	router.ServeHTTP(w, req2)
 
-	assert.Equal(t, 422, w.Code)
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 	response2 := RestCheckPaasResult{
 		PaasName:  "testPaas2",
 		Decrypted: false,
@@ -305,7 +307,7 @@ func Test_v1CheckPaas(t *testing.T) {
 
 func Test_v1CheckPaasInternalServerError(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	// Reset config if any test before get config
 	_config = nil
@@ -331,7 +333,7 @@ func Test_v1CheckPaasInternalServerError(t *testing.T) {
 	req, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(checkPaasJSON)))
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 500, w.Code)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Equal(t, "", w.Body.String())
 }
 

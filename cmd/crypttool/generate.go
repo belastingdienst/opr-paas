@@ -33,19 +33,19 @@ func generateCmd() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.StringVar(&publicKeyFile, "publicKeyFile", "", "The file to write the public key to")
-	flags.StringVar(&privateKeyFile, "privateKeyFile", "", "The file to write the private key to")
+	flags.StringVar(&publicKeyFile, argNamePublicKeyFile, "", "The file to write the public key to")
+	flags.StringVar(&privateKeyFile, argNamePrivateKeyFile, "", "The file to write the private key to")
 
-	if err := viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile")); err != nil {
+	if err := viper.BindPFlag(argNamePublicKeyFile, flags.Lookup(argNamePublicKeyFile)); err != nil {
 		logrus.Errorf("key binding for publicKeyFile failed: %v", err)
 	}
-	if err := viper.BindPFlag("privateKeyFile", flags.Lookup("privateKeyFile")); err != nil {
+	if err := viper.BindPFlag(argNamePrivateKeyFile, flags.Lookup(argNamePrivateKeyFile)); err != nil {
 		logrus.Errorf("key binding for privateKeyFile failed: %v", err)
 	}
-	if err := viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH"); err != nil {
+	if err := viper.BindEnv(argNamePublicKeyFile, "PAAS_PUBLIC_KEY_PATH"); err != nil {
 		logrus.Errorf("paas public key binding failed: %v", err)
 	}
-	if err := viper.BindEnv("privateKeyFile", "PAAS_PRIVATE_KEY_PATH"); err != nil {
+	if err := viper.BindEnv(argNamePrivateKeyFile, "PAAS_PRIVATE_KEY_PATH"); err != nil {
 		logrus.Errorf("paas private key binding failed: %v", err)
 	}
 
