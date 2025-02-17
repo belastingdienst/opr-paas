@@ -114,8 +114,10 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 		}
 
 		// Write paas to file
-		if outputFormat != "auto" {
-			format = outputFormat
+		if outputFormat == "json" {
+			format = typeJSON
+		} else if outputFormat == "yaml" {
+			format = typeYAML
 		}
 
 		if outputFormat == "preserved" {
@@ -172,28 +174,28 @@ reencrypt with the new public key and write back the paas to the file in either 
 	flags.StringVar(&publicKeyFile, "publicKeyFile", "", "The file to read the public key from")
 	flags.StringVar(
 		&outputFormat,
-		"outputFormat",
+		argNameOutputFormat,
 		"auto",
 		//revive:disable-next-line
 		"The outputformat for writing a paas, either yaml (machine formatted), json (machine formatted), auto (which will use input format as output, machine formatted) or preserved (which will use the input format and preserve the original syntax including for example comments) ",
 	)
 
-	if err := viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles")); err != nil {
+	if err := viper.BindPFlag(argNamePrivateKeyFiles, flags.Lookup(argNamePrivateKeyFiles)); err != nil {
 		logrus.Errorf("key binding for privatekeyfiles failed: %v", err)
 	}
-	if err := viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile")); err != nil {
+	if err := viper.BindPFlag(argNamePublicKeyFile, flags.Lookup(argNamePublicKeyFile)); err != nil {
 		logrus.Errorf("key binding for publickeyfile failed: %v", err)
 	}
-	if err := viper.BindPFlag("outputFormat", flags.Lookup("outputFormat")); err != nil {
+	if err := viper.BindPFlag(argNameOutputFormat, flags.Lookup(argNameOutputFormat)); err != nil {
 		logrus.Errorf("key binding at output step failed: %v", err)
 	}
-	if err := viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH"); err != nil {
+	if err := viper.BindEnv(argNamePrivateKeyFiles, "PAAS_PRIVATE_KEY_PATH"); err != nil {
 		logrus.Errorf("private key to env var binding failed: %v", err)
 	}
-	if err := viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH"); err != nil {
+	if err := viper.BindEnv(argNamePublicKeyFile, "PAAS_PUBLIC_KEY_PATH"); err != nil {
 		logrus.Errorf("public key to env var binding failed: %v", err)
 	}
-	if err := viper.BindEnv("outputFormat", "PAAS_OUTPUT_FORMAT"); err != nil {
+	if err := viper.BindEnv(argNameOutputFormat, "PAAS_OUTPUT_FORMAT"); err != nil {
 		logrus.Errorf("key binding at output step failed: %v", err)
 	}
 

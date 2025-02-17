@@ -248,12 +248,13 @@ func buildCSP(externalHosts string) string {
 	objectSrc := "object-src 'none'"
 
 	// If we have a non-empty external host, append it to each directive that needs it.
+	toAppend := " " + externalHosts
 	if externalHosts != "" {
-		scriptSrc += " " + externalHosts
-		styleSrc += " " + externalHosts
-		imgSrc += " " + externalHosts
-		connectSrc += " " + externalHosts
-		fontSrc += " " + externalHosts
+		scriptSrc += toAppend
+		styleSrc += toAppend
+		imgSrc += toAppend
+		connectSrc += toAppend
+		fontSrc += toAppend
 	}
 
 	// Combine them into one directive string

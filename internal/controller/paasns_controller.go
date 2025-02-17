@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -34,7 +33,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
-const paasNsFinalizer = "paasns.cpet.belastingdienst.nl/finalizer"
+const (
+	paasNsFinalizer     = "paasns.cpet.belastingdienst.nl/finalizer"
+	paasNsComponentName = "paasns"
+)
 
 // PaasNSReconciler reconciles a PaasNS object
 type PaasNSReconciler struct {
@@ -59,7 +61,7 @@ func (pr PaasNSReconciler) GetScheme() *runtime.Scheme {
 
 func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paasns *v1alpha1.PaasNS, err error) {
 	paasns = &v1alpha1.PaasNS{}
-	ctx, logger := logging.GetLogComponent(ctx, "paasns")
+	ctx, logger := logging.GetLogComponent(ctx, paasNsComponentName)
 	logger.Info().Msg("reconciling PaasNs")
 
 	if err = r.Get(ctx, req.NamespacedName, paasns); err != nil {
@@ -107,7 +109,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 	// This is only an issue when object is being removed.
 	// Finalizers will not be removed causing the object to be in limbo.
 	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig()) {
-		logger.Error().Msg("no config found")
+		logger.Error().Msg(noConfigFoundMsg)
 		err = r.setErrorCondition(
 			ctx,
 			paasns,
@@ -117,10 +119,10 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 			),
 		)
 		if err != nil {
-			logger.Err(err).Msg("failed to update PaasNs status")
+			logger.Err(err).Msg("failed to set Error Condition")
 			return nil, err
 		}
-		return nil, fmt.Errorf("no config found")
+		return nil, errors.New(noConfigFoundMsg)
 	}
 
 	if paasns.GetDeletionTimestamp() != nil {
@@ -134,7 +136,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 			})
 
 			if err := r.Status().Update(ctx, paasns); err != nil {
-				logger.Err(err).Msg("failed to update PaasNs status")
+				logger.Err(err).Msg("failed to set PaasNs status to Downgrade")
 				return nil, err
 			}
 
@@ -156,7 +158,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 			})
 
 			if err := r.Status().Update(ctx, paasns); err != nil {
-				logger.Err(err).Msg("failed to update PaasNs status")
+				logger.Err(err).Msg("failed to set successful paasNs status")
 				return nil, err
 			}
 
@@ -199,8 +201,8 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
 		// TODO(portly-halicore-76) move to admission webhook once available
 		// Don't requeue that often when no config is found
-		if strings.Contains(err.Error(), "no config found") {
-			return ctrl.Result{RequeueAfter: time.Minute * 10}, nil
+		if strings.Contains(err.Error(), noConfigFoundMsg) {
+			return ctrl.Result{RequeueAfter: requeueTimeout}, nil
 		}
 		logger.Err(err).Msg("could not get PaasNs from k8s")
 		return ctrl.Result{}, err
@@ -371,7 +373,7 @@ func (r *PaasNSReconciler) paasFromPaasNs(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 ) (paas *v1alpha1.Paas, namespaces map[string]int, err error) {
-	ctx, logger := logging.GetLogComponent(ctx, "paasns")
+	ctx, logger := logging.GetLogComponent(ctx, paasNsComponentName)
 	paas = &v1alpha1.Paas{}
 	if err := r.Get(ctx, types.NamespacedName{Name: paasns.Spec.Paas}, paas); err != nil {
 		logger.Err(err).Msg("cannot get Paas")
@@ -401,7 +403,7 @@ func (r *PaasNSReconciler) paasFromPaasNs(
 }
 
 func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) error {
-	ctx, logger := logging.GetLogComponent(ctx, "paasns")
+	ctx, logger := logging.GetLogComponent(ctx, paasNsComponentName)
 
 	cfg := config.GetConfig()
 	// If PaasNs is related to a capability, remove it from appSet

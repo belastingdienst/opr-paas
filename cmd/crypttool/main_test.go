@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var equalErrMsg = `Error should be: %v, got: %v`
+
 func TestRequireSubcommand(t *testing.T) {
 	// cmd := cobra.Command{}
 	args := []string{}
@@ -30,7 +32,7 @@ func TestRequireSubcommand(t *testing.T) {
 		t,
 		out,
 		expectedErrorMsg,
-		`Error should be: %v, got: %v`,
+		equalErrMsg,
 		expectedErrorMsg,
 		out,
 	) //nolint:testifylint // just no
@@ -43,7 +45,7 @@ func TestRequireSubcommand(t *testing.T) {
 		args[0],
 	)
 	out = requireSubcommand(cmd, args)
-	require.EqualErrorf(t, out, expectedErrorMsg, `Error should be: %v, got: %v`, expectedErrorMsg, out)
+	require.EqualErrorf(t, out, expectedErrorMsg, equalErrMsg, expectedErrorMsg, out)
 
 	// simulate typo
 	args = []string{"decryp"}
@@ -54,5 +56,5 @@ func TestRequireSubcommand(t *testing.T) {
 		strings.Join([]string{"decrypt"}, "\n\t"),
 	)
 	out = requireSubcommand(cmd, args)
-	assert.EqualErrorf(t, out, expectedErrorMsg, `Error should be: %v, got: %v`, expectedErrorMsg, out)
+	assert.EqualErrorf(t, out, expectedErrorMsg, equalErrMsg, expectedErrorMsg, out)
 }

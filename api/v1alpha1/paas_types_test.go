@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
+	"fmt"
 	"sort"
 	"testing"
 
@@ -17,16 +18,44 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	grp1         = "grp1"
+	grp2         = "grp2"
+	grp3         = "grp3"
+	grp4         = "grp4"
+	tstGroup     = "testGroup"
+	paasName     = "paasName"
+	test1        = "test1"
+	test2        = "test2"
+	test3        = "test3"
+	test4        = "test4"
+	cntest1      = "cn=" + test1
+	cntest2      = "cn=" + test2
+	cntest3      = "cn=" + test3
+	cntest4      = "cn=" + test4
+	argoCap      = "argocd"
+	grafanaCap   = "grafana"
+	ciCap        = "tekton"
+	ssoCap       = "keycloak"
+	extraCap     = "extra"
+	myKind       = "MyKind"
+	otherKind    = "MyOtherKind"
+	myVersion    = "1.1.1"
+	otherVersion = "1.1.0"
+	myName       = "Some Name"
+	otherName    = "Some Other Name"
+)
+
 var testGroups = PaasGroups{
-	"cn=test1": PaasGroup{
-		Query: "CN=test2,OU=org_unit,DC=example,DC=org",
+	cntest1: PaasGroup{
+		Query: cntest2 + ",OU=org_unit,DC=example,DC=org",
 		Users: []string{"usr1", "usr2"},
 	},
-	"cn=test3": PaasGroup{
-		Query: "CN=test4",
+	cntest3: PaasGroup{
+		Query: cntest4,
 		Users: []string{"usr3", "usr2"},
 	},
-	"test": PaasGroup{
+	tstGroup: PaasGroup{
 		Users: []string{"usr3", "usr2"},
 	},
 }
@@ -36,7 +65,7 @@ var testGroups = PaasGroups{
 func TestPaas_PrefixedBoolMap(t *testing.T) {
 	paas := Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "paas",
+			Name: paasName,
 		},
 	}
 
@@ -49,55 +78,63 @@ func TestPaas_PrefixedBoolMap(t *testing.T) {
 
 	assert.NotNil(t, output)
 	assert.IsType(t, map[string]bool{}, output)
-	assert.Contains(t, output, "paas-test")
-	assert.Contains(t, output, "paas-smt")
-	assert.NotContains(t, output, "paas-doesntexist")
-	assert.True(t, output["paas-test"])
-	assert.False(t, output["paas-smt"])
+	for k, v := range input {
+		assert.Contains(t, output, join(paasName, k))
+		assert.Equal(t, v, output[join(paasName, k)])
+	}
+	assert.NotContains(t, output, join(paasName, "doesntexist"))
 }
 
 func TestPaas_GetNsSSHSecrets(t *testing.T) {
+	const (
+		capSecretName    = "capsecret1"
+		capSecretValue   = "capSecretValue"
+		paasSecretName1  = "paasSecret1"
+		paasSecretValue1 = "paasSecretValue1"
+		paasSecretName2  = "paasSecret2"
+		paasSecretValue2 = "paasSecretValue1"
+	)
 	paas := Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "paas",
+			Name: paasName,
 		},
 		Spec: PaasSpec{
-			Namespaces: []string{"argocd"},
+			Namespaces: []string{argoCap},
 			Capabilities: PaasCapabilities{
-				"argocd": PaasCapability{
+				argoCap: PaasCapability{
 					Enabled:    true,
-					SSHSecrets: map[string]string{"capsecret1": "capsecretvalue1"},
+					SSHSecrets: map[string]string{capSecretName: capSecretValue},
 				},
 			},
-			SSHSecrets: map[string]string{"key1": "value1", "key2": "value2"},
+			SSHSecrets: map[string]string{paasSecretName1: paasSecretValue1, paasSecretName2: paasSecretValue2},
 		},
 	}
 
 	output := paas.GetNsSSHSecrets("nonexistingNS")
 	assert.NotNil(t, output)
 	assert.IsType(t, map[string]string{}, output)
-	assert.Contains(t, output, "key1")
-	assert.NotContains(t, output, "capsecret1")
-	assert.Equal(t, "value1", output["key1"])
+	assert.Contains(t, output, paasSecretName1)
+	assert.NotContains(t, output, capSecretName)
+	assert.Equal(t, paasSecretValue1, output[paasSecretName1])
 
-	output = paas.GetNsSSHSecrets("argocd")
+	output = paas.GetNsSSHSecrets(argoCap)
 	assert.NotNil(t, output)
 	assert.IsType(t, map[string]string{}, output)
-	assert.Contains(t, output, "key1")
-	assert.Contains(t, output, "capsecret1")
-	assert.Equal(t, "value1", output["key1"])
-	assert.Equal(t, "capsecretvalue1", output["capsecret1"])
+	assert.Contains(t, output, paasSecretName1)
+	assert.Contains(t, output, capSecretName)
+	assert.Equal(t, paasSecretValue1, output[paasSecretName1])
+	assert.Equal(t, capSecretValue, output[capSecretName])
 }
 
 // PaasGroups
 
 func TestPaasGroups_Filtered(t *testing.T) {
 	pgs := PaasGroups{
-		"grp1": {
+		grp1: {
 			Query: "cn=test1,ou=org_unit,dc=example,dc=org",
 		},
-		"grp2": {},
-		"grp3": {},
+		grp2: {},
+		grp3: {},
 	}
 
 	// Nothing to filter
@@ -106,35 +143,35 @@ func TestPaasGroups_Filtered(t *testing.T) {
 	assert.Equal(t, pgs, output)
 
 	// Filtered one group
-	output = pgs.Filtered([]string{"grp2"})
+	output = pgs.Filtered([]string{grp2})
 	assert.IsType(t, PaasGroups{}, output)
 	assert.NotEqual(t, pgs, output)
-	assert.NotContains(t, output, "grp1")
-	assert.Contains(t, output, "grp2")
-	assert.NotContains(t, output, "grp3")
+	assert.NotContains(t, output, grp1)
+	assert.Contains(t, output, grp2)
+	assert.NotContains(t, output, grp3)
 
 	// Filtered two groups
-	output = pgs.Filtered([]string{"grp1", "grp3"})
+	output = pgs.Filtered([]string{grp1, grp3})
 	assert.IsType(t, PaasGroups{}, output)
 	assert.NotEqual(t, pgs, output)
-	assert.Contains(t, output, "grp1")
-	assert.NotContains(t, output, "grp2")
-	assert.Contains(t, output, "grp3")
+	assert.Contains(t, output, grp1)
+	assert.NotContains(t, output, grp2)
+	assert.Contains(t, output, grp3)
 }
 
 func TestPaasGroups_Roles(t *testing.T) {
 	pgs := PaasGroups{
-		"grp1": {},
-		"grp2": {
+		grp1: {},
+		grp2: {
 			Query: "CN=test1,OU=org_unit,DC=example,DC=org",
 			Roles: []string{},
 		},
-		"grp3": {
+		grp3: {
 			Roles: []string{
 				"grp3-role1",
 			},
 		},
-		"grp4": {
+		grp4: {
 			Roles: []string{
 				"grp4-role1",
 				"grp4-role2",
@@ -147,59 +184,61 @@ func TestPaasGroups_Roles(t *testing.T) {
 	output := pgs.Roles()
 	assert.NotNil(t, output)
 	assert.IsType(t, map[string][]string{}, output)
-	assert.Contains(t, output, "grp1")
-	assert.Contains(t, output, "grp2")
-	assert.Contains(t, output, "grp3")
-	assert.Contains(t, output, "grp4")
-	assert.Empty(t, output["grp1"])
-	assert.NotEmpty(t, output["grp3"])
-	assert.Len(t, output["grp3"], 1)
-	assert.Contains(t, output["grp3"], "grp3-role1")
-	assert.Len(t, output["grp4"], 3)
-	assert.Contains(t, output["grp4"], "grp4-role1")
-	assert.Contains(t, output["grp4"], "grp4-role2")
-	assert.Contains(t, output["grp4"], "grp4-role3")
+	assert.Contains(t, output, grp1)
+	assert.Contains(t, output, grp2)
+	assert.Contains(t, output, grp3)
+	assert.Contains(t, output, grp4)
+	assert.Empty(t, output[grp1])
+	assert.NotEmpty(t, output[grp3])
+	assert.Len(t, output[grp3], 1)
+	assert.Contains(t, output[grp3], "grp3-role1")
+	assert.Len(t, output[grp4], 3)
+	assert.Contains(t, output[grp4], "grp4-role1")
+	assert.Contains(t, output[grp4], "grp4-role2")
+	assert.Contains(t, output[grp4], "grp4-role3")
 }
 
 func TestPaasGroups_Key2Name(t *testing.T) {
-	assert.NotNil(t, "", testGroups.Key2Name("cn=test123"))
-	assert.Equal(t, "test2", testGroups.Key2Name("cn=test1"))
-	assert.Equal(t, "", testGroups.Key2Name("cn=test123"))
-	assert.Equal(t, "test4", testGroups.Key2Name("cn=test3"))
+	const cntest123 = "cn=test123"
+	assert.NotNil(t, testGroups.Key2Name(cntest123))
+	assert.Equal(t, test2, testGroups.Key2Name(cntest1))
+	assert.Equal(t, "", testGroups.Key2Name(cntest123))
+	assert.Equal(t, test4, testGroups.Key2Name(cntest3))
 }
 
 func TestPaasGroups_Keys(t *testing.T) {
 	assert.NotNil(t, testGroups.Keys(), "Keys not nill")
-	assert.Contains(t, testGroups.Keys(), "cn=test1")
-	assert.Contains(t, testGroups.Keys(), "cn=test3")
-	assert.NotContains(t, testGroups.Keys(), "cn=test4")
+	assert.Contains(t, testGroups.Keys(), cntest1)
+	assert.Contains(t, testGroups.Keys(), cntest3)
+	assert.NotContains(t, testGroups.Keys(), cntest4)
 }
 
 func TestPaas_GroupKey2GroupName(t *testing.T) {
 	paas := Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "paas",
+			Name: paasName,
 		},
 		Spec: PaasSpec{
 			Groups: testGroups,
 		},
 	}
 	assert.Equal(t, "", paas.GroupKey2GroupName("testers"), "Key not present in Paas")
-	assert.NotNil(t, paas.GroupKey2GroupName("cn=test1"), "")
+	assert.NotNil(t, paas.GroupKey2GroupName(cntest1), "")
 	assert.Equal(
 		t,
-		"test2",
-		paas.GroupKey2GroupName("cn=test1"),
-		"cn=test1 is a query group thus returning Key2Name value.",
+		test2,
+		paas.GroupKey2GroupName(cntest1),
+		cntest1+" is a query group thus returning Key2Name value.",
 	)
-	assert.NotNil(t, paas.GroupKey2GroupName("test"), "Test is a present")
-	assert.Equal(t, "paas-test", paas.GroupKey2GroupName("test"), "Test is a group of users thus prefixed by Paas name")
+	assert.NotNil(t, paas.GroupKey2GroupName(tstGroup), "Test is a present")
+	assert.Equal(t, join(paasName, tstGroup), paas.GroupKey2GroupName(tstGroup),
+		"Test is a group of users thus prefixed by Paas name")
 }
 
 func TestPaas_GroupNames(t *testing.T) {
 	paas := Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "paas",
+			Name: paasName,
 		},
 		Spec: PaasSpec{
 			Groups: testGroups,
@@ -207,26 +246,26 @@ func TestPaas_GroupNames(t *testing.T) {
 	}
 	groupNames := paas.GroupNames()
 	assert.Len(t, groupNames, 3, "Three group names found")
-	assert.Contains(t, groupNames, "test2", "cn=test1 is a query group thus returning Key2Name value.")
-	assert.Contains(t, groupNames, "paas-test", "Test is a group of users thus prefixed by Paas name")
-	assert.Contains(t, groupNames, "test4", "cn=test3 is a query group thus returning Key2Name value.")
+	assert.Contains(t, groupNames, test2, cntest1+" is a query group thus returning Key2Name value.")
+	assert.Contains(t, groupNames, join(paasName, tstGroup), "Test is a group of users thus prefixed by Paas name")
+	assert.Contains(t, groupNames, test4, cntest3+" is a query group thus returning Key2Name value.")
 }
 
 func TestPaasGroups_Names(t *testing.T) {
 	output := testGroups.Names()
 	assert.NotNil(t, output)
 	assert.Len(t, output, 3)
-	assert.Contains(t, output, "test")
-	assert.Contains(t, output, "test2")
-	assert.Contains(t, output, "test4")
+	assert.Contains(t, output, tstGroup)
+	assert.Contains(t, output, test2)
+	assert.Contains(t, output, test4)
 }
 
 func TestPaasGroups_LdapQueries(t *testing.T) {
 	ldapGroups := testGroups.LdapQueries()
 	sort.Strings(ldapGroups)
 	assert.Len(t, ldapGroups, 2)
-	assert.Equal(t, "CN=test2,OU=org_unit,DC=example,DC=org", ldapGroups[0])
-	assert.Equal(t, "CN=test4", ldapGroups[1])
+	assert.Equal(t, cntest2+",OU=org_unit,DC=example,DC=org", ldapGroups[0])
+	assert.Equal(t, cntest4, ldapGroups[1])
 }
 
 func TestPaasGroups_AsGroups(t *testing.T) {
@@ -237,8 +276,8 @@ func TestPaasGroups_AsGroups(t *testing.T) {
 
 func TestPaasCapabilities_AsPrefixedMap(t *testing.T) {
 	pc := PaasCapabilities{
-		"argocd":  PaasCapability{},
-		"grafana": PaasCapability{},
+		argoCap:    PaasCapability{},
+		grafanaCap: PaasCapability{},
 	}
 
 	// Empty prefix
@@ -246,16 +285,16 @@ func TestPaasCapabilities_AsPrefixedMap(t *testing.T) {
 
 	assert.NotNil(t, output)
 	assert.IsType(t, PaasCapabilities{}, output)
-	assert.Contains(t, output, "argocd")
-	assert.Contains(t, output, "grafana")
+	assert.Contains(t, output, argoCap)
+	assert.Contains(t, output, grafanaCap)
 
-	// "test" prefix
-	output = pc.AsPrefixedMap("test")
+	prefix := "test"
+	output = pc.AsPrefixedMap(prefix)
 
 	assert.NotNil(t, output)
 	assert.IsType(t, PaasCapabilities{}, output)
-	assert.Contains(t, output, "test-argocd")
-	assert.Contains(t, output, "test-grafana")
+	assert.Contains(t, output, join(prefix, argoCap))
+	assert.Contains(t, output, join(prefix, grafanaCap))
 }
 
 func TestPaasCapabilities_CapExtraFields(t *testing.T) {
@@ -326,21 +365,21 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 
 func TestPaasCapabilities_IsCap(t *testing.T) {
 	pc := PaasCapabilities{
-		"argocd": PaasCapability{
+		argoCap: PaasCapability{
 			Enabled: true,
 		},
-		"grafana": PaasCapability{
+		grafanaCap: PaasCapability{
 			Enabled: false,
 		},
-		"ci": PaasCapability{},
+		ciCap: PaasCapability{},
 	}
 
 	// Empty prefix
 	// assert.Fail(t, "TEST", fmt.Sprintf("%v", pc.AsMap()))
-	assert.True(t, pc.IsCap("argocd"))
-	assert.False(t, pc.IsCap("grafana"))
-	assert.False(t, pc.IsCap("ci"))
-	assert.False(t, pc.IsCap("sso"))
+	assert.True(t, pc.IsCap(argoCap))
+	assert.False(t, pc.IsCap(grafanaCap))
+	assert.False(t, pc.IsCap(ciCap))
+	assert.False(t, pc.IsCap(ssoCap))
 }
 
 // PaasCapability
@@ -366,34 +405,32 @@ func TestPaasCapability_SetDefaults(t *testing.T) {
 // PaasStatus
 
 func TestPaasStatus_Truncate(t *testing.T) {
+	msg1 := "test msg 1"
+	msg2 := "test msg 2"
 	ps := PaasStatus{
 		Messages: []string{
-			"test msg 1",
-			"test msg 2",
+			msg1,
+			msg2,
 		},
 	}
 
 	assert.IsType(t, []string{}, ps.Messages)
 	assert.Len(t, ps.Messages, 2)
-	assert.Contains(t, ps.Messages, "test msg 1")
+	assert.Contains(t, ps.Messages, msg1)
 
 	ps.Truncate()
 	assert.IsType(t, []string{}, ps.Messages)
 	assert.Empty(t, ps.Messages)
-	assert.NotContains(t, ps.Messages, "test msg 1")
+	assert.NotContains(t, ps.Messages, msg1)
 }
 
 // Paas
 
 func Test_Paas_ClonedAnnotations(t *testing.T) {
-	paas := Paas{
-		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{
-				"key 1": "value 1",
-				"key 2": "value 2",
-				"key 3": "value 3",
-			},
-		},
+	paas := Paas{}
+	paas.ObjectMeta.Annotations = make(map[string]string)
+	for i := 0; i < 3; i++ {
+		paas.ObjectMeta.Annotations[fmt.Sprintf("key %d", i)] = fmt.Sprintf("value %d", i)
 	}
 
 	output := paas.ClonedAnnotations()
@@ -401,10 +438,10 @@ func Test_Paas_ClonedAnnotations(t *testing.T) {
 	assert.NotNil(t, output)
 	assert.IsType(t, map[string]string{}, output)
 	assert.Len(t, output, 3)
-	assert.Contains(t, output, "key 1")
-	assert.Contains(t, output, "key 2")
-	assert.Contains(t, output, "key 3")
-	assert.Equal(t, "value 1", output["key 1"])
+	for i := 0; i < 3; i++ {
+		assert.Contains(t, output, fmt.Sprintf("key %d", i))
+		assert.Equal(t, fmt.Sprintf("value %d", i), output[fmt.Sprintf("key %d", i)])
+	}
 }
 
 func Test_Paas_ClonedLabels(t *testing.T) {
@@ -429,134 +466,108 @@ func Test_Paas_ClonedLabels(t *testing.T) {
 	assert.Equal(t, "value 1", output["key 1"])
 }
 
+func generateReferences() (refs []metav1.OwnerReference) {
+	for _, kind := range []string{myKind, otherKind} {
+		for _, version := range []string{myVersion, otherVersion} {
+			for _, name := range []string{myName, otherName} {
+				refs = append(refs,
+					metav1.OwnerReference{
+						Kind:       kind,
+						APIVersion: version,
+						Name:       name,
+					})
+			}
+		}
+	}
+	return refs
+}
+
 func Test_Paas_IsItMe(t *testing.T) {
+	allOwners := generateReferences()
+	firstOwner := allOwners[0]
+
 	paas := Paas{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "MyKind",
-			APIVersion: "1.1.1",
+			Kind:       firstOwner.Kind,
+			APIVersion: firstOwner.APIVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "Some Name",
+			Name: firstOwner.Name,
 		},
 	}
 
-	test1 := metav1.OwnerReference{
-		Kind:       "MyKind",
-		APIVersion: "1.1.1",
-		Name:       "Some Name",
+	for _, ref := range allOwners {
+		if ref == firstOwner {
+			assert.True(t, paas.IsItMe(ref))
+		} else {
+			assert.False(t, paas.IsItMe(ref))
+		}
 	}
-
-	test2 := metav1.OwnerReference{
-		Kind:       "MyOtherKind",
-		APIVersion: "1.1.1",
-		Name:       "Some Name",
-	}
-
-	test3 := metav1.OwnerReference{
-		Kind:       "MyKind",
-		APIVersion: "1.1.0",
-		Name:       "Some Name",
-	}
-
-	test4 := metav1.OwnerReference{
-		Kind:       "MyKind",
-		APIVersion: "1.1.1",
-		Name:       "Some Other Name",
-	}
-
-	test5 := metav1.OwnerReference{
-		Kind:       "MyOtherKind",
-		APIVersion: "1.1.0",
-		Name:       "Some Name",
-	}
-
-	test6 := metav1.OwnerReference{}
-
-	assert.True(t, paas.IsItMe(test1))
-	assert.False(t, paas.IsItMe(test2))
-	assert.False(t, paas.IsItMe(test3))
-	assert.False(t, paas.IsItMe(test4))
-	assert.False(t, paas.IsItMe(test5))
-	assert.False(t, paas.IsItMe(test6))
+	assert.False(t, paas.IsItMe(metav1.OwnerReference{}))
 }
 
 func Test_Paas_AmIOwner(t *testing.T) {
+	allOwners := generateReferences()
+	firstOwner := allOwners[0]
+
 	paas := Paas{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "MyKind",
-			APIVersion: "1.1.1",
+			Kind:       firstOwner.Kind,
+			APIVersion: firstOwner.APIVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "Some Name",
+			Name: firstOwner.Name,
 		},
 	}
 
-	ref1 := metav1.OwnerReference{
-		Kind:       "MyKind",
-		APIVersion: "1.1.1",
-		Name:       "Some Name",
+	someOwners := []metav1.OwnerReference{
+		allOwners[0],
+		allOwners[1],
 	}
-
-	ref2 := metav1.OwnerReference{
-		Kind:       "MyOtherKind",
-		APIVersion: "1.1.1",
-		Name:       "Some Name",
-	}
-
-	owner := []metav1.OwnerReference{
-		ref1,
-		ref2,
-	}
-	notOwner := []metav1.OwnerReference{
-		ref2,
-		ref2,
+	noOwners := []metav1.OwnerReference{
+		allOwners[2],
+		allOwners[3],
 	}
 
 	empty := []metav1.OwnerReference{}
 
-	assert.True(t, paas.AmIOwner(owner))
-	assert.False(t, paas.AmIOwner(notOwner))
+	assert.True(t, paas.AmIOwner(allOwners))
+	assert.True(t, paas.AmIOwner(someOwners))
+	assert.False(t, paas.AmIOwner(noOwners))
 	assert.False(t, paas.AmIOwner(empty))
 }
 
 func Test_Paas_WithoutMe(t *testing.T) {
+	allOwners := generateReferences()
+	firstOwner := allOwners[0]
+
 	paas := Paas{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "MyKind",
-			APIVersion: "1.1.1",
+			Kind:       firstOwner.Kind,
+			APIVersion: firstOwner.APIVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "Some Name",
+			Name: firstOwner.Name,
 		},
 	}
 
-	ref1 := metav1.OwnerReference{
-		Kind:       "MyKind",
-		APIVersion: "1.1.1",
-		Name:       "Some Name",
+	someOwners := []metav1.OwnerReference{
+		allOwners[0],
+		allOwners[1],
 	}
-
-	ref2 := metav1.OwnerReference{
-		Kind:       "MyOtherKind",
-		APIVersion: "1.1.1",
-		Name:       "Some Name",
-	}
-
-	owner := []metav1.OwnerReference{
-		ref1,
-		ref2,
-	}
-	notOwner := []metav1.OwnerReference{
-		ref2,
-		ref2,
+	noOwners := []metav1.OwnerReference{
+		allOwners[2],
+		allOwners[3],
 	}
 
 	empty := []metav1.OwnerReference{}
 
-	assert.NotContains(t, paas.WithoutMe(owner), ref1)
-	assert.Contains(t, paas.WithoutMe(owner), ref2)
-	assert.NotContains(t, paas.WithoutMe(notOwner), ref1)
-	assert.Contains(t, paas.WithoutMe(notOwner), ref2)
+	assert.NotContains(t, paas.WithoutMe(allOwners), allOwners[0])
+	assert.Contains(t, paas.WithoutMe(allOwners), allOwners[1])
+	assert.NotContains(t, paas.WithoutMe(someOwners), allOwners[0])
+	assert.Contains(t, paas.WithoutMe(someOwners), allOwners[1])
+	assert.NotContains(t, paas.WithoutMe(noOwners), allOwners[0])
+	assert.Contains(t, paas.WithoutMe(noOwners), allOwners[2])
 	assert.Empty(t, paas.WithoutMe(empty))
 }
 
@@ -568,18 +579,18 @@ func TestPaas_Namespaces(t *testing.T) {
 		},
 		Spec: PaasSpec{
 			Namespaces: []string{
-				"argocd",
-				"sso",
-				"extra",
+				argoCap,
+				ssoCap,
+				extraCap,
 			},
 			Capabilities: PaasCapabilities{
-				"argocd": PaasCapability{
+				argoCap: PaasCapability{
 					Enabled: true,
 				},
-				"grafana": PaasCapability{
+				grafanaCap: PaasCapability{
 					Enabled: true,
 				},
-				"sso": PaasCapability{
+				ssoCap: PaasCapability{
 					Enabled: false,
 				},
 			},
@@ -588,24 +599,24 @@ func TestPaas_Namespaces(t *testing.T) {
 	enCapNs := paas.enabledCapNamespaces()
 	assert.NotNil(t, enCapNs)
 	assert.IsType(t, map[string]bool{}, enCapNs)
-	assert.Contains(t, enCapNs, "argocd")
-	assert.Contains(t, enCapNs, "grafana")
-	assert.NotContains(t, enCapNs, "sso")
-	assert.NotContains(t, enCapNs, "extra")
+	assert.Contains(t, enCapNs, argoCap)
+	assert.Contains(t, enCapNs, grafanaCap)
+	assert.NotContains(t, enCapNs, ssoCap)
+	assert.NotContains(t, enCapNs, extraCap)
 
 	enExNs := paas.extraNamespaces()
 	assert.NotNil(t, enExNs)
 	assert.IsType(t, map[string]bool{}, enExNs)
-	assert.NotContains(t, enExNs, "argocd")
-	assert.NotContains(t, enExNs, "grafana")
-	assert.NotContains(t, enExNs, "sso")
-	assert.Contains(t, enExNs, "extra")
+	assert.NotContains(t, enExNs, argoCap)
+	assert.NotContains(t, enExNs, grafanaCap)
+	assert.NotContains(t, enExNs, ssoCap)
+	assert.Contains(t, enExNs, extraCap)
 
 	enEnNs := paas.AllEnabledNamespaces()
 	assert.NotNil(t, enEnNs)
 	assert.IsType(t, map[string]bool{}, enEnNs)
-	assert.Contains(t, enEnNs, "argocd")
-	assert.Contains(t, enEnNs, "grafana")
-	assert.NotContains(t, enEnNs, "sso")
-	assert.Contains(t, enEnNs, "extra")
+	assert.Contains(t, enEnNs, argoCap)
+	assert.Contains(t, enEnNs, grafanaCap)
+	assert.NotContains(t, enEnNs, ssoCap)
+	assert.Contains(t, enEnNs, extraCap)
 }

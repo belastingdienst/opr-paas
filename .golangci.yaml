@@ -55,15 +55,11 @@ linters-settings:
         arguments: [120]
 
       # devotional-phoenix: Fixing is seperate PR's:
-      - name: add-constant
-        disabled: true
       - name: comment-spacings
         disabled: true
       - name: indent-error-flow
         disabled: true
       - name: unused-receiver
-        disabled: true
-      - name: add-constant
         disabled: true
       - name: use-errors-new
         disabled: true

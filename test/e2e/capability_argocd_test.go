@@ -21,6 +21,7 @@ import (
 )
 
 const (
+	argoCapName         = "argocd"
 	paasWithArgo        = "paas-capability-argocd"
 	paasArgoNs          = paasWithArgo + "-argocd"
 	paasArgoGitURL      = "ssh://git@scm/some-repo.git"
@@ -37,7 +38,7 @@ func TestCapabilityArgoCD(t *testing.T) {
 		Requestor: paasRequestor,
 		Quota:     quota.Quota{},
 		Capabilities: api.PaasCapabilities{
-			"argocd": api.PaasCapability{
+			argoCapName: api.PaasCapability{
 				CustomFields: map[string]string{
 					"git_revision": paasArgoGitRevision,
 				},
@@ -65,7 +66,7 @@ func TestCapabilityArgoCD(t *testing.T) {
 func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithArgo, t, cfg)
 	argopaasns := &api.PaasNS{ObjectMeta: metav1.ObjectMeta{
-		Name:      "argocd",
+		Name:      argoCapName,
 		Namespace: paasWithArgo,
 	}}
 	require.NoError(
@@ -95,7 +96,7 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	)
 
 	// Assert ArgoCD creation
-	argocd := getOrFail(ctx, "argocd", paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
+	argocd := getOrFail(ctx, argoCapName, paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
 	assert.Equal(t, paas.UID, argocd.OwnerReferences[0].UID)
 	assert.Equal(t, "role:tester", *argocd.Spec.RBAC.DefaultPolicy)
 	assert.Equal(t, "g, system:cluster-admins, role:admin", *argocd.Spec.RBAC.Policy)
@@ -148,7 +149,7 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	updatedRevision := "updatedRevision"
 	paas := getPaas(ctx, paasWithArgo, t, cfg)
 	paas.Spec.Capabilities = api.PaasCapabilities{
-		"argocd": api.PaasCapability{
+		argoCapName: api.PaasCapability{
 			Enabled:          true,
 			SSHSecrets:       map[string]string{paasArgoGitURL: paasArgoSecret},
 			GitURL:           paasArgoGitURL,
@@ -187,7 +188,7 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	)
 
 	// Assert ArgoCD unchanged
-	argocd := getOrFail(ctx, "argocd", paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
+	argocd := getOrFail(ctx, argoCapName, paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
 	assert.Equal(t, paas.UID, argocd.OwnerReferences[0].UID)
 	assert.Equal(t, "role:tester", *argocd.Spec.RBAC.DefaultPolicy)
 	assert.Equal(t, "g, system:cluster-admins, role:admin", *argocd.Spec.RBAC.Policy)

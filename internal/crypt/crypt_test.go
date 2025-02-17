@@ -56,6 +56,9 @@ func TestRsa(t *testing.T) {
 }
 
 func TestCrypt(t *testing.T) {
+	const (
+		minimalEncryptedLength = 100
+	)
 	var (
 		original = "Dit is een test"
 		context1 = "context1"
@@ -76,7 +79,7 @@ func TestCrypt(t *testing.T) {
 
 	encrypted, err := c.Encrypt([]byte(original))
 	require.NoError(t, err, "Encrypting")
-	assert.Greater(t, len(encrypted), 100)
+	assert.Greater(t, len(encrypted), minimalEncryptedLength)
 
 	decrypted, err := c.Decrypt(encrypted)
 	require.NoError(t, err, "Decrypting")

@@ -47,17 +47,18 @@ func createPaasPrivateKeySecret(ns string, name string, privateKey []byte) {
 }
 
 func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte, err error) {
+	tmpFileError := "failed to get new tmp private key file: %w"
 	privateKeyFile, err := os.CreateTemp("", "private")
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get new tmp private key file")
+		return nil, nil, fmt.Errorf(tmpFileError, err)
 	}
 	publicKeyFile, err := os.CreateTemp("", "public")
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get new tmp private key file")
+		return nil, nil, fmt.Errorf(tmpFileError, err)
 	}
 	myCrypt, err = crypt.NewGeneratedCrypt(privateKeyFile.Name(), publicKeyFile.Name(), context)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get new tmp private key file")
+		return nil, nil, fmt.Errorf(tmpFileError, err)
 	}
 	privateKey, err = os.ReadFile(privateKeyFile.Name())
 	if err != nil {

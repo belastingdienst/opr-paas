@@ -20,6 +20,8 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/utils"
 )
 
+const AESKeySize = 4096
+
 type Crypt struct {
 	privateKeys       CryptPrivateKeys
 	publicKeyPath     string
@@ -56,7 +58,7 @@ func NewGeneratedCrypt(privateKeyPath string, publicKeyPath string, context stri
 	c := Crypt{
 		encryptionContext: []byte(context),
 	}
-	if privateKey, err := rsa.GenerateKey(rand.Reader, 4096); err != nil {
+	if privateKey, err := rsa.GenerateKey(rand.Reader, AESKeySize); err != nil {
 		return nil, fmt.Errorf("unable to generate private key: %w", err)
 	} else {
 		pk := CryptPrivateKey{
@@ -90,7 +92,7 @@ func (c *Crypt) writePublicKey() error {
 			Bytes: publicKeyBytes,
 		})
 
-		if err = os.WriteFile(c.publicKeyPath, publicKeyPEM, 0o600); err != nil {
+		if err = os.WriteFile(c.publicKeyPath, publicKeyPEM, fileModeUserReadWrite); err != nil {
 			return fmt.Errorf("unable to write public key: %w", err)
 		}
 	}
