@@ -70,10 +70,14 @@ func (p Paas) ManagedByPaas() string {
 	return p.Name
 }
 
+func join(argv ...string) string {
+	return strings.Join(argv, "-")
+}
+
 func (p Paas) PrefixedBoolMap(m map[string]bool) map[string]bool {
 	newMap := make(map[string]bool)
 	for name, value := range m {
-		newMap[fmt.Sprintf("%s-%s", p.Name, name)] = value
+		newMap[join(p.Name, name)] = value
 	}
 	return newMap
 }
@@ -210,7 +214,7 @@ func (p Paas) GroupKey2GroupName(groupKey string) string {
 	} else if len(group.Query) > 0 {
 		return group.Name(groupKey)
 	} else {
-		return fmt.Sprintf("%s-%s", p.Name, p.Spec.Groups.Key2Name(groupKey))
+		return join(p.Name, p.Spec.Groups.Key2Name(groupKey))
 	}
 }
 
@@ -253,7 +257,7 @@ func (pcs PaasCapabilities) AsPrefixedMap(prefix string) PaasCapabilities {
 	}
 	caps := make(PaasCapabilities)
 	for name, capability := range pcs {
-		caps[fmt.Sprintf("%s-%s", prefix, name)] = capability
+		caps[join(prefix, name)] = capability
 	}
 	return caps
 }

@@ -36,12 +36,12 @@ func TestReadPaasFile(t *testing.T) {
 		t,
 		err,
 		expectedErrorMsg,
-		`Error should be: %v, got: %v`,
+		equalErrMsg,
 		expectedErrorMsg,
 		err,
 	) //nolint:testifylint // just no
 	assert.Nil(t, paas)
-	assert.Equal(t, "unable to read paas configuration file", typeString)
+	assert.Equal(t, typeUnknown, typeString)
 
 	// empty yaml file
 	paas, typeString, err = readPaasFile("testdata/emptyPaas.yml")
@@ -53,7 +53,7 @@ func TestReadPaasFile(t *testing.T) {
 		t,
 		err,
 		expectedErrorMsg,
-		`Error should be: %v, got: %v`,
+		equalErrMsg,
 		expectedErrorMsg,
 		err,
 	) //nolint:testifylint
@@ -68,7 +68,7 @@ func TestReadPaasFile(t *testing.T) {
 		t,
 		err,
 		expectedErrorMsg,
-		`Error should be: %v, got: %v`,
+		equalErrMsg,
 		expectedErrorMsg,
 		err,
 	) //nolint:testifylint
@@ -77,22 +77,22 @@ func TestReadPaasFile(t *testing.T) {
 	paas, typeString, err = readPaasFile("testdata/minimalPaas.yml")
 	require.NoError(t, err)
 	assert.Equal(t, expectedPaas, paas)
-	assert.Equal(t, "yaml", typeString)
-	assert.NotEqual(t, "json", typeString)
+	assert.Equal(t, typeYAML, typeString)
+	assert.NotEqual(t, typeJSON, typeString)
 
 	// minimal json file
 	paas, typeString, err = readPaasFile("testdata/minimalPaas.json")
 	require.NoError(t, err)
 	assert.Equal(t, expectedPaas, paas)
-	assert.Equal(t, "json", typeString)
-	assert.NotEqual(t, "yaml", typeString)
+	assert.Equal(t, typeJSON, typeString)
+	assert.NotEqual(t, typeYAML, typeString)
 
 	// unsupported field in yaml file
 	paas, typeString, err = readPaasFile("testdata/unsupportedFieldsPaas.yml")
 	require.NoError(t, err)
 	assert.Equal(t, expectedPaas, paas)
-	assert.Equal(t, "yaml", typeString)
-	assert.NotEqual(t, "json", typeString)
+	assert.Equal(t, typeYAML, typeString)
+	assert.NotEqual(t, typeJSON, typeString)
 
 	// invalid file format
 	paas, typeString, err = readPaasFile("testdata/invalidFormat.toml")

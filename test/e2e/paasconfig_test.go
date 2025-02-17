@@ -17,6 +17,8 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
+const paasConfigPaasName = "foo"
+
 func TestPaasConfig(t *testing.T) {
 	testenv.Test(
 		t,
@@ -39,7 +41,7 @@ func TestPaasConfig(t *testing.T) {
 			// revive:disable-next-line
 			Assess("Paas reconciliation is triggered after PaasConfig is updated", assertPaasReconciliationAfterConfigUpdate).
 			Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-				deletePaasSync(ctx, "foo", t, cfg)
+				deletePaasSync(ctx, paasConfigPaasName, t, cfg)
 
 				// Reset PaasConfig to erase tested changes
 				paasConfig := getOrFail(ctx, "paas-config", cfg.Namespace(), &v1alpha1.PaasConfig{}, t, cfg)
@@ -134,7 +136,7 @@ func assertOperatorErrorWithoutPaasConfig(ctx context.Context, t *testing.T, cfg
 	require.True(t, apierrors.IsNotFound(err))
 
 	paas := &v1alpha1.Paas{
-		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
+		ObjectMeta: metav1.ObjectMeta{Name: paasConfigPaasName},
 		Spec: v1alpha1.PaasSpec{
 			Requestor: "paas-user",
 			Quota:     make(quota.Quota),
@@ -152,7 +154,7 @@ func assertPaasReconciliationAfterConfigUpdate(ctx context.Context, t *testing.T
 	require.NoError(t, createSync(ctx, cfg, paasConfig, v1alpha1.TypeActivePaasConfig))
 
 	paas := &v1alpha1.Paas{
-		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
+		ObjectMeta: metav1.ObjectMeta{Name: paasConfigPaasName},
 		Spec: v1alpha1.PaasSpec{
 			Requestor: "paas-user",
 			Quota:     make(quota.Quota),
@@ -160,17 +162,17 @@ func assertPaasReconciliationAfterConfigUpdate(ctx context.Context, t *testing.T
 	}
 	require.NoError(t, createSync(ctx, cfg, paas, v1alpha1.TypeReadyPaas))
 
-	ns := getOrFail(ctx, "foo", cfg.Namespace(), &v1.Namespace{}, t, cfg)
+	ns := getOrFail(ctx, paasConfigPaasName, cfg.Namespace(), &v1.Namespace{}, t, cfg)
 	assert.Equal(t, "paas-user", ns.Labels["o.lbl"])
-	assert.Equal(t, "foo", ns.Labels["q.lbl"])
+	assert.Equal(t, paasConfigPaasName, ns.Labels["q.lbl"])
 
 	paasConfig.Spec.RequestorLabel = "another.lbl"
 	paasConfig.Spec.QuotaLabel = "different.lbl"
 	require.NoError(t, updateSync(ctx, cfg, paasConfig, v1alpha1.TypeActivePaasConfig))
 
-	ns = getOrFail(ctx, "foo", cfg.Namespace(), &v1.Namespace{}, t, cfg)
+	ns = getOrFail(ctx, paasConfigPaasName, cfg.Namespace(), &v1.Namespace{}, t, cfg)
 	assert.Equal(t, "paas-user", ns.Labels["another.lbl"])
-	assert.Equal(t, "foo", ns.Labels["different.lbl"])
+	assert.Equal(t, paasConfigPaasName, ns.Labels["different.lbl"])
 
 	return ctx
 }

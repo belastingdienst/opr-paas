@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,7 +67,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	errResult := reconcile.Result{
 		Requeue:      true,
-		RequeueAfter: time.Second * 10,
+		RequeueAfter: requeueTimeout,
 	}
 
 	if err := pcr.Get(ctx, req.NamespacedName, cfg); err != nil {

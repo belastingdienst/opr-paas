@@ -2,6 +2,7 @@ package logging
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -15,6 +16,10 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+const (
+	paasName = "my-paas"
 )
 
 type logSink struct {
@@ -41,7 +46,7 @@ func TestSetControllerLogger(t *testing.T) {
 	ctx := context.TODO()
 	obj := &v1alpha1.Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "my-paas",
+			Name: paasName,
 		},
 		Spec: v1alpha1.PaasSpec{},
 	}
@@ -59,17 +64,17 @@ func TestSetControllerLogger(t *testing.T) {
 	logLine := output.Index(1)
 	expectedPrefix := `{"controller":`
 	assert.True(t, strings.HasPrefix(logLine, expectedPrefix), "logline should begin with `%s`", expectedPrefix)
-	assert.Contains(t, logLine, `"Group":"cpet.belastingdienst.nl"`, "expected this in the logline")
-	assert.Contains(t, logLine, `"Kind":"Paas"`, "expected this in the logline")
-	assert.Contains(t, logLine, `"message":"some controller log"`, "expected this in the logline")
-	assert.Contains(t, logLine, `"object":{"Namespace":"","Name":""}`, "expected this in the logline")
+	assert.Contains(t, logLine, `"Group":"cpet.belastingdienst.nl"`)
+	assert.Contains(t, logLine, `"Kind":"Paas"`)
+	assert.Contains(t, logLine, `"message":"some controller log"`)
+	assert.Contains(t, logLine, `"object":{"Namespace":"","Name":""}`)
 }
 
 func TestSetWebhookLogger(t *testing.T) {
 	ctx := context.TODO()
 	obj := &v1alpha1.Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "my-paas",
+			Name: paasName,
 		},
 		Spec: v1alpha1.PaasSpec{},
 	}
@@ -89,10 +94,10 @@ func TestSetWebhookLogger(t *testing.T) {
 	logLine := output.Index(1)
 	expectedPrefix := `{"webhook":`
 	assert.True(t, strings.HasPrefix(logLine, expectedPrefix), "logline should begin with `%s`", expectedPrefix)
-	assert.Contains(t, logLine, `"Group":"cpet.belastingdienst.nl"`, "expected this in the logline")
-	assert.Contains(t, logLine, `"Kind":"Paas"`, "expected this in the logline")
-	assert.Contains(t, logLine, `"message":"some webhook log"`, "expected this in the logline")
-	assert.Contains(t, logLine, `"object":{"name":"my-paas","namespace":""}`, "expected this in the logline")
+	assert.Contains(t, logLine, `"Group":"cpet.belastingdienst.nl"`)
+	assert.Contains(t, logLine, `"Kind":"Paas"`)
+	assert.Contains(t, logLine, `"message":"some webhook log"`)
+	assert.Contains(t, logLine, fmt.Sprintf(`"object":{"name":"%s","namespace":""}`, paasName))
 }
 
 func TestSetComponentDebug(t *testing.T) {
@@ -113,7 +118,7 @@ func TestSetLogComponent(t *testing.T) {
 	ResetComponentDebug()
 	obj := &v1alpha1.Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "my-paas",
+			Name: paasName,
 		},
 		Spec: v1alpha1.PaasSpec{},
 	}

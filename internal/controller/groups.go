@@ -25,11 +25,11 @@ import (
 )
 
 const (
-	ldapUidAnnotationKey = "openshift.io/ldap.uid"
-	ldapUrlAnnotationKey = "openshift.io/ldap.url"
-	ldapHostLabelKey     = "openshift.io/ldap.host"
-	managedByLabelKey    = "app.kubernetes.io/managed-by"
-	managedByLabelValue  = "paas"
+	ldapUIDAnnotationKey = "openshift.io/ldap.uid"
+	ldapURLAnnotationKey = "openshift.io/ldap.url"
+	LdapHostLabelKey     = "openshift.io/ldap.host"
+	ManagedByLabelKey    = "app.kubernetes.io/managed-by"
+	ManagedByLabelValue  = "paas"
 )
 
 // EnsureGroup ensures Group presence
@@ -70,7 +70,7 @@ func (r *PaasReconciler) EnsureGroup(
 		changed = true
 	}
 
-	if _, exists := group.Labels[ldapHostLabelKey]; exists {
+	if _, exists := group.Labels[LdapHostLabelKey]; exists {
 		logger.Debug().Msg("group " + groupName + " is ldap group, not changing users")
 	} else if reflect.DeepEqual(group.Users, found.Users) {
 		logger.Debug().Msg("users for group " + groupName + " are as expected")
@@ -103,14 +103,14 @@ func (r *PaasReconciler) backendGroup(
 			Name:   groupName,
 			Labels: paas.ClonedLabels(),
 			Annotations: map[string]string{
-				ldapUidAnnotationKey: group.Query,
-				ldapUrlAnnotationKey: fmt.Sprintf("%s:%d",
+				ldapUIDAnnotationKey: group.Query,
+				ldapURLAnnotationKey: fmt.Sprintf("%s:%d",
 					config.GetConfig().LDAP.Host,
 					config.GetConfig().LDAP.Port,
 				),
 			},
 		}
-		g.ObjectMeta.Labels[ldapHostLabelKey] = config.GetConfig().LDAP.Host
+		g.ObjectMeta.Labels[LdapHostLabelKey] = config.GetConfig().LDAP.Host
 	} else {
 		g.ObjectMeta = metav1.ObjectMeta{
 			Name:   groupName,
@@ -118,7 +118,7 @@ func (r *PaasReconciler) backendGroup(
 		}
 		g.Users = group.Users
 	}
-	g.ObjectMeta.Labels[managedByLabelKey] = managedByLabelValue
+	g.ObjectMeta.Labels[ManagedByLabelKey] = ManagedByLabelValue
 
 	if err := controllerutil.SetOwnerReference(paas, g, r.Scheme); err != nil {
 		return nil, err
@@ -208,14 +208,14 @@ func (r *PaasReconciler) deleteObsoleteGroups(
 	logger.Info().Msg("deleting obsolete groups")
 	for _, existingGroup := range existingGroups {
 		if !isGroupInGroups(existingGroup, desiredGroups) {
-			if existingGroup.Annotations[ldapUidAnnotationKey] != "" {
+			if existingGroup.Annotations[ldapUIDAnnotationKey] != "" {
 				existingGroup.OwnerReferences = paas.WithoutMe(existingGroup.OwnerReferences)
 				if len(existingGroup.OwnerReferences) == 0 {
 					logger.Info().Msgf("deleting %s", existingGroup.Name)
 					if err = r.Delete(ctx, existingGroup); err != nil {
 						return removedLdapGroups, err
 					}
-					removedLdapGroups = append(removedLdapGroups, existingGroup.Annotations[ldapUidAnnotationKey])
+					removedLdapGroups = append(removedLdapGroups, existingGroup.Annotations[ldapUIDAnnotationKey])
 					continue
 				}
 				logger.Info().Msgf("not last owner of group %s", existingGroup.Name)

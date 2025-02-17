@@ -18,6 +18,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	paasName = "paasName"
+	repoName = "ssh://git@scm/some-repo.git"
+)
+
 func TestCheckPaas(t *testing.T) {
 	// Allow all origins for testing
 	t.Setenv(allowedOriginsEnv, "*")
@@ -36,21 +41,21 @@ func TestCheckPaas(t *testing.T) {
 	_config.PublicKeyPath = pub.Name()
 	_config.PrivateKeyPath = priv.Name()
 	assert.Nil(t, _crypt)
-	rsa := getRsa("paasName")
+	rsa := getRsa(paasName)
 
 	encrypted, err := rsa.Encrypt([]byte("My test string"))
 	require.NoError(t, err)
 
 	toBeDecryptedPaas := &v1alpha1.Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "paasName",
+			Name: paasName,
 		},
 		Spec: v1alpha1.PaasSpec{
-			SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+			SSHSecrets: map[string]string{repoName: encrypted},
 			Capabilities: v1alpha1.PaasCapabilities{
 				"sso": v1alpha1.PaasCapability{
 					Enabled:    true,
-					SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+					SSHSecrets: map[string]string{repoName: encrypted},
 				},
 			},
 		},
@@ -61,9 +66,9 @@ func TestCheckPaas(t *testing.T) {
 
 	notTeBeDecryptedPaas := &v1alpha1.Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "paasName",
+			Name: paasName,
 		},
-		Spec: v1alpha1.PaasSpec{SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": "bm90RGVjcnlwdGFibGU="}},
+		Spec: v1alpha1.PaasSpec{SSHSecrets: map[string]string{repoName: "bm90RGVjcnlwdGFibGU="}},
 	}
 
 	// Must be able to decrypt this
@@ -72,14 +77,14 @@ func TestCheckPaas(t *testing.T) {
 
 	partialToBeDecryptedPaas := &v1alpha1.Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "paasName",
+			Name: paasName,
 		},
 		Spec: v1alpha1.PaasSpec{
-			SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+			SSHSecrets: map[string]string{repoName: encrypted},
 			Capabilities: v1alpha1.PaasCapabilities{
 				"sso": v1alpha1.PaasCapability{
 					Enabled:    true,
-					SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": "bm90RGVjcnlwdGFibGU="},
+					SSHSecrets: map[string]string{repoName: "bm90RGVjcnlwdGFibGU="},
 				},
 			},
 		},

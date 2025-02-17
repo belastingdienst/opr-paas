@@ -15,6 +15,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	argNamePrivateKeyFile  = "privateKeyFile"
+	argNamePrivateKeyFiles = "privateKeyFiles"
+	argNamePublicKeyFile   = "publicKeyFile"
+	argNamePaas            = "paas"
+	argNameDataFileKey     = "dataFile"
+	argNameOutputFormat    = "outputFormat"
+)
+
 var debug bool
 
 // requireSubcommand returns an error if no sub command is provided

@@ -44,14 +44,14 @@ linters-settings:
       - name: add-constant
         arguments:
           - allowStrs: '""'
-            allowInts: '0,1,2'
+            allowInts: '0,1,2,3'
+            ignoreFuncs: "assert\\.Len"
+            maxLitCount: '5'
       - name: line-length-limit
         severity: warning
         disabled: false
         exclude: ['']
         arguments: [120]
-      - name: add-constant
-        disabled: true
       - name: bare-return
         disabled: true
       - name: cognitive-complexity

@@ -34,6 +34,7 @@ import (
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/crypt"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -60,7 +61,7 @@ func setupPaasSys() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Set up private key
-	privkey, err := rsa.GenerateKey(rand.Reader, 4096)
+	privkey, err := rsa.GenerateKey(rand.Reader, crypt.AESKeySize)
 	Expect(err).NotTo(HaveOccurred())
 	err = k8sClient.Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
