@@ -12,8 +12,9 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
+	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
-	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -26,13 +27,12 @@ func (r *PaasReconciler) EnsureArgoCD(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "argopermissions")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "argopermissions")
 
 	namespace := fmt.Sprintf("%s-%s", paas.Name, "argocd")
 
-	defaultPolicy := GetConfig().ArgoPermissions.DefaultPolicy
-	policy := GetConfig().ArgoPermissions.FromGroups(paas.GroupNames())
+	defaultPolicy := config.GetConfig().ArgoPermissions.DefaultPolicy
+	policy := config.GetConfig().ArgoPermissions.FromGroups(paas.GroupNames())
 	scopes := "[groups]"
 
 	argo := &argocd.ArgoCD{
@@ -41,7 +41,7 @@ func (r *PaasReconciler) EnsureArgoCD(
 			APIVersion: "argoproj.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      GetConfig().ArgoPermissions.ResourceName,
+			Name:      config.GetConfig().ArgoPermissions.ResourceName,
 			Namespace: namespace,
 		},
 		Spec: argocd.ArgoCDSpec{

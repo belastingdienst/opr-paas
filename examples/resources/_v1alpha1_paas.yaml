@@ -21,6 +21,14 @@ spec:
         - paa
     appart:
       query: CN=appatest,OU=paas,OU=clusters,OU=corp,DC=prod,DC=acme,DC=org
+      users:
+        - test
+      roles:
+        - viewer
+    appart2:
+      query: CN=appatest,OU=paas,OU=clusters,OU=corp,DC=prod,DC=acme,DC=org
+      users:
+        - test
       roles:
         - viewer
   quota:
@@ -36,7 +44,7 @@ spec:
       quota:
         limits.cpu: '2'
         limits.memory: 5Gi
-        requests.cpu: '1Gi'
+        requests.cpu: '1'
         requests.memory: 4Gi
         requests.storage: 20Gi
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
@@ -45,7 +53,7 @@ spec:
       quota:
         limits.cpu: '2'
         limits.memory: 5Gi
-        requests.cpu: '1Gi'
+        requests.cpu: '1'
         requests.memory: 4Gi
         requests.storage: 20Gi
         thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'

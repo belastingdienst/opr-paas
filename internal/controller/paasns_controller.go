@@ -18,8 +18,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 
-	"github.com/rs/zerolog/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -58,8 +59,7 @@ func (pr PaasNSReconciler) GetScheme() *runtime.Scheme {
 
 func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paasns *v1alpha1.PaasNS, err error) {
 	paasns = &v1alpha1.PaasNS{}
-	ctx = setLogComponent(ctx, "paasns")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "paasns")
 	logger.Info().Msg("reconciling PaasNs")
 
 	if err = r.Get(ctx, req.NamespacedName, paasns); err != nil {
@@ -96,7 +96,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 	// TODO(portly-halicore-76) Move to admission webhook once available
 	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
 	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
-	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
+	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig()) {
 		logger.Error().Msg("no config found")
 		err = r.setErrorCondition(ctx, paasns, fmt.Errorf("please reach out to your system administrator as there is no Paasconfig available to reconcile against"))
 		if err != nil {
@@ -174,7 +174,7 @@ func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS)
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
 func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	paasns := &v1alpha1.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
-	ctx, logger := setRequestLogger(ctx, paasns, r.Scheme, req)
+	ctx, logger := logging.SetControllerLogger(ctx, paasns, r.Scheme, req)
 
 	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
 		// TODO(portly-halicore-76) move to admission webhook once available
@@ -348,8 +348,7 @@ func (r *PaasReconciler) pnsFromNs(ctx context.Context, ns string) map[string]v1
 }
 
 func (r *PaasNSReconciler) paasFromPaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, namespaces map[string]int, err error) {
-	ctx = setLogComponent(ctx, "paasns")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "paasns")
 	paas = &v1alpha1.Paas{}
 	if err := r.Get(ctx, types.NamespacedName{Name: paasns.Spec.Paas}, paas); err != nil {
 		logger.Err(err).Msg("cannot get Paas")
@@ -379,12 +378,11 @@ func (r *PaasNSReconciler) paasFromPaasNs(ctx context.Context, paasns *v1alpha1.
 }
 
 func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) error {
-	ctx = setLogComponent(ctx, "paasns")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "paasns")
 
-	config := GetConfig()
+	cfg := config.GetConfig()
 	// If PaasNs is related to a capability, remove it from appSet
-	if _, exists := config.Capabilities[paasns.Name]; exists {
+	if _, exists := cfg.Capabilities[paasns.Name]; exists {
 		if err := r.finalizeAppSetCap(ctx, paasns); err != nil {
 			err = fmt.Errorf("cannot remove paas from capability ApplicationSet belonging to Paas %s: %s", paasns.Spec.Paas, err.Error())
 			return err

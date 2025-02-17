@@ -266,7 +266,7 @@ func (pcs PaasCapabilities) IsCap(name string) bool {
 
 func (pcs PaasCapabilities) GetCapability(capability string) (cap PaasCapability, err error) {
 	if cap, exists := pcs[capability]; !exists {
-		return cap, fmt.Errorf("Capability %s does not exist", capability)
+		return cap, fmt.Errorf("capability %s does not exist", capability)
 	} else {
 		return cap, nil
 	}
@@ -337,7 +337,7 @@ func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomFiel
 	var issues []error
 	for key, value := range pc.CustomFields {
 		if _, exists := fieldConfig[key]; !exists {
-			issues = append(issues, fmt.Errorf("Custom field %s is not configured in capability config", key))
+			issues = append(issues, fmt.Errorf("custom field %s is not configured in capability config", key))
 		} else {
 			fields[key] = value
 		}
@@ -345,12 +345,12 @@ func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomFiel
 	for key, fieldConf := range fieldConfig {
 		if value, exists := fields[key]; exists {
 			if matched, err := regexp.Match(fieldConf.Validation, []byte(value)); err != nil {
-				issues = append(issues, fmt.Errorf("Could not validate value %s: %w", value, err))
+				issues = append(issues, fmt.Errorf("could not validate value %s: %w", value, err))
 			} else if !matched {
-				issues = append(issues, fmt.Errorf("Invalid value %s (does not match %s)", value, fieldConf.Validation))
+				issues = append(issues, fmt.Errorf("invalid value %s (does not match %s)", value, fieldConf.Validation))
 			}
 		} else if fieldConf.Required {
-			issues = append(issues, fmt.Errorf("Value %s is required", key))
+			issues = append(issues, fmt.Errorf("value %s is required", key))
 		} else {
 			fields[key] = fieldConf.Default
 		}

@@ -15,6 +15,7 @@ import (
 )
 
 func TestRsaGenerate(t *testing.T) {
+	context := "context"
 	priv, err := os.CreateTemp("", "private")
 	require.NoError(t, err, "Creating tempfile for private key")
 	defer os.Remove(priv.Name()) // clean up
@@ -23,12 +24,14 @@ func TestRsaGenerate(t *testing.T) {
 	require.NoError(t, err, "Creating tempfile for public key")
 	defer os.Remove(pub.Name()) // clean up
 
-	c, err := NewGeneratedCrypt(priv.Name(), pub.Name())
+	c, err := NewGeneratedCrypt(priv.Name(), pub.Name(), context)
 	require.NoError(t, err, "Crypt object created")
 	assert.NotNil(t, c, "Crypt object is not nil")
 }
 
 func TestRsa(t *testing.T) {
+	context := "context"
+
 	// generate private/public keys
 	priv, err := os.CreateTemp("", "private")
 	require.NoError(t, err, "Creating tempfile for private key")
@@ -38,7 +41,7 @@ func TestRsa(t *testing.T) {
 	require.NoError(t, err, "Creating tempfile for public key")
 	defer os.Remove(pub.Name()) // clean up
 
-	c, err := NewGeneratedCrypt(priv.Name(), pub.Name())
+	c, err := NewGeneratedCrypt(priv.Name(), pub.Name(), context)
 
 	require.NoError(t, err, "Getting New Crypt")
 
@@ -53,7 +56,11 @@ func TestRsa(t *testing.T) {
 }
 
 func TestCrypt(t *testing.T) {
-	original := "Dit is een test"
+	var (
+		original = "Dit is een test"
+		context1 = "context1"
+		context2 = "context2"
+	)
 
 	// generate private/public keys
 	priv, err := os.CreateTemp("", "private")
@@ -64,14 +71,23 @@ func TestCrypt(t *testing.T) {
 	require.NoError(t, err, "Creating tempfile for public key")
 	defer os.Remove(pub.Name()) // clean up
 
-	c, err := NewGeneratedCrypt(priv.Name(), pub.Name())
-
+	c, err := NewGeneratedCrypt(priv.Name(), pub.Name(), context1)
 	require.NoError(t, err, "Getting New Crypt")
+
 	encrypted, err := c.Encrypt([]byte(original))
 	require.NoError(t, err, "Encrypting")
 	assert.Greater(t, len(encrypted), 100)
 
 	decrypted, err := c.Decrypt(encrypted)
 	require.NoError(t, err, "Decrypting")
+	assert.Equal(t, original, string(decrypted))
+
+	c.encryptionContext = []byte(context2)
+	_, err = c.Decrypt(encrypted)
+	require.Error(t, err, "Decrypting with other context")
+	encrypted, err = c.Encrypt([]byte(original))
+	require.NoError(t, err, "Encrypting with other context should succeed")
+	decrypted, err = c.Decrypt(encrypted)
+	require.NoError(t, err, "Decrypting with other context")
 	assert.Equal(t, original, string(decrypted))
 }

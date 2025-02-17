@@ -12,9 +12,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/groups"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 
-	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,7 +26,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 	groups string,
 ) error {
 	// Create the ConfigMap
-	wlConfigMap := GetConfig().GroupSyncList
+	wlConfigMap := config.GetConfig().GroupSyncList
 	return r.Create(ctx, &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
@@ -36,7 +37,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 			Namespace: wlConfigMap.Namespace,
 		},
 		Data: map[string]string{
-			GetConfig().GroupSyncListKey: groups,
+			config.GetConfig().GroupSyncListKey: groups,
 		},
 	})
 }
@@ -46,11 +47,10 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx = setLogComponent(ctx, "ldapgroup")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "ldapgroup")
 	logger.Info().Msg("creating ldap groups for PAAS object ")
 	// See if group already exists and create if it doesn't
-	namespacedName := GetConfig().GroupSyncList
+	namespacedName := config.GetConfig().GroupSyncList
 	cm := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Configmap",
@@ -70,9 +70,9 @@ func (r *PaasReconciler) EnsureLdapGroups(
 	} else if err != nil {
 		logger.Err(err).Msg("could not retrieve groupsynclist configmap")
 		return err
-	} else if groupsynclist, exists := cm.Data[GetConfig().GroupSyncListKey]; !exists {
+	} else if groupsynclist, exists := cm.Data[config.GetConfig().GroupSyncListKey]; !exists {
 		logger.Info().Msg("adding groupsynclist.txt to groupsynclist configmap")
-		cm.Data[GetConfig().GroupSyncListKey] = gs.AsString()
+		cm.Data[config.GetConfig().GroupSyncListKey] = gs.AsString()
 	} else {
 		logger.Info().Msgf("reading group queries from groupsynclist %v", cm)
 		groupsynclistGroups := groups.NewGroups()
@@ -83,7 +83,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 			return nil
 		}
 		logger.Info().Msg("adding to groupsynclist configmap")
-		cm.Data[GetConfig().GroupSyncListKey] = groupsynclistGroups.AsString()
+		cm.Data[config.GetConfig().GroupSyncListKey] = groupsynclistGroups.AsString()
 	}
 	logger.Info().Msgf("updating groupsynclist configmap: %v", cm)
 	return r.Update(ctx, cm)
@@ -94,10 +94,9 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 	ctx context.Context,
 	cleanedLdapQueries []string,
 ) error {
-	ctx = setLogComponent(ctx, "ldapgroup")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "ldapgroup")
 	cm := &corev1.ConfigMap{}
-	wlConfigMap := GetConfig().GroupSyncList
+	wlConfigMap := config.GetConfig().GroupSyncList
 	err := r.Get(ctx, types.NamespacedName{Name: wlConfigMap.Name, Namespace: wlConfigMap.Namespace}, cm)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info().Msg("groupsynclist configmap does not exist")
@@ -107,9 +106,9 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		logger.Err(err).Msg("error retrieving groupsynclist configmap")
 		// Error that isn't due to the group not existing
 		return err
-	} else if groupsynclist, exists := cm.Data[GetConfig().GroupSyncListKey]; !exists {
+	} else if groupsynclist, exists := cm.Data[config.GetConfig().GroupSyncListKey]; !exists {
 		// No groupsynclist.txt exists in the configmap, so nothing to clean
-		logger.Info().Msgf("%s does not exists in groupsynclist configmap", GetConfig().GroupSyncListKey)
+		logger.Info().Msgf("%s does not exists in groupsynclist configmap", config.GetConfig().GroupSyncListKey)
 		return nil
 	} else {
 		var isChanged bool
@@ -127,7 +126,7 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		if !isChanged {
 			return nil
 		}
-		cm.Data[GetConfig().GroupSyncListKey] = gs.AsString()
+		cm.Data[config.GetConfig().GroupSyncListKey] = gs.AsString()
 	}
 	return r.Update(ctx, cm)
 }

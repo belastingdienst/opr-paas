@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 
 	"github.com/rs/zerolog/log"
 	rbac "k8s.io/api/rbac/v1"
@@ -161,12 +163,12 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 ) (err error) {
 	var crb *rbac.ClusterRoleBinding
 	cap, capExists := paas.Spec.Capabilities[paasns.Name]
-	capConfig, capConfigExists := GetConfig().Capabilities[paasns.Name]
+	capConfig, capConfigExists := config.GetConfig().Capabilities[paasns.Name]
 	if !(capConfigExists || capExists) {
 		return
 	}
 
-	ctx = setLogComponent(ctx, "clusterrolebinding")
+	ctx, _ = logging.GetLogComponent(ctx, "clusterrolebinding")
 
 	permissions := capConfig.ExtraPermissions.AsConfigRolesSas(cap.WithExtraPermissions())
 	permissions.Merge(capConfig.DefaultPermissions.AsConfigRolesSas(true))
@@ -195,10 +197,9 @@ func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (err error) {
-	ctx = setLogComponent(ctx, "clusterrolebinding")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "clusterrolebinding")
 	var capRoles []string
-	for _, capConfig := range GetConfig().Capabilities {
+	for _, capConfig := range config.GetConfig().Capabilities {
 		capRoles = append(capRoles, capConfig.ExtraPermissions.Roles()...)
 		capRoles = append(capRoles, capConfig.DefaultPermissions.Roles()...)
 	}

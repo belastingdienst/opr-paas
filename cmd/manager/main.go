@@ -17,6 +17,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	gitopsResources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
 	argoResources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -35,6 +36,7 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/controller"
 	"github.com/belastingdienst/opr-paas/internal/version"
+	webhookv1alpha1 "github.com/belastingdienst/opr-paas/internal/webhook/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -117,8 +119,14 @@ func main() {
 	}
 	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = v1alpha1.SetupPaasWebhookWithManager(mgr); err != nil {
+		if err = webhookv1alpha1.SetupPaasWebhookWithManager(mgr); err != nil {
 			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create webhook")
+		}
+		if err = webhookv1alpha1.SetupPaasConfigWebhookWithManager(mgr); err != nil {
+			log.Fatal().Err(err).Str("webhook", "PaasConfig").Msg("unable to create webhook")
+		}
+		if err = webhookv1alpha1.SetupPaasNsWebhookWithManager(mgr); err != nil {
+			log.Fatal().Err(err).Str("webhook", "PaasNS").Msg("unable to create webhook")
 		}
 	}
 	if err = (&controller.PaasNSReconciler{
@@ -172,7 +180,7 @@ func configureLogging(pretty bool, debug bool, componentDebugList string, splitL
 			log.Fatal().Msg("cannot pass --debug and --component-debug simultaneously")
 		}
 	} else if componentDebugList != "" {
-		controller.SetComponentDebug(strings.Split(componentDebugList, ","))
+		logging.SetComponentDebug(strings.Split(componentDebugList, ","))
 		log.Logger = log.Level(zerolog.InfoLevel)
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)

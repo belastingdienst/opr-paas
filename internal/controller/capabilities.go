@@ -13,8 +13,9 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
-	"github.com/rs/zerolog/log"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -127,7 +128,7 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	config := GetConfig()
+	config := config.GetConfig()
 	for capName := range paas.Spec.Capabilities {
 		if _, exists := config.Capabilities[capName]; !exists {
 			return fmt.Errorf("capability not configured")
@@ -152,7 +153,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	var err error
 	var fields Elements
 	// See if AppSet exists raise error if it doesn't
-	namespacedName := GetConfig().CapabilityK8sName(capName)
+	namespacedName := config.GetConfig().CapabilityK8sName(capName)
 	appSet := &appv1.ApplicationSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Applicationset",
@@ -163,8 +164,8 @@ func (r *PaasReconciler) ensureAppSetCap(
 			Namespace: namespacedName.Namespace,
 		},
 	}
-	ctx = setLogComponent(ctx, "appset")
-	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset", capName)
+	ctx, logger := logging.GetLogComponent(ctx, "appset")
+	logger.Info().Msgf("reconciling %s Applicationset", capName)
 	err = r.Get(ctx, namespacedName, appSet)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator
@@ -174,7 +175,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	}
 
 	capability := paas.Spec.Capabilities[capName]
-	if fields, err = capability.CapExtraFields(GetConfig().Capabilities[capName].CustomFields); err != nil {
+	if fields, err = capability.CapExtraFields(config.GetConfig().Capabilities[capName].CustomFields); err != nil {
 		return err
 	}
 	service, subService := splitToService(paas.Name)
@@ -215,9 +216,9 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := GetConfig().CapabilityK8sName(paasns.Name)
-	ctx = setLogComponent(ctx, "appset")
-	log.Ctx(ctx).Info().Msgf("reconciling %s Applicationset", paasns.Name)
+	asNamespacedName := config.GetConfig().CapabilityK8sName(paasns.Name)
+	ctx, logger := logging.GetLogComponent(ctx, "appset")
+	logger.Info().Msgf("reconciling %s Applicationset", paasns.Name)
 	err := r.Get(ctx, asNamespacedName, as)
 	var entries Entries
 	var listGen *appv1.ApplicationSetGenerator

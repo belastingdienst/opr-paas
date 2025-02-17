@@ -1,21 +1,29 @@
-package controller
+/*
+Copyright 2025, Tax Administration of The Netherlands.
+Licensed under the EUPL 1.2.
+See LICENSE.md for details.
+*/
+
+package v1alpha1
 
 import (
 	"context"
 
-	"github.com/belastingdienst/opr-paas/internal/config"
+	cnf "github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
-	// crypts contains a maps of crypt against a Paas name
 	crypts             map[string]*crypt.Crypt
 	decryptPrivateKeys *crypt.CryptPrivateKeys
 )
+
+// TODO: devotional-phoenix-97: We should refine this code and the entire crypt implementation including caching.
 
 // resetCrypts removes all crypts and resets decryptSecretPrivateKeys
 func resetCrypts() {
@@ -24,15 +32,13 @@ func resetCrypts() {
 }
 
 // getRsaPrivateKeys fetches secret, compares to cached private keys, resets crypts if needed, and returns keys
-func (r *PaasNSReconciler) getRsaPrivateKeys(
-	ctx context.Context,
-) (*crypt.CryptPrivateKeys, error) {
-	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
+func getRsaPrivateKeys(ctx context.Context, _c client.Client) (*crypt.CryptPrivateKeys, error) {
+	ctx, logger := logging.GetLogComponent(ctx, "webhook_getRsaPrivateKeys")
 	rsaSecret := &corev1.Secret{}
-	cfg := config.GetConfig()
-	namespacedName := cfg.DecryptKeysSecret
+	config := cnf.GetConfig()
+	namespacedName := config.DecryptKeysSecret
 
-	err := r.Get(ctx, types.NamespacedName{
+	err := _c.Get(ctx, types.NamespacedName{
 		Name:      namespacedName.Name,
 		Namespace: namespacedName.Namespace,
 	}, rsaSecret)
@@ -60,17 +66,17 @@ func (r *PaasNSReconciler) getRsaPrivateKeys(
 }
 
 // getRsa returns a crypt.Crypt for a specified paasName
-func (r *PaasNSReconciler) getRsa(ctx context.Context, paasName string) (*crypt.Crypt, error) {
-	if keys, err := r.getRsaPrivateKeys(ctx); err != nil {
+func getRsa(ctx context.Context, _c client.Client, paasName string) (*crypt.Crypt, error) {
+	var c *crypt.Crypt
+	if keys, err := getRsaPrivateKeys(ctx, _c); err != nil {
 		return nil, err
 	} else if rsa, exists := crypts[paasName]; exists {
 		return rsa, nil
-	} else if c, err := crypt.NewCryptFromKeys(*keys, "", paasName); err != nil {
+	} else if c, err = crypt.NewCryptFromKeys(*keys, "", paasName); err != nil {
 		return nil, err
-	} else {
-		logger := log.Ctx(ctx)
-		logger.Debug().Msgf("creating new crypt for %s", paasName)
-		crypts[paasName] = c
-		return c, nil
 	}
+	logger := log.Ctx(ctx)
+	logger.Debug().Msgf("creating new crypt for %s", paasName)
+	crypts[paasName] = c
+	return c, nil
 }

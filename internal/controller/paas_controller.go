@@ -20,6 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -76,8 +78,7 @@ func (r *PaasReconciler) GetPaas(
 	req ctrl.Request,
 ) (paas *v1alpha1.Paas, err error) {
 	paas = &v1alpha1.Paas{}
-	ctx = setLogComponent(ctx, "paas")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "paas")
 	if err = r.Get(ctx, req.NamespacedName, paas); err != nil {
 		return nil, client.IgnoreNotFound(err)
 	}
@@ -98,7 +99,7 @@ func (r *PaasReconciler) GetPaas(
 	// TODO(portly-halicore-76) Move to admission webhook once available
 	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
 	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
-	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, GetConfig()) {
+	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig()) {
 		logger.Error().Msg("no config found")
 		err = r.setErrorCondition(ctx, paas, fmt.Errorf("please reach out to your system administrator as there is no Paasconfig available to reconcile against"))
 		if err != nil {
@@ -174,7 +175,7 @@ func (r *PaasReconciler) GetPaas(
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
 func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	paas := &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
-	ctx, logger := setRequestLogger(ctx, paas, r.Scheme, req)
+	ctx, logger := logging.SetControllerLogger(ctx, paas, r.Scheme, req)
 
 	if paas, err = r.GetPaas(ctx, req); err != nil {
 		// TODO(portly-halicore-76) move to admission webhook once available
