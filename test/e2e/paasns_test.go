@@ -34,6 +34,7 @@ func TestPaasNS(t *testing.T) {
 	testenv.Test(
 		t,
 		features.New("PaasNS").
+			Assess("PaasNS deletion", assertPaasNSDeletion).
 			Setup(createPaasFn(paasNsPaasName, paasSpec)).
 			Assess("PaasNS creation with linked Paas", assertPaasNSCreated).
 			Assess("PaasNS deletion", assertPaasNSDeletion).
