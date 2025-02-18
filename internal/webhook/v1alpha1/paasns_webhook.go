@@ -147,9 +147,9 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
 func (v *PaasNSCustomValidator) ValidateUpdate(
-	ctx context.Context,
-	oldObj,
-	newObj runtime.Object,
+	_ context.Context,
+	_,
+	_ runtime.Object,
 ) (w admission.Warnings, err error) {
 	/*
 		var errs field.ErrorList
@@ -215,7 +215,7 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
-func (v *PaasNSCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *PaasNSCustomValidator) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 
