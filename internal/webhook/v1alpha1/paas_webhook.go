@@ -9,6 +9,7 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -87,6 +88,8 @@ func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Ob
 	return nil, nil
 }
 
+type paasSpecValidator func(context.Context, client.Client, v1alpha1.PaasConfigSpec, *v1alpha1.Paas) ([]*field.Error, error)
+
 func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	var warnings []string
@@ -95,13 +98,17 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	if conf.DecryptKeysSecret.Name == "" {
 		return nil, apierrors.NewInternalError(fmt.Errorf("uninitialized PaasConfig"))
 	}
-	if errs := v.validateCaps(conf, paas.Spec.Capabilities); errs != nil {
-		allErrs = append(allErrs, errs...)
-	}
-	if errs, err := v.validateSecrets(ctx, conf, paas); err != nil {
-		return nil, apierrors.NewInternalError(err)
-	} else if errs != nil {
-		allErrs = append(allErrs, errs...)
+
+	for _, val := range []paasSpecValidator{
+		validateCaps,
+		validateSecrets,
+		validateCustomFields,
+	} {
+		if errs, err := val(ctx, v.client, conf, paas); err != nil {
+			return nil, apierrors.NewInternalError(err)
+		} else if errs != nil {
+			allErrs = append(allErrs, errs...)
+		}
 	}
 
 	warnings = append(warnings, v.validateGroups(paas.Spec.Groups)...)
@@ -120,10 +127,10 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 }
 
 // validateCaps returns an error if any of the passed capabilities is not configured.
-func (v *PaasCustomValidator) validateCaps(conf v1alpha1.PaasConfigSpec, caps v1alpha1.PaasCapabilities) []*field.Error {
+func validateCaps(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
 	var errs []*field.Error
 
-	for name := range caps {
+	for name := range paas.Spec.Capabilities {
 		if _, ok := conf.Capabilities[name]; !ok {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("capabilities"),
@@ -133,12 +140,12 @@ func (v *PaasCustomValidator) validateCaps(conf v1alpha1.PaasConfigSpec, caps v1
 		}
 	}
 
-	return errs
+	return errs, nil
 }
 
-func (v *PaasCustomValidator) validateSecrets(ctx context.Context, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func validateSecrets(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
 	decryptRes := &corev1.Secret{}
-	if err := v.client.Get(ctx, types.NamespacedName{
+	if err := client.Get(ctx, types.NamespacedName{
 		Name:      conf.DecryptKeysSecret.Name,
 		Namespace: conf.DecryptKeysSecret.Namespace,
 	}, decryptRes); err != nil {
@@ -158,6 +165,53 @@ func (v *PaasCustomValidator) validateSecrets(ctx context.Context, conf v1alpha1
 				name,
 				fmt.Sprintf("cannot be decrypted: %s", err),
 			))
+		}
+	}
+
+	return errs, nil
+}
+
+// validateCustomFields ensures that for a given capability in the Paas:
+//   - all custom fields are configured for that capability in the PaasConfig
+//   - all custom fields pass regular expression validation as configured in the PaasConfig if present
+//
+// Returns an internal error if the validation regexp cannot be compiled.
+func validateCustomFields(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+	var errs []*field.Error
+
+	for cname, c := range paas.Spec.Capabilities {
+		for fname := range c.CustomFields {
+			// validateCaps() has already ensured the capability configuration exists
+			fconf, ok := conf.Capabilities[cname].CustomFields[fname]
+
+			if !ok {
+				errs = append(errs, field.Invalid(
+					field.NewPath("spec").
+						Child("capabilities").Key(cname).
+						Child("custom_fields"),
+					fname,
+					"custom field not configured",
+				))
+
+				continue
+			}
+
+			if c.CustomFields[fname] != "" && fconf.Validation != "" {
+				r, err := regexp.Compile(fconf.Validation)
+				if err != nil {
+					return nil, fmt.Errorf("could not parse regular expression for %s custom_field validation: %w", fname, err)
+				}
+
+				if !r.MatchString(c.CustomFields[fname]) {
+					errs = append(errs, field.Invalid(
+						field.NewPath("spec").
+							Child("capabilities").Key(cname).
+							Child("custom_fields").Key(fname),
+						c.CustomFields[fname],
+						fmt.Sprintf("does not match regular expression /%s/", fconf.Validation),
+					))
+				}
+			}
 		}
 	}
 
