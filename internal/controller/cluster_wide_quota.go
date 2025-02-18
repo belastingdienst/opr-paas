@@ -87,7 +87,6 @@ func (r *PaasReconciler) UpdateClusterWideQuotaResources(
 		conf.QuotaSettings.MaxQuotas,
 	))
 	return nil
-
 }
 
 // backendQuota is a code for Creating Quota
