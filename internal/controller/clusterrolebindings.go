@@ -39,9 +39,8 @@ func getClusterRoleBinding(
 		return backendClusterRoleBinding(role), nil
 	} else if err != nil {
 		return nil, err
-	} else {
-		return found, nil
 	}
+	return found, nil
 }
 
 func updateClusterRoleBinding(
@@ -118,7 +117,8 @@ func updateClusterRoleBindingForRemovedSA(
 	var newSubjects []rbac.Subject
 
 	for _, subject := range crb.Subjects {
-		if nsRe.MatchString(subject.Namespace) && (subject.Kind == "ServiceAccount") && (subject.Name == sa || sa == "") {
+		if nsRe.MatchString(subject.Namespace) && (subject.Kind == "ServiceAccount") &&
+			(subject.Name == sa || sa == "") {
 			// Subject is this sa, don't keep.
 			changed = true
 			continue
@@ -162,7 +162,7 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 	paas *v1alpha1.Paas,
 ) (err error) {
 	var crb *rbac.ClusterRoleBinding
-	cap, capExists := paas.Spec.Capabilities[paasns.Name]
+	capability, capExists := paas.Spec.Capabilities[paasns.Name]
 	capConfig, capConfigExists := config.GetConfig().Capabilities[paasns.Name]
 	if !(capConfigExists || capExists) {
 		return
@@ -170,7 +170,7 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 
 	ctx, _ = logging.GetLogComponent(ctx, "clusterrolebinding")
 
-	permissions := capConfig.ExtraPermissions.AsConfigRolesSas(cap.WithExtraPermissions())
+	permissions := capConfig.ExtraPermissions.AsConfigRolesSas(capability.WithExtraPermissions())
 	permissions.Merge(capConfig.DefaultPermissions.AsConfigRolesSas(true))
 	for role, sas := range permissions {
 		if crb, err = getClusterRoleBinding(r.Client, ctx, role); err != nil {

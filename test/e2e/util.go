@@ -46,7 +46,14 @@ func waitForDefaultOpts(ctx context.Context, condition apimachinerywait.Conditio
 }
 
 // getOrFail retrieves a resource from k8s, failing the test if there is an error.
-func getOrFail[T k8s.Object](ctx context.Context, name string, namespace string, obj T, t *testing.T, cfg *envconf.Config) T {
+func getOrFail[T k8s.Object](
+	ctx context.Context,
+	name string,
+	namespace string,
+	obj T,
+	t *testing.T,
+	cfg *envconf.Config,
+) T {
 	if err := cfg.Client().Resources().Get(ctx, name, namespace, obj); err != nil {
 		t.Fatalf("Failed to get resource %s: %v", name, err)
 	}
@@ -55,7 +62,14 @@ func getOrFail[T k8s.Object](ctx context.Context, name string, namespace string,
 }
 
 // getAndFail retrieves a resource from k8s, failing the test if it was successfully retrieved.
-func failWhenExists[T k8s.Object](ctx context.Context, name string, namespace string, obj T, t *testing.T, cfg *envconf.Config) {
+func failWhenExists[T k8s.Object](
+	ctx context.Context,
+	name string,
+	namespace string,
+	obj T,
+	t *testing.T,
+	cfg *envconf.Config,
+) {
 	if err := cfg.Client().Resources().Get(ctx, name, namespace, obj); err == nil {
 		t.Fatalf("Resource %s should not be successfully retrieved", name)
 	}
@@ -71,7 +85,8 @@ func listOrFail[L k8s.ObjectList](ctx context.Context, namespace string, obj L, 
 }
 
 // getApplicationSetListEntries returns the parsed elements of all list generators
-// (https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-List/) present in the passed ApplicationSet.
+// (https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-List/)
+// which are present in the passed ApplicationSet.
 func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) ([]map[string]string, error) {
 	entries := make([]map[string]string, 0)
 
@@ -93,19 +108,26 @@ func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) ([]map[st
 }
 
 // withStatus represents a k8s object with a `.status.conditions` slice field of conditions.
-// This is a workaround to match our custom resource types; all our custom resource types have the same `.status.conditions` fields,
-// but Go generics do not currently allow accessing shared struct fields via generic types. This is apparently a feature slated for
-// Go 2. (https://github.com/golang/go/issues/48522#issuecomment-924380147)
+// This is a workaround to match our custom resource types; all our custom resource types have the same
+// `.status.conditions` fields, but Go generics do not currently allow accessing shared struct fields via generic types.
+// This is apparently a feature slated for Go 2. (https://github.com/golang/go/issues/48522#issuecomment-924380147)
 type withStatus interface {
 	k8s.Object
 	GetConditions() []metav1.Condition
 }
 
-// waitForStatus accepts a k8s object with a `.status.conditions` block, and waits until the resource has been updated and status
-// conditions have been matched as per the passed function. Only conditions matching the current generation of the resource are
-// passed to the match function. `oldGeneration` must contain the generation of the resource prior to its requested update. The
-// `generation` of a resource only updates on changes to its spec. For new resources, use 0.
-func waitForStatus(ctx context.Context, cfg *envconf.Config, obj withStatus, oldGeneration int64, match func(conds []metav1.Condition) bool) error {
+// waitForStatus accepts a k8s object with a `.status.conditions` block, and waits until the resource has been updated
+// and status conditions have been matched as per the passed function. Only conditions matching the current generation
+// of the resource are passed to the match function. `oldGeneration` must contain the generation of the resource prior
+// to its requested update. The `generation` of a resource only updates on changes to its spec.
+// For new resources, use 0.
+func waitForStatus(
+	ctx context.Context,
+	cfg *envconf.Config,
+	obj withStatus,
+	oldGeneration int64,
+	match func(conds []metav1.Condition) bool,
+) error {
 	var fetched k8s.Object
 	waitCond := conditions.New(cfg.Client().Resources()).
 		ResourceMatch(obj, func(object k8s.Object) bool {
@@ -128,14 +150,25 @@ func waitForStatus(ctx context.Context, cfg *envconf.Config, obj withStatus, old
 		})
 
 	if err := waitForDefaultOpts(ctx, waitCond); err != nil {
-		return fmt.Errorf("failed waiting for %s to be reconciled: %w and has status block: %v", fetched.GetName(), err, fetched.(withStatus).GetConditions())
+		return fmt.Errorf(
+			"failed waiting for %s to be reconciled: %w and has status block: %v",
+			fetched.GetName(),
+			err,
+			fetched.(withStatus).GetConditions(),
+		)
 	}
 
 	return nil
 }
 
 // waitForCondition blocks until the given status condition is true.
-func waitForCondition(ctx context.Context, cfg *envconf.Config, obj withStatus, oldGeneration int64, readyCondition string) error {
+func waitForCondition(
+	ctx context.Context,
+	cfg *envconf.Config,
+	obj withStatus,
+	oldGeneration int64,
+	readyCondition string,
+) error {
 	return waitForStatus(ctx, cfg, obj, oldGeneration, func(conds []metav1.Condition) bool {
 		return meta.IsStatusConditionTrue(conds, readyCondition)
 	})

@@ -34,6 +34,7 @@ import (
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/crypt"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -60,14 +61,18 @@ func setupPaasSys() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Set up private key
-	privkey, err := rsa.GenerateKey(rand.Reader, 4096)
+	privkey, err := rsa.GenerateKey(rand.Reader, crypt.AESKeySize)
 	Expect(err).NotTo(HaveOccurred())
 	err = k8sClient.Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "keys",
 			Namespace: "paas-system",
 		},
-		Data: map[string][]byte{"privatekey0": pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privkey)})},
+		Data: map[string][]byte{
+			"privatekey0": pem.EncodeToMemory(
+				&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privkey)},
+			),
+		},
 	})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -93,7 +98,10 @@ var _ = BeforeSuite(func() {
 		fmt.Sprintf("*-%s-%s", runtime.GOOS, runtime.GOARCH)))
 	slices.Sort(binDirs)
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "manifests", "crd", "bases"), filepath.Join("..", "..", "test", "e2e", "manifests", "openshift")},
+		CRDDirectoryPaths: []string{
+			filepath.Join("..", "..", "manifests", "crd", "bases"),
+			filepath.Join("..", "..", "test", "e2e", "manifests", "openshift"),
+		},
 		ErrorIfCRDPathMissing: true,
 
 		// The BinaryAssetsDirectory is only required if you want to run the tests directly

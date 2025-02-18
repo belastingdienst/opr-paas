@@ -92,16 +92,16 @@ func v1Encrypt(c *gin.Context) {
 	}
 	secret := []byte(input.Secret)
 	if _, err := ssh.ParsePrivateKey(secret); err == nil {
-		if encrypted, err := getRsa(input.PaasName).Encrypt(secret); err != nil {
+		encrypted, err := getRsa(input.PaasName).Encrypt(secret)
+		if err != nil {
 			return
-		} else {
-			output := RestEncryptResult{
-				PaasName:  input.PaasName,
-				Encrypted: encrypted,
-				Valid:     true,
-			}
-			c.IndentedJSON(http.StatusOK, output)
 		}
+		output := RestEncryptResult{
+			PaasName:  input.PaasName,
+			Encrypted: encrypted,
+			Valid:     true,
+		}
+		c.IndentedJSON(http.StatusOK, output)
 	} else {
 		output := RestEncryptResult{
 			PaasName:  input.PaasName,
@@ -122,7 +122,8 @@ func v1CheckPaas(c *gin.Context) {
 	rsa := getRsa(input.Paas.Name)
 	err := CheckPaas(rsa, &input.Paas)
 	if err != nil {
-		if strings.Contains(err.Error(), "unable to decrypt data with any of the private keys") || strings.Contains(err.Error(), "base64") {
+		if strings.Contains(err.Error(), "unable to decrypt data with any of the private keys") ||
+			strings.Contains(err.Error(), "base64") {
 			output := RestCheckPaasResult{
 				PaasName:  input.Paas.Name,
 				Decrypted: false,
@@ -130,18 +131,16 @@ func v1CheckPaas(c *gin.Context) {
 			}
 			c.IndentedJSON(http.StatusUnprocessableEntity, output)
 			return
-		} else {
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
 		}
-	} else {
-		output := RestCheckPaasResult{
-			PaasName:  input.Paas.Name,
-			Decrypted: true,
-			Error:     "",
-		}
-		c.IndentedJSON(http.StatusOK, output)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
 	}
+	output := RestCheckPaasResult{
+		PaasName:  input.Paas.Name,
+		Decrypted: true,
+		Error:     "",
+	}
+	c.IndentedJSON(http.StatusOK, output)
 }
 
 // version returns the operator version this webservice is built for
@@ -247,12 +246,13 @@ func buildCSP(externalHosts string) string {
 	objectSrc := "object-src 'none'"
 
 	// If we have a non-empty external host, append it to each directive that needs it.
+	toAppend := " " + externalHosts
 	if externalHosts != "" {
-		scriptSrc += " " + externalHosts
-		styleSrc += " " + externalHosts
-		imgSrc += " " + externalHosts
-		connectSrc += " " + externalHosts
-		fontSrc += " " + externalHosts
+		scriptSrc += toAppend
+		styleSrc += toAppend
+		imgSrc += toAppend
+		connectSrc += toAppend
+		fontSrc += toAppend
 	}
 
 	// Combine them into one directive string

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	apiv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -65,14 +66,18 @@ func setupPaasSys() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Set up private key
-	privkey, err := rsa.GenerateKey(rand.Reader, 4096)
+	privkey, err := rsa.GenerateKey(rand.Reader, crypt.AESKeySize)
 	Expect(err).NotTo(HaveOccurred())
 	err = k8sClient.Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "keys",
 			Namespace: "paas-system",
 		},
-		Data: map[string][]byte{"privatekey0": pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privkey)})},
+		Data: map[string][]byte{
+			"privatekey0": pem.EncodeToMemory(
+				&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privkey)},
+			),
+		},
 	})
 	Expect(err).NotTo(HaveOccurred())
 

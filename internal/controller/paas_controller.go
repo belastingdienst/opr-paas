@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -54,6 +53,7 @@ type Reconciler interface {
 	Delete(context.Context, client.Object, ...client.DeleteOption) error
 }
 
+//revive:disable:line-length-limit
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paas,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paas/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paas/finalizers,verbs=update
@@ -65,6 +65,7 @@ type Reconciler interface {
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings;clusterrolebindings,verbs=create;delete;get;list;patch;update;watch
 // It is advised to reduce the scope of this permission by stating the resourceNames of the roles you would like Paas to bind to, in your deployment role.yaml
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=bind
+//revive:enable:line-length-limit
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -84,7 +85,16 @@ func (r *PaasReconciler) GetPaas(
 	}
 
 	// Started reconciling, reset status
-	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{Type: v1alpha1.TypeReadyPaas, Status: metav1.ConditionUnknown, ObservedGeneration: paas.Generation, Reason: "Reconciling", Message: "Starting reconciliation"})
+	meta.SetStatusCondition(
+		&paas.Status.Conditions,
+		metav1.Condition{
+			Type:               v1alpha1.TypeReadyPaas,
+			Status:             metav1.ConditionUnknown,
+			ObservedGeneration: paas.Generation,
+			Reason:             "Reconciling",
+			Message:            "Starting reconciliation",
+		},
+	)
 	meta.RemoveStatusCondition(&paas.Status.Conditions, v1alpha1.TypeHasErrorsPaas)
 	if err = r.Status().Update(ctx, paas); err != nil {
 		logger.Err(err).Msg("failed to update Paas status")
@@ -98,15 +108,23 @@ func (r *PaasReconciler) GetPaas(
 
 	// TODO(portly-halicore-76) Move to admission webhook once available
 	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
-	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
+	// this is only an issue when object is being removed, finalizers will not be removed
+	// causing the object to be in limbo.
 	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig()) {
-		logger.Error().Msg("no config found")
-		err = r.setErrorCondition(ctx, paas, fmt.Errorf("please reach out to your system administrator as there is no Paasconfig available to reconcile against"))
+		logger.Error().Msg(noConfigFoundMsg)
+		err = r.setErrorCondition(
+			ctx,
+			paas,
+			errors.New(
+				//revive:disable-next-line
+				"please reach out to your system administrator as there is no Paasconfig available to reconcile against",
+			),
+		)
 		if err != nil {
 			logger.Err(err).Msg("failed to update Paas status")
 			return nil, err
 		}
-		return nil, fmt.Errorf("no config found")
+		return nil, errors.New(noConfigFoundMsg)
 	}
 
 	// Add finalizer for this CR
@@ -114,7 +132,7 @@ func (r *PaasReconciler) GetPaas(
 		logger.Info().Msg("paas has no finalizer yet")
 		if ok := controllerutil.AddFinalizer(paas, paasFinalizer); !ok {
 			logger.Err(err).Msg("failed to add finalizer")
-			return nil, fmt.Errorf("failed to add finalizer")
+			return nil, errors.New("failed to add finalizer")
 		}
 		if err := r.Update(ctx, paas); err != nil {
 			logger.Err(err).Msg("error updating Paas")
@@ -180,8 +198,8 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	if paas, err = r.GetPaas(ctx, req); err != nil {
 		// TODO(portly-halicore-76) move to admission webhook once available
 		// Don't requeue that often when no config is found
-		if strings.Contains(err.Error(), "no config found") {
-			return ctrl.Result{RequeueAfter: time.Minute * 10}, nil
+		if strings.Contains(err.Error(), noConfigFoundMsg) {
+			return ctrl.Result{RequeueAfter: requeueTimeout}, nil
 		}
 		logger.Err(err).Msg("could not get Paas from k8s")
 		return ctrl.Result{}, err
@@ -271,7 +289,7 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			))).
 		Watches(
 			&v1alpha1.PaasConfig{},
-			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, _ client.Object) []reconcile.Request {
 				// Enqueue all Paas objects
 				var reqs []reconcile.Request
 				var paasList v1alpha1.PaasList

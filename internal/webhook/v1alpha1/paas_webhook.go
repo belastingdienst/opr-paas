@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -35,6 +36,7 @@ func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
 
 // NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
 // Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
+// revive:disable-line
 // +kubebuilder:webhook:path=/validate-cpet-belastingdienst-nl-v1alpha1-paas,mutating=false,failurePolicy=fail,sideEffects=None,groups=cpet.belastingdienst.nl,resources=paas,verbs=create;update,versions=v1alpha1,name=vpaas-v1alpha1.kb.io,admissionReviewVersions=v1
 
 // PaasCustomValidator struct is responsible for validating the Paas resource
@@ -62,7 +64,10 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
-func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *PaasCustomValidator) ValidateUpdate(
+	ctx context.Context,
+	_, newObj runtime.Object,
+) (admission.Warnings, error) {
 	paas, ok := newObj.(*v1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object for the newObj but got %T", newObj)
@@ -93,7 +98,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	conf := config.GetConfig()
 	// Check for uninitialized config
 	if conf.DecryptKeysSecret.Name == "" {
-		return nil, apierrors.NewInternalError(fmt.Errorf("uninitialized PaasConfig"))
+		return nil, apierrors.NewInternalError(errors.New("uninitialized PaasConfig"))
 	}
 	if errs := v.validateCaps(conf, paas.Spec.Capabilities); errs != nil {
 		allErrs = append(allErrs, errs...)
@@ -110,17 +115,19 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 		return nil, nil
 	} else if len(allErrs) == 0 {
 		return warnings, nil
-	} else {
-		return warnings, apierrors.NewInvalid(
-			schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "Paas"},
-			paas.Name,
-			allErrs,
-		)
 	}
+	return warnings, apierrors.NewInvalid(
+		schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "Paas"},
+		paas.Name,
+		allErrs,
+	)
 }
 
 // validateCaps returns an error if any of the passed capabilities is not configured.
-func (v *PaasCustomValidator) validateCaps(conf v1alpha1.PaasConfigSpec, caps v1alpha1.PaasCapabilities) []*field.Error {
+func (v *PaasCustomValidator) validateCaps(
+	conf v1alpha1.PaasConfigSpec,
+	caps v1alpha1.PaasCapabilities,
+) []*field.Error {
 	var errs []*field.Error
 
 	for name := range caps {
@@ -136,7 +143,11 @@ func (v *PaasCustomValidator) validateCaps(conf v1alpha1.PaasConfigSpec, caps v1
 	return errs
 }
 
-func (v *PaasCustomValidator) validateSecrets(ctx context.Context, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func (v *PaasCustomValidator) validateSecrets(
+	ctx context.Context,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
 	decryptRes := &corev1.Secret{}
 	if err := v.client.Get(ctx, types.NamespacedName{
 		Name:      conf.DecryptKeysSecret.Name,
@@ -151,7 +162,7 @@ func (v *PaasCustomValidator) validateSecrets(ctx context.Context, conf v1alpha1
 	rsa, _ := crypt.NewCryptFromKeys(keys, "", paas.Name)
 
 	var errs []*field.Error
-	for name, secret := range paas.Spec.SshSecrets {
+	for name, secret := range paas.Spec.SSHSecrets {
 		if _, err := rsa.Decrypt(secret); err != nil {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("sshSecrets"),
@@ -169,7 +180,9 @@ func (v *PaasCustomValidator) validateGroups(groups v1alpha1.PaasGroups) (warnin
 	for key, grp := range groups {
 		if len(grp.Query) > 0 && len(grp.Users) > 0 {
 			warnings = append(warnings, fmt.Sprintf(
-				"%s contains both users and query, the users will be ignored", field.NewPath("spec").Child("groups").Key(key)))
+				"%s contains both users and query, the users will be ignored",
+				field.NewPath("spec").Child("groups").Key(key),
+			))
 		}
 	}
 

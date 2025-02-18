@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -43,13 +44,13 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 		paasAsBytes, err := os.ReadFile(fileName)
 		paasAsString := string(paasAsBytes)
 		if err != nil {
-			return fmt.Errorf("could not read file into string")
+			return errors.New("could not read file into string")
 		}
 
 		// Read paas from file
 		paas, format, err := readPaasFile(fileName)
 		if err != nil {
-			return fmt.Errorf("could not read file")
+			return errors.New("could not read file")
 		}
 
 		paasName := paas.ObjectMeta.Name
@@ -63,39 +64,61 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 			return err
 		}
 
-		for key, secret := range paas.Spec.SshSecrets {
+		for key, secret := range paas.Spec.SSHSecrets {
 			reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 			if err != nil {
 				errNum += 1
-				logrus.Errorf("failed to decrypt/reencrypt %s.spec.sshSecrets[%s] in %s: %v", paasName, key, fileName, err)
+				logrus.Errorf(
+					"failed to decrypt/reencrypt %s.spec.sshSecrets[%s] in %s: %v",
+					paasName,
+					key,
+					fileName,
+					err,
+				)
 				continue
 			}
 
-			paas.Spec.SshSecrets[key] = reencrypted
+			paas.Spec.SSHSecrets[key] = reencrypted
 			// Use replaceAll as same secret can occur multiple times and use TrimSpace to prevent removal of newlines.
 			paasAsString = strings.ReplaceAll(paasAsString, strings.TrimSpace(secret), reencrypted)
 			logrus.Infof("successfully reencrypted %s.spec.sshSecrets[%s] in file %s", paasName, key, fileName)
 		}
 
 		for capName, cap := range paas.Spec.Capabilities {
-			for key, secret := range cap.GetSshSecrets() {
+			for key, secret := range cap.GetSSHSecrets() {
 				reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 				if err != nil {
 					errNum += 1
-					logrus.Errorf("failed to decrypt/reencrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %v", paasName, capName, key, fileName, err)
+					logrus.Errorf(
+						"failed to decrypt/reencrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %v",
+						paasName,
+						capName,
+						key,
+						fileName,
+						err,
+					)
 					continue
 				}
 
-				cap.SetSshSecret(key, reencrypted)
-				// Use replaceAll as same secret can occur multiple times and use TrimSpace to prevent removal of newlines.
+				cap.SetSSHSecret(key, reencrypted)
+				// Use replaceAll as same secret can occur multiple times
+				// Use TrimSpace to prevent removal of newlines.
 				paasAsString = strings.ReplaceAll(paasAsString, strings.TrimSpace(secret), reencrypted)
-				logrus.Infof("successfully reencrypted %s.spec.capabilities[%s].sshSecrets[%s] in file %s", paasName, capName, key, fileName)
+				logrus.Infof(
+					"successfully reencrypted %s.spec.capabilities[%s].sshSecrets[%s] in file %s",
+					paasName,
+					capName,
+					key,
+					fileName,
+				)
 			}
 		}
 
 		// Write paas to file
-		if outputFormat != "auto" {
-			format = outputFormat
+		if outputFormat == "json" {
+			format = typeJSON
+		} else if outputFormat == "yaml" {
+			format = typeYAML
 		}
 
 		if outputFormat == "preserved" {
@@ -129,43 +152,51 @@ func reencryptCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "reencrypt [command options]",
 		Short: "reencrypt using old private key to decrypt and new public key to encrypt",
+		//revive:disable-next-line
 		Long: `reencrypt can parse yaml/json files with paas objects, decrypt the sshSecrets with the previous private key,
 reencrypt with the new public key and write back the paas to the file in either yaml or json format.`,
-		RunE: func(command *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			if debug {
 				logrus.SetLevel(logrus.DebugLevel)
 			}
-			if files, err := utils.PathToFileList(args); err != nil {
+			files, err := utils.PathToFileList(args)
+			if err != nil {
 				return err
-			} else {
-				return reencryptFiles(privateKeyFiles, publicKeyFile, outputFormat, files)
 			}
+			return reencryptFiles(privateKeyFiles, publicKeyFile, outputFormat, files)
 		},
-		Args:    cobra.MinimumNArgs(1),
+		Args: cobra.MinimumNArgs(1),
+		//revive:disable-next-line
 		Example: `crypttool reencrypt --privateKeyFiles "/tmp/priv" --publicKeyFile "/tmp/pub" [file or dir] ([file or dir]...)`,
 	}
 
 	flags := cmd.Flags()
 	flags.StringVar(&privateKeyFiles, "privateKeyFiles", "", "The file to read the private key from")
 	flags.StringVar(&publicKeyFile, "publicKeyFile", "", "The file to read the public key from")
-	flags.StringVar(&outputFormat, "outputFormat", "auto", "The outputformat for writing a paas, either yaml (machine formatted), json (machine formatted), auto (which will use input format as output, machine formatted) or preserved (which will use the input format and preserve the original syntax including for example comments) ")
+	flags.StringVar(
+		&outputFormat,
+		argNameOutputFormat,
+		"auto",
+		//revive:disable-next-line
+		"The outputformat for writing a paas, either yaml (machine formatted), json (machine formatted), auto (which will use input format as output, machine formatted) or preserved (which will use the input format and preserve the original syntax including for example comments) ",
+	)
 
-	if err := viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles")); err != nil {
+	if err := viper.BindPFlag(argNamePrivateKeyFiles, flags.Lookup(argNamePrivateKeyFiles)); err != nil {
 		logrus.Errorf("key binding for privatekeyfiles failed: %v", err)
 	}
-	if err := viper.BindPFlag("publicKeyFile", flags.Lookup("publicKeyFile")); err != nil {
+	if err := viper.BindPFlag(argNamePublicKeyFile, flags.Lookup(argNamePublicKeyFile)); err != nil {
 		logrus.Errorf("key binding for publickeyfile failed: %v", err)
 	}
-	if err := viper.BindPFlag("outputFormat", flags.Lookup("outputFormat")); err != nil {
+	if err := viper.BindPFlag(argNameOutputFormat, flags.Lookup(argNameOutputFormat)); err != nil {
 		logrus.Errorf("key binding at output step failed: %v", err)
 	}
-	if err := viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH"); err != nil {
+	if err := viper.BindEnv(argNamePrivateKeyFiles, "PAAS_PRIVATE_KEY_PATH"); err != nil {
 		logrus.Errorf("private key to env var binding failed: %v", err)
 	}
-	if err := viper.BindEnv("publicKeyFile", "PAAS_PUBLIC_KEY_PATH"); err != nil {
+	if err := viper.BindEnv(argNamePublicKeyFile, "PAAS_PUBLIC_KEY_PATH"); err != nil {
 		logrus.Errorf("public key to env var binding failed: %v", err)
 	}
-	if err := viper.BindEnv("outputFormat", "PAAS_OUTPUT_FORMAT"); err != nil {
+	if err := viper.BindEnv(argNameOutputFormat, "PAAS_OUTPUT_FORMAT"); err != nil {
 		logrus.Errorf("key binding at output step failed: %v", err)
 	}
 

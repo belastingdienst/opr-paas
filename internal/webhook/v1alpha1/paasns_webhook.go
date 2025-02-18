@@ -27,9 +27,10 @@ func SetupPaasNsWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
+//revive:disable-line
 // +kubebuilder:webhook:path=/validate-cpet-belastingdienst-nl-v1alpha1-paasns,mutating=false,failurePolicy=fail,sideEffects=None,groups=cpet.belastingdienst.nl,resources=paasns,verbs=create;update,versions=v1alpha1,name=vpaasns-v1alpha1.kb.io,admissionReviewVersions=v1
 
-// PaasNSCustomValidator struct is responsible for validating the PaasNS resource when it is created, updated, or deleted.
+// PaasNSCustomValidator struct is used for validating the PaasNS resource when it is created, updated, or deleted.
 // +kubebuilder:object:generate=false
 type PaasNSCustomValidator struct {
 	client client.Client
@@ -80,7 +81,10 @@ func nssFromPaas(ctx context.Context, c client.Client, paas *v1alpha1.Paas) (map
 }
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
-func (v *PaasNSCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (w admission.Warnings, err error) {
+func (v *PaasNSCustomValidator) ValidateCreate(
+	ctx context.Context,
+	obj runtime.Object,
+) (w admission.Warnings, err error) {
 	var errs field.ErrorList
 	paasns, ok := obj.(*v1alpha1.PaasNS)
 	ctx, logger := logging.SetWebhookLogger(ctx, paasns)
@@ -132,7 +136,7 @@ func (v *PaasNSCustomValidator) ValidateCreate(ctx context.Context, obj runtime.
 	getRsaFunc := func() (cr *crypt.Crypt, err error) {
 		return getRsa(ctx, v.client, paasns.Spec.Paas)
 	}
-	errs = append(errs, validated.compareSecrets(paasns.Spec.SshSecrets, getRsaFunc)...)
+	errs = append(errs, validated.compareSecrets(paasns.Spec.SSHSecrets, getRsaFunc)...)
 
 	if len(errs) == 0 {
 		return nil, nil
@@ -142,7 +146,11 @@ func (v *PaasNSCustomValidator) ValidateCreate(ctx context.Context, obj runtime.
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
-func (v *PaasNSCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (w admission.Warnings, err error) {
+func (v *PaasNSCustomValidator) ValidateUpdate(
+	_ context.Context,
+	_,
+	_ runtime.Object,
+) (w admission.Warnings, err error) {
 	/*
 		var errs field.ErrorList
 		oldPaasns, ok := oldObj.(*v1alpha1.PaasNS)
@@ -187,7 +195,7 @@ func (v *PaasNSCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newO
 		}
 
 		// Err when an sshSecret can't be decrypted
-		if !reflect.DeepEqual(oldPaasns.Spec.SshSecrets, newPaasns.Spec.SshSecrets) {
+		if !reflect.DeepEqual(oldPaasns.Spec.SSHSecrets, newPaasns.Spec.SSHSecrets) {
 			var validated validatedSecrets
 			// We don't have to validate what is in the Paas (already validated by Paas webhook)
 			validated.appendFromPaas(*paas)
@@ -196,7 +204,7 @@ func (v *PaasNSCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newO
 			getRsaFunc := func() (cr *crypt.Crypt, err error) {
 				return getRsa(ctx, v.client, newPaasns.Spec.Paas)
 			}
-			errs = append(errs, validated.compareSecrets(newPaasns.Spec.SshSecrets, getRsaFunc)...)
+			errs = append(errs, validated.compareSecrets(newPaasns.Spec.SSHSecrets, getRsaFunc)...)
 		}
 
 		if len(errs) > 0 {
@@ -207,7 +215,7 @@ func (v *PaasNSCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newO
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
-func (v *PaasNSCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *PaasNSCustomValidator) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 

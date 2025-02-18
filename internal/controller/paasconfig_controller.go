@@ -8,9 +8,9 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
-	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,7 +67,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	errResult := reconcile.Result{
 		Requeue:      true,
-		RequeueAfter: time.Second * 10,
+		RequeueAfter: requeueTimeout,
 	}
 
 	if err := pcr.Get(ctx, req.NamespacedName, cfg); err != nil {
@@ -79,7 +79,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	// Add finalizer for this CR
 	if !controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
 		if ok := controllerutil.AddFinalizer(cfg, paasconfigFinalizer); !ok {
-			return errResult, fmt.Errorf("failed to add finalizer")
+			return errResult, errors.New("failed to add finalizer")
 		}
 		if err := pcr.Update(ctx, cfg); err != nil {
 			logger.Err(err).Msg("error updating PaasConfig")
@@ -103,7 +103,11 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 				return errResult, nil
 			}
 			// Reset Config if this was the active config
-			if meta.IsStatusConditionPresentAndEqual(cfg.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) {
+			if meta.IsStatusConditionPresentAndEqual(
+				cfg.Status.Conditions,
+				v1alpha1.TypeActivePaasConfig,
+				metav1.ConditionTrue,
+			) {
 				config.SetConfig(v1alpha1.PaasConfig{})
 			}
 
@@ -111,7 +115,10 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			meta.SetStatusCondition(&cfg.Status.Conditions, metav1.Condition{
 				Type:   v1alpha1.TypeDegradedPaasConfig,
 				Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: cfg.Generation,
-				Message: fmt.Sprintf("Finalizer operations for PaasConfig %s name were successfully accomplished", cfg.Name),
+				Message: fmt.Sprintf(
+					"Finalizer operations for PaasConfig %s name were successfully accomplished",
+					cfg.Name,
+				),
 			})
 
 			if err := pcr.Status().Update(ctx, cfg); err != nil {
@@ -120,7 +127,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 			}
 
 			if ok := controllerutil.RemoveFinalizer(cfg, paasconfigFinalizer); !ok {
-				return errResult, fmt.Errorf("failed to add finalizer")
+				return errResult, errors.New("failed to add finalizer")
 			}
 			if err := pcr.Update(ctx, cfg); err != nil {
 				logger.Err(err).Msg("error updating PaasConfig")

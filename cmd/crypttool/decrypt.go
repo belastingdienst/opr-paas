@@ -7,7 +7,7 @@ See LICENSE.md for details.
 package main
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/sirupsen/logrus"
@@ -23,9 +23,9 @@ func decryptCmd() *cobra.Command {
 		Use:   "decrypt [command options]",
 		Short: "decrypt using private key and print results",
 		Long:  `decrypt using private key and print results`,
-		RunE: func(command *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			if paasName == "" {
-				return fmt.Errorf("a paas must be set with eith --paas or environment variabele PAAS_NAME")
+				return errors.New("a paas must be set with with --paas or environment variabele PAAS_NAME")
 			}
 			return crypt.DecryptFromStdin([]string{privateKeyFiles}, paasName)
 		},
@@ -33,19 +33,19 @@ func decryptCmd() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.StringVar(&privateKeyFiles, "privateKeyFiles", "", "The file to read the private key from")
-	flags.StringVar(&paasName, "paas", "", "The paas this data is to be encrypted for")
+	flags.StringVar(&privateKeyFiles, argNamePrivateKeyFiles, "", "The file to read the private key from")
+	flags.StringVar(&paasName, argNamePaas, "", "The paas this data is to be encrypted for")
 
-	if err := viper.BindPFlag("privateKeyFiles", flags.Lookup("privateKeyFiles")); err != nil {
+	if err := viper.BindPFlag(argNamePrivateKeyFiles, flags.Lookup(argNamePrivateKeyFiles)); err != nil {
 		logrus.Errorf("error binding private keys: %v", err)
 	}
-	if err := viper.BindPFlag("paas", flags.Lookup("paas")); err != nil {
+	if err := viper.BindPFlag(argNamePaas, flags.Lookup(argNamePaas)); err != nil {
 		logrus.Errorf("error binding paas key: %v", err)
 	}
-	if err := viper.BindEnv("privateKeyFiles", "PAAS_PRIVATE_KEY_PATH"); err != nil {
+	if err := viper.BindEnv(argNamePrivateKeyFiles, "PAAS_PRIVATE_KEY_PATH"); err != nil {
 		logrus.Errorf("error binding paas private keys: %v", err)
 	}
-	if err := viper.BindEnv("paas", "PAAS_NAME"); err != nil {
+	if err := viper.BindEnv(argNamePaas, "PAAS_NAME"); err != nil {
 		logrus.Errorf("error binding PAAS_NAME: %v", err)
 	}
 

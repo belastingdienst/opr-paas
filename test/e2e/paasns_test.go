@@ -103,8 +103,22 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Equal(t, linkedPaas, thisPaas)
 
 	// check that there are no errors
-	assert.True(t, meta.IsStatusConditionPresentAndEqual(fetchedPaasNS.Status.Conditions, api.TypeReadyPaasNs, metav1.ConditionTrue))
-	assert.True(t, meta.IsStatusConditionPresentAndEqual(fetchedPaasNS.Status.Conditions, api.TypeHasErrorsPaasNs, metav1.ConditionFalse))
+	assert.True(
+		t,
+		meta.IsStatusConditionPresentAndEqual(
+			fetchedPaasNS.Status.Conditions,
+			api.TypeReadyPaasNs,
+			metav1.ConditionTrue,
+		),
+	)
+	assert.True(
+		t,
+		meta.IsStatusConditionPresentAndEqual(
+			fetchedPaasNS.Status.Conditions,
+			api.TypeHasErrorsPaasNs,
+			metav1.ConditionFalse,
+		),
+	)
 	foundCondition := meta.FindStatusCondition(paasNs.Status.Conditions, api.TypeHasErrorsPaasNs)
 	assert.Equal(t, fmt.Sprintf("Reconciled (%s) successfully", paasNsName), foundCondition.Message)
 
@@ -124,7 +138,12 @@ func pnsCreatePaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paa
 	require.NoError(t, waitForDefaultOpts(ctx, waitUntilPaasNSExists))
 }
 
-func pnsGetPaasNS(ctx context.Context, cfg *envconf.Config, paasnsName string, namespace string) (paasns api.PaasNS, err error) {
+func pnsGetPaasNS(
+	ctx context.Context,
+	cfg *envconf.Config,
+	paasnsName string,
+	namespace string,
+) (paasns api.PaasNS, err error) {
 	err = cfg.Client().Resources().Get(ctx, paasnsName, namespace, &paasns)
 	return paasns, err
 }

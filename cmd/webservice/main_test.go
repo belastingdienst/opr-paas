@@ -23,6 +23,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const allowedOriginsVal = "*"
+
 // Helper function for testing
 func performRequest(r http.Handler, method, path string) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest(method, path, nil)
@@ -34,7 +36,7 @@ func performRequest(r http.Handler, method, path string) *httptest.ResponseRecor
 
 func Test_getConfig(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	// Reset config if any test before set config
 	_config = nil
@@ -66,7 +68,7 @@ func Test_getConfig(t *testing.T) {
 
 func Test_getRSA(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	// Reset config if any test before set config
 	_config = nil
@@ -133,7 +135,7 @@ func Test_getRSA(t *testing.T) {
 
 func TestNoSniffIsSet(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	router := SetupRouter()
 	w := performRequest(router, "GET", "/version")
@@ -143,7 +145,7 @@ func TestNoSniffIsSet(t *testing.T) {
 
 func Test_version(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	expected := gin.H{
 		"version": v.PaasVersion,
@@ -164,7 +166,7 @@ func Test_version(t *testing.T) {
 
 func Test_healthz(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	expected := gin.H{
 		"message": "healthy",
@@ -185,7 +187,7 @@ func Test_healthz(t *testing.T) {
 
 func Test_readyz(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	expected := gin.H{
 		"message": "ready",
@@ -206,7 +208,7 @@ func Test_readyz(t *testing.T) {
 
 func Test_v1CheckPaas(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	// Reset config if any test before set config
 	_config = nil
@@ -244,26 +246,29 @@ func Test_v1CheckPaas(t *testing.T) {
 				Name: "testPaas",
 			},
 			Spec: v1alpha1.PaasSpec{
-				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+				SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
 				Capabilities: v1alpha1.PaasCapabilities{
-					"sso": v1alpha1.PaasCapability{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted}},
+					"sso": v1alpha1.PaasCapability{
+						Enabled:    true,
+						SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+					},
 				},
 			},
 		},
 	}
-	checkPaasJson, _ := json.Marshal(validRequest)
+	checkPaasJSON, _ := json.Marshal(validRequest)
 
-	req, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(checkPaasJson)))
+	req, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(checkPaasJSON)))
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	response := RestCheckPaasResult{
 		PaasName:  "testPaas",
 		Decrypted: true,
 		Error:     "",
 	}
-	responseJson, _ := json.MarshalIndent(response, "", "    ")
-	assert.JSONEq(t, string(responseJson), w.Body.String())
+	responseJSON, _ := json.MarshalIndent(response, "", "    ")
+	assert.JSONEq(t, string(responseJSON), w.Body.String())
 
 	// Reset recorder
 	w = httptest.NewRecorder()
@@ -274,31 +279,35 @@ func Test_v1CheckPaas(t *testing.T) {
 				Name: "testPaas2",
 			},
 			Spec: v1alpha1.PaasSpec{
-				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
+				SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
 				Capabilities: v1alpha1.PaasCapabilities{
-					"sso": v1alpha1.PaasCapability{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted}},
+					"sso": v1alpha1.PaasCapability{
+						Enabled:    true,
+						SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+					},
 				},
 			},
 		},
 	}
-	invalidCheckPaasJson, _ := json.Marshal(invalidRequest)
+	invalidcheckPaasJSON, _ := json.Marshal(invalidRequest)
 
-	req2, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(invalidCheckPaasJson)))
+	req2, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(invalidcheckPaasJSON)))
 	router.ServeHTTP(w, req2)
 
-	assert.Equal(t, 422, w.Code)
+	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 	response2 := RestCheckPaasResult{
 		PaasName:  "testPaas2",
 		Decrypted: false,
-		Error:     "testPaas2: .spec.sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys , testPaas2: .spec.capabilities[sso].sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys",
+		// revive:disable-next-line
+		Error: "testPaas2: .spec.sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys , testPaas2: .spec.capabilities[sso].sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys",
 	}
-	response2Json, _ := json.MarshalIndent(response2, "", "    ")
-	assert.JSONEq(t, string(response2Json), w.Body.String())
+	response2JSON, _ := json.MarshalIndent(response2, "", "    ")
+	assert.JSONEq(t, string(response2JSON), w.Body.String())
 }
 
 func Test_v1CheckPaasInternalServerError(t *testing.T) {
 	// Allow all origins for test
-	t.Setenv(allowedOriginsEnv, "*")
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
 	// Reset config if any test before get config
 	_config = nil
@@ -315,25 +324,27 @@ func Test_v1CheckPaasInternalServerError(t *testing.T) {
 				Name: "testPaas",
 			},
 			Spec: v1alpha1.PaasSpec{
-				SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
+				SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
 			},
 		},
 	}
-	checkPaasJson, _ := json.Marshal(validRequest)
+	checkPaasJSON, _ := json.Marshal(validRequest)
 
-	req, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(checkPaasJson)))
+	req, _ := http.NewRequest("POST", "/v1/checkpaas", strings.NewReader(string(checkPaasJSON)))
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 500, w.Code)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Equal(t, "", w.Body.String())
 }
 
 func TestBuildCSP(t *testing.T) {
 	externalHosts := ""
+	// revive:disable-next-line
 	expected := "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'"
 	assert.Equal(t, expected, buildCSP(externalHosts))
 
 	externalHosts = "http://example.com"
+	// revive:disable-next-line
 	expected = "default-src 'none'; script-src 'self' http://example.com; style-src 'self' http://example.com; img-src 'self' http://example.com; connect-src 'self' http://example.com; font-src 'self' http://example.com; object-src 'none'"
 	assert.Equal(t, expected, buildCSP(externalHosts))
 }

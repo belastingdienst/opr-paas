@@ -65,6 +65,7 @@ func (r *PaasReconciler) BackendAppProject(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (*argo.AppProject, error) {
+	const argoAll = "*"
 	name := paas.Name
 	logger := log.Ctx(ctx)
 	logger.Info().Msgf("defining %s AppProject", name)
@@ -84,13 +85,13 @@ func (r *PaasReconciler) BackendAppProject(
 		},
 		Spec: argo.AppProjectSpec{
 			ClusterResourceWhitelist: []metav1.GroupKind{
-				{Group: "*", Kind: "*"},
+				{Group: argoAll, Kind: argoAll},
 			},
 			Destinations: []argo.ApplicationDestination{
-				{Namespace: "*", Server: "*"},
+				{Namespace: argoAll, Server: argoAll},
 			},
 			SourceRepos: []string{
-				"*",
+				argoAll,
 			},
 		},
 	}

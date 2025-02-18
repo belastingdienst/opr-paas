@@ -9,6 +9,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -28,9 +29,8 @@ func ElementsFromJSON(raw []byte) (Elements, error) {
 	newElements := make(Elements)
 	if err := json.Unmarshal(raw, &newElements); err != nil {
 		return nil, err
-	} else {
-		return newElements, nil
 	}
+	return newElements, nil
 }
 
 func (es Elements) AsString() string {
@@ -67,11 +67,11 @@ func (en Entries) AsString() string {
 func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
 	list := []apiextensionsv1.JSON{}
 	for _, entry := range en {
-		if data, err := entry.AsJSON(); err != nil {
+		data, err := entry.AsJSON()
+		if err != nil {
 			return nil, err
-		} else {
-			list = append(list, apiextensionsv1.JSON{Raw: data})
 		}
+		list = append(list, apiextensionsv1.JSON{Raw: data})
 	}
 	return list, nil
 }
@@ -79,16 +79,16 @@ func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
 func EntriesFromJSON(data []apiextensionsv1.JSON) (Entries, error) {
 	e := Entries{}
 	for _, raw := range data {
-		if entry, err := ElementsFromJSON(raw.Raw); err != nil {
+		entry, err := ElementsFromJSON(raw.Raw)
+		if err != nil {
 			return nil, err
+		}
+		key := entry.Key()
+		if key != "" {
+			e[key] = entry
 		} else {
-			key := entry.Key()
-			if key != "" {
-				e[key] = entry
-			} else {
-				// weird, this entry does not have a paas key, let's preserve, but put aside
-				e[string(raw.Raw)] = entry
-			}
+			// weird, this entry does not have a paas key, let's preserve, but put aside
+			e[string(raw.Raw)] = entry
 		}
 	}
 	return e, nil
@@ -115,7 +115,7 @@ func getListGen(generators []appv1.ApplicationSetGenerator) *appv1.ApplicationSe
 	return nil
 }
 
-func splitToService(paasName string) (string, string) {
+func splitToService(paasName string) (name string, service string) {
 	parts := strings.SplitN(paasName, "-", 3)
 	if len(parts) < 2 {
 		return paasName, ""
@@ -131,7 +131,7 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	config := config.GetConfig()
 	for capName := range paas.Spec.Capabilities {
 		if _, exists := config.Capabilities[capName]; !exists {
-			return fmt.Errorf("capability not configured")
+			return errors.New("capability not configured")
 		}
 		// Only do this when enabled
 		capability := paas.Spec.Capabilities[capName]
@@ -199,11 +199,11 @@ func (r *PaasReconciler) ensureAppSetCap(
 		entry := fields
 		entries[entry.Key()] = entry
 	}
-	if jsonentries, err := entries.AsJSON(); err != nil {
+	jsonentries, err := entries.AsJSON()
+	if err != nil {
 		return err
-	} else {
-		listGen.List.Elements = jsonentries
 	}
+	listGen.List.Elements = jsonentries
 
 	appSet.Spec.Generators = clearGenerators(appSet.Spec.Generators)
 	return r.Patch(ctx, appSet, patch)
@@ -232,13 +232,14 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 		return nil
 	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
 		return err
-	} else {
-		delete(entries, paasns.Spec.Paas)
 	}
-	if jsonentries, err := entries.AsJSON(); err != nil {
+	delete(entries, paasns.Spec.Paas)
+
+	jsonentries, err := entries.AsJSON()
+	if err != nil {
 		return err
-	} else {
-		listGen.List.Elements = jsonentries
 	}
+	listGen.List.Elements = jsonentries
+
 	return r.Patch(ctx, as, patch)
 }

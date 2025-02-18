@@ -21,13 +21,15 @@ import (
 )
 
 const (
+	argoCapName         = "argocd"
 	paasWithArgo        = "paas-capability-argocd"
 	paasArgoNs          = paasWithArgo + "-argocd"
-	paasArgoGitUrl      = "ssh://git@scm/some-repo.git"
+	paasArgoGitURL      = "ssh://git@scm/some-repo.git"
 	paasArgoGitPath     = "foo/"
 	paasArgoGitRevision = "main"
 	paasRequestor       = "paas-requestor"
 	// String `dummysecret` encrypted with fixtures/crypt/pub/publicKey0
+	// revive:disable-next-line
 	paasArgoSecret = "mPNADW4KlAYmiBSXfgyoP6G0h/8prFQNH7VBFXB3xiZ8wij2sRIgKekVUC3N9cHk73wkuewoH2fyM0BH2P1xKvSP4v4wwzq+fJC6qxx+d/lucrfnBHWCpsAr646OVYyoH8Er6PpBrPxM+OXCjVsXhd/8CGA32VzcUKSrAWBVWTgXpJ4/X/9gez865AmZkfFf2WBImYgs5Q/rH/mPP1jxl3WP10g51FLi4XG1qn2XdLRzBKXRKluh+PvMRYgqZ8QKl2Yd2HWj1SkzXrtayB7197r0fQ6t4cwpn8mqy30GQhsw6NEPSkcYakukOX2PYeRIVCwmMl3uEe9X1y7fesQVBMnq1loQJRpd7kBUj6EErnKNZ9Qa8tOXYLMME2tzsaYWz+rxhczCaMv9r55EGBENRB0K6VMY4jfC4NKkcVwgZm182/Z1wzOnPbhSKAoaSYUXVrsNfjuzlvQGJmaNF4onDgJdVpqJxkEH98E3q+NMlSYhIzZDph1RDjHmUm2aoAhx2W9zle+LsOWHLgogPHRwY+N7NRII5SBEnw99miCAQVqHnpEk0uITzny0G5AuoS9aKmVhbUNNR1TgZ6u2dFjrkbnZB0GKilJhVENM+oE8Fbq7Q4Qa9wtk/GK1myPNvY7ARbw1tfvbcpJT/NtKnEKsho/OVzfHn15W3niNVpXrZgs=" //nolint:gosec
 )
 
@@ -36,13 +38,13 @@ func TestCapabilityArgoCD(t *testing.T) {
 		Requestor: paasRequestor,
 		Quota:     quota.Quota{},
 		Capabilities: api.PaasCapabilities{
-			"argocd": api.PaasCapability{
+			argoCapName: api.PaasCapability{
 				CustomFields: map[string]string{
 					"git_revision": paasArgoGitRevision,
 				},
 				Enabled:          true,
-				SshSecrets:       map[string]string{paasArgoGitUrl: paasArgoSecret},
-				GitUrl:           paasArgoGitUrl,
+				SSHSecrets:       map[string]string{paasArgoGitURL: paasArgoSecret},
+				GitURL:           paasArgoGitURL,
 				GitPath:          paasArgoGitPath,
 				ExtraPermissions: true,
 			},
@@ -64,10 +66,14 @@ func TestCapabilityArgoCD(t *testing.T) {
 func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithArgo, t, cfg)
 	argopaasns := &api.PaasNS{ObjectMeta: metav1.ObjectMeta{
-		Name:      "argocd",
+		Name:      argoCapName,
 		Namespace: paasWithArgo,
 	}}
-	require.NoError(t, waitForCondition(ctx, cfg, argopaasns, 0, api.TypeReadyPaasNs), "ArgoCD PaasNS reconciliation succeeds")
+	require.NoError(
+		t,
+		waitForCondition(ctx, cfg, argopaasns, 0, api.TypeReadyPaasNs),
+		"ArgoCD PaasNS reconciliation succeeds",
+	)
 
 	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
 	entries, _ := getApplicationSetListEntries(argoAppSet)
@@ -76,17 +82,21 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Equal(t, map[string]string{
 		"git_path":     paasArgoGitPath,
 		"git_revision": paasArgoGitRevision,
-		"git_url":      paasArgoGitUrl,
+		"git_url":      paasArgoGitURL,
 		"paas":         paasWithArgo,
 		"requestor":    paasRequestor,
 		"service":      "paas",
 		"subservice":   "capability",
 	}, entries[0], "ApplicationSet List generator contains the correct parameters")
 
-	assert.NotNil(t, getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")
+	assert.NotNil(
+		t,
+		getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg),
+		"ArgoCD namespace created",
+	)
 
 	// Assert ArgoCD creation
-	argocd := getOrFail(ctx, "argocd", paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
+	argocd := getOrFail(ctx, argoCapName, paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
 	assert.Equal(t, paas.UID, argocd.OwnerReferences[0].UID)
 	assert.Equal(t, "role:tester", *argocd.Spec.RBAC.DefaultPolicy)
 	assert.Equal(t, "g, system:cluster-admins, role:admin", *argocd.Spec.RBAC.Policy)
@@ -96,18 +106,33 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Len(t, applications, 1, "An application is present in the ArgoCD namespace")
 	assert.Equal(t, "paas-bootstrap", applications[0].Name)
 	assert.Equal(t, argo.ApplicationSource{
-		RepoURL:        paasArgoGitUrl,
+		RepoURL:        paasArgoGitURL,
 		Path:           paasArgoGitPath,
 		TargetRevision: paasArgoGitRevision,
 	}, *applications[0].Spec.Source, "Application source matches Git properties from Paas")
-	assert.Equal(t, "whatever", applications[0].Spec.IgnoreDifferences[0].Name, "`exclude_appset_name` configuration is included in IgnoreDifferences")
+	assert.Equal(
+		t,
+		"whatever",
+		applications[0].Spec.IgnoreDifferences[0].Name,
+		"`exclude_appset_name` configuration is included in IgnoreDifferences",
+	)
 
 	secrets := listOrFail(ctx, paasArgoNs, &corev1.SecretList{}, t, cfg).Items
 	assert.Len(t, secrets, 1)
-	assert.Equal(t, "dummysecret", string(secrets[0].Data["sshPrivateKey"]), "SSH secret is created in ArgoCD namespace")
+	assert.Equal(
+		t,
+		"dummysecret",
+		string(secrets[0].Data["sshPrivateKey"]),
+		"SSH secret is created in ArgoCD namespace",
+	)
 
 	crq := getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &quotav1.ClusterResourceQuota{}, t, cfg)
-	assert.Equal(t, "q.lbl="+paasArgoNs, metav1.FormatLabelSelector(crq.Spec.Selector.LabelSelector), "Quota selects ArgoCD namespace via selector set to `quota_label` configuration")
+	assert.Equal(
+		t,
+		"q.lbl="+paasArgoNs,
+		metav1.FormatLabelSelector(crq.Spec.Selector.LabelSelector),
+		"Quota selects ArgoCD namespace via selector set to `quota_label` configuration",
+	)
 	assert.Equal(t, corev1.ResourceList{
 		corev1.ResourceLimitsCPU:                                  resource.MustParse("5"),
 		corev1.ResourceRequestsCPU:                                resource.MustParse("1"),
@@ -124,10 +149,10 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	updatedRevision := "updatedRevision"
 	paas := getPaas(ctx, paasWithArgo, t, cfg)
 	paas.Spec.Capabilities = api.PaasCapabilities{
-		"argocd": api.PaasCapability{
+		argoCapName: api.PaasCapability{
 			Enabled:          true,
-			SshSecrets:       map[string]string{paasArgoGitUrl: paasArgoSecret},
-			GitUrl:           paasArgoGitUrl,
+			SSHSecrets:       map[string]string{paasArgoGitURL: paasArgoSecret},
+			GitURL:           paasArgoGitURL,
 			GitPath:          paasArgoGitPath,
 			GitRevision:      updatedRevision,
 			ExtraPermissions: true,
@@ -149,17 +174,21 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Equal(t, map[string]string{
 		"git_path":     paasArgoGitPath,
 		"git_revision": updatedRevision,
-		"git_url":      paasArgoGitUrl,
+		"git_url":      paasArgoGitURL,
 		"paas":         paasWithArgo,
 		"requestor":    paasRequestor,
 		"service":      "paas",
 		"subservice":   "capability",
 	}, entries[0], "ApplicationSet List generator contains the correct parameters")
 
-	assert.NotNil(t, getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")
+	assert.NotNil(
+		t,
+		getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg),
+		"ArgoCD namespace created",
+	)
 
 	// Assert ArgoCD unchanged
-	argocd := getOrFail(ctx, "argocd", paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
+	argocd := getOrFail(ctx, argoCapName, paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
 	assert.Equal(t, paas.UID, argocd.OwnerReferences[0].UID)
 	assert.Equal(t, "role:tester", *argocd.Spec.RBAC.DefaultPolicy)
 	assert.Equal(t, "g, system:cluster-admins, role:admin", *argocd.Spec.RBAC.Policy)
@@ -170,19 +199,24 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Len(t, applications, 1, "An application is present in the ArgoCD namespace")
 	assert.Equal(t, "paas-bootstrap", applications[0].Name)
 	assert.Equal(t, argo.ApplicationSource{
-		RepoURL:        paasArgoGitUrl,
+		RepoURL:        paasArgoGitURL,
 		Path:           paasArgoGitPath,
 		TargetRevision: updatedRevision,
 	}, *applications[0].Spec.Source, "Application source matches Git properties from Paas")
-	assert.Equal(t, "whatever", applications[0].Spec.IgnoreDifferences[0].Name, "`exclude_appset_name` configuration is included in IgnoreDifferences")
+	assert.Equal(
+		t,
+		"whatever",
+		applications[0].Spec.IgnoreDifferences[0].Name,
+		"`exclude_appset_name` configuration is included in IgnoreDifferences",
+	)
 
 	return ctx
 }
 
 func assertArgoCRB(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	default_role_binding := getOrFail(ctx, "paas-monitoring-edit", "", &rbac.ClusterRoleBinding{}, t, cfg)
+	defaultRoleBinding := getOrFail(ctx, "paas-monitoring-edit", "", &rbac.ClusterRoleBinding{}, t, cfg)
 
-	subjects := default_role_binding.Subjects
+	subjects := defaultRoleBinding.Subjects
 	assert.Len(t, subjects, 2, "ClusterRoleBinding contains two subjects")
 	var subjectNames []string
 	for _, subject := range subjects {
@@ -193,10 +227,15 @@ func assertArgoCRB(ctx context.Context, t *testing.T, cfg *envconf.Config) conte
 	assert.Contains(t, subjectNames, "argo-service-applicationset-controller", "ClusterRoleBinding contains")
 	assert.Contains(t, subjectNames, "argo-service-argocd-application-controller", "ClusterRoleBinding contains")
 
-	extra_role_binding := getOrFail(ctx, "paas-admin", "", &rbac.ClusterRoleBinding{}, t, cfg)
-	assert.Len(t, extra_role_binding.Subjects, 1, "ClusterRoleBinding contains one subject")
-	assert.Equal(t, paasArgoNs, extra_role_binding.Subjects[0].Namespace, "Subject is from correct namespace")
-	assert.Equal(t, "argo-service-argocd-application-controller", extra_role_binding.Subjects[0].Name, "Subject is as defined in capability extra_permissions")
+	extraRoleBinding := getOrFail(ctx, "paas-admin", "", &rbac.ClusterRoleBinding{}, t, cfg)
+	assert.Len(t, extraRoleBinding.Subjects, 1, "ClusterRoleBinding contains one subject")
+	assert.Equal(t, paasArgoNs, extraRoleBinding.Subjects[0].Namespace, "Subject is from correct namespace")
+	assert.Equal(
+		t,
+		"argo-service-argocd-application-controller",
+		extraRoleBinding.Subjects[0].Name,
+		"Subject is as defined in capability extra_permissions",
+	)
 
 	return ctx
 }
