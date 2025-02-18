@@ -263,7 +263,7 @@ func Test_v1CheckPaas(t *testing.T) {
 		Error:     "",
 	}
 	responseJson, _ := json.MarshalIndent(response, "", "    ")
-	assert.Equal(t, string(responseJson), w.Body.String())
+	assert.JSONEq(t, string(responseJson), w.Body.String())
 
 	// Reset recorder
 	w = httptest.NewRecorder()
@@ -293,7 +293,7 @@ func Test_v1CheckPaas(t *testing.T) {
 		Error:     "testPaas2: .spec.sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys , testPaas2: .spec.capabilities[sso].sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys",
 	}
 	response2Json, _ := json.MarshalIndent(response2, "", "    ")
-	assert.Equal(t, string(response2Json), w.Body.String())
+	assert.JSONEq(t, string(response2Json), w.Body.String())
 }
 
 func Test_v1CheckPaasInternalServerError(t *testing.T) {
