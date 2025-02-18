@@ -40,7 +40,13 @@ import (
 	//+kubebuilder:scaffold:imports
 )
 
-var scheme = runtime.NewScheme()
+var (
+	scheme             = runtime.NewScheme()
+	pretty             bool
+	debug              bool
+	splitLogOutput     bool
+	componentDebugList string
+)
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
@@ -58,10 +64,6 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var getVersion bool
-	var pretty bool
-	var debug bool
-	var componentDebugList string
-	var splitLogOutput bool
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&getVersion, "version", false, "Print version and quit")
@@ -79,7 +81,7 @@ func main() {
 	flag.BoolVar(&splitLogOutput, "split-log-output", false, "Send error logs to stderr, and the rest to stdout.")
 
 	flag.Parse()
-	configureLogging(pretty, debug, componentDebugList, splitLogOutput)
+	configureLogging()
 
 	if getVersion {
 		fmt.Printf("opr-paas version %s", version.PaasVersion)
@@ -155,7 +157,7 @@ func main() {
 	}
 }
 
-func configureLogging(pretty bool, debug bool, componentDebugList string, splitLogOutput bool) {
+func configureLogging() {
 	var output io.Writer = os.Stderr
 
 	if splitLogOutput {
