@@ -63,8 +63,6 @@ linters-settings:
         disabled: true
       - name: use-errors-new
         disabled: true
-      - name: unused-parameter
-        disabled: true
       - name: flag-parameter
         disabled: true
       - name: var-declaration
