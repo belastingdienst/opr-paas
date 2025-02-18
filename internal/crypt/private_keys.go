@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 
@@ -78,7 +79,7 @@ type CryptPrivateKey struct {
 // NewPrivateKeyFromFile returns a CryptPrivateKey from a privateKeyFilePath
 func NewPrivateKeyFromFile(privateKeyPath string) (*CryptPrivateKey, error) {
 	if privateKeyPath == "" {
-		return nil, fmt.Errorf("cannot get private key without a specified path")
+		return nil, errors.New("cannot get private key without a specified path")
 	}
 	if privateKeyPem, err := os.ReadFile(privateKeyPath); err != nil {
 		panic(err)
@@ -99,7 +100,7 @@ func NewPrivateKeyFromPem(privateKeyPath string, privateKeyPem []byte) (*CryptPr
 
 func (pk *CryptPrivateKey) writePrivateKey() error {
 	if pk.privateKeyPath == "" {
-		return fmt.Errorf("cannot write private key without a specified path")
+		return errors.New("cannot write private key without a specified path")
 	}
 	privateKeyBytes := x509.MarshalPKCS1PrivateKey(pk.privateKey)
 	privateKeyPEM := pem.EncodeToMemory(&pem.Block{
@@ -121,13 +122,13 @@ func (pk *CryptPrivateKey) getPrivateKey() (privateKey *rsa.PrivateKey, err erro
 	if pk.privateKey != nil {
 		return pk.privateKey, nil
 	} else if len(pk.privateKeyPem) == 0 {
-		return nil, fmt.Errorf("invalid private key (Pem not set)")
+		return nil, errors.New("invalid private key (Pem not set)")
 	}
 
 	// load privateKey from privateKeyPem
 	privateKeyBlock, _ := pem.Decode(pk.privateKeyPem)
 	if privateKeyBlock == nil {
-		return nil, fmt.Errorf("cannot decode private key")
+		return nil, errors.New("cannot decode private key")
 		// sanity check if the privatekey is a valid one
 	}
 	privateRsaKey, err := x509.ParsePKCS1PrivateKey(privateKeyBlock.Bytes)

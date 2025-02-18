@@ -13,6 +13,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -81,7 +82,7 @@ func NewGeneratedCrypt(privateKeyPath string, publicKeyPath string, context stri
 func (c *Crypt) writePublicKey() error {
 	const FileModeUserReadWrite = 0o600
 	if c.publicKeyPath == "" {
-		return fmt.Errorf("cannot write public key without a specified path")
+		return errors.New("cannot write public key without a specified path")
 	}
 	publicKeyBytes, err := x509.MarshalPKIXPublicKey(c.publicKey)
 	if err != nil {
@@ -105,16 +106,16 @@ func (c *Crypt) getPublicKey() (publicRsaKey *rsa.PublicKey, err error) {
 		return c.publicKey, nil
 	}
 	if c.publicKeyPath == "" {
-		return nil, fmt.Errorf("cannot get public key without a specified path")
+		return nil, errors.New("cannot get public key without a specified path")
 	}
 	if publicKeyPEM, err := os.ReadFile(c.publicKeyPath); err != nil {
 		panic(err)
 	} else if publicKeyBlock, _ := pem.Decode(publicKeyPEM); publicKeyBlock == nil {
-		return nil, fmt.Errorf("cannot decode public key")
+		return nil, errors.New("cannot decode public key")
 	} else if publicKey, err := x509.ParsePKIXPublicKey(publicKeyBlock.Bytes); err != nil {
 		return nil, fmt.Errorf("public key invalid: %w", err)
 	} else if publicRsaKey, ok = publicKey.(*rsa.PublicKey); !ok {
-		return nil, fmt.Errorf("public key not rsa public key")
+		return nil, errors.New("public key not rsa public key")
 	}
 	c.publicKey = publicRsaKey
 	return c.publicKey, nil
@@ -155,7 +156,7 @@ func (c *Crypt) Encrypt(secret []byte) (encrypted string, err error) {
 
 func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
 	if len(c.privateKeys) < 1 {
-		return nil, fmt.Errorf("cannot decrypt without any private key")
+		return nil, errors.New("cannot decrypt without any private key")
 	}
 	for _, pk := range c.privateKeys {
 		if decryptedBytes, err = pk.DecryptRsa(data, c.encryptionContext); err != nil {
@@ -164,7 +165,7 @@ func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
 			return decryptedBytes, nil
 		}
 	}
-	return nil, fmt.Errorf("unable to decrypt data with any of the private keys")
+	return nil, errors.New("unable to decrypt data with any of the private keys")
 }
 
 func (c Crypt) Decrypt(b64 string) ([]byte, error) {

@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,7 +56,7 @@ type PaasNS struct {
 
 func (pns PaasNS) NamespaceName() string {
 	if pns.Spec.Paas == "" || pns.Name == "" {
-		panic(fmt.Errorf("invalid paas or paasns name (empty)"))
+		panic(errors.New("invalid paas or paasns name (empty)"))
 	}
 
 	return fmt.Sprintf("%s-%s", pns.Spec.Paas, pns.Name)

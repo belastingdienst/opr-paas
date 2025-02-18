@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -43,13 +44,13 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 		paasAsBytes, err := os.ReadFile(fileName)
 		paasAsString := string(paasAsBytes)
 		if err != nil {
-			return fmt.Errorf("could not read file into string")
+			return errors.New("could not read file into string")
 		}
 
 		// Read paas from file
 		paas, format, err := readPaasFile(fileName)
 		if err != nil {
-			return fmt.Errorf("could not read file")
+			return errors.New("could not read file")
 		}
 
 		paasName := paas.ObjectMeta.Name
