@@ -94,7 +94,7 @@ spec:
     namespace: paas-system
     name: example-keys
   ldap:
-    host: my-ldap-host
+    host: ldap.example.com
     port: 13
   managed_by_label: argocd.argoproj.io/manby
   requestor_label: o.lbl

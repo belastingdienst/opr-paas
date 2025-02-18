@@ -81,6 +81,7 @@ type PaasConfigSpec struct {
 	ArgoPermissions ConfigArgoPermissions `json:"argopermissions"`
 
 	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
+	// Deprecated: ArgoCD specific code will be removed from the operator
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	ClusterWideArgoCDNamespace string `json:"clusterwide_argocd_namespace"`
@@ -209,9 +210,6 @@ type ConfigCapability struct {
 }
 
 // TODO: When we move to PaasConfig, we can probably combine Required and Default fields
-// TODO: When we move to PaasConfig, we can verify Validation being a valid RE
-// TODO: When we move to PaasConfig, we can verify Default meeting Validation
-// TODO: When we move to PaasConfig, we can verify that Default and Required are not both set
 
 type ConfigCustomField struct {
 	// Regular expression for validating input, defaults to '', which means no validation.

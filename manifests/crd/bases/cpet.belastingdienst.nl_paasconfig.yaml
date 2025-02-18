@@ -167,8 +167,9 @@ spec:
                 description: A map with zero or more ConfigCapability
                 type: object
               clusterwide_argocd_namespace:
-                description: Namespace in which a clusterwide ArgoCD can be found
-                  for managing capabilities and appProjects
+                description: |-
+                  Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
+                  Deprecated: ArgoCD specific code will be removed from the operator
                 minLength: 1
                 type: string
               debug:
