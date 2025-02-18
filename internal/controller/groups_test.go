@@ -80,6 +80,30 @@ var _ = Describe("Group controller", Ordered, func() {
 		Expect(updated.Users).To(Equal(group.Users))
 	})
 
+	It("should not update the group if only users list changes and it is an ldap group", func() {
+		// ldap managed group has a label and users (from ldap)
+		initialUsers := userv1.OptionalNames([]string{"user1", "user2"})
+		changedUsers := userv1.OptionalNames([]string{"us", "them"})
+		group.Labels = map[string]string{ldapHostLabelKey: "somehost"}
+		group.Users = initialUsers
+
+		// Create the group
+		err := k8sClient.Create(ctx, group)
+		Expect(err).NotTo(HaveOccurred())
+
+		// Modify users
+		group.Users = changedUsers
+
+		err = reconciler.EnsureGroup(ctx, paas, group)
+		Expect(err).NotTo(HaveOccurred())
+
+		updated := &userv1.Group{}
+		err = k8sClient.Get(ctx, types.NamespacedName{Name: group.Name}, updated)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(updated.Users).NotTo(Equal(group.Users))
+		Expect(updated.Users).To(Equal(initialUsers))
+	})
+
 	It("should set the owner reference if not already set", func() {
 		// Create group without owner reference
 		err := k8sClient.Create(ctx, group)
