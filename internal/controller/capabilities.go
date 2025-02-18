@@ -9,6 +9,7 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -130,7 +131,7 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	config := config.GetConfig()
 	for capName := range paas.Spec.Capabilities {
 		if _, exists := config.Capabilities[capName]; !exists {
-			return fmt.Errorf("capability not configured")
+			return errors.New("capability not configured")
 		}
 		// Only do this when enabled
 		capability := paas.Spec.Capabilities[capName]

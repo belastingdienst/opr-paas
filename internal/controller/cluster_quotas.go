@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -17,7 +18,7 @@ import (
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -34,7 +35,7 @@ func (r *PaasReconciler) EnsureQuota(
 	err := r.Get(ctx, types.NamespacedName{
 		Name: quota.Name,
 	}, found)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		// Create the quota
 		if err = r.Create(ctx, quota); err != nil {
 			// creating the quota failed
@@ -111,7 +112,7 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
 	for name, cap := range paas.Spec.Capabilities {
 		if capConfig, exists := config.Capabilities[name]; !exists {
-			return nil, fmt.Errorf("a capability is requested, but not configured")
+			return nil, errors.New("a capability is requested, but not configured")
 		} else if cap.IsEnabled() {
 			if !capConfig.QuotaSettings.Clusterwide {
 				defaults := capConfig.QuotaSettings.DefQuota
@@ -147,7 +148,7 @@ func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, quotaName str
 	obj := &quotav1.ClusterResourceQuota{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Name: quotaName,
-	}, obj); err != nil && errors.IsNotFound(err) {
+	}, obj); err != nil && k8serrors.IsNotFound(err) {
 		logger.Info().Msg("does not exist")
 		return nil
 	} else if err != nil {
@@ -164,7 +165,7 @@ func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1a
 	obj := &quotav1.ClusterResourceQuota{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Name: paasns.NamespaceName(),
-	}, obj); err != nil && errors.IsNotFound(err) {
+	}, obj); err != nil && k8serrors.IsNotFound(err) {
 		logger.Info().Msg("does not exist")
 		return nil
 	} else if err != nil {

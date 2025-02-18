@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -16,7 +17,7 @@ import (
 	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -46,7 +47,7 @@ func (r *PaasReconciler) FetchAllPaasCapabilityResources(
 			continue
 		}
 		if getErr := r.Get(ctx, paasNamespacedName, paas); getErr != nil {
-			if errors.IsNotFound(getErr) {
+			if k8serrors.IsNotFound(getErr) {
 				// Quota referencing a missing Paas, no problem.
 				continue
 			}
@@ -126,7 +127,7 @@ func ClusterWideQuotaName(capabilityName string) string {
 func ClusterWideCapabilityName(quotaName string) (capabilityName string, err error) {
 	var found bool
 	if capabilityName, found = strings.CutPrefix(quotaName, cwqPrefix); !found {
-		_ = fmt.Errorf("failed to remove prefix")
+		_ = errors.New("failed to remove prefix")
 	}
 	return capabilityName, nil
 }
@@ -135,7 +136,7 @@ func (r *PaasReconciler) FinalizeClusterWideQuotas(ctx context.Context, paas *v1
 	for capabilityName, capability := range paas.Spec.Capabilities {
 		if capability.IsEnabled() {
 			err := r.removeFromClusterWideQuota(ctx, paas, capabilityName)
-			if err != nil && errors.IsNotFound(err) {
+			if err != nil && k8serrors.IsNotFound(err) {
 				continue
 			}
 			return err
@@ -148,7 +149,7 @@ func (r *PaasReconciler) ReconcileClusterWideQuota(ctx context.Context, paas *v1
 	for capabilityName, capability := range paas.Spec.Capabilities {
 		if capability.IsEnabled() {
 			err := r.addToClusterWideQuota(ctx, paas, capabilityName)
-			if err != nil && errors.IsNotFound(err) {
+			if err != nil && k8serrors.IsNotFound(err) {
 				continue
 			}
 			if err != nil {
@@ -156,7 +157,7 @@ func (r *PaasReconciler) ReconcileClusterWideQuota(ctx context.Context, paas *v1
 			}
 		} else {
 			err := r.removeFromClusterWideQuota(ctx, paas, capabilityName)
-			if err != nil && errors.IsNotFound(err) {
+			if err != nil && k8serrors.IsNotFound(err) {
 				continue
 			}
 			if err != nil {
@@ -180,7 +181,7 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 	quota = backendClusterWideQuota(quotaName, config.QuotaSettings.MinQuotas)
 
 	err := r.Get(ctx, types.NamespacedName{Name: quotaName}, quota)
-	if err != nil && !errors.IsNotFound(err) {
+	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 	exists = err == nil
@@ -224,7 +225,7 @@ func (r *PaasReconciler) removeFromClusterWideQuota(
 	err := r.Get(ctx, types.NamespacedName{
 		Name: quotaName,
 	}, quota)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && k8serrors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
 		return err

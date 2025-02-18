@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -60,7 +61,7 @@ func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte,
 	}
 	privateKey, err = os.ReadFile(privateKeyFile.Name())
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read private key from file")
+		return nil, nil, errors.New("failed to read private key from file")
 	}
 
 	return myCrypt, privateKey, nil
