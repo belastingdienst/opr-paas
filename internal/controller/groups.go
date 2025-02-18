@@ -22,13 +22,24 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+const (
+	ldapUidAnnotationKey = "openshift.io/ldap.uid"
+	ldapUrlAnnotationKey = "openshift.io/ldap.url"
+	ldapHostLabelKey     = "openshift.io/ldap.host"
+	managedByLabelKey    = "app.kubernetes.io/managed-by"
+	managedByLabelValue  = "paas"
+)
+
 // EnsureGroup ensures Group presence
 func (r *PaasReconciler) EnsureGroup(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	group *userv1.Group,
 ) error {
-	var changed bool
+	var (
+		changed   bool
+		groupName = group.GetName()
+	)
 	logger := log.Ctx(ctx)
 	// See if group already exists and create if it doesn't
 	found := &userv1.Group{}
@@ -36,7 +47,7 @@ func (r *PaasReconciler) EnsureGroup(
 		Name: group.Name,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
-		logger.Info().Msg("creating the group")
+		logger.Info().Msg("creating group " + groupName)
 		// Create the group
 		if err = r.Create(ctx, group); err != nil {
 			// creating the group failed
@@ -45,18 +56,23 @@ func (r *PaasReconciler) EnsureGroup(
 		return nil
 	} else if err != nil {
 		// Error that isn't due to the group not existing
-		logger.Err(err).Msg("could not retrieve the group")
+		logger.Err(err).Msg("could not retrieve group " + groupName)
 		return err
 	}
 	if !paas.AmIOwner(found.OwnerReferences) {
-		logger.Info().Msg("setting owner reference")
+		logger.Info().Msg("setting owner reference on group " + groupName)
 		if err := controllerutil.SetOwnerReference(paas, found, r.Scheme); err != nil {
-			logger.Err(err).Msg("error while setting owner reference")
+			logger.Err(err).Msg("error while setting owner reference on group " + groupName)
 			return err
 		}
 		changed = true
 	}
-	if !reflect.DeepEqual(group.Users, found.Users) {
+
+	if _, exists := group.Labels[ldapHostLabelKey]; exists {
+		logger.Debug().Msg("group " + groupName + " is ldap group, not changing users")
+	} else if reflect.DeepEqual(group.Users, found.Users) {
+		logger.Debug().Msg("users for group " + groupName + " are as expected")
+	} else {
 		found.Users = group.Users
 		changed = true
 	}
@@ -85,23 +101,22 @@ func (r *PaasReconciler) backendGroup(
 			Name:   groupName,
 			Labels: paas.ClonedLabels(),
 			Annotations: map[string]string{
-				"openshift.io/ldap.uid": group.Query,
-				"openshift.io/ldap.url": fmt.Sprintf("%s:%d",
+				ldapUidAnnotationKey: group.Query,
+				ldapUrlAnnotationKey: fmt.Sprintf("%s:%d",
 					GetConfig().LDAP.Host,
 					GetConfig().LDAP.Port,
 				),
 			},
 		}
-		g.ObjectMeta.Labels["openshift.io/ldap.host"] = GetConfig().LDAP.Host
-		g.ObjectMeta.Labels["app.kubernetes.io/managed-by"] = "paas"
+		g.ObjectMeta.Labels[ldapHostLabelKey] = GetConfig().LDAP.Host
 	} else {
 		g.ObjectMeta = metav1.ObjectMeta{
 			Name:   groupName,
 			Labels: paas.ClonedLabels(),
 		}
-		g.ObjectMeta.Labels["app.kubernetes.io/managed-by"] = "paas"
 		g.Users = group.Users
 	}
+	g.ObjectMeta.Labels[managedByLabelKey] = managedByLabelValue
 
 	if err := controllerutil.SetOwnerReference(paas, g, r.Scheme); err != nil {
 		return nil, err
@@ -186,14 +201,14 @@ func (r *PaasReconciler) deleteObsoleteGroups(ctx context.Context, paas *v1alpha
 	logger.Info().Msg("deleting obsolete groups")
 	for _, existingGroup := range existingGroups {
 		if !isGroupInGroups(existingGroup, desiredGroups) {
-			if existingGroup.Annotations["openshift.io/ldap.uid"] != "" {
+			if existingGroup.Annotations[ldapUidAnnotationKey] != "" {
 				existingGroup.OwnerReferences = paas.WithoutMe(existingGroup.OwnerReferences)
 				if len(existingGroup.OwnerReferences) == 0 {
 					logger.Info().Msgf("deleting %s", existingGroup.Name)
 					if err = r.Delete(ctx, existingGroup); err != nil {
 						return removedLdapGroups, err
 					}
-					removedLdapGroups = append(removedLdapGroups, existingGroup.Annotations["openshift.io/ldap.uid"])
+					removedLdapGroups = append(removedLdapGroups, existingGroup.Annotations[ldapUidAnnotationKey])
 					continue
 				}
 				logger.Info().Msgf("not last owner of group %s", existingGroup.Name)
