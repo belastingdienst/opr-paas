@@ -79,7 +79,7 @@ func (v *PaasCustomValidator) ValidateUpdate(
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Paas.
-func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (_ *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	paas, ok := obj.(*v1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
@@ -199,7 +199,7 @@ func validateCustomFields(_ context.Context, client client.Client, conf v1alpha1
 }
 
 // validateGroups returns a warning for any of the passed groups which contain both users and a query.
-func (v *PaasCustomValidator) validateGroups(groups v1alpha1.PaasGroups) (warnings []string) {
+func (_ *PaasCustomValidator) validateGroups(groups v1alpha1.PaasGroups) (warnings []string) {
 	for key, grp := range groups {
 		if len(grp.Query) > 0 && len(grp.Users) > 0 {
 			warnings = append(warnings, fmt.Sprintf(
