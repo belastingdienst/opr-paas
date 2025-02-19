@@ -14,6 +14,7 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/logging"
+	"github.com/belastingdienst/opr-paas/internal/quota"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -111,6 +112,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	}
 
 	warnings = append(warnings, v.validateGroups(paas.Spec.Groups)...)
+	warnings = append(warnings, v.validateQuota(paas)...)
 
 	if len(allErrs) == 0 && len(warnings) == 0 {
 		return nil, nil
@@ -204,4 +206,33 @@ func (v *PaasCustomValidator) validateGroups(groups v1alpha1.PaasGroups) (warnin
 	}
 
 	return warnings
+}
+
+// validateQuota returns a warning when limits are configured higher than requests for the Paas quota or capability quotas.
+func (v *PaasCustomValidator) validateQuota(paas *v1alpha1.Paas) (warnings []string) {
+	quotas := map[*field.Path]quota.Quota{
+		field.NewPath("spec", "quota"): paas.Spec.Quota,
+	}
+	cf := field.NewPath("spec", "capabilities")
+	for name, c := range paas.Spec.Capabilities {
+		quotas[cf.Key(name).Child("quota")] = c.Quota
+	}
+
+	for f, q := range quotas {
+		reqc, reqcok := q[corev1.ResourceRequestsCPU]
+		limc, limcok := q[corev1.ResourceLimitsCPU]
+
+		if reqcok && limcok && reqc.Cmp(limc) > 0 {
+			warnings = append(warnings, fmt.Sprintf("%s CPU resource request (%s) higher than limit (%s)", f, reqc.String(), limc.String()))
+		}
+
+		reqm, reqmok := q[corev1.ResourceRequestsMemory]
+		limm, limmok := q[corev1.ResourceLimitsMemory]
+
+		if reqmok && limmok && reqm.Cmp(limm) > 0 {
+			warnings = append(warnings, fmt.Sprintf("%s memory resource request (%s) higher than limit (%s)", f, reqm.String(), limm.String()))
+		}
+	}
+
+	return
 }
