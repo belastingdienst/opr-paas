@@ -69,7 +69,7 @@ func (v *PaasConfigCustomValidator) ValidateCreate(
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
-func (v *PaasConfigCustomValidator) ValidateUpdate(
+func (_ *PaasConfigCustomValidator) ValidateUpdate(
 	ctx context.Context,
 	_, newObj runtime.Object,
 ) (admission.Warnings, error) {
@@ -87,7 +87,7 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(
 
 // TODO(portly-halicore-76): determine whether this can be left out
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
-func (v *PaasConfigCustomValidator) ValidateDelete(
+func (_ *PaasConfigCustomValidator) ValidateDelete(
 	ctx context.Context,
 	obj runtime.Object,
 ) (admission.Warnings, error) {
