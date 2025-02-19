@@ -13,15 +13,14 @@ import (
 	"encoding/base64"
 	"errors"
 
-	"github.com/belastingdienst/opr-paas/internal/quota"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -284,6 +283,33 @@ var _ = Describe("Paas Webhook", func() {
 				"spec.quota CPU resource request (11) higher than limit (10)",
 				"spec.capabilities[foo].quota memory resource request (1Gi) higher than limit (256Mi)",
 			))
+		})
+
+		It("Should warn when extra permissions are requested for a capability that are not configured", func() {
+			conf := config.GetConfig()
+			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
+				ExtraPermissions: v1alpha1.ConfigCapPerm{
+					"bar": []string{"baz"},
+				},
+			}
+			conf.Capabilities["bar"] = v1alpha1.ConfigCapability{
+				// No extra permissions
+			}
+			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
+
+			obj = &v1alpha1.Paas{
+				Spec: v1alpha1.PaasSpec{
+					Capabilities: v1alpha1.PaasCapabilities{
+						"foo": v1alpha1.PaasCapability{ExtraPermissions: true},
+						"bar": v1alpha1.PaasCapability{ExtraPermissions: true},
+					},
+				},
+			}
+
+			warnings, err := validator.ValidateCreate(ctx, obj)
+			Expect(err).To(Not(HaveOccurred()))
+			Expect(warnings).To(HaveLen(1))
+			Expect(warnings[0]).To(Equal("spec.capabilities[bar].extra_permissions capability does not have extra permissions configured"))
 		})
 	})
 

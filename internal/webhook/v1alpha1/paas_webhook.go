@@ -113,6 +113,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 
 	warnings = append(warnings, v.validateGroups(paas.Spec.Groups)...)
 	warnings = append(warnings, v.validateQuota(paas)...)
+	warnings = append(warnings, v.validateExtraPerm(conf, paas)...)
 
 	if len(allErrs) == 0 && len(warnings) == 0 {
 		return nil, nil
@@ -231,6 +232,20 @@ func (v *PaasCustomValidator) validateQuota(paas *v1alpha1.Paas) (warnings []str
 
 		if reqmok && limmok && reqm.Cmp(limm) > 0 {
 			warnings = append(warnings, fmt.Sprintf("%s memory resource request (%s) higher than limit (%s)", f, reqm.String(), limm.String()))
+		}
+	}
+
+	return
+}
+
+// validateExtraPerm returns a warning when extra permissions are requested for a capability that are not configured.
+func (v *PaasCustomValidator) validateExtraPerm(conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) (warnings []string) {
+	for cname, c := range paas.Spec.Capabilities {
+		if c.ExtraPermissions && conf.Capabilities[cname].ExtraPermissions == nil {
+			warnings = append(warnings, fmt.Sprintf(
+				"%s capability does not have extra permissions configured",
+				field.NewPath("spec", "capabilities").Key(cname).Child("extra_permissions"),
+			))
 		}
 	}
 
