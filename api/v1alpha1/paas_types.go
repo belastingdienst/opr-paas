@@ -48,8 +48,12 @@ type PaasSpec struct {
 	Quota paas_quota.Quota `json:"quota"`
 
 	// Namespaces can be used to define extra namespaces to be created as part of this Paas project
+	// As the names are used as the names of PaasNs resources, they must comply to the DNS subdomainname regex
+	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names for more info
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:items:Pattern=`^[a-z0-9]([a-z0-9-.]{0,251}[a-z0-9])?$`
 	Namespaces []string `json:"namespaces"`
+
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
 	// +kubebuilder:validation:Optional
