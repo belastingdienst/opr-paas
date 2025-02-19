@@ -92,6 +92,7 @@ func (_ *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Ob
 	return nil, nil
 }
 
+// revive:disable-next-line
 type paasSpecValidator func(context.Context, client.Client, v1alpha1.PaasConfigSpec, *v1alpha1.Paas) ([]*field.Error, error)
 
 func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas) (admission.Warnings, error) {
@@ -130,7 +131,12 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 }
 
 // validateCaps returns an error if any of the passed capabilities is not configured.
-func validateCaps(_ context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func validateCaps(
+	_ context.Context,
+	client client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
 	var errs []*field.Error
 
 	for name := range paas.Spec.Capabilities {
@@ -146,7 +152,12 @@ func validateCaps(_ context.Context, client client.Client, conf v1alpha1.PaasCon
 	return errs, nil
 }
 
-func validateSecrets(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func validateSecrets(
+	ctx context.Context,
+	client client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
 	decryptRes := &corev1.Secret{}
 	if err := client.Get(ctx, types.NamespacedName{
 		Name:      conf.DecryptKeysSecret.Name,
@@ -179,7 +190,12 @@ func validateSecrets(ctx context.Context, client client.Client, conf v1alpha1.Pa
 //   - all custom fields pass regular expression validation as configured in the PaasConfig if present
 //
 // Returns an internal error if the validation regexp cannot be compiled.
-func validateCustomFields(_ context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func validateCustomFields(
+	_ context.Context,
+	client client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
 	var errs []*field.Error
 
 	for cname, c := range paas.Spec.Capabilities {

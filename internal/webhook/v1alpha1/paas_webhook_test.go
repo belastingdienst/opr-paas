@@ -154,7 +154,8 @@ var _ = Describe("Paas Webhook", func() {
 			Expect(causes).To(HaveLen(1))
 			Expect(causes).To(ContainElements(
 				metav1.StatusCause{
-					Type:    metav1.CauseTypeFieldValueInvalid,
+					Type: metav1.CauseTypeFieldValueInvalid,
+					// revive:disable-next-line
 					Message: "Invalid value: \"custom_fields\": custom field baz is not configured in capability config",
 					Field:   "spec.capabilities[foo]",
 				},
