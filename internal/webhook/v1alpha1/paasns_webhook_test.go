@@ -9,6 +9,7 @@ package v1alpha1
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -68,21 +69,24 @@ func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte,
 
 var _ = Describe("PaasNS Webhook", Ordered, func() {
 	var (
-		paasSystem    string = "paasnssystem"
-		paasPkSecret  string = "paasns-pk-secret"
-		paasName      string = "mypaas"
-		otherPaasName string = "myotherpaas"
-		groupName     string = "mygroup"
-		otherGroup    string = "myothergroup"
-		paasNsName    string = "mypaasns"
-		privateKey    []byte
-		paas          *v1alpha1.Paas
-		obj           *v1alpha1.PaasNS
-		oldObj        *v1alpha1.PaasNS
-		mycrypt       *crypt.Crypt
-		paasSecret    string
-		validSecret   string
-		validator     PaasNSCustomValidator
+		paasSystem      string = "paasnssystem"
+		paasPkSecret    string = "paasns-pk-secret"
+		paasName        string = "mypaas"
+		otherPaasName   string = "myotherpaas"
+		groupName1      string = "mygroup1"
+		groupName2      string = "mygroup2"
+		otherGroup      string = "myothergroup"
+		paasNsName      string = "mypaasns"
+		privateKey      []byte
+		paas            *v1alpha1.Paas
+		obj             *v1alpha1.PaasNS
+		oldObj          *v1alpha1.PaasNS
+		mycrypt         *crypt.Crypt
+		paasSecret      string
+		validSecret1    string
+		validSecret1Key string = "validSecret1"
+		validSecret2    string
+		validator       PaasNSCustomValidator
 	)
 
 	BeforeAll(func() {
@@ -109,7 +113,11 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		if err != nil {
 			Fail(fmt.Errorf("encrypting paas secret failed: %w", err).Error())
 		}
-		validSecret, err = mycrypt.Encrypt([]byte("validSecret"))
+		validSecret1, err = mycrypt.Encrypt([]byte("validSecretCreated"))
+		if err != nil {
+			Fail(fmt.Errorf("encrypting valid paasns secret failed: %w", err).Error())
+		}
+		validSecret2, err = mycrypt.Encrypt([]byte("validSecretUpdated"))
 		if err != nil {
 			Fail(fmt.Errorf("encrypting valid paasns secret failed: %w", err).Error())
 		}
@@ -124,7 +132,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			Spec: v1alpha1.PaasSpec{
 				Requestor: "paasns-requestor",
 				Groups: v1alpha1.PaasGroups{
-					groupName: v1alpha1.PaasGroup{},
+					groupName1: v1alpha1.PaasGroup{},
+					groupName2: v1alpha1.PaasGroup{},
 				},
 				SshSecrets: map[string]string{
 					paasSecret: paasSecret,
@@ -151,11 +160,23 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			Spec: v1alpha1.PaasNSSpec{
 				Paas: paasName,
 				SshSecrets: map[string]string{
-					"validSecret": validSecret,
+					validSecret1Key: validSecret1,
+				},
+				Groups: []string{groupName1},
+			},
+		}
+		oldObj = &v1alpha1.PaasNS{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      paasNsName,
+				Namespace: paasName,
+			},
+			Spec: v1alpha1.PaasNSSpec{
+				Paas: paasName,
+				SshSecrets: map[string]string{
+					validSecret1Key: validSecret1,
 				},
 			},
 		}
-		oldObj = &v1alpha1.PaasNS{}
 		validator = PaasNSCustomValidator{k8sClient}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
@@ -165,15 +186,22 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 	AfterEach(func() {
 	})
 
-	Context("When creating a proper PaasNS", func() {
+	Context("When properly creating or updating a PaasNS", func() {
 		It("Should allow creation", func() {
 			By("simulating with reference to Paas where it is deployed")
 			warn, err := validator.ValidateCreate(ctx, obj)
 			Expect(warn, err).Error().ToNot(HaveOccurred())
 		})
+		It("Should allow updating", func() {
+			By("simulating with reference to Paas where it is deployed")
+			obj.Spec.SshSecrets[validSecret1Key] = validSecret2
+			obj.Spec.Groups = []string{groupName1, groupName2}
+			warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
+			Expect(warn, err).Error().ToNot(HaveOccurred())
+		})
 	})
 
-	Context("When creating a PaasNS with incorrect Paas reference", func() {
+	Context("When creating or updating a PaasNS with incorrect Paas reference", func() {
 		It("Should deny creation", func() {
 			By("simulating with reference to other Paas then where created")
 			obj.Spec.Paas = otherPaasName
@@ -188,9 +216,15 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			Expect(warn, err).Error().To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("paasns not in namespace belonging to paas %s", paasName))
 		})
+		It("Should deny updating", func() {
+			By("checking old vs new and raising error if they differ")
+			obj.Spec.Paas = "changing this should fail"
+			_, err := validator.ValidateUpdate(ctx, oldObj, obj)
+			Expect(err.Error()).To(ContainSubstring("field is immutable"))
+		})
 	})
 
-	Context("When creating PaasNS with improper group config", func() {
+	Context("When creating or updating PaasNS with improper group config", func() {
 		It("Should deny creation", func() {
 			By("creating a PaasNs with improper Group reference")
 			obj.Spec.Groups = []string{otherGroup}
@@ -198,26 +232,74 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			Expect(warn, err).Error().To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("group %s does not exist in paas", otherGroup))
 		})
+		It("Should deny updating", func() {
+			By("checking references in Paas and raising error if group is not in it")
+			obj.Spec.Groups = []string{otherGroup}
+			warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
+			Expect(warn, err).Error().To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("group %s does not exist in paas", otherGroup))
+		})
 	})
 
-	Context("When creating PaasNS with sshSecret that cannot be decrypted", func() {
+	Context("When creating or updating PaasNS with sshSecret that cannot be decrypted", func() {
 		It("Should deny creation", func() {
 			By("creating PaasNs with sshSecret encrypted with public key that has no corresponding private key")
 
 			var err error
-			var invalidSecret string
+			var invalidSecret1 string
 			mycrypt, privateKey, err = newGeneratedCrypt(paasName)
 			if err != nil {
 				Fail(err.Error())
 			}
-			invalidSecret, err = mycrypt.Encrypt([]byte("paasns_secret"))
+			invalidSecret1, err = mycrypt.Encrypt([]byte("paasns_secret"))
 			if err != nil {
 				Fail(fmt.Errorf("encrypting invalid paasns secret failed: %w", err).Error())
 			}
-			obj.Spec.SshSecrets["invalidSecret"] = invalidSecret
+			obj.Spec.SshSecrets["invalidSecret1"] = invalidSecret1
 			warn, err := validator.ValidateCreate(ctx, obj)
 			Expect(warn, err).Error().To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("unable to decrypt data with any of the private keys"))
+		})
+		It("Should deny updating", func() {
+			By("creating PaasNs with sshSecret encrypted with public key that has no corresponding private key")
+
+			var err error
+			var invalidSecret1 string
+			mycrypt, privateKey, err = newGeneratedCrypt(paasName)
+			if err != nil {
+				Fail(err.Error())
+			}
+			invalidSecret1, err = mycrypt.Encrypt([]byte("paasns_secret"))
+			if err != nil {
+				Fail(fmt.Errorf("encrypting invalid paasns secret failed: %w", err).Error())
+			}
+			obj.Spec.SshSecrets["invalidSecret1"] = invalidSecret1
+			warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
+			Expect(warn, err).Error().To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("unable to decrypt data with any of the private keys"))
+		})
+	})
+	Context("When deleting a PaasNs, ", func() {
+		It("Update webhook should not fail", func() {
+			By("checking deletion timestamp")
+
+			var err error
+			var invalidSecret1 string
+			mycrypt, privateKey, err = newGeneratedCrypt(paasName)
+			if err != nil {
+				Fail(err.Error())
+			}
+			invalidSecret1, err = mycrypt.Encrypt([]byte("paasns_secret"))
+			if err != nil {
+				Fail(fmt.Errorf("encrypting invalid paasns secret failed: %w", err).Error())
+			}
+			obj.Spec.SshSecrets["invalidSecret1"] = invalidSecret1
+			obj.Spec.Paas = "not the one"
+			obj.Spec.Groups = []string{otherGroup}
+			now := metav1.NewTime(time.Now())
+			obj.DeletionTimestamp = &now
+			warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
+			Expect(warn, err).Error().ToNot(HaveOccurred())
 		})
 	})
 })
