@@ -15,6 +15,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	argNamePrivateKeyFile  = "privateKeyFile"
+	argNamePrivateKeyFiles = "privateKeyFiles"
+	argNamePublicKeyFile   = "publicKeyFile"
+	argNamePaas            = "paas"
+	argNameDataFileKey     = "dataFile"
+	argNameOutputFormat    = "outputFormat"
+)
+
 var debug bool
 
 // requireSubcommand returns an error if no sub command is provided
@@ -26,10 +35,20 @@ func requireSubcommand(cmd *cobra.Command, args []string) error {
 		arg := args[0]
 		suggestions := cmd.SuggestionsFor(arg)
 		if len(suggestions) == 0 {
-			return fmt.Errorf("unrecognized command `%[1]s %[2]s`\nTry '%[1]s --help' for more information", cmd.CommandPath(), arg)
+			return fmt.Errorf(
+				"unrecognized command `%[1]s %[2]s`\nTry '%[1]s --help' for more information",
+				cmd.CommandPath(),
+				arg,
+			)
 		}
 
-		return fmt.Errorf("unrecognized command `%[1]s %[2]s`\n\nDid you mean this?\n\t%[3]s\n\nTry '%[1]s --help' for more information", cmd.CommandPath(), arg, strings.Join(suggestions, "\n\t"))
+		return fmt.Errorf(
+			// revive:disable-next-line
+			"unrecognized command `%[1]s %[2]s`\n\nDid you mean this?\n\t%[3]s\n\nTry '%[1]s --help' for more information",
+			cmd.CommandPath(),
+			arg,
+			strings.Join(suggestions, "\n\t"),
+		)
 	}
 
 	return fmt.Errorf("missing command '%[1]s COMMAND'\nTry '%[1]s --help' for more information", cmd.CommandPath())

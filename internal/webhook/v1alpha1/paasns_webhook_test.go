@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -46,21 +47,22 @@ func createPaasPrivateKeySecret(ns string, name string, privateKey []byte) {
 }
 
 func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte, err error) {
+	tmpFileError := "failed to get new tmp private key file: %w"
 	privateKeyFile, err := os.CreateTemp("", "private")
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get new tmp private key file")
+		return nil, nil, fmt.Errorf(tmpFileError, err)
 	}
 	publicKeyFile, err := os.CreateTemp("", "public")
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get new tmp private key file")
+		return nil, nil, fmt.Errorf(tmpFileError, err)
 	}
 	myCrypt, err = crypt.NewGeneratedCrypt(privateKeyFile.Name(), publicKeyFile.Name(), context)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get new tmp private key file")
+		return nil, nil, fmt.Errorf(tmpFileError, err)
 	}
 	privateKey, err = os.ReadFile(privateKeyFile.Name())
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read private key from file")
+		return nil, nil, errors.New("failed to read private key from file")
 	}
 
 	return myCrypt, privateKey, nil
@@ -126,7 +128,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				Groups: v1alpha1.PaasGroups{
 					groupName: v1alpha1.PaasGroup{},
 				},
-				SshSecrets: map[string]string{
+				SSHSecrets: map[string]string{
 					paasSecret: paasSecret,
 				},
 				Quota: quota.Quota{
@@ -150,7 +152,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			},
 			Spec: v1alpha1.PaasNSSpec{
 				Paas: paasName,
-				SshSecrets: map[string]string{
+				SSHSecrets: map[string]string{
 					"validSecret": validSecret,
 				},
 			},
@@ -214,7 +216,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			if err != nil {
 				Fail(fmt.Errorf("encrypting invalid paasns secret failed: %w", err).Error())
 			}
-			obj.Spec.SshSecrets["invalidSecret"] = invalidSecret
+			obj.Spec.SSHSecrets["invalidSecret"] = invalidSecret
 			warn, err := validator.ValidateCreate(ctx, obj)
 			Expect(warn, err).Error().To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("unable to decrypt data with any of the private keys"))

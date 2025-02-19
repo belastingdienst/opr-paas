@@ -40,7 +40,13 @@ import (
 	//+kubebuilder:scaffold:imports
 )
 
-var scheme = runtime.NewScheme()
+var (
+	scheme             = runtime.NewScheme()
+	pretty             bool
+	debug              bool
+	splitLogOutput     bool
+	componentDebugList string
+)
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
@@ -58,10 +64,6 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var getVersion bool
-	var pretty bool
-	var debug bool
-	var componentDebugList string
-	var splitLogOutput bool
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&getVersion, "version", false, "Print version and quit")
@@ -70,11 +72,16 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.BoolVar(&pretty, "pretty", false, "Pretty-print logging output")
 	flag.BoolVar(&debug, "debug", false, "Log all debug messages")
-	flag.StringVar(&componentDebugList, "component-debug", "", "Comma-separated list of components to log debug messages for.")
+	flag.StringVar(
+		&componentDebugList,
+		"component-debug",
+		"",
+		"Comma-separated list of components to log debug messages for.",
+	)
 	flag.BoolVar(&splitLogOutput, "split-log-output", false, "Send error logs to stderr, and the rest to stdout.")
 
 	flag.Parse()
-	configureLogging(pretty, debug, componentDebugList, splitLogOutput)
+	configureLogging()
 
 	if getVersion {
 		fmt.Printf("opr-paas version %s", version.PaasVersion)
@@ -109,31 +116,31 @@ func main() {
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		log.Fatal().Err(err).Str("controller", "PaasConfig").Msg("unable to create controller")
+		log.Fatal().Err(err).Str("controller", "PaasConfig").Msg("unable to create PaasConfig controller")
 	}
 	if err = (&controller.PaasReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		log.Fatal().Err(err).Str("controller", "Paas").Msg("unable to create controller")
+		log.Fatal().Err(err).Str("controller", "Paas").Msg("unable to create Paas controller")
 	}
 	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = webhookv1alpha1.SetupPaasWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create webhook")
+			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create Paas webhook")
 		}
 		if err = webhookv1alpha1.SetupPaasConfigWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "PaasConfig").Msg("unable to create webhook")
+			log.Fatal().Err(err).Str("webhook", "PaasConfig").Msg("unable to create PaasConfig webhook")
 		}
 		if err = webhookv1alpha1.SetupPaasNsWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "PaasNS").Msg("unable to create webhook")
+			log.Fatal().Err(err).Str("webhook", "PaasNS").Msg("unable to create PaasNs webhook")
 		}
 	}
 	if err = (&controller.PaasNSReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		log.Fatal().Err(err).Str("controller", "PaasNS").Msg("unable to create controller")
+		log.Fatal().Err(err).Str("controller", "PaasNS").Msg("unable to create PaasNs controller")
 	}
 	//+kubebuilder:scaffold:builder
 
@@ -150,7 +157,7 @@ func main() {
 	}
 }
 
-func configureLogging(pretty bool, debug bool, componentDebugList string, splitLogOutput bool) {
+func configureLogging() {
 	var output io.Writer = os.Stderr
 
 	if splitLogOutput {

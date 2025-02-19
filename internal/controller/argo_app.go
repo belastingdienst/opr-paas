@@ -25,6 +25,7 @@ import (
 
 const (
 	appName = "paas-bootstrap"
+	capName = "argocd"
 )
 
 // ensureArgoApp ensures ArgoApp presence in given argo application.
@@ -32,8 +33,8 @@ func (r *PaasReconciler) EnsureArgoApp(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx, logger := logging.GetLogComponent(ctx, "argoapp")
-	namespace := fmt.Sprintf("%s-%s", paas.Name, "argocd")
+	ctx, logger := logging.GetLogComponent(ctx, capName)
+	namespace := fmt.Sprintf("%s-%s", paas.Name, capName)
 	namespacedName := types.NamespacedName{
 		Namespace: namespace,
 		Name:      appName,
@@ -41,7 +42,8 @@ func (r *PaasReconciler) EnsureArgoApp(
 
 	// See if argo application exists and create if it doesn't
 	found := &argo.Application{}
-	if argoApp, err := r.backendArgoApp(ctx, paas); err != nil {
+	argoApp, err := r.backendArgoApp(ctx, paas)
+	if err != nil {
 		return err
 	} else if err := r.Get(ctx, namespacedName, found); err == nil {
 		logger.Info().Msg("argo Application already exists, updating")
@@ -51,10 +53,9 @@ func (r *PaasReconciler) EnsureArgoApp(
 	} else if !kerrors.IsNotFound(err) {
 		logger.Err(err).Msg("could not retrieve info of Argo Application")
 		return err
-	} else {
-		logger.Info().Msg("creating Argo Application")
-		return r.Create(ctx, argoApp)
 	}
+	logger.Info().Msg("creating Argo Application")
+	return r.Create(ctx, argoApp)
 }
 
 // backendArgoApp is code for creating a ArgoApp
@@ -65,10 +66,10 @@ func (r *PaasReconciler) backendArgoApp(
 	logger := log.Ctx(ctx)
 	logger.Info().Msgf("defining %s Argo Application", appName)
 
-	namespace := fmt.Sprintf("%s-%s", paas.Name, "argocd")
-	argoConfig := paas.Spec.Capabilities["argocd"]
+	namespace := fmt.Sprintf("%s-%s", paas.Name, capName)
+	argoConfig := paas.Spec.Capabilities[capName]
 	argoConfig.SetDefaults()
-	fields, err := argoConfig.CapExtraFields(config.GetConfig().Capabilities["argocd"].CustomFields)
+	fields, err := argoConfig.CapExtraFields(config.GetConfig().Capabilities[capName].CustomFields)
 	if err != nil {
 		return nil, err
 	}

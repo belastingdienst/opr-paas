@@ -27,7 +27,9 @@ const (
 	TypeActivePaasConfig = "Active"
 	// TypeHasErrorsPaasConfig represents the status used when the custom resource reconciliation holds errors.
 	TypeHasErrorsPaasConfig = "HasErrors"
-	// TypeDegradedPaasConfig represents the status used when the custom resource is deleted and the finalizer operations are yet to occur.
+	// revive:disable-next-line
+	// TypeDegradedPaasConfig represents the status used when the custom resource is deleted
+	// and the finalizer operations are yet to occur.
 	TypeDegradedPaasConfig = "Degraded"
 )
 
@@ -307,22 +309,26 @@ func (ccp ConfigCapPerm) ServiceAccounts() []string {
 	return sas
 }
 
-func (config PaasConfigSpec) CapabilityK8sName(capability string) (as types.NamespacedName) {
+func (config PaasConfigSpec) CapabilityK8sName(capName string) (as types.NamespacedName) {
 	as.Namespace = config.ClusterWideArgoCDNamespace
-	if cap, exists := config.Capabilities[capability]; exists {
-		as.Name = cap.AppSet
+	if capability, exists := config.Capabilities[capName]; exists {
+		as.Name = capability.AppSet
 		as.Namespace = config.ClusterWideArgoCDNamespace
 	} else {
-		as.Name = fmt.Sprintf("paas-%s", capability)
+		as.Name = fmt.Sprintf("paas-%s", capName)
 		as.Namespace = config.ClusterWideArgoCDNamespace
 	}
 	return as
 }
 
+// revive:disable:line-length-limit
+
 type PaasConfigStatus struct {
 	// Conditions of this resource
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
+
+// revive:enable:line-length-limit
 
 // +kubebuilder:object:root=true
 // PaasConfigList contains a list of PaasConfig
@@ -336,9 +342,11 @@ func init() {
 	SchemeBuilder.Register(&PaasConfig{}, &PaasConfigList{})
 }
 
-// ActivePaasConfigUpdated returns a predicate to be used in watches. We are only interested in changes to the active PaasConfig.
-// because we determine the active PaasConfig based on a Condition, we must use the updateFunc as the status set is done via an
-// update. We explicitly don't return deletions of the PaasConfig.
+// ActivePaasConfigUpdated returns a predicate to be used in watches.
+// We are only interested in changes to the active PaasConfig.
+// Because we determine the active PaasConfig based on a Condition,
+// we must use the updateFunc as the status set is done via an update.
+// We explicitly don't return deletions of the PaasConfig.
 func ActivePaasConfigUpdated() predicate.Predicate {
 	return predicate.Funcs{
 		// Trigger reconciliation only if the paasConfig has the Active PaasConfig is updated
@@ -346,10 +354,18 @@ func ActivePaasConfigUpdated() predicate.Predicate {
 			oldObj := e.ObjectOld.(*PaasConfig)
 			newObj := e.ObjectNew.(*PaasConfig)
 
-			// The 'double' status check is needed because during 'creation' of the PaasConfig, the Condition is set. Once set
-			// we check for specChanges.
-			if meta.IsStatusConditionPresentAndEqual(newObj.Status.Conditions, TypeActivePaasConfig, metav1.ConditionTrue) {
-				if !meta.IsStatusConditionPresentAndEqual(oldObj.Status.Conditions, TypeActivePaasConfig, metav1.ConditionTrue) {
+			// The 'double' status check is needed because during 'creation' of the PaasConfig, the Condition is set.
+			// Once set we check for specChanges.
+			if meta.IsStatusConditionPresentAndEqual(
+				newObj.Status.Conditions,
+				TypeActivePaasConfig,
+				metav1.ConditionTrue,
+			) {
+				if !meta.IsStatusConditionPresentAndEqual(
+					oldObj.Status.Conditions,
+					TypeActivePaasConfig,
+					metav1.ConditionTrue,
+				) {
 					return true
 				}
 				return !reflect.DeepEqual(oldObj.Spec, newObj.Spec)
@@ -359,17 +375,17 @@ func ActivePaasConfigUpdated() predicate.Predicate {
 		},
 
 		// Disallow create events
-		CreateFunc: func(e event.CreateEvent) bool {
+		CreateFunc: func(_ event.CreateEvent) bool {
 			return false
 		},
 
 		// Disallow delete events
-		DeleteFunc: func(e event.DeleteEvent) bool {
+		DeleteFunc: func(_ event.DeleteEvent) bool {
 			return false
 		},
 
 		// Disallow generic events (e.g., external triggers)
-		GenericFunc: func(e event.GenericEvent) bool {
+		GenericFunc: func(_ event.GenericEvent) bool {
 			return false
 		},
 	}

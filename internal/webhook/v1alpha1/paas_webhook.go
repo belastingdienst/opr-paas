@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -35,6 +36,7 @@ func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
 
 // NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
 // Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
+// revive:disable-line
 // +kubebuilder:webhook:path=/validate-cpet-belastingdienst-nl-v1alpha1-paas,mutating=false,failurePolicy=fail,sideEffects=None,groups=cpet.belastingdienst.nl,resources=paas,verbs=create;update,versions=v1alpha1,name=vpaas-v1alpha1.kb.io,admissionReviewVersions=v1
 
 // PaasCustomValidator struct is responsible for validating the Paas resource
@@ -62,7 +64,10 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
-func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *PaasCustomValidator) ValidateUpdate(
+	ctx context.Context,
+	_, newObj runtime.Object,
+) (admission.Warnings, error) {
 	paas, ok := newObj.(*v1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object for the newObj but got %T", newObj)
@@ -74,7 +79,7 @@ func (v *PaasCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Paas.
-func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (_ *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	paas, ok := obj.(*v1alpha1.Paas)
 	if !ok {
 		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
@@ -87,6 +92,7 @@ func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Ob
 	return nil, nil
 }
 
+// revive:disable-next-line
 type paasSpecValidator func(context.Context, client.Client, v1alpha1.PaasConfigSpec, *v1alpha1.Paas) ([]*field.Error, error)
 
 func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas) (admission.Warnings, error) {
@@ -95,7 +101,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	conf := config.GetConfig()
 	// Check for uninitialized config
 	if conf.DecryptKeysSecret.Name == "" {
-		return nil, apierrors.NewInternalError(fmt.Errorf("uninitialized PaasConfig"))
+		return nil, apierrors.NewInternalError(errors.New("uninitialized PaasConfig"))
 	}
 
 	for _, val := range []paasSpecValidator{
@@ -116,17 +122,21 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 		return nil, nil
 	} else if len(allErrs) == 0 {
 		return warnings, nil
-	} else {
-		return warnings, apierrors.NewInvalid(
-			schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "Paas"},
-			paas.Name,
-			allErrs,
-		)
 	}
+	return warnings, apierrors.NewInvalid(
+		schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "Paas"},
+		paas.Name,
+		allErrs,
+	)
 }
 
 // validateCaps returns an error if any of the passed capabilities is not configured.
-func validateCaps(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func validateCaps(
+	_ context.Context,
+	client client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
 	var errs []*field.Error
 
 	for name := range paas.Spec.Capabilities {
@@ -142,7 +152,12 @@ func validateCaps(ctx context.Context, client client.Client, conf v1alpha1.PaasC
 	return errs, nil
 }
 
-func validateSecrets(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func validateSecrets(
+	ctx context.Context,
+	client client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
 	decryptRes := &corev1.Secret{}
 	if err := client.Get(ctx, types.NamespacedName{
 		Name:      conf.DecryptKeysSecret.Name,
@@ -157,7 +172,7 @@ func validateSecrets(ctx context.Context, client client.Client, conf v1alpha1.Pa
 	rsa, _ := crypt.NewCryptFromKeys(keys, "", paas.Name)
 
 	var errs []*field.Error
-	for name, secret := range paas.Spec.SshSecrets {
+	for name, secret := range paas.Spec.SSHSecrets {
 		if _, err := rsa.Decrypt(secret); err != nil {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("sshSecrets"),
@@ -175,7 +190,12 @@ func validateSecrets(ctx context.Context, client client.Client, conf v1alpha1.Pa
 //   - all custom fields pass regular expression validation as configured in the PaasConfig if present
 //
 // Returns an internal error if the validation regexp cannot be compiled.
-func validateCustomFields(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func validateCustomFields(
+	_ context.Context,
+	client client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
 	var errs []*field.Error
 
 	for cname, c := range paas.Spec.Capabilities {
@@ -195,11 +215,13 @@ func validateCustomFields(ctx context.Context, client client.Client, conf v1alph
 }
 
 // validateGroups returns a warning for any of the passed groups which contain both users and a query.
-func (v *PaasCustomValidator) validateGroups(groups v1alpha1.PaasGroups) (warnings []string) {
+func (_ *PaasCustomValidator) validateGroups(groups v1alpha1.PaasGroups) (warnings []string) {
 	for key, grp := range groups {
 		if len(grp.Query) > 0 && len(grp.Users) > 0 {
 			warnings = append(warnings, fmt.Sprintf(
-				"%s contains both users and query, the users will be ignored", field.NewPath("spec").Child("groups").Key(key)))
+				"%s contains both users and query, the users will be ignored",
+				field.NewPath("spec").Child("groups").Key(key),
+			))
 		}
 	}
 

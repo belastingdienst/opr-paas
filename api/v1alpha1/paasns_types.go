@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
+	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,7 +19,8 @@ const (
 	TypeReadyPaasNs = "Ready"
 	// TypeHasErrorsPaasNs represents the status used when the PaasNs reconciliation holds errors.
 	TypeHasErrorsPaasNs = "HasErrors"
-	// TypeDegradedPaasNs represents the status used when the PaasNs is deleted and the finalizer operations are yet to occur.
+	// TypeDegradedPaasNs represents the status used when the PaasNs is deleted
+	// and the finalizer operations are yet to occur.
 	TypeDegradedPaasNs = "Degraded"
 )
 
@@ -28,13 +30,15 @@ type PaasNSSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Paas string `json:"paas"`
-	// Keys of the groups, as defined in the related `paas`, which should get access to the namespace created by this PaasNS.
-	// When not set, all groups as defined in the related `paas` get access to the namespace created by this PaasNS.
+	// Keys of the groups, as defined in the related `paas`, which should get access to
+	// the namespace created by this PaasNS. When not set, all groups as defined in the related
+	// `paas` get access to the namespace created by this PaasNS.
 	// +kubebuilder:validation:Optional
 	Groups []string `json:"groups"`
-	// SshSecrets which should exist in the namespace created through this PaasNS, the values are the encrypted secrets through Crypt
+	// SSHSecrets which should exist in the namespace created through this PaasNS,
+	// the values are the encrypted secrets through Crypt
 	// +kubebuilder:validation:Optional
-	SshSecrets map[string]string `json:"sshSecrets"`
+	SSHSecrets map[string]string `json:"sshSecrets"`
 }
 
 //+kubebuilder:object:root=true
@@ -52,7 +56,7 @@ type PaasNS struct {
 
 func (pns PaasNS) NamespaceName() string {
 	if pns.Spec.Paas == "" || pns.Name == "" {
-		panic(fmt.Errorf("invalid paas or paasns name (empty)"))
+		panic(errors.New("invalid paas or paasns name (empty)"))
 	}
 
 	return fmt.Sprintf("%s-%s", pns.Spec.Paas, pns.Name)
@@ -105,7 +109,9 @@ func init() {
 	SchemeBuilder.Register(&PaasNS{}, &PaasNSList{})
 }
 
-// PaasStatus defines the observed state of Paas
+// revive:disable:line-length-limit
+
+// PaasNsStatus defines the observed state of Paas
 type PaasNsStatus struct {
 	// Deprecated: use paasns.status.conditions instead
 	// +kubebuilder:validation:Optional
@@ -113,6 +119,8 @@ type PaasNsStatus struct {
 	// +kubebuilder:validation:Optional
 	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
+
+// revive:enable:line-length-limit
 
 // Deprecated: use paasns.status.conditions instead
 func (ps *PaasNsStatus) Truncate() {
