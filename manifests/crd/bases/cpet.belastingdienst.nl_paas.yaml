@@ -122,9 +122,12 @@ spec:
                   is managed
                 type: string
               namespaces:
-                description: Namespaces can be used to define extra namespaces to
-                  be created as part of this Paas project
+                description: |-
+                  Namespaces can be used to define extra namespaces to be created as part of this Paas project
+                  As the names are used as the names of PaasNs resources, they must comply to the DNS subdomainname regex
+                  See https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names for more info
                 items:
+                  pattern: ^[a-z0-9]([a-z0-9-.]{0,251}[a-z0-9])?$
                   type: string
                 type: array
               quota:
