@@ -144,8 +144,39 @@ var _ = Describe("Paas Webhook", func() {
 			Expect(causes).To(ContainElements(
 				metav1.StatusCause{
 					Type:    metav1.CauseTypeFieldValueInvalid,
-					Message: "Invalid value: \"baz\": custom field not configured",
-					Field:   "spec.capabilities[foo].custom_fields",
+					Message: "Invalid value: \"custom_fields\": custom field baz is not configured in capability config",
+					Field:   "spec.capabilities[foo]",
+				},
+			))
+		})
+
+		It("Should deny creation when a capability is missing a required custom field", func() {
+			conf := config.GetConfig()
+			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
+				CustomFields: map[string]v1alpha1.ConfigCustomField{
+					"bar": {Required: true},
+				},
+			}
+			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
+
+			obj = &v1alpha1.Paas{
+				Spec: v1alpha1.PaasSpec{
+					Capabilities: v1alpha1.PaasCapabilities{
+						"foo": v1alpha1.PaasCapability{},
+					},
+				},
+			}
+			_, err := validator.ValidateCreate(ctx, obj)
+
+			var serr *apierrors.StatusError
+			Expect(errors.As(err, &serr)).To(BeTrue())
+			causes := serr.Status().Details.Causes
+			Expect(causes).To(HaveLen(1))
+			Expect(causes).To(ContainElements(
+				metav1.StatusCause{
+					Type:    metav1.CauseTypeFieldValueInvalid,
+					Message: "Invalid value: \"custom_fields\": value bar is required",
+					Field:   "spec.capabilities[foo]",
 				},
 			))
 		})
@@ -181,8 +212,8 @@ var _ = Describe("Paas Webhook", func() {
 			Expect(causes).To(ContainElements(
 				metav1.StatusCause{
 					Type:    metav1.CauseTypeFieldValueInvalid,
-					Message: "Invalid value: \"notinteger123\": does not match regular expression /^\\d+$/",
-					Field:   "spec.capabilities[foo].custom_fields[bar]",
+					Message: "Invalid value: \"custom_fields\": invalid value notinteger123 (does not match ^\\d+$)",
+					Field:   "spec.capabilities[foo]",
 				},
 			))
 		})

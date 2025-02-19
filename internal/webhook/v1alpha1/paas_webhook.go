@@ -9,7 +9,6 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -180,38 +179,15 @@ func validateCustomFields(ctx context.Context, client client.Client, conf v1alph
 	var errs []*field.Error
 
 	for cname, c := range paas.Spec.Capabilities {
-		for fname := range c.CustomFields {
-			// validateCaps() has already ensured the capability configuration exists
-			fconf, ok := conf.Capabilities[cname].CustomFields[fname]
+		// validateCaps() has already ensured the capability configuration exists
+		if _, err := c.CapExtraFields(config.GetConfig().Capabilities[cname].CustomFields); err != nil {
+			errs = append(errs, field.Invalid(
+				field.NewPath("spec").Child("capabilities").Key(cname),
+				"custom_fields",
+				err.Error(),
+			))
 
-			if !ok {
-				errs = append(errs, field.Invalid(
-					field.NewPath("spec").
-						Child("capabilities").Key(cname).
-						Child("custom_fields"),
-					fname,
-					"custom field not configured",
-				))
-
-				continue
-			}
-
-			if c.CustomFields[fname] != "" && fconf.Validation != "" {
-				r, err := regexp.Compile(fconf.Validation)
-				if err != nil {
-					return nil, fmt.Errorf("could not parse regular expression for %s custom_field validation: %w", fname, err)
-				}
-
-				if !r.MatchString(c.CustomFields[fname]) {
-					errs = append(errs, field.Invalid(
-						field.NewPath("spec").
-							Child("capabilities").Key(cname).
-							Child("custom_fields").Key(fname),
-						c.CustomFields[fname],
-						fmt.Sprintf("does not match regular expression /%s/", fconf.Validation),
-					))
-				}
-			}
+			continue
 		}
 	}
 
