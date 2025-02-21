@@ -9,11 +9,11 @@ package v1alpha1
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
+
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -178,17 +178,6 @@ type ConfigArgoPermissions struct {
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Header string `json:"header"`
-}
-
-// Deprecated: ArgoCD specific code will be removed from the operator
-func (ap ConfigArgoPermissions) FromGroups(groups []string) string {
-	permissions := []string{
-		strings.TrimSpace(ap.Header),
-	}
-	for _, group := range groups {
-		permissions = append(permissions, fmt.Sprintf("g, %s, role:%s", group, ap.Role))
-	}
-	return strings.Join(permissions, "\n")
 }
 
 type ConfigLdap struct {

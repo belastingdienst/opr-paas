@@ -13,7 +13,6 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/fields"
 	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
-	gitops "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
 	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -78,7 +77,6 @@ func assurePaas(ctx context.Context, newPaas *api.Paas) {
 var _ = Describe("Paas Controller", Ordered, func() {
 	const (
 		paasRequestor      = "paas-controller"
-		paasNamePrefix     = paasRequestor + "-paas"
 		capAppSetNamespace = "asns"
 		capAppSetName      = "argoas"
 		capName            = "argocd"
@@ -140,14 +138,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 				Name: "paas-config",
 			},
 			Spec: api.PaasConfigSpec{
-				ArgoEnabled:                true,
 				ClusterWideArgoCDNamespace: capAppSetNamespace,
-				ArgoPermissions: api.ConfigArgoPermissions{
-					ResourceName:  "argocd",
-					DefaultPolicy: "role:tester",
-					Role:          "admin",
-					Header:        "g, system:cluster-admins, role:admin",
-				},
 				Capabilities: map[string]api.ConfigCapability{
 					capName: {
 						AppSet: capAppSetName,
@@ -206,33 +197,6 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			}
 			Expect(entries).To(HaveKey(paasName))
 		})
-		It("should create an argo bootstrap app", func() {
-			app := &argocd.Application{}
-			appName := types.NamespacedName{
-				Name:      argoAppName,
-				Namespace: capNamespace,
-			}
-			err := k8sClient.Get(ctx, appName, app)
-			Expect(err).NotTo(HaveOccurred())
-		})
-		It("should create an argocd", func() {
-			argo := &gitops.ArgoCD{}
-			argoName := types.NamespacedName{
-				Name:      config.GetConfig().Spec.ArgoPermissions.ResourceName,
-				Namespace: capNamespace,
-			}
-			err := k8sClient.Get(ctx, argoName, argo)
-			Expect(err).NotTo(HaveOccurred())
-		})
-		It("should create an argo project", func() {
-			proj := &argocd.AppProject{}
-			projName := types.NamespacedName{
-				Name:      paasName,
-				Namespace: capAppSetNamespace,
-			}
-			err := k8sClient.Get(ctx, projName, proj)
-			Expect(err).NotTo(HaveOccurred())
-		})
 	})
 
 	When("reconciling a Paas without argocd capability", func() {
@@ -266,89 +230,6 @@ var _ = Describe("Paas Controller", Ordered, func() {
 				entries = entries.Merge(generatorEntries)
 			}
 			Expect(entries).NotTo(HaveKey(paasName))
-		})
-
-		It("should not create an argo bootstrap app", func() {
-			app := &argocd.Application{}
-			appName := types.NamespacedName{
-				Name:      argoAppName,
-				Namespace: capNamespace,
-			}
-			err := k8sClient.Get(ctx, appName, app)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring(`applications.argoproj.io "` + argoAppName + `" not found`))
-		})
-
-		It("should not create an argocd", func() {
-			argocdName := config.GetConfig().Spec.ArgoPermissions.ResourceName
-			argo := &gitops.ArgoCD{}
-			argoName := types.NamespacedName{
-				Name:      argocdName,
-				Namespace: capNamespace,
-			}
-			err := k8sClient.Get(ctx, argoName, argo)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring(`argocds.argoproj.io "` + argocdName + `" not found`))
-		})
-		It("should create an argo project", func() {
-			proj := &argocd.AppProject{}
-			projName := types.NamespacedName{
-				Name:      paasName,
-				Namespace: capAppSetNamespace,
-			}
-			err := k8sClient.Get(ctx, projName, proj)
-			Expect(err).NotTo(HaveOccurred())
-		})
-	})
-
-	When("reconciling a Paas with argocd disabled", func() {
-		It("should not return an error", func() {
-			paasName = paasRequestor + "-nocode"
-			paas.Name = paasName
-			request.Name = paasName
-			capNamespace = paasName + "-" + capName
-			assurePaas(ctx, paas)
-			assureNamespace(ctx, capNamespace)
-			patchAppSet(ctx, appSet)
-			myConfig.Spec.ArgoEnabled = false
-			config.SetConfig(myConfig)
-			result, err := reconciler.Reconcile(ctx, request)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(result.RequeueAfter.Microseconds()).To(BeZero())
-		})
-
-		It("should not create an argo bootstrap app", func() {
-			app := &argocd.Application{}
-			appName := types.NamespacedName{
-				Name:      argoAppName,
-				Namespace: capNamespace,
-			}
-			err := k8sClient.Get(ctx, appName, app)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring(`applications.argoproj.io "` + argoAppName + `" not found`))
-		})
-
-		It("should not create an argocd", func() {
-			argocdName := config.GetConfig().Spec.ArgoPermissions.ResourceName
-			argo := &gitops.ArgoCD{}
-			argoName := types.NamespacedName{
-				Name:      argocdName,
-				Namespace: capNamespace,
-			}
-			err := k8sClient.Get(ctx, argoName, argo)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring(`argocds.argoproj.io "` + argocdName + `" not found`))
-		})
-
-		It("should not create an argo project", func() {
-			proj := &argocd.AppProject{}
-			projName := types.NamespacedName{
-				Name:      paasName,
-				Namespace: capAppSetNamespace,
-			}
-			err := k8sClient.Get(ctx, projName, proj)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring(`appprojects.argoproj.io "` + paasName + `" not found`))
 		})
 	})
 })

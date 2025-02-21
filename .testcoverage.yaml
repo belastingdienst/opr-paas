@@ -37,7 +37,7 @@ override:
   #- path: ^pkg/lib/foo$
   #  threshold: 100
   - path: ^internal/controller$
-    threshold: 32
+    threshold: 30
   - path: ^api/v1alpha1$
     threshold: 32
   - path: ^internal/crypt$
@@ -46,7 +46,7 @@ override:
     threshold: 23
 
   - path: api/v1alpha1/paasconfig_types.go
-    threshold: 15
+    threshold: 10
   - path: api/v1alpha1/zz_generated.deepcopy.go
     threshold: 13
   - path: internal/config/watcher.go
@@ -72,7 +72,7 @@ override:
   - path: internal/controller/namespaces.go
     threshold: 33
   - path: internal/controller/paas_controller.go
-    threshold: 32
+    threshold: 28
   - path: internal/controller/paasconfig_controller.go
     threshold: 0
   - path: internal/controller/paasnamespaces.go
