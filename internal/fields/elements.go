@@ -21,6 +21,16 @@ func ElementsFromJSON(raw []byte) (Elements, error) {
 	}
 }
 
+// GetElementsAsString gets a value and returns as string
+// This should be a method on Element, but a method cannot exist on interface datatypes
+func (es Elements) GetElementsAsStringMap() (values map[string]string) {
+	values = make(map[string]string)
+	for key := range es {
+		values[key] = es.GetElementAsString(key)
+	}
+	return values
+}
+
 // GetElementAsString gets a value and returns as string
 // This should be a method on Element, but a method cannot exist on interface datatypes
 func (es Elements) GetElementAsString(key string) string {
@@ -45,10 +55,16 @@ func (es Elements) TryGetElementAsString(key string) (string, error) {
 	return fmt.Sprintf("%v", value), nil
 }
 
-func (es Elements) AsString() string {
+func (es Elements) String() string {
 	var l []string
-	for key, value := range es {
-		l = append(l, fmt.Sprintf("'%s': '%s'", key, strings.ReplaceAll(fmt.Sprintf("%e", value), "'", "\\'")))
+	for key := range es {
+		value, err := es.TryGetElementAsString(key)
+		if err != nil {
+			panic("this is impossible, looping through keys in Elements object, and key cannot be fount, weird.")
+		}
+		key = strings.ReplaceAll(key, "'", "\\'")
+		value = strings.ReplaceAll(value, "'", "\\'")
+		l = append(l, fmt.Sprintf("'%s': '%s'", key, value))
 	}
 	return fmt.Sprintf("{ %s }", strings.Join(l, ", "))
 }
