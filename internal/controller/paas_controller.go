@@ -60,7 +60,7 @@ type Reconciler interface {
 
 //+kubebuilder:rbac:groups=quota.openshift.io,resources=clusterresourcequotas,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=user.openshift.io,resources=groups,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=argoproj.io,resources=argocds;applicationsets;applications;appprojects,verbs=create;delete;list;patch;watch;update;get
+//+kubebuilder:rbac:groups=argoproj.io,resources=applicationsets,verbs=get;list;watch;patch
 //+kubebuilder:rbac:groups=core,resources=secrets;configmaps;namespaces,verbs=create;delete;get;list;patch;update;watch
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings;clusterrolebindings,verbs=create;delete;get;list;patch;update;watch
 // It is advised to reduce the scope of this permission by stating the resourceNames of the roles you would like Paas to bind to, in your deployment role.yaml
@@ -200,8 +200,6 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.ReconcilePaasNss(ctx, paas); err != nil {
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.EnsureAppProject(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.ReconcileGroups(ctx, paas); err != nil {
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.EnsureLdapGroups(ctx, paas); err != nil {
@@ -210,19 +208,6 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if err = r.ensureAppSetCaps(ctx, paas); err != nil {
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if argoCap, exists := paas.Spec.Capabilities["argocd"]; exists {
-		if argoCap.IsEnabled() {
-			logger.Info().Msg("creating Argo App for client bootstrapping")
-
-			// Create bootstrap Argo App
-			if err := r.EnsureArgoApp(ctx, paas); err != nil {
-				return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-			}
-
-			if err := r.EnsureArgoCD(ctx, paas); err != nil {
-				return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-			}
-		}
 	}
 
 	// Reconciling succeeded, set appropriate Condition
