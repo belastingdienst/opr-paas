@@ -147,7 +147,7 @@ func validateCaps(ctx context.Context, client client.Client, conf v1alpha1.PaasC
 	return errs, nil
 }
 
-// validateCaps returns an error if any of the passed capabilities is not configured.
+// validateGroupNames returns an error if any of the passed capabilities is not configured.
 func validateGroupNames(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
 	var errs []*field.Error
 
