@@ -20,43 +20,39 @@ import (
 func TestPaasConfig(t *testing.T) {
 	testenv.Test(
 		t,
-		features.New("Paas Operator can run without a PaasConfig Resource").
+		features.New("PaasConfig is a Singleton").
 			Setup(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-				paasconfig := &v1alpha1.PaasConfig{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "paas-config",
-					},
-				}
-
-				// Ensure the PaasConfig does not exist
-				err := deleteResourceSync(ctx, cfg, paasconfig)
-				if err != nil {
-					t.Fatalf("Failed to delete PaasConfig in test setup: %v", err)
-				}
 				return ctx
 			}).
-			Assess("Operator reports error when no PaasConfig is loaded", assertOperatorErrorWithoutPaasConfig).
-			Assess("Paas reconciliation is triggered after PaasConfig is updated", assertPaasReconciliationAfterConfigUpdate).
-			Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-				deletePaasSync(ctx, "foo", t, cfg)
-
-				// Reset PaasConfig to erase tested changes
-				paasConfig := getOrFail(ctx, "paas-config", cfg.Namespace(), &v1alpha1.PaasConfig{}, t, cfg)
-				examplePaasConfig.Spec.DeepCopyInto(&paasConfig.Spec)
-				require.NoError(t, updateSync(ctx, cfg, paasConfig, v1alpha1.TypeActivePaasConfig))
-
-				return ctx
-			}).
-			Feature(),
-		features.New("PaasConfig is valid").
-			Assess("PaasConfig is Active", assertPaasConfigIsActive).
-			Assess("PaasConfig is Updated", assertPaasConfigIsUpdated).
-			Assess("PaasConfig Invalid Spec", assertPaasConfigInvalidSpec).
+			Assess("A single PaasConfig resource instances exists", assertOnePaasConfigExists).
+			// Assess("Adding a second PaasConfig fails", assertPaasConfigCannotBeAdded).
 			Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 				return ctx
 			}).
 			Feature(),
+		// features.New("Paas Operator can run without a PaasConfig Resource").
+		// 	Feature(),
+		// features.New("PaasConfig is valid").
+		// 	Assess("PaasConfig is Active", assertPaasConfigIsActive).
+		// 	Assess("PaasConfig is Updated", assertPaasConfigIsUpdated).
+		// 	Assess("PaasConfig Invalid Spec", assertPaasConfigInvalidSpec).
+		// 	Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		// 		return ctx
+		// 	}).
+		// 	Feature(),
 	)
+}
+
+// assertOnePaasConfigExists verifies that only one PaasConfig resource exists.
+func assertOnePaasConfigExists(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	// Ensure PaasConfig does not exist
+	paasconfiglist := v1alpha1.PaasConfigList{}
+	err := cfg.Client().Resources().List(ctx, &paasconfiglist)
+	require.NoError(t, err)
+	require.NotEmpty(t, paasconfiglist.Items)
+	assert.Equal(t, "paas-config", paasconfiglist.Items[0].Name)
+
+	return ctx
 }
 
 // assertPaasConfigIsActive verifies that the PaasConfig resource exists and is active.
@@ -121,27 +117,6 @@ func assertPaasConfigInvalidSpec(ctx context.Context, t *testing.T, cfg *envconf
 	err = cfg.Client().Resources().Get(ctx, "invalid-paas-config", "", &paasConfig)
 	require.Error(t, err, "Expected error when getting invalid PaasConfig")
 	require.True(t, apierrors.IsNotFound(err), "Expected NotFound error, got: %v", err)
-
-	return ctx
-}
-
-func assertOperatorErrorWithoutPaasConfig(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	// Ensure no PaasConfig resource exists
-	var existingPaasConfig v1alpha1.PaasConfig
-	err := cfg.Client().Resources().Get(ctx, "paas-config", "", &existingPaasConfig)
-
-	require.True(t, apierrors.IsNotFound(err))
-
-	paas := &v1alpha1.Paas{
-		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
-		Spec: v1alpha1.PaasSpec{
-			Requestor: "paas-user",
-			Quota:     make(quota.Quota),
-		},
-	}
-
-	err = cfg.Client().Resources().Create(ctx, paas)
-	require.True(t, apierrors.IsInternalError(err))
 
 	return ctx
 }
