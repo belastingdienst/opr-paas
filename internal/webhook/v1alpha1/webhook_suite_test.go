@@ -8,11 +8,7 @@ package v1alpha1
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
 	"crypto/tls"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -28,7 +24,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -48,36 +43,12 @@ var (
 	ctx       context.Context
 	k8sClient client.Client
 	testEnv   *envtest.Environment
-	pubkey    *rsa.PublicKey
 )
 
 func TestWebhooks(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	RunSpecs(t, "Webhook Suite")
-}
-
-func setupPaasSys() {
-	// Create system namespace
-	err := k8sClient.Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: "paas-system"},
-	})
-	Expect(err).NotTo(HaveOccurred())
-
-	// Set up private key
-	privkey, err := rsa.GenerateKey(rand.Reader, 4096)
-	Expect(err).NotTo(HaveOccurred())
-	err = k8sClient.Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "keys",
-			Namespace: "paas-system",
-		},
-		Data: map[string][]byte{"privatekey0": pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privkey)})},
-	})
-	Expect(err).NotTo(HaveOccurred())
-
-	// Save public key so we can encrypt things within tests
-	pubkey = &privkey.PublicKey
 }
 
 var _ = BeforeSuite(func() {
@@ -161,8 +132,6 @@ var _ = BeforeSuite(func() {
 
 		return conn.Close()
 	}).Should(Succeed())
-
-	setupPaasSys()
 })
 
 var _ = AfterSuite(func() {

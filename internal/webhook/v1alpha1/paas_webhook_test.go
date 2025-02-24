@@ -7,14 +7,12 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha512"
 	"encoding/base64"
 	"errors"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -24,12 +22,23 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Paas Webhook", func() {
+var _ = Describe("Paas Webhook", Ordered, func() {
+	const paasName = "my-paas"
 	var (
 		obj       *v1alpha1.Paas
 		oldObj    *v1alpha1.Paas
 		validator PaasCustomValidator
+		mycrypt   *crypt.Crypt
 	)
+
+	BeforeAll(func() {
+		c, pkey, err := newGeneratedCrypt(paasName)
+		Expect(err).NotTo(HaveOccurred())
+		mycrypt = c
+
+		createNamespace("paas-system")
+		createPaasPrivateKeySecret("paas-system", "keys", pkey)
+	})
 
 	BeforeEach(func() {
 		obj = &v1alpha1.Paas{}
@@ -82,15 +91,14 @@ var _ = Describe("Paas Webhook", func() {
 		})
 
 		It("Should deny creation when a secret is set that cannot be decrypted", func() {
-			const paasName = "my-paas"
-			encrypted, err := rsa.EncryptOAEP(sha512.New(), rand.Reader, pubkey, []byte("some encrypted string"), []byte(paasName))
+			encrypted, err := mycrypt.Encrypt([]byte("some encrypted string"))
 			Expect(err).NotTo(HaveOccurred())
 
 			obj = &v1alpha1.Paas{
 				ObjectMeta: metav1.ObjectMeta{Name: paasName},
 				Spec: v1alpha1.PaasSpec{
 					SshSecrets: map[string]string{
-						"valid secret":   base64.StdEncoding.EncodeToString(encrypted),
+						"valid secret":   encrypted,
 						"invalid secret": base64.StdEncoding.EncodeToString([]byte("foo bar baz")),
 						"invalid base64": "foo bar baz",
 					},
