@@ -14,6 +14,7 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/logging"
+	"github.com/belastingdienst/opr-paas/internal/quota"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -87,6 +88,8 @@ func (v *PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Ob
 	return nil, nil
 }
 
+type paasSpecValidator func(context.Context, client.Client, v1alpha1.PaasConfigSpec, *v1alpha1.Paas) ([]*field.Error, error)
+
 func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	var warnings []string
@@ -95,16 +98,22 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	if conf.DecryptKeysSecret.Name == "" {
 		return nil, apierrors.NewInternalError(fmt.Errorf("uninitialized PaasConfig"))
 	}
-	if errs := v.validateCaps(conf, paas.Spec.Capabilities); errs != nil {
-		allErrs = append(allErrs, errs...)
-	}
-	if errs, err := v.validateSecrets(ctx, conf, paas); err != nil {
-		return nil, apierrors.NewInternalError(err)
-	} else if errs != nil {
-		allErrs = append(allErrs, errs...)
+
+	for _, val := range []paasSpecValidator{
+		validateCaps,
+		validateSecrets,
+		validateCustomFields,
+	} {
+		if errs, err := val(ctx, v.client, conf, paas); err != nil {
+			return nil, apierrors.NewInternalError(err)
+		} else if errs != nil {
+			allErrs = append(allErrs, errs...)
+		}
 	}
 
 	warnings = append(warnings, v.validateGroups(paas.Spec.Groups)...)
+	warnings = append(warnings, v.validateQuota(paas)...)
+	warnings = append(warnings, v.validateExtraPerm(conf, paas)...)
 
 	if len(allErrs) == 0 && len(warnings) == 0 {
 		return nil, nil
@@ -120,10 +129,10 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 }
 
 // validateCaps returns an error if any of the passed capabilities is not configured.
-func (v *PaasCustomValidator) validateCaps(conf v1alpha1.PaasConfigSpec, caps v1alpha1.PaasCapabilities) []*field.Error {
+func validateCaps(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
 	var errs []*field.Error
 
-	for name := range caps {
+	for name := range paas.Spec.Capabilities {
 		if _, ok := conf.Capabilities[name]; !ok {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("capabilities"),
@@ -133,12 +142,12 @@ func (v *PaasCustomValidator) validateCaps(conf v1alpha1.PaasConfigSpec, caps v1
 		}
 	}
 
-	return errs
+	return errs, nil
 }
 
-func (v *PaasCustomValidator) validateSecrets(ctx context.Context, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+func validateSecrets(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
 	decryptRes := &corev1.Secret{}
-	if err := v.client.Get(ctx, types.NamespacedName{
+	if err := client.Get(ctx, types.NamespacedName{
 		Name:      conf.DecryptKeysSecret.Name,
 		Namespace: conf.DecryptKeysSecret.Namespace,
 	}, decryptRes); err != nil {
@@ -164,6 +173,30 @@ func (v *PaasCustomValidator) validateSecrets(ctx context.Context, conf v1alpha1
 	return errs, nil
 }
 
+// validateCustomFields ensures that for a given capability in the Paas:
+//   - all custom fields are configured for that capability in the PaasConfig
+//   - all custom fields pass regular expression validation as configured in the PaasConfig if present
+//
+// Returns an internal error if the validation regexp cannot be compiled.
+func validateCustomFields(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+	var errs []*field.Error
+
+	for cname, c := range paas.Spec.Capabilities {
+		// validateCaps() has already ensured the capability configuration exists
+		if _, err := c.CapExtraFields(config.GetConfig().Capabilities[cname].CustomFields); err != nil {
+			errs = append(errs, field.Invalid(
+				field.NewPath("spec").Child("capabilities").Key(cname),
+				"custom_fields",
+				err.Error(),
+			))
+
+			continue
+		}
+	}
+
+	return errs, nil
+}
+
 // validateGroups returns a warning for any of the passed groups which contain both users and a query.
 func (v *PaasCustomValidator) validateGroups(groups v1alpha1.PaasGroups) (warnings []string) {
 	for key, grp := range groups {
@@ -174,4 +207,47 @@ func (v *PaasCustomValidator) validateGroups(groups v1alpha1.PaasGroups) (warnin
 	}
 
 	return warnings
+}
+
+// validateQuota returns a warning when limits are configured higher than requests for the Paas quota or capability quotas.
+func (v *PaasCustomValidator) validateQuota(paas *v1alpha1.Paas) (warnings []string) {
+	quotas := map[*field.Path]quota.Quota{
+		field.NewPath("spec", "quota"): paas.Spec.Quota,
+	}
+	cf := field.NewPath("spec", "capabilities")
+	for name, c := range paas.Spec.Capabilities {
+		quotas[cf.Key(name).Child("quota")] = c.Quota
+	}
+
+	for f, q := range quotas {
+		reqc, reqcok := q[corev1.ResourceRequestsCPU]
+		limc, limcok := q[corev1.ResourceLimitsCPU]
+
+		if reqcok && limcok && reqc.Cmp(limc) > 0 {
+			warnings = append(warnings, fmt.Sprintf("%s CPU resource request (%s) higher than limit (%s)", f, reqc.String(), limc.String()))
+		}
+
+		reqm, reqmok := q[corev1.ResourceRequestsMemory]
+		limm, limmok := q[corev1.ResourceLimitsMemory]
+
+		if reqmok && limmok && reqm.Cmp(limm) > 0 {
+			warnings = append(warnings, fmt.Sprintf("%s memory resource request (%s) higher than limit (%s)", f, reqm.String(), limm.String()))
+		}
+	}
+
+	return
+}
+
+// validateExtraPerm returns a warning when extra permissions are requested for a capability that are not configured.
+func (v *PaasCustomValidator) validateExtraPerm(conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) (warnings []string) {
+	for cname, c := range paas.Spec.Capabilities {
+		if c.ExtraPermissions && conf.Capabilities[cname].ExtraPermissions == nil {
+			warnings = append(warnings, fmt.Sprintf(
+				"%s capability does not have extra permissions configured",
+				field.NewPath("spec", "capabilities").Key(cname).Child("extra_permissions"),
+			))
+		}
+	}
+
+	return
 }
