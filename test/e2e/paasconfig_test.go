@@ -5,11 +5,9 @@ import (
 	"testing"
 
 	v1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/quota"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,25 +19,16 @@ func TestPaasConfig(t *testing.T) {
 	testenv.Test(
 		t,
 		features.New("PaasConfig is a Singleton").
-			Setup(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-				return ctx
-			}).
 			Assess("A single PaasConfig resource instances exists", assertOnePaasConfigExists).
 			// Assess("Adding a second PaasConfig fails", assertPaasConfigCannotBeAdded).
-			Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-				return ctx
-			}).
 			Feature(),
 		// features.New("Paas Operator can run without a PaasConfig Resource").
 		// 	Feature(),
-		// features.New("PaasConfig is valid").
-		// 	Assess("PaasConfig is Active", assertPaasConfigIsActive).
-		// 	Assess("PaasConfig is Updated", assertPaasConfigIsUpdated).
-		// 	Assess("PaasConfig Invalid Spec", assertPaasConfigInvalidSpec).
-		// 	Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-		// 		return ctx
-		// 	}).
-		// 	Feature(),
+		features.New("PaasConfig is valid").
+			Assess("PaasConfig is Active", assertPaasConfigIsActive).
+			Assess("PaasConfig is Updated", assertPaasConfigIsUpdated).
+			Assess("PaasConfig Invalid Spec", assertPaasConfigInvalidSpec).
+			Feature(),
 	)
 }
 
@@ -117,34 +106,6 @@ func assertPaasConfigInvalidSpec(ctx context.Context, t *testing.T, cfg *envconf
 	err = cfg.Client().Resources().Get(ctx, "invalid-paas-config", "", &paasConfig)
 	require.Error(t, err, "Expected error when getting invalid PaasConfig")
 	require.True(t, apierrors.IsNotFound(err), "Expected NotFound error, got: %v", err)
-
-	return ctx
-}
-
-func assertPaasReconciliationAfterConfigUpdate(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	paasConfig := examplePaasConfig.DeepCopy()
-	require.NoError(t, createSync(ctx, cfg, paasConfig, v1alpha1.TypeActivePaasConfig))
-
-	paas := &v1alpha1.Paas{
-		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
-		Spec: v1alpha1.PaasSpec{
-			Requestor: "paas-user",
-			Quota:     make(quota.Quota),
-		},
-	}
-	require.NoError(t, createSync(ctx, cfg, paas, v1alpha1.TypeReadyPaas))
-
-	ns := getOrFail(ctx, "foo", cfg.Namespace(), &v1.Namespace{}, t, cfg)
-	assert.Equal(t, "paas-user", ns.Labels["o.lbl"])
-	assert.Equal(t, "foo", ns.Labels["q.lbl"])
-
-	paasConfig.Spec.RequestorLabel = "another.lbl"
-	paasConfig.Spec.QuotaLabel = "different.lbl"
-	require.NoError(t, updateSync(ctx, cfg, paasConfig, v1alpha1.TypeActivePaasConfig))
-
-	ns = getOrFail(ctx, "foo", cfg.Namespace(), &v1.Namespace{}, t, cfg)
-	assert.Equal(t, "paas-user", ns.Labels["another.lbl"])
-	assert.Equal(t, "foo", ns.Labels["different.lbl"])
 
 	return ctx
 }
