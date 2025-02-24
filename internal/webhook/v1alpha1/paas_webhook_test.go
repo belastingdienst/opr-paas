@@ -9,6 +9,7 @@ package v1alpha1
 import (
 	"encoding/base64"
 	"errors"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -229,6 +230,69 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			))
 		})
 
+		It("Should allow groups with valid names", func() {
+			var (
+				validChars = "abcdefghijklmknopqrstuvwzyz-0123456789"
+				validNames = []string{
+					validChars,
+					strings.Repeat(validChars, 3)[0:63],
+				}
+			)
+			for _, validName := range validNames {
+				validGroupNamePaas := &v1alpha1.Paas{
+					Spec: v1alpha1.PaasSpec{
+						Groups: map[string]v1alpha1.PaasGroup{
+							validName: {
+								Users: []string{"bar"},
+							},
+						},
+					},
+				}
+				warnings, errors := validator.ValidateCreate(ctx, validGroupNamePaas)
+				Expect(warnings).To(BeNil())
+				Expect(errors).ToNot(HaveOccurred())
+			}
+		})
+
+		// RFC 1035 Label Names
+		//
+		// Some resource types require their names to follow the DNS label standard as defined in RFC 1035.
+		// This means the name must:
+		//
+		// contain at most 63 characters
+		// contain only lowercase alphanumeric characters or '-'
+		// start with an alphabetic character
+		// end with an alphanumeric character
+		It("Should deny groups with invalid names", func() {
+			const (
+				tooLongMsg      = "must be no more than 63 characters"
+				invalidCharsMsg = "a DNS-1035 label must consist of lower case alphanumeric characters or '-'"
+			)
+			var (
+				validChars   = "abcdefghijklmknopqrstuvwzyz-0123456789"
+				invalidNames = map[string]string{
+					"-" + validChars: invalidCharsMsg,
+					validChars + "-": invalidCharsMsg,
+					validChars[0:10] + "A" + validChars[11:20]: invalidCharsMsg,
+					strings.Repeat(validChars, 3):              tooLongMsg,
+				}
+			)
+			for invalidName, msg := range invalidNames {
+				invalidGroupNamePaas := &v1alpha1.Paas{
+					Spec: v1alpha1.PaasSpec{
+						Groups: map[string]v1alpha1.PaasGroup{
+							invalidName: {
+								Users: []string{"bar"},
+							},
+						},
+					},
+				}
+				warnings, errors := validator.ValidateCreate(ctx, invalidGroupNamePaas)
+				Expect(warnings).To(BeEmpty())
+				Expect(errors).To(MatchError(SatisfyAll(ContainSubstring(msg))))
+			}
+
+		})
 		It("Should warn when a group contains both users and a query", func() {
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
