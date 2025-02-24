@@ -178,7 +178,7 @@ func validatePaasConfigSpec(ctx context.Context, client client.Client, spec v1al
 	}
 
 	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, client, spec.DecryptKeysSecret, childPath)...)
-	allErrs = append(allErrs, validateCapabilities(spec.Capabilities, childPath)...)
+	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, childPath)...)
 
 	if len(allErrs) > 0 {
 		logger.Error().Strs("validation_errors", formatFieldErrors(allErrs)).Msg("encountered errors during validation of PaasConfig")
@@ -187,29 +187,29 @@ func validatePaasConfigSpec(ctx context.Context, client client.Client, spec v1al
 	return warn, allErrs
 }
 
-func validateCapabilities(capabilities v1alpha1.ConfigCapabilities, rootPath *field.Path) field.ErrorList {
+func validateConfigCapabilities(capabilities v1alpha1.ConfigCapabilities, rootPath *field.Path) field.ErrorList {
 	childPath := rootPath.Child("capabilities")
 
 	var allErrs field.ErrorList
 
 	for name, capability := range capabilities {
-		allErrs = append(allErrs, validateCapability(name, capability, childPath)...)
+		allErrs = append(allErrs, validateConfigCapability(name, capability, childPath)...)
 	}
 
 	return allErrs
 }
 
-func validateCapability(name string, cap v1alpha1.ConfigCapability, rootPath *field.Path) field.ErrorList {
+func validateConfigCapability(name string, cap v1alpha1.ConfigCapability, rootPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Key(name)
 
-	allErrs = append(allErrs, validateQuotaSettings(cap.QuotaSettings, childPath)...)
-	allErrs = append(allErrs, validateCustomFields(cap.CustomFields, childPath)...)
+	allErrs = append(allErrs, validateConfigQuotaSettings(cap.QuotaSettings, childPath)...)
+	allErrs = append(allErrs, validateConfigCustomFields(cap.CustomFields, childPath)...)
 
 	return allErrs
 }
 
-func validateQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *field.Path) field.ErrorList {
+func validateConfigQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Child("quotasettings")
 
@@ -300,18 +300,18 @@ func validateQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *field.Path
 	return allErrs
 }
 
-func validateCustomFields(customfields map[string]v1alpha1.ConfigCustomField, rootPath *field.Path) field.ErrorList {
+func validateConfigCustomFields(customfields map[string]v1alpha1.ConfigCustomField, rootPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Child("customfields")
 
 	for name, cf := range customfields {
-		allErrs = append(allErrs, validateCustomField(name, cf, childPath)...)
+		allErrs = append(allErrs, validateConfigCustomField(name, cf, childPath)...)
 	}
 
 	return allErrs
 }
 
-func validateCustomField(name string, customfield v1alpha1.ConfigCustomField, rootPath *field.Path) field.ErrorList {
+func validateConfigCustomField(name string, customfield v1alpha1.ConfigCustomField, rootPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Child("customfields").Key(name)
 
