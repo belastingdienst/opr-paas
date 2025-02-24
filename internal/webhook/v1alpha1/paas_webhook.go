@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -103,6 +104,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 		validateCaps,
 		validateSecrets,
 		validateCustomFields,
+		validateGroupNames,
 	} {
 		if errs, err := val(ctx, v.client, conf, paas); err != nil {
 			return nil, apierrors.NewInternalError(err)
@@ -138,6 +140,23 @@ func validateCaps(ctx context.Context, client client.Client, conf v1alpha1.PaasC
 				field.NewPath("spec").Child("capabilities"),
 				name,
 				"capability not configured",
+			))
+		}
+	}
+
+	return errs, nil
+}
+
+// validateGroupNames returns an error if any of the passed capabilities is not configured.
+func validateGroupNames(ctx context.Context, client client.Client, conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) ([]*field.Error, error) {
+	var errs []*field.Error
+
+	for name := range paas.Spec.Groups {
+		for _, errString := range validation.IsDNS1035Label(name) {
+			errs = append(errs, field.Invalid(
+				field.NewPath("spec").Child("groups"),
+				name,
+				errString,
 			))
 		}
 	}
