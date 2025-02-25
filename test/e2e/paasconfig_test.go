@@ -15,15 +15,14 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
+//TODO: Move as many test as possible to webhook (unit)tests
+
 func TestPaasConfig(t *testing.T) {
 	testenv.Test(
 		t,
 		features.New("PaasConfig is a Singleton").
 			Assess("A single PaasConfig resource instances exists", assertOnePaasConfigExists).
-			// Assess("Adding a second PaasConfig fails", assertPaasConfigCannotBeAdded).
 			Feature(),
-		// features.New("Paas Operator can run without a PaasConfig Resource").
-		// 	Feature(),
 		features.New("PaasConfig is valid").
 			Assess("PaasConfig is Active", assertPaasConfigIsActive).
 			Assess("PaasConfig is Updated", assertPaasConfigIsUpdated).
