@@ -77,11 +77,15 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 		allErrs = append(allErrs, flderr...)
 	}
 
-	return warn, apierrors.NewInvalid(
-		schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "PaasConfig"},
-		paasconfig.Name,
-		allErrs,
-	)
+	if len(allErrs) > 0 {
+		return warn, apierrors.NewInvalid(
+			schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "PaasConfig"},
+			paasconfig.Name,
+			allErrs,
+		)
+	}
+
+	return warn, nil
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
@@ -105,11 +109,15 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, 
 	// TODO(hikarukin): figure out what we need to check on update specifically
 	logger.Debug().Msgf("old PaasConfig: %v", oldObj.(*v1alpha1.PaasConfig))
 
-	return warn, apierrors.NewInvalid(
-		schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "PaasConfig"},
-		paasconfig.Name,
-		allErrs,
-	)
+	if len(allErrs) > 0 {
+		return warn, apierrors.NewInvalid(
+			schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "PaasConfig"},
+			paasconfig.Name,
+			allErrs,
+		)
+	}
+
+	return warn, nil
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
@@ -250,7 +258,7 @@ func validateConfigQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *fiel
 	for resourceName, maxQuantity := range qs.MaxQuotas {
 		// Ensure MaxQuota is not less than MinQuota
 		if minQuantity, exists := qs.MinQuotas[resourceName]; exists {
-			if maxQuantity.Cmp(minQuantity) > 0 {
+			if maxQuantity.Cmp(minQuantity) < 0 {
 				allErrs = append(allErrs, field.Invalid(
 					childPath.Child("maxquotas").Key(string(resourceName)),
 					maxQuantity,
