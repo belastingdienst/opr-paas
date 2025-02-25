@@ -73,7 +73,7 @@ func GenerateKeyPair(privateKey string, publicKey string) error {
 		publicKey = f.Name()
 	}
 
-	if _, err := NewGeneratedCrypt(privateKey, publicKey); err != nil {
+	if _, err := NewGeneratedCrypt(privateKey, publicKey, ""); err != nil {
 		return fmt.Errorf("failed to generate new key pair: %w", err)
 	}
 	return nil

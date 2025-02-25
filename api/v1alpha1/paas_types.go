@@ -48,8 +48,12 @@ type PaasSpec struct {
 	Quota paas_quota.Quota `json:"quota"`
 
 	// Namespaces can be used to define extra namespaces to be created as part of this Paas project
+	// As the names are used as the names of PaasNs resources, they must comply to the DNS subdomainname regex
+	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names for more info
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:items:Pattern=`^[a-z0-9]([a-z0-9-.]{0,251}[a-z0-9])?$`
 	Namespaces []string `json:"namespaces"`
+
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
 	// They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
 	// +kubebuilder:validation:Optional
@@ -266,7 +270,7 @@ func (pcs PaasCapabilities) IsCap(name string) bool {
 
 func (pcs PaasCapabilities) GetCapability(capability string) (cap PaasCapability, err error) {
 	if cap, exists := pcs[capability]; !exists {
-		return cap, fmt.Errorf("Capability %s does not exist", capability)
+		return cap, fmt.Errorf("capability %s does not exist", capability)
 	} else {
 		return cap, nil
 	}
@@ -337,7 +341,7 @@ func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomFiel
 	var issues []error
 	for key, value := range pc.CustomFields {
 		if _, exists := fieldConfig[key]; !exists {
-			issues = append(issues, fmt.Errorf("Custom field %s is not configured in capability config", key))
+			issues = append(issues, fmt.Errorf("custom field %s is not configured in capability config", key))
 		} else {
 			fields[key] = value
 		}
@@ -345,12 +349,12 @@ func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomFiel
 	for key, fieldConf := range fieldConfig {
 		if value, exists := fields[key]; exists {
 			if matched, err := regexp.Match(fieldConf.Validation, []byte(value)); err != nil {
-				issues = append(issues, fmt.Errorf("Could not validate value %s: %w", value, err))
+				issues = append(issues, fmt.Errorf("could not validate value %s: %w", value, err))
 			} else if !matched {
-				issues = append(issues, fmt.Errorf("Invalid value %s (does not match %s)", value, fieldConf.Validation))
+				issues = append(issues, fmt.Errorf("invalid value %s (does not match %s)", value, fieldConf.Validation))
 			}
 		} else if fieldConf.Required {
-			issues = append(issues, fmt.Errorf("Value %s is required", key))
+			issues = append(issues, fmt.Errorf("value %s is required", key))
 		} else {
 			fields[key] = fieldConf.Default
 		}

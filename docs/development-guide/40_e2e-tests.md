@@ -24,7 +24,7 @@ recommend using [kind](https://kind.sigs.k8s.io).
 
 1. In case of a vanilla kubernetes cluster, run: `make setup-e2e` <br/>
   This will apply mocks, etc. needed to run the operator.
-2. Start the operator: `make run-operator`
+2. Start the operator: `make run`
 3. Finally, run the actual e2e tests: `make test-e2e`
 
 ## Design considerations

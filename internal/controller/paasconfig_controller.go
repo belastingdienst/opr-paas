@@ -19,6 +19,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -59,68 +61,68 @@ func (r *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	config := &v1alpha1.PaasConfig{}
-	ctx, logger := setRequestLogger(ctx, config, pcr.Scheme, req)
-	ctx = setLogComponent(ctx, "paasconfig")
+	cfg := &v1alpha1.PaasConfig{}
+	ctx, _ = logging.SetControllerLogger(ctx, cfg, pcr.Scheme, req)
+	ctx, logger := logging.GetLogComponent(ctx, "paasconfig")
 
 	errResult := reconcile.Result{
 		Requeue:      true,
 		RequeueAfter: time.Second * 10,
 	}
 
-	if err := pcr.Get(ctx, req.NamespacedName, config); err != nil {
+	if err := pcr.Get(ctx, req.NamespacedName, cfg); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	logger.Info().Msg("reconciling PaasConfig")
 
 	// Add finalizer for this CR
-	if !controllerutil.ContainsFinalizer(config, paasconfigFinalizer) {
-		if ok := controllerutil.AddFinalizer(config, paasconfigFinalizer); !ok {
+	if !controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
+		if ok := controllerutil.AddFinalizer(cfg, paasconfigFinalizer); !ok {
 			return errResult, fmt.Errorf("failed to add finalizer")
 		}
-		if err := pcr.Update(ctx, config); err != nil {
+		if err := pcr.Update(ctx, cfg); err != nil {
 			logger.Err(err).Msg("error updating PaasConfig")
 			return errResult, nil
 		}
 		logger.Info().Msg("added finalizer to PaasConfig")
 	}
 
-	if config.GetDeletionTimestamp() != nil {
+	if cfg.GetDeletionTimestamp() != nil {
 		logger.Info().Msg("paasconfig marked for deletion")
-		if controllerutil.ContainsFinalizer(config, paasconfigFinalizer) {
+		if controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
 			// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
-			meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{
+			meta.SetStatusCondition(&cfg.Status.Conditions, metav1.Condition{
 				Type:   v1alpha1.TypeDegradedPaasConfig,
-				Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: config.Generation,
-				Message: fmt.Sprintf("Performing finalizer operations for PaasConfig: %s ", config.Name),
+				Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: cfg.Generation,
+				Message: fmt.Sprintf("Performing finalizer operations for PaasConfig: %s ", cfg.Name),
 			})
 
-			if err := pcr.Status().Update(ctx, config); err != nil {
+			if err := pcr.Status().Update(ctx, cfg); err != nil {
 				logger.Err(err).Msg("Failed to update PaasConfig status")
 				return errResult, nil
 			}
 			// Reset Config if this was the active config
-			if meta.IsStatusConditionPresentAndEqual(config.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) {
-				SetConfig(v1alpha1.PaasConfig{})
+			if meta.IsStatusConditionPresentAndEqual(cfg.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) {
+				config.SetConfig(v1alpha1.PaasConfig{})
 			}
 
 			logger.Info().Msg("config reset successfully")
-			meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{
+			meta.SetStatusCondition(&cfg.Status.Conditions, metav1.Condition{
 				Type:   v1alpha1.TypeDegradedPaasConfig,
-				Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: config.Generation,
-				Message: fmt.Sprintf("Finalizer operations for PaasConfig %s name were successfully accomplished", config.Name),
+				Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: cfg.Generation,
+				Message: fmt.Sprintf("Finalizer operations for PaasConfig %s name were successfully accomplished", cfg.Name),
 			})
 
-			if err := pcr.Status().Update(ctx, config); err != nil {
+			if err := pcr.Status().Update(ctx, cfg); err != nil {
 				logger.Err(err).Msg("Failed to update PaasConfig status")
 				return errResult, nil
 			}
 
-			if ok := controllerutil.RemoveFinalizer(config, paasconfigFinalizer); !ok {
+			if ok := controllerutil.RemoveFinalizer(cfg, paasconfigFinalizer); !ok {
 				return errResult, fmt.Errorf("failed to add finalizer")
 			}
-			if err := pcr.Update(ctx, config); err != nil {
+			if err := pcr.Update(ctx, cfg); err != nil {
 				logger.Err(err).Msg("error updating PaasConfig")
 				return errResult, nil
 			}
@@ -128,39 +130,11 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
-	configList := &v1alpha1.PaasConfigList{}
-	if err := pcr.List(ctx, configList); err != nil {
-		logger.Err(err).Msg("error listing PaasConfigs")
-		err := pcr.setErrorCondition(ctx, config, err)
-		if err != nil {
-			logger.Err(err).Msg("failed to update PaasConfig status")
-			return errResult, nil
-		}
-		return errResult, nil
-	}
-
-	// Enforce singleton pattern
-	// TODO(portly-halicore-76) move to admission webhook when available
-	for _, existingConfig := range configList.Items {
-		if meta.IsStatusConditionPresentAndEqual(existingConfig.Status.Conditions, v1alpha1.TypeActivePaasConfig, metav1.ConditionTrue) && existingConfig.ObjectMeta.Name != config.Name {
-			// There is already another config which is the active one so we don't allow adding a new one
-			singletonErr := fmt.Errorf("paasConfig singleton violation")
-			logger.Err(singletonErr).Msg("more than one PaasConfig instance found")
-			err := pcr.setErrorCondition(ctx, config, singletonErr)
-			if err != nil {
-				logger.Err(err).Msg("failed to update PaasConfig status")
-				return errResult, nil
-			}
-			// don't reconcile this one again as that won't change anything.
-			return ctrl.Result{}, nil
-		}
-	}
-
 	// As there can be reasons why we reconcile again, we check if there is a diff in the desired state vs GetConfig()
-	if reflect.DeepEqual(config.Spec, GetConfig()) {
+	if reflect.DeepEqual(cfg.Spec, config.GetConfig()) {
 		logger.Debug().Msg("Config already equals desired state")
 		// Reconciling succeeded, set appropriate Condition
-		err := pcr.setSuccesfullCondition(ctx, config)
+		err := pcr.setSuccesfullCondition(ctx, cfg)
 		if err != nil {
 			logger.Err(err).Msg("failed to update PaasConfig status")
 			return errResult, nil
@@ -169,15 +143,15 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	logger.Info().Msg("configuration has changed")
-	if !reflect.DeepEqual(config.Spec.DecryptKeysSecret, GetConfig().DecryptKeysSecret) {
+	if !reflect.DeepEqual(cfg.Spec.DecryptKeysSecret, config.GetConfig().DecryptKeysSecret) {
 		resetCrypts()
 	}
 	// Update the shared configuration store
-	SetConfig(*config)
+	config.SetConfig(*cfg)
 	logger.Debug().Msg("set active PaasConfig successfully")
 
 	// Reconciling succeeded, set appropriate Condition
-	err := pcr.setSuccesfullCondition(ctx, config)
+	err := pcr.setSuccesfullCondition(ctx, cfg)
 	if err != nil {
 		logger.Err(err).Msg("failed to update PaasConfig status")
 		return errResult, nil
@@ -195,24 +169,6 @@ func (pcr *PaasConfigReconciler) setSuccesfullCondition(ctx context.Context, con
 		Type:   v1alpha1.TypeHasErrorsPaasConfig,
 		Status: metav1.ConditionFalse, Reason: "Reconciling", ObservedGeneration: config.Generation,
 		Message: fmt.Sprintf("Reconciled (%s) successfully", config.Name),
-	})
-
-	if err := pcr.Status().Update(ctx, config); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (pcr *PaasConfigReconciler) setErrorCondition(ctx context.Context, config *v1alpha1.PaasConfig, err error) error {
-	meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{
-		Type:   v1alpha1.TypeActivePaasConfig,
-		Status: metav1.ConditionFalse, Reason: "ReconcilingError", ObservedGeneration: config.Generation,
-		Message: fmt.Sprintf("Reconciling (%s) failed", config.Name),
-	})
-	meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{
-		Type:   v1alpha1.TypeHasErrorsPaasConfig,
-		Status: metav1.ConditionTrue, Reason: "ReconcilingError", ObservedGeneration: config.Generation,
-		Message: err.Error(),
 	})
 
 	if err := pcr.Status().Update(ctx, config); err != nil {

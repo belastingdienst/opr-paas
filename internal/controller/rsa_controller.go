@@ -3,7 +3,9 @@ package controller
 import (
 	"context"
 
+	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
+	"github.com/belastingdienst/opr-paas/internal/logging"
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -25,11 +27,10 @@ func resetCrypts() {
 func (r *PaasNSReconciler) getRsaPrivateKeys(
 	ctx context.Context,
 ) (*crypt.CryptPrivateKeys, error) {
-	ctx = setLogComponent(ctx, "rolebinding")
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
 	rsaSecret := &corev1.Secret{}
-	config := GetConfig()
-	namespacedName := config.DecryptKeysSecret
+	cfg := config.GetConfig()
+	namespacedName := cfg.DecryptKeysSecret
 
 	err := r.Get(ctx, types.NamespacedName{
 		Name:      namespacedName.Name,

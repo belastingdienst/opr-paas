@@ -85,7 +85,7 @@ func Test_getRSA(t *testing.T) {
 	defer os.Remove(pub.Name()) // clean up
 
 	t.Log("generating new keys and creating crypt")
-	crypt.NewGeneratedCrypt(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
+	crypt.GenerateKeyPair(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
 
 	// test: non-existing public key should panic
 	getConfig()
@@ -225,7 +225,7 @@ func Test_v1CheckPaas(t *testing.T) {
 	t.Setenv("PAAS_PRIVATE_KEYS_PATH", priv.Name()) //nolint:errcheck // this is fine in test
 
 	// Generate keyPair to be used during test
-	crypt.NewGeneratedCrypt(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
+	crypt.GenerateKeyPair(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
 
 	// Encrypt secret for test
 	rsa := getRsa("testPaas")
@@ -263,7 +263,7 @@ func Test_v1CheckPaas(t *testing.T) {
 		Error:     "",
 	}
 	responseJson, _ := json.MarshalIndent(response, "", "    ")
-	assert.Equal(t, string(responseJson), w.Body.String())
+	assert.JSONEq(t, string(responseJson), w.Body.String())
 
 	// Reset recorder
 	w = httptest.NewRecorder()
@@ -293,7 +293,7 @@ func Test_v1CheckPaas(t *testing.T) {
 		Error:     "testPaas2: .spec.sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys , testPaas2: .spec.capabilities[sso].sshSecrets[ssh://git@scm/some-repo.git], error: unable to decrypt data with any of the private keys",
 	}
 	response2Json, _ := json.MarshalIndent(response2, "", "    ")
-	assert.Equal(t, string(response2Json), w.Body.String())
+	assert.JSONEq(t, string(response2Json), w.Body.String())
 }
 
 func Test_v1CheckPaasInternalServerError(t *testing.T) {

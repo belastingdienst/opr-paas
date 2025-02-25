@@ -5,6 +5,20 @@ metadata:
   name: paas-manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - namespaces
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - argoproj.io
   resources:
   - applications
@@ -20,74 +34,10 @@ rules:
   - update
   - watch
 - apiGroups:
-  - ""
-  resources:
-  - configmaps
-  - namespaces
-  - secrets
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
   - cpet.belastingdienst.nl
   resources:
   - paas
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - cpet.belastingdienst.nl
-  resources:
-  - paas/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - cpet.belastingdienst.nl
-  resources:
-  - paas/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - cpet.belastingdienst.nl
-  resources:
   - paasconfig
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - cpet.belastingdienst.nl
-  resources:
-  - paasconfig/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - cpet.belastingdienst.nl
-  resources:
-  - paasconfig/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - cpet.belastingdienst.nl
-  resources:
   - paasns
   verbs:
   - create
@@ -100,12 +50,16 @@ rules:
 - apiGroups:
   - cpet.belastingdienst.nl
   resources:
+  - paas/finalizers
+  - paasconfig/finalizers
   - paasns/finalizers
   verbs:
   - update
 - apiGroups:
   - cpet.belastingdienst.nl
   resources:
+  - paas/status
+  - paasconfig/status
   - paasns/status
   verbs:
   - get

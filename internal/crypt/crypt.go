@@ -52,8 +52,10 @@ func NewCryptFromKeys(privateKeys CryptPrivateKeys, publicKeyPath string, encryp
 	}, nil
 }
 
-func NewGeneratedCrypt(privateKeyPath string, publicKeyPath string) (*Crypt, error) {
-	var c Crypt
+func NewGeneratedCrypt(privateKeyPath string, publicKeyPath string, context string) (*Crypt, error) {
+	c := Crypt{
+		encryptionContext: []byte(context),
+	}
 	if privateKey, err := rsa.GenerateKey(rand.Reader, 4096); err != nil {
 		return nil, fmt.Errorf("unable to generate private key: %w", err)
 	} else {
