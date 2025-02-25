@@ -51,6 +51,7 @@ endif
 OPERATOR_SDK_VERSION ?= v1.36.1
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
+
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 # When updating, make sure to update the versions in the xx_suite_test.go files as well
 ENVTEST_K8S_VERSION = 1.31.0
@@ -325,3 +326,37 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+.PHONY: refresh-kind
+refresh-kind:
+	kind delete cluster
+	kind create cluster
+
+.PHONY: setup-local-e2e
+setup-local-e2e:
+	$(CONTAINER_TOOL) build -t ${IMG} .
+	kind load image-archive <(${CONTAINER_TOOL} save controller:latest)
+
+	${KUSTOMIZE} build test/e2e/manifests/gitops-operator | kubectl create -f -
+	${KUSTOMIZE} build test/e2e/manifests/openshift | kubectl apply -f -
+
+	# Wait a bit as the paas-context files rely on the previous deployed mocks
+	sleep 10
+	kustomize build test/e2e/manifests/paas-context | kubectl apply -f -
+
+.PHONY: local-e2e
+local-e2e: refresh-kind setup-local-e2e manifests kustomize
+	# Install certManager for generating certs to easily test webhooks
+	# TODO(portly-halicore-76) define version of certmanager externally
+	$(KUBECTL) apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml
+	# Wait for certmanager to be ready else deploying Paas will fail
+	$(KUBECTL) wait --for=condition=Available deployment/cert-manager-webhook -n cert-manager --timeout=120s
+ifeq ($(CONTAINER_TOOL),podman)
+	cd manifests/manager && $(KUSTOMIZE) edit set image controller=localhost/$(IMG)
+endif
+	$(KUSTOMIZE) build manifests/default | $(KUBECTL) apply -f -
+ifeq ($(CONTAINER_TOOL),podman)
+	cd manifests/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+endif
+	kubectl wait --for=condition=Available deployment/paas-controller-manager -n paas-system --timeout=120s
+	go test -v ./test/e2e
