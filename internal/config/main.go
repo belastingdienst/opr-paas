@@ -4,6 +4,8 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
+// Package config allows the current and active PaasConfig to be used all over
+// the codebase.
 package config
 
 import (

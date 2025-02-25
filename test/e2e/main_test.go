@@ -118,8 +118,8 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceLimitsMemory: resourcev1.MustParse("4Gi"),
 					},
 					MaxQuotas: map[corev1.ResourceName]resourcev1.Quantity{
-						corev1.ResourceLimitsCPU:    resourcev1.MustParse("1"),
-						corev1.ResourceLimitsMemory: resourcev1.MustParse("1Gi"),
+						corev1.ResourceLimitsCPU:    resourcev1.MustParse("10"),
+						corev1.ResourceLimitsMemory: resourcev1.MustParse("10Gi"),
 					},
 					Ratio: 0.1,
 				},
@@ -158,7 +158,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 			Namespace: "paas-system",
 		},
 		LDAP: v1alpha1.ConfigLdap{
-			Host: "my-ldap-host",
+			Host: "ldap.example.com",
 			Port: 13,
 		},
 		ManagedByLabel: "argocd.argoproj.io/manby",
