@@ -158,10 +158,12 @@ func assertGroupKeyAndNameDifferenceIsOk(ctx context.Context, t *testing.T, cfg 
 
 func assertLdapGroupRemovedAfterUpdatingKey(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithGroupQuery, t, cfg)
-	paas.Spec.Groups = api.PaasGroups{groupWithQueryName: api.PaasGroup{Query: groupQuery}, "updatedSecondLdapGroup": api.PaasGroup{
-		Query: updatedGroup2Query,
-		Roles: []string{"viewer"},
-	}}
+	paas.Spec.Groups = api.PaasGroups{
+		groupWithQueryName: api.PaasGroup{Query: groupQuery},
+		"updated-second-ldap-group": api.PaasGroup{
+			Query: updatedGroup2Query,
+			Roles: []string{"viewer"},
+		}}
 
 	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
