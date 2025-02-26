@@ -78,7 +78,6 @@ linters-settings:
 
       # axiomatic-fixed-chimpanzee: Fixing is seperate PR's:
       - name: bare-return
-        disabled: true
       - name: cognitive-complexity
         disabled: true
       - name: context-as-argument

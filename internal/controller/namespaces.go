@@ -164,5 +164,5 @@ func (r *PaasNSReconciler) ReconcileNamespaces(
 	} else if err = EnsureNamespace(r.Client, ctx, paas, ns, r.Scheme); err != nil {
 		return fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
 	}
-	return
+	return err
 }

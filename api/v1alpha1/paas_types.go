@@ -101,7 +101,7 @@ func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 			ns[name] = true
 		}
 	}
-	return
+	return ns
 }
 
 func (p Paas) AllCapNamespaces() (ns map[string]bool) {
@@ -109,7 +109,7 @@ func (p Paas) AllCapNamespaces() (ns map[string]bool) {
 	for name := range p.Spec.Capabilities {
 		ns[name] = true
 	}
-	return
+	return ns
 }
 
 func (p Paas) PrefixedAllCapNamespaces() (ns map[string]bool) {
@@ -121,7 +121,7 @@ func (p Paas) AllEnabledNamespaces() (ns map[string]bool) {
 	for name := range p.extraNamespaces() {
 		ns[name] = true
 	}
-	return
+	return ns
 }
 
 func (p Paas) PrefixedAllEnabledNamespaces() (ns map[string]bool) {
@@ -136,7 +136,7 @@ func (p Paas) extraNamespaces() (ns map[string]bool) {
 			ns[name] = true
 		}
 	}
-	return
+	return ns
 }
 
 type PaasGroup struct {
