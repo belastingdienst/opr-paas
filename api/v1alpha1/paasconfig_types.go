@@ -348,8 +348,13 @@ func ActivePaasConfigUpdated() predicate.Predicate {
 	return predicate.Funcs{
 		// Trigger reconciliation only if the paasConfig has the Active PaasConfig is updated
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			oldObj := e.ObjectOld.(*PaasConfig)
-			newObj := e.ObjectNew.(*PaasConfig)
+			oldObj, oldOk := e.ObjectOld.(*PaasConfig)
+			newObj, newOk := e.ObjectNew.(*PaasConfig)
+
+			// If type assertion fails, return false (do not trigger reconciliation)
+			if !oldOk || !newOk {
+				return false
+			}
 
 			// The 'double' status check is needed because during 'creation' of the PaasConfig, the Condition is set.
 			// Once set we check for specChanges.
