@@ -6,7 +6,6 @@ import (
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/quota"
-	"github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -53,16 +52,15 @@ func TestCapabilityArgoCD(t *testing.T) {
 		t,
 		features.New("ArgoCD Capability").
 			Setup(createPaasFn(paasWithArgo, paasSpec)).
-			Assess("ArgoCD application is created", assertArgoCDCreated).
-			Assess("ArgoCD application is updated", assertArgoCDUpdated).
-			Assess("ArgoCD application has ClusterRoleBindings", assertArgoCRB).
+			Assess("Argo cap is created", assertArgoCapCreated).
+			Assess("Argo cap is updated", assertArgoCapUpdated).
+			Assess("Argo cap has ClusterRoleBindings", assertArgoCRB).
 			Teardown(teardownPaasFn(paasWithArgo)).
 			Feature(),
 	)
 }
 
-func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	paas := getPaas(ctx, paasWithArgo, t, cfg)
+func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	argopaasns := &api.PaasNS{ObjectMeta: metav1.ObjectMeta{
 		Name:      "argocd",
 		Namespace: paasWithArgo,
@@ -85,23 +83,6 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 
 	assert.NotNil(t, getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")
 
-	// Assert ArgoCD creation
-	argocd := getOrFail(ctx, "argocd", paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
-	assert.Equal(t, paas.UID, argocd.OwnerReferences[0].UID)
-	assert.Equal(t, "role:tester", *argocd.Spec.RBAC.DefaultPolicy)
-	assert.Equal(t, "g, system:cluster-admins, role:admin", *argocd.Spec.RBAC.Policy)
-	assert.Equal(t, "[groups]", *argocd.Spec.RBAC.Scopes)
-
-	applications := listOrFail(ctx, paasArgoNs, &argo.ApplicationList{}, t, cfg).Items
-	assert.Len(t, applications, 1, "An application is present in the ArgoCD namespace")
-	assert.Equal(t, "paas-bootstrap", applications[0].Name)
-	assert.Equal(t, argo.ApplicationSource{
-		RepoURL:        paasArgoGitUrl,
-		Path:           paasArgoGitPath,
-		TargetRevision: paasArgoGitRevision,
-	}, *applications[0].Spec.Source, "Application source matches Git properties from Paas")
-	assert.Equal(t, "whatever", applications[0].Spec.IgnoreDifferences[0].Name, "`exclude_appset_name` configuration is included in IgnoreDifferences")
-
 	secrets := listOrFail(ctx, paasArgoNs, &corev1.SecretList{}, t, cfg).Items
 	assert.Len(t, secrets, 1)
 	assert.Equal(t, "dummysecret", string(secrets[0].Data["sshPrivateKey"]), "SSH secret is created in ArgoCD namespace")
@@ -120,7 +101,7 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	return ctx
 }
 
-func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	updatedRevision := "updatedRevision"
 	paas := getPaas(ctx, paasWithArgo, t, cfg)
 	paas.Spec.Capabilities = api.PaasCapabilities{
@@ -157,24 +138,6 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	}, entries[0], "ApplicationSet List generator contains the correct parameters")
 
 	assert.NotNil(t, getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg), "ArgoCD namespace created")
-
-	// Assert ArgoCD unchanged
-	argocd := getOrFail(ctx, "argocd", paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
-	assert.Equal(t, paas.UID, argocd.OwnerReferences[0].UID)
-	assert.Equal(t, "role:tester", *argocd.Spec.RBAC.DefaultPolicy)
-	assert.Equal(t, "g, system:cluster-admins, role:admin", *argocd.Spec.RBAC.Policy)
-	assert.Equal(t, "[groups]", *argocd.Spec.RBAC.Scopes)
-
-	// Assert Bootstrap is now updated as described in issue #185
-	applications := listOrFail(ctx, paasArgoNs, &argo.ApplicationList{}, t, cfg).Items
-	assert.Len(t, applications, 1, "An application is present in the ArgoCD namespace")
-	assert.Equal(t, "paas-bootstrap", applications[0].Name)
-	assert.Equal(t, argo.ApplicationSource{
-		RepoURL:        paasArgoGitUrl,
-		Path:           paasArgoGitPath,
-		TargetRevision: updatedRevision,
-	}, *applications[0].Spec.Source, "Application source matches Git properties from Paas")
-	assert.Equal(t, "whatever", applications[0].Spec.IgnoreDifferences[0].Name, "`exclude_appset_name` configuration is included in IgnoreDifferences")
 
 	return ctx
 }
