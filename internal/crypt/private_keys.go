@@ -80,14 +80,17 @@ type CryptPrivateKey struct {
 
 // NewPrivateKeyFromFile returns a CryptPrivateKey from a privateKeyFilePath
 func NewPrivateKeyFromFile(privateKeyPath string) (*CryptPrivateKey, error) {
+	var privateKeyPem []byte
+	var err error
+
 	if privateKeyPath == "" {
 		return nil, fmt.Errorf("cannot get private key without a specified path")
 	}
-	if privateKeyPem, err := os.ReadFile(privateKeyPath); err != nil {
+	if privateKeyPem, err = os.ReadFile(privateKeyPath); err != nil {
 		panic(err)
-	} else {
-		return NewPrivateKeyFromPem(privateKeyPath, privateKeyPem)
 	}
+
+	return NewPrivateKeyFromPem(privateKeyPath, privateKeyPem)
 }
 
 // NewPrivateKeyFromPem returns a CryptPrivateKey from a privateKeyFilePath
