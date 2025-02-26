@@ -36,7 +36,7 @@ const (
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=paasconfig,scope=Cluster
 type PaasConfig struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta   `json:""`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   PaasConfigSpec   `json:"spec,omitempty"`
@@ -330,7 +330,7 @@ type PaasConfigStatus struct {
 // +kubebuilder:object:root=true
 // PaasConfigList contains a list of PaasConfig
 type PaasConfigList struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta `json:""`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []PaasConfig `json:"items"`
 }
