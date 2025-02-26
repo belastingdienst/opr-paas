@@ -291,7 +291,7 @@ func (v *PaasCustomValidator) validateQuota(paas *v1alpha1.Paas) (warnings []str
 		}
 	}
 
-	return
+	return warnings
 }
 
 // validateExtraPerm returns a warning when extra permissions are requested for a capability that are not configured.
@@ -305,5 +305,5 @@ func (v *PaasCustomValidator) validateExtraPerm(conf v1alpha1.PaasConfigSpec, pa
 		}
 	}
 
-	return
+	return warnings
 }
