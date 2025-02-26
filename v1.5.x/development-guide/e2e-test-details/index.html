@@ -1,0 +1,1647 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Dutch Tax Office">
+      
+      
+        <link rel="canonical" href="https://belastingdienst.github.io/opr-paas/v1.5.x/development-guide/e2e-test-details/">
+      
+      
+        <link rel="prev" href="../60_writing-documentation/">
+      
+      
+        <link rel="next" href="../maintaining/">
+      
+      
+      <link rel="icon" href="../../about/branding/paas-logo-v1-32x32px.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.5">
+    
+    
+      
+        <title>E2E test cases for opr-paas - opr-paas</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.8608ea7d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+      
+        <meta  property="og:type"  content="website" >
+      
+        <meta  property="og:title"  content="E2E test cases for opr-paas - opr-paas" >
+      
+        <meta  property="og:description"  content="None" >
+      
+        <meta  property="og:image"  content="https://belastingdienst.github.io/opr-paas/v1.5.x/assets/images/social/development-guide/e2e-test-details.png" >
+      
+        <meta  property="og:image:type"  content="image/png" >
+      
+        <meta  property="og:image:width"  content="1200" >
+      
+        <meta  property="og:image:height"  content="630" >
+      
+        <meta  property="og:url"  content="https://belastingdienst.github.io/opr-paas/v1.5.x/development-guide/e2e-test-details/" >
+      
+        <meta  name="twitter:card"  content="summary_large_image" >
+      
+        <meta  name="twitter:title"  content="E2E test cases for opr-paas - opr-paas" >
+      
+        <meta  name="twitter:description"  content="None" >
+      
+        <meta  name="twitter:image"  content="https://belastingdienst.github.io/opr-paas/v1.5.x/assets/images/social/development-guide/e2e-test-details.png" >
+      
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#e2e-test-cases-for-opr-paas" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+          <aside class="md-banner md-banner--warning">
+            <div class="md-banner__inner md-grid md-typeset">
+              
+  You're not viewing the latest version.
+  <a href="../../.."> 
+    <strong>Click here to go to latest.</strong>
+  </a>
+
+            </div>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("../.."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
+          </aside>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="opr-paas" class="md-header__button md-logo" aria-label="opr-paas" data-md-component="logo">
+      
+  <img src="../../about/branding/paas-logo-v1-180x180px.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            opr-paas
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              E2E test cases for opr-paas
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/belastingdienst/opr-paas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    opr-paas
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../overview/" class="md-tabs__link">
+          
+  
+    
+  
+  Overview
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../administrators-guide/capabilities/" class="md-tabs__link">
+          
+  
+    
+  
+  Administrator Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user-guide/01_basic-usage/" class="md-tabs__link">
+          
+  
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+    
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../about/branding/" class="md-tabs__link">
+          
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="opr-paas" class="md-nav__button md-logo" aria-label="opr-paas" data-md-component="logo">
+      
+  <img src="../../about/branding/paas-logo-v1-180x180px.png" alt="logo">
+
+    </a>
+    opr-paas
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/belastingdienst/opr-paas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    opr-paas
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+    <a href="../../overview/" class="md-nav__link">
+      
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+    <a href="../../administrators-guide/capabilities/" class="md-nav__link">
+      
+  
+  <span class="md-ellipsis">
+    Administrator Guide
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+    <a href="../../user-guide/01_basic-usage/" class="md-nav__link">
+      
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Developer Guide
+    
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Developer Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../00_api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../20_issues/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Raising issues
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../21_security-issues/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Raising security issues
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../30_submitting-a-pr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Submitting a Pull Request
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../31_writing-good-pull-request/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Writing Good Pull Requests
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../40_e2e-tests/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    End to end testing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../50_notes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer notes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../60_writing-documentation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Writing Documentation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    E2E test cases for opr-paas
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    E2E test cases for opr-paas
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#paas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Paas
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#paasns" class="md-nav__link">
+    <span class="md-ellipsis">
+      PaasNs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#namespaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      Namespaces
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clusterresourcequotas" class="md-nav__link">
+    <span class="md-ellipsis">
+      ClusterResourceQuotas
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cluster-wide-quotas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster wide quotas
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#groups-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      Groups =&gt; Users
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#groups-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      Groups =&gt; Query
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Secrets
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Secrets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#capability-argocd" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capability ArgoCD
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-tekton" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capability Tekton
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-grafana" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capability Grafana
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-sso" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capability SSO
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configurable-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configurable capabilities
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maintaining/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Maintenance
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../about/branding/" class="md-nav__link">
+      
+  
+  <span class="md-ellipsis">
+    About
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+  
+
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#paas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Paas
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#paasns" class="md-nav__link">
+    <span class="md-ellipsis">
+      PaasNs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#namespaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      Namespaces
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clusterresourcequotas" class="md-nav__link">
+    <span class="md-ellipsis">
+      ClusterResourceQuotas
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cluster-wide-quotas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster wide quotas
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#groups-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      Groups =&gt; Users
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#groups-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      Groups =&gt; Query
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Secrets
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Secrets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#capability-argocd" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capability ArgoCD
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-tekton" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capability Tekton
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-grafana" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capability Grafana
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-sso" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capability SSO
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configurable-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configurable capabilities
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/belastingdienst/opr-paas/edit/main/docs/development-guide/e2e-test-details.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="e2e-test-cases-for-opr-paas">E2E test cases for opr-paas<a class="headerlink" href="#e2e-test-cases-for-opr-paas" title="Permanent link">&para;</a></h1>
+<p>Below you will find a list of features that we want to test using end-to-end testing.
+For each feature, the setup and the assessments are listed.</p>
+<h2 id="paas">Paas<a class="headerlink" href="#paas" title="Permanent link">&para;</a></h2>
+<p>What we test: CRUD for Paas</p>
+<p>Scenarios:</p>
+<ol>
+<li>
+<p>A <code>Paas</code> is created that already exists.<br/><br/>
+   <strong>Given</strong> that a specified <code>Paas</code> already exists,<br/>
+   <strong>when</strong> someone configures a new <code>Paas</code> with the same name,<br/>
+   <strong>then</strong> the <code>Paas</code> related namespace must not be created<br/>
+   <strong>and</strong> the operator must return an error.</p>
+</li>
+<li>
+<p>A minimal <code>Paas</code> is created.<br/><br/>
+   <strong>Given</strong> that the <code>Paas</code> does not exist,<br/>
+   <strong>when</strong> someone configures the minimal <code>Paas</code><br/>
+   <strong>then</strong> the <code>Paas</code> namespace must be created<br/>
+   <strong>and</strong> the status of the <code>Paas</code> contains no errors.</p>
+</li>
+<li>
+<p>A <code>Paas</code> is renamed.<br/><br/>
+   <strong>Given</strong> that a specified <code>Paas</code> exists,<br/>
+   <strong>when</strong> the <code>Paas</code> is renamed in the configuration,<br/>
+   <strong>then</strong> the related <code>Paas</code> namespace must be renamed as well.</p>
+</li>
+<li>
+<p>A <code>Paas</code> is deleted.<br/><br/>
+   <strong>Given</strong> that a specified <code>Paas</code> exists,<br/>
+   <strong>when</strong> the <code>Paas</code> is deleted,<br/>
+   <strong>then</strong> the namespace belonging to the <code>Paas</code> is also removed.</p>
+</li>
+</ol>
+<p>Post scenarios: reset environment to clean slate.</p>
+<h2 id="paasns">PaasNs<a class="headerlink" href="#paasns" title="Permanent link">&para;</a></h2>
+<p>What we test: CRUD for PaasNs</p>
+<p>Scenarios:</p>
+<ol>
+<li>
+<p>A <code>PaasNs</code> is created for a <code>Paas</code> that does not exist.<br/><br/>
+   <strong>Given</strong> that a specified <code>Paas</code> does not exist,<br/>
+   <strong>when</strong> someone configures a <code>PaasNs</code> to be created under specified <code>Paas</code>,<br/>
+   <strong>then</strong> the <code>PaasNs</code> related namespace must not be created<br/>
+   <strong>and</strong> the status of said <code>PaasNs</code> must contain the correct error.</p>
+</li>
+<li>
+<p>A minimal <code>Paas</code> that is referenced in the <code>PaasNs</code> is created.<br/><br/>
+   <strong>Given</strong> that the <code>PaasNs</code> does not exist,<br/>
+   <strong>and</strong> that the minimal <code>Paas</code> does not exist,<br/>
+   <strong>when</strong> someone configures the minimal <code>Paas</code><br/>
+   <strong>and</strong> someone configures the <code>PaasNs</code> referencing the minimal <code>Paas</code><br/>
+   <strong>then</strong> the <code>PaasNS</code> namespace must be created<br/>
+   <strong>and</strong> the <code>PaasNS</code> namespace has the <code>quota_label</code> label with the value of ... FIXME<br/>
+   <strong>and</strong> the status of the <code>PaasNs</code> contains no errors.</p>
+</li>
+<li>
+<p>A <code>PaasNs</code> is renamed.<br/><br/>
+   <strong>Given</strong> that a specified <code>PaasNs</code> exists,<br/>
+   <strong>when</strong> the <code>PaasNs</code> is renamed in the configuration,<br/>
+   <strong>then</strong> the related <code>PaasNs</code> namespace must be renamed as well.</p>
+</li>
+<li>
+<p>A <code>PaasNs</code> is deleted.<br/><br/>
+   <strong>Given</strong> that a specified <code>PaasNs</code> exists,<br/>
+   <strong>when</strong> the <code>PaasNs</code> is deleted,<br/>
+   <strong>then</strong> the namespace belonging to the <code>PaasNs</code> is also removed.</p>
+</li>
+</ol>
+<p>Post scenarios: reset environment to clean slate.</p>
+<h2 id="namespaces">Namespaces<a class="headerlink" href="#namespaces" title="Permanent link">&para;</a></h2>
+<ol>
+<li>
+<p>A minimal <code>Paas</code> configuration without namespaces results in one namespace.<br/><br/>
+   <strong>Given</strong> a minimal <code>Paas</code> configuration without namespaces,<br/>
+   <strong>when</strong> someone adds said configuration to the system,<br/>
+   <strong>then</strong> a single namespace should have been created,<br/>
+   <strong>and</strong> this namespace should be named the same as the <code>Paas</code>,<br/>
+   <strong>and</strong> no <code>PaasNs</code>'s or there namespaces are linked to th <code>Paas</code>.</p>
+</li>
+<li>
+<p>Adding two namespaces to the <code>Paas</code>'s spec.<br/><br/>
+   <strong>Given</strong> a minimal <code>Paas</code> without any namespaces exists,<br/>
+   <strong>when</strong> the <code>Paas</code> is updated by adding 2 namespaces to the spec,<br/>
+   <strong>then</strong> one namespace with the same name as the <code>Paas</code> must exist,<br/>
+   <strong>and</strong> two <code>PaasNs</code>'s must exist in the namespace of the <code>Paas</code>,<br/>
+   <strong>and</strong> these <code>PaasNs</code>'s each have a namespace,<br/>
+   <strong>and</strong> these <code>PaasNs</code> namespaces must be named according to their <code>spec.namespaces</code> entries, prefixed by the <code>Paas</code> namespace name</p>
+</li>
+<li>
+<p>Removing the namespaces from a <code>Paas</code>.<br/><br/>
+   <strong>Given</strong> a minimal <code>Paas</code> with two namespaces exists,<br/>
+   <strong>when</strong> the <code>Paas</code> configuration is updated to remove the namespaces,<br/>
+   <strong>then</strong> the <code>PaasNs</code>'s should have be removed from the <code>Paas</code> namespace,<br/>
+   <strong>and</strong> the <code>Paas</code> namespace was removed.</p>
+</li>
+</ol>
+<p>Post scenarios: reset environment to clean slate.</p>
+<h2 id="clusterresourcequotas">ClusterResourceQuotas<a class="headerlink" href="#clusterresourcequotas" title="Permanent link">&para;</a></h2>
+<p>What we test: CRQ CRUD</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>spec.quota</code> does not fall under not cluster wide quotas, hence a separate
+set of test scenarios.</p>
+</div>
+<ol>
+<li>
+<p>Ensure the correct CRQ is created for a <code>Paas</code>.<br/><br/>
+   <strong>Given</strong> a minimal <code>Paas</code> exists,<br/>
+   <strong>when</strong> someone adds a quota to <code>spec.quota</code> for the <code>Paas</code> configuration,<br/>
+   <strong>then</strong> a CRQ with the name of the <code>Paas</code> must be created,<br/>
+   <strong>and</strong> <code>clusterquotagroup=</code> followed by the <code>Paas</code> name should have been applied
+   as label selector on the CRQ,<br/>
+   <strong>and</strong> the size of the created CRQ equals the size as specified in the <code>spec.quota</code>.</p>
+</li>
+<li>
+<p>The <code>spec.quota</code> for a <code>Paas</code> is updated.<br/><br/>
+   <strong>Given</strong> a minimal <code>Paas</code> exists,<br/>
+   <strong>and</strong> a valid CRQ exists for this <code>Paas</code>,<br/>
+   <strong>when</strong> someone updates the <code>spec.quota</code> section for the specified <code>Paas</code> configuration,<br/>
+   <strong>then</strong> the CRQ should be updated,<br/>
+   <strong>and</strong> the size of the updated CRQ equals the size as specified in the <code>spec.quota</code>.</p>
+</li>
+<li>
+<p>Removing the <code>Paas</code> should remove the associated CRQ.<br/><br/>
+   <strong>Given</strong> a minimal <code>Paas</code> and its associated CRQ exist,<br/>
+   <strong>when</strong> the <code>Paas</code> is removed,<br/>
+   <strong>then</strong> the associated CRW with the name of the <code>Paas</code> should have removed as well.</p>
+</li>
+</ol>
+<p>Post scenarios: reset environment to clean slate.</p>
+<h2 id="cluster-wide-quotas">Cluster wide quotas<a class="headerlink" href="#cluster-wide-quotas" title="Permanent link">&para;</a></h2>
+<p>What we test: cluster wide quota CRUD</p>
+<p>Scenarios:</p>
+<p><strong>TODO</strong></p>
+<p>Post scenarios: reset environment to clean slate.</p>
+<h2 id="groups-users">Groups =&gt; Users<a class="headerlink" href="#groups-users" title="Permanent link">&para;</a></h2>
+<p>What we test: managing users and group memberships through <code>Paas</code> configuration.</p>
+<p>Scenarios:</p>
+<ol>
+<li>
+<p>Creating a group with a single user without a specified role.<br/><br/>
+   <strong>Given</strong> a minimal <code>Paas</code> with a single namespace,<br/>
+   <strong>and</strong> a group with a single user without a specified role,<br/>
+   <strong>when</strong> that <code>Paas</code> is created,<br/>
+   <strong>then</strong> a <code>Group</code> was created with the correct name,<br/>
+   <strong>and</strong> the user is a member of said group,<br/>
+   <strong>and</strong> the correct labels were placed on the group,<br/>
+   <strong>and</strong> the Owner Reference for the Group points to the correct Paas,<br/>
+   <strong>and</strong> there are were no changes to the GroupSyncList,<br/>
+   <strong>and</strong> the rolebinding on the namespace points to the group to the default role,<br/>
+   <strong>and</strong> the rolebinding was not applied to the default <code>Paas</code> namespace (name of the <code>Paas</code>)</p>
+</li>
+<li>
+<p>Updating the <code>Paas</code>, adding a group with a role other than default.<br/><br/>
+   <strong>Given</strong> an existing, minimal <code>Paas</code> with a single namespace,<br/>
+   <strong>when</strong> a group is added to said <code>Paas</code>,<br/>
+   <strong>and</strong> said group has a specific role, other than default (see test_config),<br/>
+   <strong>and</strong> a different user is a member of said group than in scenario 1,<br/>
+   <strong>then</strong> a <code>Group</code> was created with the correct name,<br/>
+   <strong>and</strong> the user is a member of said group,<br/>
+   <strong>and</strong> the correct labels were placed on the group,<br/>
+   <strong>and</strong> the Owner Reference for the Group points to the correct Paas,<br/>
+   <strong>and</strong> there are were no changes to the GroupSyncList,<br/>
+   <strong>and</strong> the rolebinding on the namespace points to the group to the default role,<br/>
+   <strong>and</strong> the rolebinding was not applied to the default <code>Paas</code> namespace (name of the <code>Paas</code>)</p>
+</li>
+<li>
+<p>Removing the <code>Paas</code>.<br/><br/>
+   <strong>Given</strong> an existing <code>Paas</code> with a single group,<br/>
+   <strong>when</strong> said <code>Paas</code> is removed,<br/></p>
+</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><em>There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation.</em></p>
+<p><em>Determine what that baseline currently is.</em></p>
+</div>
+<p>Post scenarios: reset environment to clean slate.</p>
+<h2 id="groups-query">Groups =&gt; Query<a class="headerlink" href="#groups-query" title="Permanent link">&para;</a></h2>
+<p>What we test: managing users and group memberships through an LDAP query specified
+in the <code>Paas</code> configuration.</p>
+<p>Scenarios:</p>
+<ol>
+<li>Minimal <code>Paas</code> with one namespace and a <code>Group</code> with a <code>Query</code> but no <code>Role</code>.<br/><br/>
+   <strong>Given</strong> no existing <code>Paas</code>,<br/>
+   <strong>when</strong> a minimal <code>Paas</code> is created with a single namespace,<br/>
+   <strong>and</strong> a <code>Group</code> with a <code>Query</code>, but without a <code>Role</code>,<br/>
+   <strong>then</strong> a <code>Group</code> with the correct name should have been created,<br/>
+   <strong>and</strong> there should be no users in said <code>Group</code>,<br/>
+   <strong>and</strong> the correct labels were added onto the <code>Group</code>,<br/>
+   <strong>and</strong> the Owner Reference for the Group points to the correct Paas,<br/>
+   <strong>and</strong> the query was added to the groupsynclist,<br/>
+   <strong>and</strong> the rolebinding on the namespace points to the group, to the specified role,<br/>
+   <strong>and</strong> the rolebinding was not applied to the default <code>Paas</code> namespace (name of the <code>Paas</code>).</li>
+<li>
+<p>Updating the <code>Paas</code>, adding a group with a role other than default.<br/><br/>
+   <strong>Given</strong> an existing, minimal <code>Paas</code> with a single namespace,<br/>
+   <strong>when</strong> another query is added to said <code>Paas</code> (compared to step scenario 1),<br/>
+   <strong>and</strong> said group has a specific role, other than default (see test_config),<br/>
+   <strong>then</strong> a <code>Group</code> was created with the correct name,<br/>
+   <strong>and</strong> there are no users in said group,<br/>
+   <strong>and</strong> the correct labels were placed on the group, (no ldap things)<br/>
+   <strong>and</strong> the Owner Reference for the Group points to the correct Paas,<br/>
+   <strong>and</strong> there were changes made to the GroupSyncList,<br/>
+   <strong>and</strong> the rolebinding on the namespace points to the group to the specified role,<br/>
+   <strong>and</strong> the rolebinding was not applied to the default <code>Paas</code> namespace (name of the <code>Paas</code>)</p>
+</li>
+<li>
+<p>Removing the <code>Paas</code>.<br/><br/>
+   <strong>Given</strong> an existing <code>Paas</code> with a single group,<br/>
+   <strong>when</strong> said <code>Paas</code> is removed,<br/></p>
+</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><em>There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation.</em></p>
+<p><em>Determine what that baseline currently is.</em></p>
+</div>
+<p>Post scenarios: reset environment to clean slate.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>TODO, there a known issue regarding groups. Good regression test to model the
+following steps:
+1. Create <code>Paas</code> with query;
+2. Update <code>Paas</code> from step 1, remove query and add users to the group;
+3. Group is not removed from groupsynclist;
+4. Sync fails because the required <code>ldap.uid</code> doesn't match the groupname.
+(We don't fully test sync.)</p>
+</div>
+<h2 id="secrets">Secrets<a class="headerlink" href="#secrets" title="Permanent link">&para;</a></h2>
+<p><em>The capabilities are also used to test clusterwide quotas</em></p>
+<h3 id="capability-argocd">Capability ArgoCD<a class="headerlink" href="#capability-argocd" title="Permanent link">&para;</a></h3>
+<p>What we test: creating a <code>Paas</code> with the <code>ArgoCD</code> capability enabled.</p>
+<p>Scenarios:</p>
+<ol>
+<li>
+<p>A minimal <code>Paas</code> with ArgoCD capability enabled.<br/><br/>
+    <strong>Given</strong> a minimal <code>Paas</code> and <code>ArgoCD</code> capability configuration,<br/>
+    <strong>when</strong> the minimal <code>Paas</code> is created with the <code>ArgoCD</code> capability enabled,<br/>
+    <strong>then</strong> the list entry in the applicationset should have been created,<br/>
+    <strong>and</strong> a namespace with the name <code>paasname-argocd</code> should have been created,<br/>
+    <strong>and</strong> an ArgoCD Application should have been created in namespaces,<br/>
+    <strong>and</strong> a quota with the name <code>paasname-argocd</code> should have been created,<br/>
+    <strong>and</strong> the ArgoCD Application and quota conform to the points below.</p>
+<p>ArgoCD Application points:</p>
+<ol>
+<li>Assess gitUrl, path etc. exist in spec;</li>
+<li>Assess RBAC .. determine how;</li>
+<li>Assess Secrets exist in namespace and in argo...?</li>
+<li>Assess Exclude appset is included in spec as ignoreDiff;</li>
+</ol>
+<p>Quota points:</p>
+<ol>
+<li>Assess a quota with the name <code>paasnaam-argocd</code> was created;</li>
+<li>Assess that the <code>quota_label</code> label was used as selector on the quota;</li>
+<li>Assess that the quota selector was set in such a manner so that only the <code>paasnaam-argocd</code> namespace is selected;</li>
+<li>Assess that the size of the quota equals the size of the default quota specified in the paas_config;</li>
+</ol>
+<p>Default_permissions points:</p>
+<ol>
+<li>Assess that a rolebinding for <code>monitoring-edit</code> is created</li>
+<li>Assess that the <code>monitoring-edit</code> rolebinding contains the <code>argo-service-applicationset-controller</code> service account</li>
+<li>Assess that the <code>monitoring-edit</code> rolebinding contains the <code>argo-service-argocd-application-controller</code> service account</li>
+</ol>
+</li>
+</ol>
+<p>Post scenarios: reset environment to clean slate.</p>
+<h3 id="capability-tekton">Capability Tekton<a class="headerlink" href="#capability-tekton" title="Permanent link">&para;</a></h3>
+<p>Quota points:</p>
+<ol>
+<li>Assess a quota with the name <code>paasnaam-tekton</code> was created;</li>
+<li>Assess that the <code>quota_label</code> label was used as selector on the quota;</li>
+<li>Assess that the quota selector was set in such a manner so that only the <code>paasnaam-tekton</code> namespace is selected;</li>
+<li>Assess that the size of the quota equals the size of the default quota specified in the paas_config;</li>
+</ol>
+<p>Default_permissions points:</p>
+<ol>
+<li>Assess that a rolebinding for <code>monitoring-edit</code> is created</li>
+<li>Assess that the <code>monitoring-edit</code> rolebinding contains the <code>tekton</code> service account</li>
+<li>Assess that a rolebinding for <code>alert-routing-edit</code> is created</li>
+<li>Assess that the <code>alert-routing-edit</code> rolebinding contains the <code>tekton</code> service account</li>
+</ol>
+<h3 id="capability-grafana">Capability Grafana<a class="headerlink" href="#capability-grafana" title="Permanent link">&para;</a></h3>
+<p>Check Quota</p>
+<h3 id="capability-sso">Capability SSO<a class="headerlink" href="#capability-sso" title="Permanent link">&para;</a></h3>
+<p>What we test: creating a <code>Paas</code> with the <code>SSO</code> capability enabled.</p>
+<p>Scenarios:</p>
+<ol>
+<li>A minimal <code>Paas</code> with SSO capability enabled and no capability quota.<br/><br/>
+   <strong>Given</strong> a minimal <code>Paas</code> and <code>SSO</code> capability configuration,<br/>
+   <strong>when</strong> the minimal <code>Paas</code> is created with the <code>SSO</code> capability enabled,<br/>
+   <strong>then</strong> the list entry in the applicationset should have been created,<br/>
+   <strong>and</strong> a namespace with the name <code>paasname-sso</code> should have been created,<br/>
+   <strong>and</strong> a quota with the name <code>paasname-sso</code> should have been created,<br/>
+   <strong>and</strong> the quota conforms to the points below.</li>
+</ol>
+<p>Quota points:</p>
+<ol>
+<li>Assess that the <code>quota_label</code> label was used as selector on the quota;</li>
+<li>Assess that the quota selector was set in such a manner so that only the <code>paasnaam-sso</code> namespace is selected;</li>
+<li>
+<p>Assess that the size of the quota equals the size of the default quota specified in the paas_config;</p>
+</li>
+<li>
+<p>The <code>Paas</code> from scenario 1 is removed.<br/><br/>
+   <strong>Given</strong> a the <code>Paas</code> remaining from scenario 1 above,<br/>
+   <strong>when</strong> said <code>Paas</code> is deleted,<br/>
+   <strong>then</strong> the associated <code>Quota</code> should have been removed,<br/>
+   <strong>then</strong> the associated <code>Namespace</code> should have been removed,<br/>
+   <strong>then</strong> the associated list entry in the <code>ApplicationSet</code> should have been removed.</p>
+</li>
+</ol>
+<p>Post scenarios: reset environment to clean slate.</p>
+<h3 id="configurable-capabilities">Configurable capabilities<a class="headerlink" href="#configurable-capabilities" title="Permanent link">&para;</a></h3>
+<p>What we test: adding a new capability with configuration</p>
+<p>Scenarios:</p>
+<ol>
+<li>Add config for a new cap4 and check that it works as expecten when included in a Paas</li>
+<li>Add cap5 in a Paas and check that it does not work when not yet defined in config</li>
+</ol>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 Tax Administration of The Netherlands, software and documentation licensed under EUPL.
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.action.edit", "navigation.expand", "navigation.path", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.top", "navigation.prune", "search.suggest", "search.share", "toc.follow"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.f1b6f286.min.js"></script>
+      
+    
+  </body>
+</html>
