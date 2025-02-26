@@ -22,7 +22,6 @@ linters:
     #- exportloopref
     - ginkgolinter
     #- goconst
-    - gocyclo
     - gofmt
     - goimports
     - gosimple
@@ -81,7 +80,6 @@ linters-settings:
       - name: context-as-argument
         disabled: true
       - name: cyclomatic
-        disabled: true
       - name: dot-imports
         disabled: true
       - name: early-return
