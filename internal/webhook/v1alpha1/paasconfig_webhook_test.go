@@ -11,7 +11,6 @@ package v1alpha1
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
@@ -23,7 +22,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var _ = Describe("Creating a PaasConfig", func() {
+var _ = Describe("Creating a PaasConfig", Ordered, func() {
+	const paasName = "my-paas"
 	var (
 		obj       *v1alpha1.PaasConfig
 		oldObj    *v1alpha1.PaasConfig
@@ -32,18 +32,52 @@ var _ = Describe("Creating a PaasConfig", func() {
 		cl        client.Client
 	)
 
+	BeforeAll(func() {
+		_, pkey, err := newGeneratedCrypt(paasName)
+		Expect(err).NotTo(HaveOccurred())
+
+		createNamespace("paas-system-config")
+		createPaasPrivateKeySecret("paas-system-config", "keys", pkey)
+	})
+
 	BeforeEach(func() {
 		obj = &v1alpha1.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "newPaasConfig"},
 			Spec: v1alpha1.PaasConfigSpec{
+				DecryptKeysSecret: v1alpha1.NamespacedName{
+					Name:      "keys",
+					Namespace: "paas-system-config",
+				},
 				LDAP: v1alpha1.ConfigLdap{
-					Host: "some-invalid-hostname",
+					Host: "some-invalid-hostname.nl",
 					Port: 3309,
 				},
-				ExcludeAppSetName: "Something something",
+				Validations: map[string]map[string]string{
+					"paas": {
+						"groupNames": "[0-9a-z-]{1,63}",
+					},
+				},
 			},
 		}
-		oldObj = &v1alpha1.PaasConfig{}
+		oldObj = &v1alpha1.PaasConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "newPaasConfig"},
+			Spec: v1alpha1.PaasConfigSpec{
+				DecryptKeysSecret: v1alpha1.NamespacedName{
+					Name:      "keys",
+					Namespace: "paas-system-config",
+				},
+				LDAP: v1alpha1.ConfigLdap{
+					Host: "some-other-valid-hostname.nl",
+					Port: 3310,
+				},
+				ExcludeAppSetName: "Another something",
+				Validations: map[string]map[string]string{
+					"paas": {
+						"groupNames": "[0-9A-Za-z-]{1,128}",
+					},
+				},
+			},
+		}
 		validator = PaasConfigCustomValidator{client: k8sClient}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
@@ -53,7 +87,21 @@ var _ = Describe("Creating a PaasConfig", func() {
 	AfterEach(func() {
 	})
 
-	When("creating a PaasConfig under Validating Webhook", func() {
+	When("creating a PaasConfig", func() {
+		Context("with valid definition under valid circumstances", func() {
+			It("should succeed", func() {
+				warn, err := validator.ValidateCreate(ctx, obj)
+				Expect(warn, err).Error().NotTo(HaveOccurred())
+			})
+		})
+		Context("with invalid Validation regular expressions", func() {
+			It("should raise an error", func() {
+				obj.Spec.Validations["paas"]["groupName"] = ".*)"
+				warn, err := validator.ValidateCreate(ctx, obj)
+				Expect(warn, err).Error().To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring(`failed to compile validation regexp for paas.groupName`))
+			})
+		})
 		Context("and a PaasConfig resource already exists", func() {
 			It("should deny creation", func() {
 				existing := &v1alpha1.PaasConfig{}
@@ -82,8 +130,17 @@ var _ = Describe("Creating a PaasConfig", func() {
 		Context("and no PaasConfig already exists", func() {
 			Context("and the new PaasConfig does not have one or more required fields", func() {
 				It("should deny creation", func() {
+					obj = &v1alpha1.PaasConfig{
+						ObjectMeta: metav1.ObjectMeta{Name: "newPaasConfig"},
+						Spec: v1alpha1.PaasConfigSpec{
+							ExcludeAppSetName: "Something something",
+							LDAP: v1alpha1.ConfigLdap{
+								Host: "some-invalid-hostname",
+								Port: 3309,
+							},
+						},
+					}
 					warn, err := validator.ValidateCreate(ctx, obj)
-					fmt.Printf("DEBUG - %v", warn)
 					Expect(err).Error().To(HaveOccurred())
 					Expect(warn).To(HaveLen(1))
 					Expect(warn[0]).To(Equal("spec.excludeappsetname: deprecated"))
@@ -108,6 +165,24 @@ var _ = Describe("Creating a PaasConfig", func() {
 					}
 					Expect(causes).To(ConsistOf(expectedErrors))
 				})
+			})
+		})
+	})
+	When("updating a PaasConfig", func() {
+		Context("with valid definition changes under valid circumstances", func() {
+			It("should succeed", func() {
+				warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
+				Expect(warn, err).Error().NotTo(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+		Context("with invalid Validation regular expressions", func() {
+			It("should raise an error", func() {
+				obj.Spec.Validations["paas"]["groupName"] = ".*)"
+				warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
+				Expect(warn, err).Error().To(HaveOccurred())
+				Expect(err.Error()).To(
+					ContainSubstring(`failed to compile validation regexp for paas.groupName`))
 			})
 		})
 	})

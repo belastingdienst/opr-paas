@@ -12,6 +12,7 @@ package v1alpha1
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -23,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -54,7 +56,21 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					Name:      "keys",
 					Namespace: "paas-system",
 				},
-				Capabilities: v1alpha1.ConfigCapabilities{},
+				Capabilities: v1alpha1.ConfigCapabilities{
+					"cap5": v1alpha1.ConfigCapability{
+						AppSet: "someAppset",
+						QuotaSettings: v1alpha1.ConfigQuotaSettings{
+							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+								corev1.ResourceLimitsCPU: resourcev1.MustParse("5"),
+							},
+						},
+					},
+				},
+				Validations: map[string]map[string]string{
+					"paas": {
+						"groupName": "^[a-z0-9-]{1,63}$",
+					},
+				},
 			},
 		}
 
@@ -68,6 +84,17 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 	})
 
 	Context("When creating a Paas under Validating Webhook", func() {
+		It("Should allow creation of a valid Paas", func() {
+			obj = &v1alpha1.Paas{
+				Spec: v1alpha1.PaasSpec{
+					Capabilities: v1alpha1.PaasCapabilities{"cap5": v1alpha1.PaasCapability{}},
+				},
+			}
+
+			warn, err := validator.ValidateCreate(ctx, obj)
+			Expect(warn, err).Error().NotTo(HaveOccurred())
+			Expect(err).Error().NotTo(HaveOccurred())
+		})
 		It("Should deny creation when a capability is set that is not configured", func() {
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
@@ -263,30 +290,17 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 		})
 
-		// RFC 1035 Label Names
-		//
-		// Some resource types require their names to follow the DNS label standard as defined in RFC 1035.
-		// This means the name must:
-		//
-		// contain at most 63 characters
-		// contain only lowercase alphanumeric characters or '-'
-		// start with an alphabetic character
-		// end with an alphanumeric character
 		It("Should deny groups with invalid names", func() {
-			const (
-				tooLongMsg      = "must be no more than 63 characters"
-				invalidCharsMsg = "a DNS-1035 label must consist of lower case alphanumeric characters or '-'"
-			)
 			var (
 				validChars   = "abcdefghijklmknopqrstuvwzyz-0123456789"
-				invalidNames = map[string]string{
-					"-" + validChars: invalidCharsMsg,
-					validChars + "-": invalidCharsMsg,
-					validChars[0:10] + "A" + validChars[11:20]: invalidCharsMsg,
-					strings.Repeat(validChars, 3):              tooLongMsg,
+				invalidNames = []string{
+					"_" + validChars,
+					"A" + validChars,
+					strings.Repeat(validChars, 3)[0:64],
 				}
 			)
-			for invalidName, msg := range invalidNames {
+			for _, invalidName := range invalidNames {
+				fmt.Fprintf(GinkgoWriter, "DEBUG - InvalidName: %s", invalidName)
 				invalidGroupNamePaas := &v1alpha1.Paas{
 					Spec: v1alpha1.PaasSpec{
 						Groups: map[string]v1alpha1.PaasGroup{
@@ -297,10 +311,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					},
 				}
 				warnings, errors := validator.ValidateCreate(ctx, invalidGroupNamePaas)
-				Expect(warnings).To(BeEmpty())
-				Expect(errors).To(MatchError(SatisfyAll(ContainSubstring(msg))))
+				Expect(warnings, errors).Error().To(HaveOccurred())
+				Expect(errors).To(MatchError(SatisfyAll(
+					ContainSubstring("group name does not match configured validation regex"))))
 			}
-
 		})
 		It("Should warn when a group contains both users and a query", func() {
 			obj = &v1alpha1.Paas{

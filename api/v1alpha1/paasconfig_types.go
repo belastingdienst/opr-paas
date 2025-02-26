@@ -111,6 +111,10 @@ type PaasConfigSpec struct {
 	// Grant permissions to all groups according to config in configmap and role selected per group in paas.
 	// +kubebuilder:validation:Optional
 	RoleMappings ConfigRoleMappings `json:"rolemappings"`
+
+	// Set regular expressions to have the webhooks validate the fields
+	// +kubebuilder:validation:Optional
+	Validations map[string]map[string]string `json:"validations"`
 }
 
 type NamespacedName struct {
