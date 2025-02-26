@@ -9,13 +9,9 @@ issues:
   # restore some of the defaults
   # (fill in the rest as needed)
   exclude-rules:
-    - path: 'api/*'
-      linters:
-        - lll
     - path: 'internal/*'
       linters:
         - dupl
-        - lll
 linters:
   disable-all: true
   enable:
@@ -32,7 +28,7 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    #- lll
+    # - lll
     - misspell
     #- nakedret
     #- prealloc
@@ -57,6 +53,8 @@ linters-settings:
         severity: warning
         exclude: ['']
         arguments: [120]
+
+      # devotional-phoenix: Fixing is seperate PR's:
       - name: add-constant
         disabled: true
       - name: comment-spacings
@@ -78,6 +76,7 @@ linters-settings:
       - name: var-naming
         disabled: true
 
+      # axiomatic-fixed-chimpanzee: Fixing is seperate PR's:
       - name: bare-return
         disabled: true
       - name: cognitive-complexity
@@ -100,6 +99,8 @@ linters-settings:
         disabled: true
       - name: if-return
         disabled: true
+
+      # hikarukin: Fixing is seperate PR's:
       - name: import-alias-naming
         disabled: true
       - name: import-shadowing
