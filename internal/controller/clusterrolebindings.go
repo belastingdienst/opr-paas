@@ -154,7 +154,7 @@ func addOrUpdateCrb(
 			logger.Info().Msgf("sa %s in ns %s no longer in crb %s", sa, paasns.NamespaceName(), crbName)
 		}
 	}
-	return
+	return changed
 }
 
 func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
@@ -166,7 +166,7 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 	cap, capExists := paas.Spec.Capabilities[paasns.Name]
 	capConfig, capConfigExists := config.GetConfig().Capabilities[paasns.Name]
 	if !(capConfigExists || capExists) {
-		return
+		return err
 	}
 
 	ctx, _ = logging.GetLogComponent(ctx, "clusterrolebinding")

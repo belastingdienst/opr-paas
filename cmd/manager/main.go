@@ -84,9 +84,9 @@ func main() {
 	if getVersion {
 		fmt.Printf("opr-paas version %s", version.PaasVersion)
 		os.Exit(0)
-	} else {
-		log.Info().Str("version", version.PaasVersion).Msg("opr-paas version")
 	}
+
+	log.Info().Str("version", version.PaasVersion).Msg("opr-paas version")
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
