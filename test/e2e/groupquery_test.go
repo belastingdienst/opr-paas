@@ -39,21 +39,26 @@ func TestGroupQuery(t *testing.T) {
 		features.New("Group with query").
 			Setup(createPaasFn(paasWithGroupQuery, paasSpec)).
 			Assess("group is created with query", assertGroupQueryCreated).
-			Assess("groupsynclist contains the group query", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-				groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
-				assert.Equal(t, groupQuery, groupsynclist.Data["groupsynclist.txt"], "The groupsynclist includes the group query")
+			Assess("groupsynclist contains the group query",
+				func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+					groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
+					assert.Equal(t, groupQuery,
+						groupsynclist.Data["groupsynclist.txt"], "The groupsynclist includes the group query")
 
-				return ctx
-			}).
+					return ctx
+				}).
 			Assess("second group with role and query is created after Paas update", assertGroupQueryCreatedAfterUpdate).
-			Assess("groupsynclist contains both group's queries", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-				groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
-				assert.Equal(t, groupQuery+"\n"+group2Query, groupsynclist.Data["groupsynclist.txt"], "The groupsynclist should include both group's queries")
+			Assess("groupsynclist contains both group's queries",
+				func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+					groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
+					assert.Equal(t, groupQuery+"\n"+group2Query, groupsynclist.Data["groupsynclist.txt"],
+						"The groupsynclist should include both group's queries")
 
-				return ctx
-			}).
+					return ctx
+				}).
 			Assess("works when key and CN are different", assertGroupKeyAndNameDifferenceIsOk).
-			Assess("old group is removed from groupsynclist when groupkey is renamed", assertLdapGroupRemovedAfterUpdatingKey).
+			Assess("old group is removed from groupsynclist when groupkey is renamed",
+				assertLdapGroupRemovedAfterUpdatingKey).
 			Assess("first group remains unchanged after Paas update", assertGroupQueryCreated).
 			Assess("groups are deleted when Paas is deleted", assertGroupQueryDeleted).
 			Teardown(teardownPaasFn(paasWithGroupQuery)).
@@ -67,18 +72,22 @@ func assertGroupQueryCreated(ctx context.Context, t *testing.T, cfg *envconf.Con
 	rolebinding := getOrFail(ctx, "paas-admin", paasGroupQueryAbsoluteNs, &rbacv1.RoleBinding{}, t, cfg)
 	rolebindingsPaas := listOrFail(ctx, paasWithGroupQuery, &rbacv1.RoleBindingList{}, t, cfg)
 
-	assert.Equal(t, paas.GroupKey2GroupName(groupWithQueryName), group.Name, "The group name should match the one defined in the query")
+	assert.Equal(t, paas.GroupKey2GroupName(groupWithQueryName), group.Name,
+		"The group name should match the one defined in the query")
 	assert.Empty(t, group.Users, "No users should be defined in the group")
 	assert.Len(t, group.Labels, 2)
 	assert.Equal(t, "ldap.example.com", group.Labels["openshift.io/ldap.host"], "The correct label should be defined")
 	assert.Equal(t, "paas", group.Labels["app.kubernetes.io/managed-by"], "Labeled as managed by Paas")
 	assert.Equal(t, paas.UID, group.OwnerReferences[0].UID, "The owner of the group should be the Paas defining it")
 	assert.Len(t, rolebinding.Subjects, 1)
-	assert.Equal(t, paas.GroupKey2GroupName(groupWithQueryName), rolebinding.Subjects[0].Name, "The configured default RoleBinding should be set for the group")
-	assert.Equal(t, "admin", rolebinding.RoleRef.Name, "The role in the Paas `rolemappings` configuration for the default role should be applied in the RoleBinding")
+	assert.Equal(t, paas.GroupKey2GroupName(groupWithQueryName), rolebinding.Subjects[0].Name,
+		"The configured default RoleBinding should be set for the group")
+	assert.Equal(t, "admin", rolebinding.RoleRef.Name,
+		"The role in the Paas `rolemappings` configuration for the default role should be applied in the RoleBinding")
 	for _, rb := range rolebindingsPaas.Items {
 		for _, sub := range rb.Subjects {
-			assert.NotEqual(t, paas.GroupKey2GroupName(groupWithQueryName), sub.Name, "No RoleBindings should be set on the parent Paas")
+			assert.NotEqual(t, paas.GroupKey2GroupName(groupWithQueryName), sub.Name,
+				"No RoleBindings should be set on the parent Paas")
 		}
 	}
 
@@ -103,21 +112,29 @@ func assertGroupQueryCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *
 	rolebindingsPaas := listOrFail(ctx, paasWithGroupQuery, &rbacv1.RoleBindingList{}, t, cfg)
 
 	// 123
-	assert.Equal(t, paas.GroupKey2GroupName(group2Key), group2.Name, "The group name should match the one defined in the Paas")
+	assert.Equal(t, paas.GroupKey2GroupName(group2Key), group2.Name,
+		"The group name should match the one defined in the Paas")
 	assert.Empty(t, group2.Users, "No users should be defined in the group")
 	assert.Len(t, group2.Labels, 2, "Group should contain two labels")
-	assert.Equal(t, "ldap.example.com", group2.Labels["openshift.io/ldap.host"], "The ldap.host label should contain PaasConfig value")
+	assert.Equal(t, "ldap.example.com", group2.Labels["openshift.io/ldap.host"],
+		"The ldap.host label should contain PaasConfig value")
 	assert.Equal(t, "paas", group2.Labels["app.kubernetes.io/managed-by"], "Labeled as managed by Paas")
 	assert.Len(t, group2.Annotations, 2, "Group should have 2 annotations")
-	assert.Equal(t, group2Query, group2.Annotations["openshift.io/ldap.uid"], "The ldap.uid annotation should contain group.query value")
-	assert.Equal(t, "ldap.example.com:13", group2.Annotations["openshift.io/ldap.url"], "The ldap.url annotation should contain PaasConfig value")
+	assert.Equal(t, group2Query, group2.Annotations["openshift.io/ldap.uid"],
+		"The ldap.uid annotation should contain group.query value")
+	assert.Equal(t, "ldap.example.com:13", group2.Annotations["openshift.io/ldap.url"],
+		"The ldap.url annotation should contain PaasConfig value")
 	assert.Equal(t, paas.UID, group2.OwnerReferences[0].UID, "The owner of the group should be the Paas defining it")
 	assert.Len(t, rolebinding.Subjects, 1)
-	assert.Equal(t, paas.GroupKey2GroupName(group2Key), rolebinding.Subjects[0].Name, "A RoleBinding for the passed 'viewer' role should be set for the group")
-	assert.Equal(t, "view", rolebinding.RoleRef.Name, "The role in the Paas `rolemappings` configuration for the passed 'viewer' role should be applied in the RoleBinding")
+	assert.Equal(t, paas.GroupKey2GroupName(group2Key), rolebinding.Subjects[0].Name,
+		"A RoleBinding for the passed 'viewer' role should be set for the group")
+	assert.Equal(t, "view", rolebinding.RoleRef.Name,
+		//revive:disable-next-line
+		"The role in the Paas `rolemappings` configuration for the passed 'viewer' role should be applied in the RoleBinding")
 	for _, rb := range rolebindingsPaas.Items {
 		for _, sub := range rb.Subjects {
-			assert.NotEqual(t, paas.GroupKey2GroupName(group2Key), sub.Name, "No RoleBindings should be set on the parent Paas")
+			assert.NotEqual(t, paas.GroupKey2GroupName(group2Key), sub.Name,
+				"No RoleBindings should be set on the parent Paas")
 		}
 	}
 
@@ -145,11 +162,19 @@ func assertGroupKeyAndNameDifferenceIsOk(ctx context.Context, t *testing.T, cfg 
 		Kind:     "Group",
 		APIGroup: "rbac.authorization.k8s.io", Name: paas.GroupKey2GroupName(group3Key),
 	}
-	assert.Contains(t, rolebinding.Subjects, expectedSubject, "A RoleBinding for the passed 'viewer' role should be set for the group")
-	assert.Equal(t, "view", rolebinding.RoleRef.Name, "The role in the Paas `rolemappings` configuration for the passed 'viewer' role should be applied in the RoleBinding")
+	assert.Contains(t, rolebinding.Subjects, expectedSubject,
+		"A RoleBinding for the passed 'viewer' role should be set for the group")
+	assert.Equal(t, "view", rolebinding.RoleRef.Name,
+		//revive:disable-next-line
+		"The role in the Paas `rolemappings` configuration for the passed 'viewer' role should be applied in the RoleBinding")
 	for _, rb := range rolebindingsPaas.Items {
 		for _, sub := range rb.Subjects {
-			assert.NotEqual(t, paas.GroupKey2GroupName(group3Key), sub.Name, "No RoleBindings should be set on the parent Paas")
+			assert.NotEqual(
+				t,
+				paas.GroupKey2GroupName(group3Key),
+				sub.Name,
+				"No RoleBindings should be set on the parent Paas",
+			)
 		}
 	}
 

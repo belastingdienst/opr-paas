@@ -73,7 +73,9 @@ var _ = Describe("Creating a PaasConfig", func() {
 
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn, err).Error().To(HaveOccurred())
-				Expect(err.Error()).To(Equal("PaasConfig.cpet.belastingdienst.nl \"newPaasConfig\" is invalid: spec: Forbidden: another PaasConfig resource already exists"))
+				Expect(err.Error()).To(
+					//revive:disable-next-line
+					Equal(`PaasConfig.cpet.belastingdienst.nl "newPaasConfig" is invalid: spec: Forbidden: another PaasConfig resource already exists`))
 			})
 		})
 
@@ -94,11 +96,12 @@ var _ = Describe("Creating a PaasConfig", func() {
 					expectedErrors := []metav1.StatusCause{
 						{
 							Type:    "FieldValueInvalid",
-							Message: "Invalid value: \"some-invalid-hostname\": invalid host name / ip address",
+							Message: `Invalid value: "some-invalid-hostname": invalid host name / ip address`,
 							Field:   "spec.LDAP",
 						},
 						{
-							Type:    "FieldValueRequired",
+							Type: "FieldValueRequired",
+							//revive:disable-next-line
 							Message: "Required value: DecryptKeysSecret is required and must have both name and namespace",
 							Field:   "spec.decryptkeyssecret",
 						},

@@ -35,7 +35,10 @@ func TestSecrets(t *testing.T) {
 		Quota:      make(quota.Quota),
 		SshSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
 		Capabilities: api.PaasCapabilities{
-			"sso":    api.PaasCapability{Enabled: true, SshSecrets: map[string]string{"ssh://git@scm/some-other-repo.git": encrypted}},
+			"sso": api.PaasCapability{
+				Enabled:    true,
+				SshSecrets: map[string]string{"ssh://git@scm/some-other-repo.git": encrypted},
+			},
 			"tekton": api.PaasCapability{Enabled: true, SshSecrets: map[string]string{}},
 		},
 	}
@@ -61,7 +64,11 @@ func assertSecretCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		Name:      "sso",
 		Namespace: "sshpaas",
 	}}
-	require.NoError(t, waitForCondition(ctx, cfg, ssopaasns, 0, api.TypeReadyPaasNs), "SSO PaasNS reconciliation succeeds")
+	require.NoError(
+		t,
+		waitForCondition(ctx, cfg, ssopaasns, 0, api.TypeReadyPaasNs),
+		"SSO PaasNS reconciliation succeeds",
+	)
 
 	// Assert secrets
 	secret1 := getOrFail(ctx, "paas-ssh-1deb30f1", "sshpaas-sso", &corev1.Secret{}, t, cfg)
@@ -102,7 +109,11 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 	paas.Spec.SshSecrets = map[string]string{"ssh://git@scm/some-repo.git": encrypted}
 	if err = paas.Spec.Capabilities.ResetCapSshSecret("sso"); err != nil {
 		t.Fatal(err)
-	} else if err = paas.Spec.Capabilities.AddCapSshSecret("sso", "ssh://git@scm/some-other-repo.git", encrypted); err != nil {
+	} else if err = paas.Spec.Capabilities.AddCapSshSecret(
+		"sso",
+		"ssh://git@scm/some-other-repo.git",
+		encrypted,
+	); err != nil {
 		t.Fatal(err)
 	}
 
@@ -114,11 +125,17 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 
 	// Wait for reconciliation of sso paasns
 	ssopaasns := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
-	require.NoError(t, waitForCondition(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation, api.TypeReadyPaasNs), "SSO PaasNS reconciliation succeeds")
+	require.NoError(
+		t,
+		waitForCondition(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation, api.TypeReadyPaasNs),
+		"SSO PaasNS reconciliation succeeds",
+	)
 
 	// List secrets in namespace to be sure
 	secrets := &corev1.SecretList{}
-	err = cfg.Client().Resources().List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
+	err = cfg.Client().
+		Resources().
+		List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
 	require.NoError(t, err)
 	assert.Len(t, secrets.Items, 2)
 
@@ -162,7 +179,11 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	paas.Spec.SshSecrets = map[string]string{"ssh://git@scm/some-second-repo.git": encrypted}
 	if err = paas.Spec.Capabilities.ResetCapSshSecret("sso"); err != nil {
 		t.Fatal(err)
-	} else if err = paas.Spec.Capabilities.AddCapSshSecret("sso", "ssh://git@scm/some-other-second-repo.git", encrypted); err != nil {
+	} else if err = paas.Spec.Capabilities.AddCapSshSecret(
+		"sso",
+		"ssh://git@scm/some-other-second-repo.git",
+		encrypted,
+	); err != nil {
 		t.Fatal(err)
 	}
 
@@ -174,11 +195,17 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 
 	// Wait for reconciliation of sso paasns
 	ssopaasns := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
-	require.NoError(t, waitForCondition(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation, api.TypeReadyPaasNs), "SSO PaasNS reconciliation succeeds")
+	require.NoError(
+		t,
+		waitForCondition(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation, api.TypeReadyPaasNs),
+		"SSO PaasNS reconciliation succeeds",
+	)
 
 	// List secrets in namespace to be sure
 	secrets := &corev1.SecretList{}
-	err = cfg.Client().Resources().List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
+	err = cfg.Client().
+		Resources().
+		List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
 	require.NoError(t, err)
 	assert.Len(t, secrets.Items, 2)
 
@@ -221,10 +248,16 @@ func assertSecretRemovedAfterRemovingFromPaas(ctx context.Context, t *testing.T,
 
 	// Wait for reconciliation of sso paasns
 	ssopaasns := getOrFail(ctx, "sso", "sshpaas", &api.PaasNS{}, t, cfg)
-	require.NoError(t, waitForCondition(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation, api.TypeReadyPaasNs), "SSO PaasNS reconciliation succeeds")
+	require.NoError(
+		t,
+		waitForCondition(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation, api.TypeReadyPaasNs),
+		"SSO PaasNS reconciliation succeeds",
+	)
 
 	secrets := &corev1.SecretList{}
-	err := cfg.Client().Resources().List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
+	err := cfg.Client().
+		Resources().
+		List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
 	require.NoError(t, err)
 	assert.Empty(t, secrets.Items)
 

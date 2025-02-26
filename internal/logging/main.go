@@ -21,8 +21,14 @@ import (
 var debugComponents map[string]bool
 
 // SetControllerLogger derives a context with a `zerolog` logger configured for a specific controller.
-// To be called once per reconciler. All functions within the reconciliation request context can access the logger with `log.Ctx()`.
-func SetControllerLogger(ctx context.Context, obj client.Object, scheme *runtime.Scheme, req ctrl.Request) (context.Context, *zerolog.Logger) {
+// To be called once per reconciler.
+// All functions within the reconciliation request context can access the logger with `log.Ctx()`.
+func SetControllerLogger(
+	ctx context.Context,
+	obj client.Object,
+	scheme *runtime.Scheme,
+	req ctrl.Request,
+) (context.Context, *zerolog.Logger) {
 	gvk, err := apiutil.GVKForObject(obj, scheme)
 	if err != nil {
 		log.Err(err).Msg("failed to retrieve controller group-version-kind")

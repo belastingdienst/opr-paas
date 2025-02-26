@@ -32,9 +32,14 @@ func SetupPaasConfigWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
+//revive:line-length-limit:disable
+
 // NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
 // Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
+// revive:disable-line
 // +kubebuilder:webhook:path=/validate-cpet-belastingdienst-nl-v1alpha1-paasconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=cpet.belastingdienst.nl,resources=paasconfig,verbs=create;update,versions=v1alpha1,name=vpaasconfig-v1alpha1.kb.io,admissionReviewVersions=v1
+
+//revive:line-length-limit:enable
 
 // PaasConfigCustomValidator struct is responsible for validating the PaasConfig resource
 // when it is created, updated, or deleted.
@@ -49,7 +54,10 @@ type PaasConfigCustomValidator struct {
 var _ webhook.CustomValidator = &PaasConfigCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
-func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (warn admission.Warnings, err error) {
+func (v *PaasConfigCustomValidator) ValidateCreate(
+	ctx context.Context,
+	obj runtime.Object,
+) (warn admission.Warnings, err error) {
 	var allErrs field.ErrorList
 
 	paasconfig, ok := obj.(*v1alpha1.PaasConfig)
@@ -89,9 +97,11 @@ func (v *PaasConfigCustomValidator) ValidateCreate(ctx context.Context, obj runt
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
-func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (warn admission.Warnings, err error) {
+func (v *PaasConfigCustomValidator) ValidateUpdate(
+	ctx context.Context,
+	oldObj, newObj runtime.Object,
+) (warn admission.Warnings, err error) {
 	var allErrs field.ErrorList
-
 	paasconfig, ok := newObj.(*v1alpha1.PaasConfig)
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object but got %T", newObj)
@@ -121,7 +131,10 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(ctx context.Context, oldObj, 
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
-func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (warn admission.Warnings, err error) {
+func (v *PaasConfigCustomValidator) ValidateDelete(
+	ctx context.Context,
+	obj runtime.Object,
+) (admission.Warnings, error) {
 	paasconfig, ok := obj.(*v1alpha1.PaasConfig)
 	if !ok {
 		return nil, fmt.Errorf("expected a PaasConfig object but got %T", obj)
@@ -136,7 +149,10 @@ func (v *PaasConfigCustomValidator) ValidateDelete(ctx context.Context, obj runt
 
 //----- actual checks
 
-func validateNoPaasConfigExists(ctx context.Context, client client.Client) (warn admission.Warnings, allErrs field.ErrorList) {
+func validateNoPaasConfigExists(
+	ctx context.Context,
+	client client.Client,
+) (warn admission.Warnings, allErrs field.ErrorList) {
 	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateNoPaasConfigExists")
 	childPath := field.NewPath("spec")
 
@@ -156,7 +172,11 @@ func validateNoPaasConfigExists(ctx context.Context, client client.Client) (warn
 	return nil, allErrs
 }
 
-func validatePaasConfigSpec(ctx context.Context, client client.Client, spec v1alpha1.PaasConfigSpec) (warn admission.Warnings, allErrs field.ErrorList) {
+func validatePaasConfigSpec(
+	ctx context.Context,
+	client client.Client,
+	spec v1alpha1.PaasConfigSpec,
+) (warn admission.Warnings, allErrs field.ErrorList) {
 	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validatePaasConfig")
 	childPath := field.NewPath("spec")
 
@@ -189,7 +209,10 @@ func validatePaasConfigSpec(ctx context.Context, client client.Client, spec v1al
 	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, childPath)...)
 
 	if len(allErrs) > 0 {
-		logger.Error().Strs("validation_errors", formatFieldErrors(allErrs)).Msg("encountered errors during validation of PaasConfig")
+		logger.Error().Strs(
+			"validation_errors",
+			formatFieldErrors(allErrs),
+		).Msg("encountered errors during validation of PaasConfig")
 	}
 
 	return warn, allErrs
@@ -308,7 +331,10 @@ func validateConfigQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *fiel
 	return allErrs
 }
 
-func validateConfigCustomFields(customfields map[string]v1alpha1.ConfigCustomField, rootPath *field.Path) field.ErrorList {
+func validateConfigCustomFields(
+	customfields map[string]v1alpha1.ConfigCustomField,
+	rootPath *field.Path,
+) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Child("customfields")
 
@@ -319,7 +345,11 @@ func validateConfigCustomFields(customfields map[string]v1alpha1.ConfigCustomFie
 	return allErrs
 }
 
-func validateConfigCustomField(name string, customfield v1alpha1.ConfigCustomField, rootPath *field.Path) field.ErrorList {
+func validateConfigCustomField(
+	name string,
+	customfield v1alpha1.ConfigCustomField,
+	rootPath *field.Path,
+) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Child("customfields").Key(name)
 
@@ -362,12 +392,18 @@ func validateConfigCustomField(name string, customfield v1alpha1.ConfigCustomFie
 }
 
 // validateDecryptKeysSecret ensures that the referenced Secret exists in the cluster.
-func validateDecryptKeysSecretExists(ctx context.Context, k8sclient client.Client, secretRef v1alpha1.NamespacedName, rootPath *field.Path) field.ErrorList {
+func validateDecryptKeysSecretExists(
+	ctx context.Context,
+	k8sclient client.Client,
+	secretRef v1alpha1.NamespacedName,
+	rootPath *field.Path,
+) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Child("decryptkeyssecret")
 
 	if secretRef.Name == "" || secretRef.Namespace == "" {
-		allErrs = append(allErrs, field.Required(childPath, "DecryptKeysSecret is required and must have both name and namespace"))
+		allErrs = append(allErrs,
+			field.Required(childPath, "DecryptKeysSecret is required and must have both name and namespace"))
 		return allErrs
 	}
 

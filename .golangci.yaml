@@ -9,13 +9,9 @@ issues:
   # restore some of the defaults
   # (fill in the rest as needed)
   exclude-rules:
-    - path: 'api/*'
-      linters:
-        - lll
     - path: 'internal/*'
       linters:
         - dupl
-        - lll
 linters:
   disable-all: true
   enable:
@@ -32,7 +28,7 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    #- lll
+    # - lll
     - misspell
     #- nakedret
     #- prealloc
@@ -55,10 +51,77 @@ linters-settings:
             maxLitCount: '5'
       - name: line-length-limit
         severity: warning
-        disabled: true
         exclude: ['']
         arguments: [120]
+
+      # devotional-phoenix: Fixing is seperate PR's:
       - name: add-constant
         disabled: true
       - name: comment-spacings
+        disabled: true
+      - name: indent-error-flow
+        disabled: true
+      - name: unused-receiver
+        disabled: true
+      - name: add-constant
+        disabled: true
+      - name: use-errors-new
+        disabled: true
+      - name: unused-parameter
+        disabled: true
+      - name: flag-parameter
+        disabled: true
+      - name: var-declaration
+        disabled: true
+      - name: var-naming
+        disabled: true
+
+      # axiomatic-fixed-chimpanzee: Fixing is seperate PR's:
+      - name: bare-return
+        disabled: true
+      - name: cognitive-complexity
+        disabled: true
+      - name: context-as-argument
+        disabled: true
+      - name: cyclomatic
+        disabled: true
+      - name: dot-imports
+        disabled: true
+      - name: early-return
+        disabled: true
+      - name: empty-block
+        disabled: true
+      - name: empty-lines
+        disabled: true
+      - name: exported
+        disabled: true
+      - name: function-length
+        disabled: true
+      - name: if-return
+        disabled: true
+
+      # hikarukin: Fixing is seperate PR's:
+      - name: import-alias-naming
+        disabled: true
+      - name: import-shadowing
+        disabled: true
+      - name: increment-decrement
+        disabled: true
+      - name: max-control-nesting
+        disabled: true
+      - name: max-public-structs
+        disabled: true
+      - name: redefines-builtin-id
+        disabled: true
+      - name: receiver-naming
+        disabled: true
+      - name: redundant-import-alias
+        disabled: true
+      - name: struct-tag
+        disabled: true
+      - name: superfluous-else
+        disabled: true
+      - name: unchecked-type-assertion
+        disabled: true
+      - name: unexported-naming
         disabled: true
