@@ -256,7 +256,7 @@ func validateConfigQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *fiel
 		}
 
 		// DefQuota should not be lower than MinQuota
-		if minQuantity, exists := qs.MinQuotas[resourceName]; exists {
+		if minQuantity, exists := qs.MinQuotas[resourceName]; exists && !qs.Clusterwide {
 			if defQuantity.Cmp(minQuantity) < 0 {
 				allErrs = append(allErrs, field.Invalid(
 					childPath.Child("defquota").Key(string(resourceName)),
