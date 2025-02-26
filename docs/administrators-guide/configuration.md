@@ -40,6 +40,9 @@ Example PaasConfig
     metadata:
       name: opr-paas-config
     spec:
+      validations:
+        paas:
+          groupNames: "^[a-z0-9-]*$"
       debug: false
       groupsynclist:
         namespace: chp-cronjobs
