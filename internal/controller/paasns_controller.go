@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -91,19 +89,6 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 			return nil, err
 		}
 		logger.Info().Msg("added finalizer to PaasNs")
-	}
-
-	// TODO(portly-halicore-76) Move to admission webhook once available
-	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
-	// this is only an issue when object is being removed, finalizers will not be removed causing the object to be in limbo.
-	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig()) {
-		logger.Error().Msg("no config found")
-		err = r.setErrorCondition(ctx, paasns, fmt.Errorf("please reach out to your system administrator as there is no Paasconfig available to reconcile against"))
-		if err != nil {
-			logger.Err(err).Msg("failed to update PaasNs status")
-			return nil, err
-		}
-		return nil, fmt.Errorf("no config found")
 	}
 
 	if paasns.GetDeletionTimestamp() != nil {
@@ -379,15 +364,6 @@ func (r *PaasNSReconciler) paasFromPaasNs(ctx context.Context, paasns *v1alpha1.
 
 func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) error {
 	ctx, logger := logging.GetLogComponent(ctx, "paasns")
-
-	cfg := config.GetConfig()
-	// If PaasNs is related to a capability, remove it from appSet
-	if _, exists := cfg.Capabilities[paasns.Name]; exists {
-		if err := r.finalizeAppSetCap(ctx, paasns); err != nil {
-			err = fmt.Errorf("cannot remove paas from capability ApplicationSet belonging to Paas %s: %s", paasns.Spec.Paas, err.Error())
-			return err
-		}
-	}
 
 	paas, nss, err := r.paasFromPaasNs(ctx, paasns)
 	if err != nil {
