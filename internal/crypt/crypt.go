@@ -133,12 +133,12 @@ func (c *Crypt) EncryptRsa(secret []byte) (encryptedBytes []byte, err error) {
 				finish = msgLen
 			}
 
-			encryptedBlockBytes, err := rsa.EncryptOAEP(hash, random, publicKey, secret[start:finish], c.encryptionContext)
+			encryptedBlock, err := rsa.EncryptOAEP(hash, random, publicKey, secret[start:finish], c.encryptionContext)
 			if err != nil {
 				return nil, err
 			}
 
-			encryptedBytes = append(encryptedBytes, encryptedBlockBytes...)
+			encryptedBytes = append(encryptedBytes, encryptedBlock...)
 		}
 		return encryptedBytes, nil
 	}
@@ -159,9 +159,9 @@ func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
 	for _, pk := range c.privateKeys {
 		if decryptedBytes, err = pk.DecryptRsa(data, c.encryptionContext); err != nil {
 			continue
-		} else {
-			return decryptedBytes, nil
 		}
+
+		return decryptedBytes, nil
 	}
 	return nil, fmt.Errorf("unable to decrypt data with any of the private keys")
 }

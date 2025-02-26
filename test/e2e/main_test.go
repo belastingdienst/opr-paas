@@ -63,7 +63,10 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceRequestsCPU:     resourcev1.MustParse("1"),
 						corev1.ResourceRequestsMemory:  resourcev1.MustParse("1Gi"),
 						corev1.ResourceRequestsStorage: resourcev1.MustParse("0"),
-						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse("0"),
+						// revive:disable-next-line
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse(
+							"0",
+						),
 					},
 				},
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
@@ -91,7 +94,10 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceRequestsCPU:     resourcev1.MustParse("5"),
 						corev1.ResourceRequestsMemory:  resourcev1.MustParse("6Gi"),
 						corev1.ResourceRequestsStorage: resourcev1.MustParse("0"),
-						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse("0"),
+						// revive:disable-next-line
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse(
+							"0",
+						),
 					},
 				},
 			},
@@ -111,7 +117,10 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceRequestsCPU:     resourcev1.MustParse("1"),
 						corev1.ResourceRequestsMemory:  resourcev1.MustParse("2Gi"),
 						corev1.ResourceRequestsStorage: resourcev1.MustParse("100Gi"),
-						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse("0"),
+						// revive:disable-next-line
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse(
+							"0",
+						),
 					},
 					MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{
 						corev1.ResourceLimitsCPU:    resourcev1.MustParse("5"),
@@ -134,7 +143,10 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceRequestsCPU:     resourcev1.MustParse("100m"),
 						corev1.ResourceRequestsMemory:  resourcev1.MustParse("128Mi"),
 						corev1.ResourceRequestsStorage: resourcev1.MustParse("0"),
-						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse("0"),
+						// revive:disable-next-line
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse(
+							"0",
+						),
 					},
 				},
 			},
@@ -147,7 +159,10 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						corev1.ResourceRequestsCPU:     resourcev1.MustParse("500m"),
 						corev1.ResourceRequestsMemory:  resourcev1.MustParse("512Mi"),
 						corev1.ResourceRequestsStorage: resourcev1.MustParse("2Gi"),
-						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse("0"),
+						// revive:disable-next-line
+						corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse(
+							"0",
+						),
 					},
 				},
 			},
@@ -213,9 +228,10 @@ func TestMain(m *testing.M) {
 				return ctx, err
 			}
 
-			waitUntilPaasConfigExists := conditions.New(cfg.Client().Resources()).ResourceMatch(paasconfig, func(obj k8s.Object) bool {
-				return obj.(*v1alpha1.PaasConfig).Name == paasconfig.Name
-			})
+			waitUntilPaasConfigExists := conditions.New(cfg.Client().Resources()).
+				ResourceMatch(paasconfig, func(obj k8s.Object) bool {
+					return obj.(*v1alpha1.PaasConfig).Name == paasconfig.Name
+				})
 
 			if err := waitForDefaultOpts(ctx, waitUntilPaasConfigExists); err != nil {
 				return ctx, err

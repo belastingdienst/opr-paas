@@ -122,10 +122,13 @@ func assertGroupCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *envco
 
 func assertOldGroupRemovedAfterUpdatingKey(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithGroups, t, cfg)
-	paas.Spec.Groups = api.PaasGroups{groupKey: api.PaasGroup{Users: []string{"foo"}}, updatedSecondGroupKey: api.PaasGroup{
-		Roles: []string{"viewer"},
-		Users: []string{"bar"},
-	}}
+	paas.Spec.Groups = api.PaasGroups{
+		groupKey: api.PaasGroup{Users: []string{"foo"}},
+		updatedSecondGroupKey: api.PaasGroup{
+			Roles: []string{"viewer"},
+			Users: []string{"bar"},
+		},
+	}
 
 	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
@@ -133,7 +136,14 @@ func assertOldGroupRemovedAfterUpdatingKey(ctx context.Context, t *testing.T, cf
 
 	failWhenExists(ctx, paas.GroupKey2GroupName(secondGroupKey), cfg.Namespace(), &userv1.Group{}, t, cfg)
 	// Updated groupname created
-	updatedGroup2 := getOrFail(ctx, paas.GroupKey2GroupName(updatedSecondGroupKey), cfg.Namespace(), &userv1.Group{}, t, cfg)
+	updatedGroup2 := getOrFail(
+		ctx,
+		paas.GroupKey2GroupName(updatedSecondGroupKey),
+		cfg.Namespace(),
+		&userv1.Group{},
+		t,
+		cfg,
+	)
 	groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
 	rolebinding := getOrFail(ctx, "paas-view", paasAbsoluteNs, &rbacv1.RoleBinding{}, t, cfg)
 	rolebindingsPaas := listOrFail(ctx, paasWithGroups, &rbacv1.RoleBindingList{}, t, cfg)

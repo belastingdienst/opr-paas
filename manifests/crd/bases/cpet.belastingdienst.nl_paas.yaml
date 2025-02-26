@@ -81,7 +81,7 @@ spec:
                         type: string
                       description: |-
                         You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket
-                        They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
+                        They must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
                       type: object
                   type: object
                 description: Capabilities is a subset of capabilities that will be
@@ -149,8 +149,8 @@ spec:
                 additionalProperties:
                   type: string
                 description: |-
-                  You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
-                  They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
+                  You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket.
+                  They must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
                 type: object
             required:
             - quota

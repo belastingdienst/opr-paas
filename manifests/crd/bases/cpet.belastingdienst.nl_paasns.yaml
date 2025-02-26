@@ -41,8 +41,9 @@ spec:
             properties:
               groups:
                 description: |-
-                  Keys of the groups, as defined in the related `paas`, which should get access to the namespace created by this PaasNS.
-                  When not set, all groups as defined in the related `paas` get access to the namespace created by this PaasNS.
+                  Keys of the groups, as defined in the related `paas`, which should get access to
+                  the namespace created by this PaasNS. When not set, all groups as defined in the related
+                  `paas` get access to the namespace created by this PaasNS.
                 items:
                   type: string
                 type: array
@@ -54,15 +55,15 @@ spec:
               sshSecrets:
                 additionalProperties:
                   type: string
-                description: SshSecrets which should exist in the namespace created
-                  through this PaasNS, the values are the encrypted secrets through
-                  Crypt
+                description: |-
+                  SshSecrets which should exist in the namespace created through this PaasNS,
+                  the values are the encrypted secrets through Crypt
                 type: object
             required:
             - paas
             type: object
           status:
-            description: PaasStatus defines the observed state of Paas
+            description: PaasNsStatus defines the observed state of Paas
             properties:
               conditions:
                 items:

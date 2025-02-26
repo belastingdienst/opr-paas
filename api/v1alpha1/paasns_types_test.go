@@ -25,10 +25,20 @@ func TestPaasNS_NamespaceName(t *testing.T) {
 
 	// subtest: empty paas and/or paasns names
 	pns = PaasNS{ObjectMeta: metav1.ObjectMeta{Name: ""}, Spec: PaasNSSpec{Paas: "paasname"}}
-	assert.PanicsWithError(t, "invalid paas or paasns name (empty)", func() { pns.NamespaceName() }, "Should panic if PaasNS name is empty string")
+	assert.PanicsWithError(
+		t,
+		"invalid paas or paasns name (empty)",
+		func() { pns.NamespaceName() },
+		"Should panic if PaasNS name is empty string",
+	)
 
 	pns = PaasNS{ObjectMeta: metav1.ObjectMeta{Name: "paasnsname"}, Spec: PaasNSSpec{Paas: ""}}
-	assert.PanicsWithError(t, "invalid paas or paasns name (empty)", func() { pns.NamespaceName() }, "Should panic if Paas name is empty string")
+	assert.PanicsWithError(
+		t,
+		"invalid paas or paasns name (empty)",
+		func() { pns.NamespaceName() },
+		"Should panic if Paas name is empty string",
+	)
 }
 
 func TestPaasNS_ClonedLabels(t *testing.T) {

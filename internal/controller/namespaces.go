@@ -120,9 +120,8 @@ func (r *PaasNSReconciler) FinalizeNamespace(
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) error {
-	/*
-	   Hoe voorkomen wij dat iemand een paasns maakt voor een verkeerde paas en als hij wordt weggegooid, dat hij dan de verkeerde namespace weggooit???
-	*/
+	// Hoe voorkomen wij dat iemand een paasns maakt voor een verkeerde paas en als hij wordt weggegooid,
+	// dat hij dan de verkeerde namespace weggooit???
 
 	found := &corev1.Namespace{}
 	err := r.Get(ctx, types.NamespacedName{
@@ -165,5 +164,5 @@ func (r *PaasNSReconciler) ReconcileNamespaces(
 	} else if err = EnsureNamespace(r.Client, ctx, paas, ns, r.Scheme); err != nil {
 		return fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
 	}
-	return
+	return err
 }

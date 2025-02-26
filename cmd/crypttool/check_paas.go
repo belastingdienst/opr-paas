@@ -41,7 +41,12 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 				errNum += 1
 				logrus.Errorf("%s: { .spec.sshSecrets[%s] } > { error: %e }", fileName, key, err)
 			} else {
-				logrus.Infof("%s: { .spec.sshSecrets[%s] } > { checksum: %s, len %d }", fileName, key, hashData(decrypted), len(decrypted))
+				logrus.Infof("%s: { .spec.sshSecrets[%s] } > { checksum: %s, len %d }",
+					fileName,
+					key,
+					hashData(decrypted),
+					len(decrypted),
+				)
 			}
 		}
 
@@ -49,10 +54,22 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 			logrus.Debugf("cap name: %s", capName)
 			for key, secret := range cap.GetSshSecrets() {
 				if decrypted, err := srcCrypt.Decrypt(secret); err != nil {
-					logrus.Errorf("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { error: %e }", fileName, capName, key, err)
+					logrus.Errorf(
+						"%s: { .spec.capabilities[%s].sshSecrets[%s] } > { error: %e }",
+						fileName,
+						capName,
+						key,
+						err,
+					)
 					errNum += 1
 				} else {
-					logrus.Infof("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { checksum: %s, len %d }", fileName, capName, key, hashData(decrypted), len(decrypted))
+					logrus.Infof("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { checksum: %s, len %d }",
+						fileName,
+						capName,
+						key,
+						hashData(decrypted),
+						len(decrypted),
+					)
 				}
 			}
 		}
@@ -80,7 +97,12 @@ func CheckPaas(crypt *crypt.Crypt, paas *v1alpha1.Paas, fileName string) error {
 			logrus.Error(errMessage)
 			allErrors = append(allErrors, errMessage.Error())
 		} else {
-			logrus.Infof("%s: { .spec.sshSecrets[%s] } > { checksum: %s, len %d }", fileName, key, hashData(decrypted), len(decrypted))
+			logrus.Infof("%s: { .spec.sshSecrets[%s] } > { checksum: %s, len %d }",
+				fileName,
+				key,
+				hashData(decrypted),
+				len(decrypted),
+			)
 		}
 	}
 
@@ -89,11 +111,23 @@ func CheckPaas(crypt *crypt.Crypt, paas *v1alpha1.Paas, fileName string) error {
 		for key, secret := range capability.GetSshSecrets() {
 			decrypted, err := crypt.Decrypt(secret)
 			if err != nil {
-				errMessage := fmt.Errorf("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { error: %w }", fileName, capName, key, err)
+				errMessage := fmt.Errorf(
+					"%s: { .spec.capabilities[%s].sshSecrets[%s] } > { error: %w }",
+					fileName,
+					capName,
+					key,
+					err,
+				)
 				logrus.Error(errMessage)
 				allErrors = append(allErrors, errMessage.Error())
 			} else {
-				logrus.Infof("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { checksum: %s, len %d }", fileName, capName, key, hashData(decrypted), len(decrypted))
+				logrus.Infof("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { checksum: %s, len %d }",
+					fileName,
+					capName,
+					key,
+					hashData(decrypted),
+					len(decrypted),
+				)
 			}
 		}
 	}
@@ -110,7 +144,8 @@ func checkPaasCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "check-paas [command options]",
 		Short: "check secrets in paas yaml files",
-		Long:  `check-paas can parse yaml/json files with paas objects, decrypt the sshSecrets and display length and checksum.`,
+		//revive:disable-next-line
+		Long: `check-paas can parse yaml/json files with paas objects, decrypt the sshSecrets and display length and checksum.`,
 		RunE: func(command *cobra.Command, args []string) error {
 			if debug {
 				logrus.SetLevel(logrus.DebugLevel)

@@ -51,11 +51,15 @@ func TestCapabilityTekton(t *testing.T) {
 func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapabilityTekton, t, cfg)
 	tpaasns := getOrFail(ctx, "tekton", paasWithCapabilityTekton, &api.PaasNS{}, t, cfg)
-	require.NoError(t, waitForCondition(ctx, cfg, tpaasns, 0, api.TypeReadyPaasNs), "Tekton PaasNS reconciliation succeeds")
+	require.NoError(
+		t,
+		waitForCondition(ctx, cfg, tpaasns, 0, api.TypeReadyPaasNs),
+		"Tekton PaasNS reconciliation succeeds",
+	)
 
 	namespace := getOrFail(ctx, paasWithCapabilityTekton, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
 	applicationSet := getOrFail(ctx, TektonApplicationSet, asTektonNamespace, &argo.ApplicationSet{}, t, cfg)
-	TektonQuota := getOrFail(ctx, paasTektonCRQ, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
+	tektonQuota := getOrFail(ctx, paasTektonCRQ, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
 	// ClusterResource is created with the same name as the Paas
 	assert.Equal(t, paasWithCapabilityTekton, paas.Name)
@@ -79,13 +83,13 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	assert.Equal(t, paasWithCapabilityTekton, applicationSetListEntries[0]["paas"])
 
 	// Check whether the LabelSelector is specific to the paasnaam-Tekton namespace
-	labelSelector := TektonQuota.Spec.Selector.LabelSelector
+	labelSelector := tektonQuota.Spec.Selector.LabelSelector
 	assert.True(t, MatchLabelExists(labelSelector.MatchLabels, "q.lbl", paasTektonCRQ))
 	assert.False(t, MatchLabelExists(labelSelector.MatchLabels, "q.lbl", "wrong-value"))
 	assert.False(t, MatchLabelExists(labelSelector.MatchLabels, "nonexistent.lbl", paasTektonNs))
 
 	// Quota namespace name
-	assert.Equal(t, paasTektonCRQ, TektonQuota.Name)
+	assert.Equal(t, paasTektonCRQ, tektonQuota.Name)
 
 	return ctx
 }

@@ -23,7 +23,9 @@ const (
 	TypeReadyPaas = "Ready"
 	// TypeHasErrorsPaas represents the status used when the Paas reconciliation holds errors.
 	TypeHasErrorsPaas = "HasErrors"
-	// TypeDegradedPaas represents the status used when the Paas is deleted and the finalizer operations are yet to occur.
+	// revive:disable-next-line
+	// TypeDegradedPaas represents the status used when the Paas is deleted
+	// and the finalizer operations are yet to occur.
 	TypeDegradedPaas = "Degraded"
 )
 
@@ -53,9 +55,8 @@ type PaasSpec struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:items:Pattern=`^[a-z0-9]([a-z0-9-.]{0,251}[a-z0-9])?$`
 	Namespaces []string `json:"namespaces"`
-
-	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket
-	// They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
+	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket.
+	// They must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
 	// +kubebuilder:validation:Optional
 	SshSecrets map[string]string `json:"sshSecrets"`
 
@@ -100,7 +101,7 @@ func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 			ns[name] = true
 		}
 	}
-	return
+	return ns
 }
 
 func (p Paas) AllCapNamespaces() (ns map[string]bool) {
@@ -108,7 +109,7 @@ func (p Paas) AllCapNamespaces() (ns map[string]bool) {
 	for name := range p.Spec.Capabilities {
 		ns[name] = true
 	}
-	return
+	return ns
 }
 
 func (p Paas) PrefixedAllCapNamespaces() (ns map[string]bool) {
@@ -120,7 +121,7 @@ func (p Paas) AllEnabledNamespaces() (ns map[string]bool) {
 	for name := range p.extraNamespaces() {
 		ns[name] = true
 	}
-	return
+	return ns
 }
 
 func (p Paas) PrefixedAllEnabledNamespaces() (ns map[string]bool) {
@@ -135,7 +136,7 @@ func (p Paas) extraNamespaces() (ns map[string]bool) {
 			ns[name] = true
 		}
 	}
-	return
+	return ns
 }
 
 type PaasGroup struct {
@@ -322,7 +323,7 @@ type PaasCapability struct {
 	// +kubebuilder:validation:Optional
 	Quota paas_quota.Quota `json:"quota"`
 	// You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket
-	// They must be encrypted with the public key corresponding to the private key deployed together with the Paas operator
+	// They must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
 	// +kubebuilder:validation:Optional
 	SshSecrets map[string]string `json:"sshSecrets"`
 	// You can enable extra permissions for the service accounts belonging to this capability
@@ -331,7 +332,9 @@ type PaasCapability struct {
 	ExtraPermissions bool `json:"extra_permissions"`
 }
 
-func (pc *PaasCapability) CapExtraFields(fieldConfig map[string]ConfigCustomField) (fields map[string]string, err error) {
+func (pc *PaasCapability) CapExtraFields(
+	fieldConfig map[string]ConfigCustomField,
+) (fields map[string]string, err error) {
 	// TODO: remove argocd specific fields
 	fields = map[string]string{
 		"git_url":      pc.GitUrl,
@@ -394,6 +397,8 @@ func (pc *PaasCapability) SetSshSecret(key string, value string) {
 	pc.SshSecrets[key] = value
 }
 
+// revive:disable:line-length-limit
+
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
 	// Deprecated: use paasns.status.conditions instead
@@ -405,6 +410,8 @@ type PaasStatus struct {
 	// +kubebuilder:validation:Optional
 	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
+
+// revive:enable:line-length-limit
 
 // Deprecated: use paas.status.conditions instead
 func (ps *PaasStatus) Truncate() {
