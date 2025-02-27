@@ -38,7 +38,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 			ObjectMeta: metav1.ObjectMeta{Name: "newPaasConfig"},
 			Spec: v1alpha1.PaasConfigSpec{
 				LDAP: v1alpha1.ConfigLdap{
-					Host: "some-invalid-hostname.nl",
+					Host: "example.com",
 					Port: 3309,
 				},
 				ExcludeAppSetName: "Something something",
@@ -91,8 +91,8 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 		Context("with invalid Validation regular expressions", func() {
 			It("should raise an error", func() {
 				obj.Spec.Validations["paas"]["groupName"] = ".*)"
-				warn, err := validator.ValidateCreate(ctx, obj)
-				Expect(warn, err).Error().To(HaveOccurred())
+				_, err := validator.ValidateCreate(ctx, obj)
+				Expect(err).Error().To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(`failed to compile validation regexp for paas.groupName`))
 			})
 		})
@@ -124,6 +124,9 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 		Context("and no PaasConfig already exists", func() {
 			Context("and the new PaasConfig does not have one or more required fields", func() {
 				It("should deny creation", func() {
+					// Ensure correct PaasConfig
+					obj.Spec.LDAP.Host = "broken-example-com"
+
 					warn, err := validator.ValidateCreate(ctx, obj)
 					Expect(err).Error().To(HaveOccurred())
 					Expect(warn).To(HaveLen(1))
@@ -137,7 +140,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					expectedErrors := []metav1.StatusCause{
 						{
 							Type:    "FieldValueInvalid",
-							Message: `Invalid value: "some-invalid-hostname": invalid host name / ip address`,
+							Message: `Invalid value: "broken-example-com": invalid host name / ip address`,
 							Field:   "spec.LDAP",
 						},
 					}
@@ -150,9 +153,6 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 	When("creating a new PaasConfig", func() {
 		Context("having a capability defined with clusterwide=true", func() {
 			It("should not check if Min > Def", func() {
-				// Ensure correct PaasConfig
-				obj.Spec.LDAP.Host = "example.com"
-
 				// Add cap for testing
 				obj.Spec.Capabilities = v1alpha1.ConfigCapabilities{
 					"HighQuotaCapability": v1alpha1.ConfigCapability{
@@ -191,13 +191,17 @@ var _ = Describe("Updating a PaasConfig", Ordered, func() {
 			ObjectMeta: metav1.ObjectMeta{Name: "newPaasConfig"},
 			Spec: v1alpha1.PaasConfigSpec{
 				LDAP: v1alpha1.ConfigLdap{
-					Host: "some-invalid-hostname",
+					Host: "example.com",
 					Port: 3309,
 				},
-				ExcludeAppSetName: "Something something",
 				DecryptKeysSecret: v1alpha1.NamespacedName{
 					Name:      paasConfigPkSecret,
 					Namespace: paasConfigSystem,
+				},
+				Validations: map[string]map[string]string{
+					"paas": {
+						"groupNames": "[0-9a-z-]{1,63}",
+					},
 				},
 			},
 		}
