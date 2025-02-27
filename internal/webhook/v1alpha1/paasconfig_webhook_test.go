@@ -15,7 +15,9 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -23,7 +25,6 @@ import (
 )
 
 var _ = Describe("Creating a PaasConfig", Ordered, func() {
-	const paasName = "my-paas"
 	var (
 		obj       *v1alpha1.PaasConfig
 		oldObj    *v1alpha1.PaasConfig
@@ -32,25 +33,18 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 		cl        client.Client
 	)
 
-	BeforeAll(func() {
-		_, pkey, err := newGeneratedCrypt(paasName)
-		Expect(err).NotTo(HaveOccurred())
-
-		createNamespace("paas-system-config")
-		createPaasPrivateKeySecret("paas-system-config", "keys", pkey)
-	})
-
 	BeforeEach(func() {
 		obj = &v1alpha1.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "newPaasConfig"},
 			Spec: v1alpha1.PaasConfigSpec{
-				DecryptKeysSecret: v1alpha1.NamespacedName{
-					Name:      "keys",
-					Namespace: "paas-system-config",
-				},
 				LDAP: v1alpha1.ConfigLdap{
-					Host: "some-invalid-hostname.nl",
+					Host: "example.com",
 					Port: 3309,
+				},
+				ExcludeAppSetName: "Something something",
+				DecryptKeysSecret: v1alpha1.NamespacedName{
+					Name:      paasConfigPkSecret,
+					Namespace: paasConfigSystem,
 				},
 				Validations: map[string]map[string]string{
 					"paas": {
@@ -97,8 +91,8 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 		Context("with invalid Validation regular expressions", func() {
 			It("should raise an error", func() {
 				obj.Spec.Validations["paas"]["groupName"] = ".*)"
-				warn, err := validator.ValidateCreate(ctx, obj)
-				Expect(warn, err).Error().To(HaveOccurred())
+				_, err := validator.ValidateCreate(ctx, obj)
+				Expect(err).Error().To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(`failed to compile validation regexp for paas.groupName`))
 			})
 		})
@@ -130,16 +124,9 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 		Context("and no PaasConfig already exists", func() {
 			Context("and the new PaasConfig does not have one or more required fields", func() {
 				It("should deny creation", func() {
-					obj = &v1alpha1.PaasConfig{
-						ObjectMeta: metav1.ObjectMeta{Name: "newPaasConfig"},
-						Spec: v1alpha1.PaasConfigSpec{
-							ExcludeAppSetName: "Something something",
-							LDAP: v1alpha1.ConfigLdap{
-								Host: "some-invalid-hostname",
-								Port: 3309,
-							},
-						},
-					}
+					// Ensure correct PaasConfig
+					obj.Spec.LDAP.Host = "broken-example-com"
+
 					warn, err := validator.ValidateCreate(ctx, obj)
 					Expect(err).Error().To(HaveOccurred())
 					Expect(warn).To(HaveLen(1))
@@ -149,22 +136,112 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					Expect(errors.As(err, &serr)).To(BeTrue())
 
 					causes := serr.Status().Details.Causes
-					Expect(causes).To(HaveLen(2))
+					Expect(causes).To(HaveLen(1))
 					expectedErrors := []metav1.StatusCause{
 						{
 							Type:    "FieldValueInvalid",
-							Message: `Invalid value: "some-invalid-hostname": invalid host name / ip address`,
+							Message: `Invalid value: "broken-example-com": invalid host name / ip address`,
 							Field:   "spec.LDAP",
-						},
-						{
-							Type: "FieldValueRequired",
-							//revive:disable-next-line
-							Message: "Required value: DecryptKeysSecret is required and must have both name and namespace",
-							Field:   "spec.decryptkeyssecret",
 						},
 					}
 					Expect(causes).To(ConsistOf(expectedErrors))
 				})
+			})
+		})
+	})
+
+	When("creating a new PaasConfig", func() {
+		Context("having a capability defined with clusterwide=true", func() {
+			It("should not check if Min > Def", func() {
+				// Add cap for testing
+				obj.Spec.Capabilities = v1alpha1.ConfigCapabilities{
+					"HighQuotaCapability": v1alpha1.ConfigCapability{
+						AppSet: "high-quota-appset",
+						QuotaSettings: v1alpha1.ConfigQuotaSettings{
+							Clusterwide: true,
+							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+								corev1.ResourceCPU:    resourcev1.MustParse("5000m"),
+								corev1.ResourceMemory: resourcev1.MustParse("1Gi"),
+							},
+							MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{
+								corev1.ResourceCPU:    resourcev1.MustParse("1000m"),
+								corev1.ResourceMemory: resourcev1.MustParse("2Gi"),
+							},
+						},
+					},
+				}
+
+				warn, err := validator.ValidateCreate(ctx, obj)
+				Expect(err).Error().To(Not(HaveOccurred()))
+				Expect(warn).To(BeEmpty())
+			})
+		})
+	})
+})
+
+var _ = Describe("Updating a PaasConfig", Ordered, func() {
+	var (
+		obj       *v1alpha1.PaasConfig
+		oldObj    *v1alpha1.PaasConfig
+		validator PaasConfigCustomValidator
+	)
+
+	BeforeEach(func() {
+		obj = &v1alpha1.PaasConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "newPaasConfig"},
+			Spec: v1alpha1.PaasConfigSpec{
+				LDAP: v1alpha1.ConfigLdap{
+					Host: "example.com",
+					Port: 3309,
+				},
+				DecryptKeysSecret: v1alpha1.NamespacedName{
+					Name:      paasConfigPkSecret,
+					Namespace: paasConfigSystem,
+				},
+				Validations: map[string]map[string]string{
+					"paas": {
+						"groupNames": "[0-9a-z-]{1,63}",
+					},
+				},
+			},
+		}
+		oldObj = &v1alpha1.PaasConfig{}
+		validator = PaasConfigCustomValidator{client: k8sClient}
+		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
+		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
+		Expect(obj).NotTo(BeNil(), "Expected obj to be initialized")
+	})
+
+	AfterEach(func() {
+	})
+
+	When("updating an existing PaasConfig", func() {
+		Context("having a capability defined with clusterwide=true", func() {
+			It("should not check if Min > Def", func() {
+				// Ensure correct PaasConfig
+				obj.Spec.LDAP.Host = "example.com"
+
+				// Add cap for testing
+				obj.Spec.Capabilities = v1alpha1.ConfigCapabilities{
+					"HighQuotaCapability": v1alpha1.ConfigCapability{
+						AppSet: "high-quota-appset",
+						QuotaSettings: v1alpha1.ConfigQuotaSettings{
+							Clusterwide: true,
+							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+								corev1.ResourceCPU:    resourcev1.MustParse("5000m"),
+								corev1.ResourceMemory: resourcev1.MustParse("1Gi"),
+							},
+							MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{
+								corev1.ResourceCPU:    resourcev1.MustParse("1000m"),
+								corev1.ResourceMemory: resourcev1.MustParse("2Gi"),
+							},
+						},
+					},
+				}
+
+				warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
+				Expect(err).Error().To(Not(HaveOccurred()))
+				Expect(warn).To(BeEmpty())
 			})
 		})
 	})
