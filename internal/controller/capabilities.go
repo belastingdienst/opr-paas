@@ -8,91 +8,17 @@ package controller
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
+	"github.com/belastingdienst/opr-paas/internal/fields"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-// Elements represents all key, value pars for one entry in the list of the listgenerator
-type Elements map[string]string
-
-func ElementsFromJSON(raw []byte) (Elements, error) {
-	newElements := make(Elements)
-	if err := json.Unmarshal(raw, &newElements); err != nil {
-		return nil, err
-	} else {
-		return newElements, nil
-	}
-}
-
-func (es Elements) AsString() string {
-	var l []string
-	for key, value := range es {
-		l = append(l, fmt.Sprintf("'%s': '%s'", key, strings.ReplaceAll(value, "'", "\\'")))
-	}
-	return fmt.Sprintf("{ %s }", strings.Join(l, ", "))
-}
-
-func (es Elements) AsJSON() ([]byte, error) {
-	return json.Marshal(es)
-}
-
-func (es Elements) Key() string {
-	if key, exists := es["paas"]; exists {
-		return key
-	}
-	return ""
-}
-
-// Entries represents all entries in the list of the listgenerator
-// This is a map so that values are unique, the key is the paas entry
-type Entries map[string]Elements
-
-func (en Entries) AsString() string {
-	var l []string
-	for key, value := range en {
-		l = append(l, fmt.Sprintf("'%s': %s", key, value.AsString()))
-	}
-	return fmt.Sprintf("{ %s }", strings.Join(l, ", "))
-}
-
-func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
-	list := []apiextensionsv1.JSON{}
-	for _, entry := range en {
-		if data, err := entry.AsJSON(); err != nil {
-			return nil, err
-		} else {
-			list = append(list, apiextensionsv1.JSON{Raw: data})
-		}
-	}
-	return list, nil
-}
-
-func EntriesFromJSON(data []apiextensionsv1.JSON) (Entries, error) {
-	e := Entries{}
-	for _, raw := range data {
-		if entry, err := ElementsFromJSON(raw.Raw); err != nil {
-			return nil, err
-		} else {
-			key := entry.Key()
-			if key != "" {
-				e[key] = entry
-			} else {
-				// weird, this entry does not have a paas key, let's preserve, but put aside
-				e[string(raw.Raw)] = entry
-			}
-		}
-	}
-	return e, nil
-}
 
 func clearGenerators(generators []appv1.ApplicationSetGenerator) (clean []appv1.ApplicationSetGenerator) {
 	for _, generator := range generators {
@@ -151,7 +77,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	capName string,
 ) error {
 	var err error
-	var fields Elements
+	var elements fields.Elements
 	// See if AppSet exists raise error if it doesn't
 	namespacedName := config.GetConfig().CapabilityK8sName(capName)
 	appSet := &appv1.ApplicationSet{
@@ -167,7 +93,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	ctx, logger := logging.GetLogComponent(ctx, "appset")
 	logger.Info().Msgf("reconciling %s Applicationset", capName)
 	err = r.Get(ctx, namespacedName, appSet)
-	var entries Entries
+	var entries fields.Entries
 	var listGen *appv1.ApplicationSetGenerator
 	if err != nil {
 		// Applicationset does not exist
@@ -175,14 +101,14 @@ func (r *PaasReconciler) ensureAppSetCap(
 	}
 
 	capability := paas.Spec.Capabilities[capName]
-	if fields, err = capability.CapExtraFields(config.GetConfig().Capabilities[capName].CustomFields); err != nil {
+	if elements, err = capability.CapExtraFields(config.GetConfig().Capabilities[capName].CustomFields); err != nil {
 		return err
 	}
 	service, subService := splitToService(paas.Name)
-	fields["requestor"] = paas.Spec.Requestor
-	fields["paas"] = paas.Name
-	fields["service"] = service
-	fields["subservice"] = subService
+	elements["requestor"] = paas.Spec.Requestor
+	elements["paas"] = paas.Name
+	elements["service"] = service
+	elements["subservice"] = subService
 	patch := client.MergeFrom(appSet.DeepCopy())
 	if listGen = getListGen(appSet.Spec.Generators); listGen == nil {
 		// create the list
@@ -190,13 +116,13 @@ func (r *PaasReconciler) ensureAppSetCap(
 			List: &appv1.ListGenerator{},
 		}
 		appSet.Spec.Generators = append(appSet.Spec.Generators, *listGen)
-		entries = Entries{
-			paas.Name: fields,
+		entries = fields.Entries{
+			paas.Name: elements,
 		}
-	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
+	} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
 		return err
 	} else {
-		entry := fields
+		entry := elements
 		entries[entry.Key()] = entry
 	}
 	if jsonentries, err := entries.AsJSON(); err != nil {
@@ -220,7 +146,7 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 	ctx, logger := logging.GetLogComponent(ctx, "appset")
 	logger.Info().Msgf("reconciling %s Applicationset", paasns.Name)
 	err := r.Get(ctx, asNamespacedName, as)
-	var entries Entries
+	var entries fields.Entries
 	var listGen *appv1.ApplicationSetGenerator
 	if err != nil {
 		// Applicationset does not exist
@@ -230,7 +156,7 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 	if listGen = getListGen(as.Spec.Generators); listGen == nil {
 		// no need to create the list
 		return nil
-	} else if entries, err = EntriesFromJSON(listGen.List.Elements); err != nil {
+	} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
 		return err
 	} else {
 		delete(entries, paasns.Spec.Paas)
