@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/belastingdienst/opr-paas/internal/fields"
 	"github.com/belastingdienst/opr-paas/internal/groups"
 	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -334,38 +335,39 @@ type PaasCapability struct {
 
 func (pc *PaasCapability) CapExtraFields(
 	fieldConfig map[string]ConfigCustomField,
-) (fields map[string]string, err error) {
+) (elements fields.Elements, err error) {
 	// TODO: remove argocd specific fields
-	fields = map[string]string{
-		"git_url":      pc.GitURL,
-		"git_revision": pc.GitRevision,
-		"git_path":     pc.GitPath,
-	}
+	elements = make(fields.Elements)
+	elements["git_url"] = pc.GitURL
+	elements["git_revision"] = pc.GitRevision
+	elements["git_path"] = pc.GitPath
 	var issues []error
 	for key, value := range pc.CustomFields {
 		if _, exists := fieldConfig[key]; !exists {
 			issues = append(issues, fmt.Errorf("custom field %s is not configured in capability config", key))
 		} else {
-			fields[key] = value
+			elements[key] = value
 		}
 	}
 	for key, fieldConf := range fieldConfig {
-		if value, exists := fields[key]; exists {
+		if value, err := elements.TryGetElementAsString(key); err == nil {
 			if matched, err := regexp.Match(fieldConf.Validation, []byte(value)); err != nil {
 				issues = append(issues, fmt.Errorf("could not validate value %s: %w", value, err))
 			} else if !matched {
-				issues = append(issues, fmt.Errorf("invalid value %s (does not match %s)", value, fieldConf.Validation))
+				issues = append(issues,
+					fmt.Errorf("invalid value %s (does not match %s)", value, fieldConf.Validation),
+				)
 			}
 		} else if fieldConf.Required {
 			issues = append(issues, fmt.Errorf("value %s is required", key))
 		} else {
-			fields[key] = fieldConf.Default
+			elements[key] = fieldConf.Default
 		}
 	}
 	if len(issues) > 0 {
 		return nil, errors.Join(issues...)
 	}
-	return fields, nil
+	return elements, nil
 }
 
 func (pc *PaasCapability) WithExtraPermissions() bool {

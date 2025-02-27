@@ -98,9 +98,9 @@ func (r *PaasReconciler) backendArgoApp(
 			},
 			Project: "default",
 			Source: &argo.ApplicationSource{
-				RepoURL:        fields["git_url"],
-				Path:           fields["git_path"],
-				TargetRevision: fields["git_revision"],
+				RepoURL:        fields.GetElementAsString("git_url"),
+				Path:           fields.GetElementAsString("git_path"),
+				TargetRevision: fields.GetElementAsString("git_revision"),
 			},
 			SyncPolicy: &argo.SyncPolicy{
 				Automated: &argo.SyncPolicyAutomated{
