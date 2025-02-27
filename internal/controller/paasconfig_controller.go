@@ -102,14 +102,6 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 				logger.Err(err).Msg("Failed to update PaasConfig status")
 				return errResult, nil
 			}
-			// Reset Config if this was the active config
-			if meta.IsStatusConditionPresentAndEqual(
-				cfg.Status.Conditions,
-				v1alpha1.TypeActivePaasConfig,
-				metav1.ConditionTrue,
-			) {
-				config.SetConfig(v1alpha1.PaasConfig{})
-			}
 
 			logger.Info().Msg("config reset successfully")
 			meta.SetStatusCondition(&cfg.Status.Conditions, metav1.Condition{
@@ -154,7 +146,6 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		resetCrypts()
 	}
 	// Update the shared configuration store
-	config.SetConfig(*cfg)
 	logger.Debug().Msg("set active PaasConfig successfully")
 
 	// Reconciling succeeded, set appropriate Condition

@@ -63,6 +63,15 @@ func SetWebhookLogger(ctx context.Context, obj client.Object) (context.Context, 
 	return logger.WithContext(ctx), &logger
 }
 
+func SetWatcherLogger(ctx context.Context, obj client.Object) (context.Context, *zerolog.Logger) {
+	logger := log.With().
+		Any("watcher", obj.GetObjectKind().GroupVersionKind()).
+		Logger()
+	logger.Info().Msg("starting watcher")
+
+	return logger.WithContext(ctx), &logger
+}
+
 func ResetComponentDebug() {
 	debugComponents = make(map[string]bool)
 }
