@@ -131,7 +131,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			obj = &v1alpha1.Paas{
 				ObjectMeta: metav1.ObjectMeta{Name: paasName},
 				Spec: v1alpha1.PaasSpec{
-					SshSecrets: map[string]string{
+					SSHSecrets: map[string]string{
 						"valid secret":   encrypted,
 						"invalid secret": base64.StdEncoding.EncodeToString([]byte("foo bar baz")),
 						"invalid base64": "foo bar baz",

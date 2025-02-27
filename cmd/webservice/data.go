@@ -30,7 +30,7 @@ type RestCheckPaasResult struct {
 }
 
 type RestGenerateInput struct {
-	ApiKey string `json:"apiKey"`
+	APIKey string `json:"apiKey"`
 }
 
 type RestGenerateResult struct {

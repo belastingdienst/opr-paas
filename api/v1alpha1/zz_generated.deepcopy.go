@@ -347,8 +347,8 @@ func (in *PaasCapability) DeepCopyInto(out *PaasCapability) {
 			(*out)[key] = val.DeepCopy()
 		}
 	}
-	if in.SshSecrets != nil {
-		in, out := &in.SshSecrets, &out.SshSecrets
+	if in.SSHSecrets != nil {
+		in, out := &in.SSHSecrets, &out.SSHSecrets
 		*out = make(map[string]string, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val
@@ -652,8 +652,8 @@ func (in *PaasNSSpec) DeepCopyInto(out *PaasNSSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.SshSecrets != nil {
-		in, out := &in.SshSecrets, &out.SshSecrets
+	if in.SSHSecrets != nil {
+		in, out := &in.SSHSecrets, &out.SSHSecrets
 		*out = make(map[string]string, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val
@@ -727,8 +727,8 @@ func (in *PaasSpec) DeepCopyInto(out *PaasSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.SshSecrets != nil {
-		in, out := &in.SshSecrets, &out.SshSecrets
+	if in.SSHSecrets != nil {
+		in, out := &in.SSHSecrets, &out.SSHSecrets
 		*out = make(map[string]string, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val

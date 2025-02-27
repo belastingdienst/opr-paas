@@ -11,20 +11,20 @@ func TestValidatedSecretsFromPaas(t *testing.T) {
 	validated := validatedSecrets{}
 	paas := v1alpha1.Paas{
 		Spec: v1alpha1.PaasSpec{
-			SshSecrets: map[string]string{
+			SSHSecrets: map[string]string{
 				"paasSecret1":      "paasSecret1",
 				"paasSecret2":      "paasSecret2",
 				"duplicatedSecret": "paasSecret2",
 			},
 			Capabilities: v1alpha1.PaasCapabilities{
 				"cap1": v1alpha1.PaasCapability{
-					SshSecrets: map[string]string{
+					SSHSecrets: map[string]string{
 						"paasSecret1": "cap1secret1",
 						"paasSecret2": "cap1secret2",
 					},
 				},
 				"cap2": v1alpha1.PaasCapability{
-					SshSecrets: map[string]string{
+					SSHSecrets: map[string]string{
 						"paasSecret1":          "cap2secret1",
 						"paasSecret2":          "cap2secret2",
 						"duplicatedSecret":     "paasSecret2",
@@ -55,7 +55,7 @@ func TestValidatedSecretsFromPaasNS(t *testing.T) {
 	validated := validatedSecrets{}
 	paasns := v1alpha1.PaasNS{
 		Spec: v1alpha1.PaasNSSpec{
-			SshSecrets: map[string]string{
+			SSHSecrets: map[string]string{
 				"paasSecret1":      "paasSecret1",
 				"paasSecret2":      "paasSecret2",
 				"duplicatedSecret": "paasSecret2",

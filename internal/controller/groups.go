@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	ldapUidAnnotationKey = "openshift.io/ldap.uid"
-	ldapUrlAnnotationKey = "openshift.io/ldap.url"
+	ldapUIDAnnotationKey = "openshift.io/ldap.uid"
+	ldapURLAnnotationKey = "openshift.io/ldap.url"
 	ldapHostLabelKey     = "openshift.io/ldap.host"
 	managedByLabelKey    = "app.kubernetes.io/managed-by"
 	managedByLabelValue  = "paas"
@@ -103,8 +103,8 @@ func (r *PaasReconciler) backendGroup(
 			Name:   groupName,
 			Labels: paas.ClonedLabels(),
 			Annotations: map[string]string{
-				ldapUidAnnotationKey: group.Query,
-				ldapUrlAnnotationKey: fmt.Sprintf("%s:%d",
+				ldapUIDAnnotationKey: group.Query,
+				ldapURLAnnotationKey: fmt.Sprintf("%s:%d",
 					config.GetConfig().LDAP.Host,
 					config.GetConfig().LDAP.Port,
 				),
@@ -208,14 +208,14 @@ func (r *PaasReconciler) deleteObsoleteGroups(
 	logger.Info().Msg("deleting obsolete groups")
 	for _, existingGroup := range existingGroups {
 		if !isGroupInGroups(existingGroup, desiredGroups) {
-			if existingGroup.Annotations[ldapUidAnnotationKey] != "" {
+			if existingGroup.Annotations[ldapUIDAnnotationKey] != "" {
 				existingGroup.OwnerReferences = paas.WithoutMe(existingGroup.OwnerReferences)
 				if len(existingGroup.OwnerReferences) == 0 {
 					logger.Info().Msgf("deleting %s", existingGroup.Name)
 					if err = r.Delete(ctx, existingGroup); err != nil {
 						return removedLdapGroups, err
 					}
-					removedLdapGroups = append(removedLdapGroups, existingGroup.Annotations[ldapUidAnnotationKey])
+					removedLdapGroups = append(removedLdapGroups, existingGroup.Annotations[ldapUIDAnnotationKey])
 					continue
 				}
 				logger.Info().Msgf("not last owner of group %s", existingGroup.Name)

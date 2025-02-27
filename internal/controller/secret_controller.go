@@ -162,15 +162,15 @@ func (r *PaasNSReconciler) BackendSecrets(
 	secrets := make(map[string]string)
 
 	// From the PaasNS resource
-	maps.Copy(secrets, paasns.Spec.SshSecrets)
+	maps.Copy(secrets, paasns.Spec.SSHSecrets)
 
 	// From the Paas Resource capability chapter (if applicable)
-	if cap, exists := paas.Spec.Capabilities[paasns.Name]; exists && cap.IsEnabled() {
-		maps.Copy(secrets, cap.GetSshSecrets())
+	if capability, exists := paas.Spec.Capabilities[paasns.Name]; exists && capability.IsEnabled() {
+		maps.Copy(secrets, capability.GetSSHSecrets())
 	}
 
 	// From the Paas resource
-	maps.Copy(secrets, paas.Spec.SshSecrets)
+	maps.Copy(secrets, paas.Spec.SSHSecrets)
 
 	return r.getSecrets(ctx, paas, paasns, secrets)
 }

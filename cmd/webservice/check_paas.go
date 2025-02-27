@@ -23,7 +23,7 @@ import (
 // it returns an error containing which secrets cannot be decrypted if any
 func CheckPaas(crypt *crypt.Crypt, paas *v1alpha1.Paas) error {
 	var allErrors []string
-	for key, secret := range paas.Spec.SshSecrets {
+	for key, secret := range paas.Spec.SSHSecrets {
 		decrypted, err := crypt.Decrypt(secret)
 		if err != nil {
 			errMessage := fmt.Errorf("%s: .spec.sshSecrets[%s], error: %w", paas.Name, key, err)
@@ -42,7 +42,7 @@ func CheckPaas(crypt *crypt.Crypt, paas *v1alpha1.Paas) error {
 
 	for capName, capability := range paas.Spec.Capabilities {
 		logrus.Debugf("capability name: %s", capName)
-		for key, secret := range capability.GetSshSecrets() {
+		for key, secret := range capability.GetSSHSecrets() {
 			decrypted, err := crypt.Decrypt(secret)
 			if err != nil {
 				errMessage := fmt.Errorf(
