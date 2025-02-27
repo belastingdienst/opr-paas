@@ -9,6 +9,7 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -20,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -173,13 +173,22 @@ func validateGroupNames(
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
+	paasValidations, exists := conf.Validations["paas"]
+	if !exists {
+		return nil, nil
+	}
+	groupNameValidation, exists := paasValidations["groupName"]
+	if !exists {
+		return nil, nil
+	}
+	groupNameValidationRE := regexp.MustCompile(groupNameValidation)
 
-	for name := range paas.Spec.Groups {
-		for _, errString := range validation.IsDNS1035Label(name) {
+	for groupName := range paas.Spec.Groups {
+		if !groupNameValidationRE.Match([]byte(groupName)) {
 			errs = append(errs, field.Invalid(
-				field.NewPath("spec").Child("groups"),
-				name,
-				errString,
+				field.NewPath("spec").Child("groups").Key(groupName),
+				groupName,
+				fmt.Sprintf("group name does not match configured validation regex `%s`", groupNameValidation),
 			))
 		}
 	}

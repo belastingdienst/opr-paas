@@ -255,6 +255,14 @@ spec:
                 description: Grant permissions to all groups according to config in
                   configmap and role selected per group in paas.
                 type: object
+              validations:
+                additionalProperties:
+                  additionalProperties:
+                    type: string
+                  type: object
+                description: Set regular expressions to have the webhooks validate
+                  the fields
+                type: object
             required:
             - clusterwide_argocd_namespace
             - decryptKeySecret
