@@ -10,6 +10,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/belastingdienst/opr-paas/internal/fields"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -259,7 +260,7 @@ func TestPaasCapabilities_AsPrefixedMap(t *testing.T) {
 
 func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 	var pc PaasCapability
-	var fields map[string]string
+	var elements fields.Element
 	var err error
 
 	// argocd specific fields can come from old and new options
@@ -274,19 +275,19 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 			"git_revision": "develop",
 		},
 	}
-	fields, err = pc.CapExtraFields(map[string]ConfigCustomField{
+	elements, err = pc.CapExtraFields(map[string]ConfigCustomField{
 		"git_url":      {Validation: "^https://.*$"},
 		"git_revision": {},
 		"git_path":     {},
 		"default_key":  {Default: "default_value"},
 	})
 	require.NoError(t, err, "we should have no errors returned")
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, fields.Elements{
 		"git_url":      "https://github.com/org/other-repo",
 		"git_revision": "develop",
 		"git_path":     "argocd/myconfig",
 		"default_key":  "default_value",
-	}, fields)
+	}, elements)
 
 	// key not in config throws error
 	pc = PaasCapability{
@@ -294,19 +295,19 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 			"not_in_config": "breaks",
 		},
 	}
-	fields, err = pc.CapExtraFields(map[string]ConfigCustomField{})
+	elements, err = pc.CapExtraFields(map[string]ConfigCustomField{})
 	assert.Equal(t, "custom field not_in_config is not configured in capability config", err.Error())
-	assert.Nil(t, fields, "not_in_config should return nilmap for fields")
+	assert.Nil(t, elements, "not_in_config should return nilmap for fields")
 
 	// required_field key not being set throws error
 	pc = PaasCapability{
 		CustomFields: map[string]string{},
 	}
-	fields, err = pc.CapExtraFields(map[string]ConfigCustomField{
+	elements, err = pc.CapExtraFields(map[string]ConfigCustomField{
 		"required_key": {Required: true},
 	})
 	assert.Equal(t, "value required_key is required", err.Error())
-	assert.Nil(t, fields, "required_field should return nilmap for fields")
+	assert.Nil(t, elements, "required_field should return nilmap for fields")
 
 	// validation errors throw issues
 	pc = PaasCapability{
@@ -314,13 +315,13 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 			"invalid_key": "invalid_value",
 		},
 	}
-	fields, err = pc.CapExtraFields(map[string]ConfigCustomField{
+	elements, err = pc.CapExtraFields(map[string]ConfigCustomField{
 		"invalid_key": {
 			Validation: "^valid_value$",
 		},
 	})
 	assert.Equal(t, "invalid value invalid_value (does not match ^valid_value$)", err.Error())
-	assert.Nil(t, fields, "invalid_value should return nilmap for fields")
+	assert.Nil(t, elements, "invalid_value should return nilmap for fields")
 }
 
 func TestPaasCapabilities_IsCap(t *testing.T) {
