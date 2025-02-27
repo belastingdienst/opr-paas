@@ -59,7 +59,7 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 
 	namespace := getOrFail(ctx, paasWithCapabilityTekton, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
 	applicationSet := getOrFail(ctx, TektonApplicationSet, asTektonNamespace, &argo.ApplicationSet{}, t, cfg)
-	TektonQuota := getOrFail(ctx, paasTektonCRQ, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
+	tektonQuota := getOrFail(ctx, paasTektonCRQ, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
 	// ClusterResource is created with the same name as the Paas
 	assert.Equal(t, paasWithCapabilityTekton, paas.Name)
@@ -83,13 +83,13 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	assert.Equal(t, paasWithCapabilityTekton, applicationSetListEntries[0]["paas"])
 
 	// Check whether the LabelSelector is specific to the paasnaam-Tekton namespace
-	labelSelector := TektonQuota.Spec.Selector.LabelSelector
+	labelSelector := tektonQuota.Spec.Selector.LabelSelector
 	assert.True(t, MatchLabelExists(labelSelector.MatchLabels, "q.lbl", paasTektonCRQ))
 	assert.False(t, MatchLabelExists(labelSelector.MatchLabels, "q.lbl", "wrong-value"))
 	assert.False(t, MatchLabelExists(labelSelector.MatchLabels, "nonexistent.lbl", paasTektonNs))
 
 	// Quota namespace name
-	assert.Equal(t, paasTektonCRQ, TektonQuota.Name)
+	assert.Equal(t, paasTektonCRQ, tektonQuota.Name)
 
 	return ctx
 }
@@ -128,8 +128,8 @@ func assertCapTektonDeleted(ctx context.Context, t *testing.T, cfg *envconf.Conf
 
 func assertTektonCRB(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	for _, crbName := range []string{"paas-view", "paas-alert-routing-edit"} {
-		argo_role_binding := getOrFail(ctx, crbName, "", &rbac.ClusterRoleBinding{}, t, cfg)
-		subjects := argo_role_binding.Subjects
+		argoRoleBinding := getOrFail(ctx, crbName, "", &rbac.ClusterRoleBinding{}, t, cfg)
+		subjects := argoRoleBinding.Subjects
 		assert.Len(t, subjects, 1, "ClusterRoleBinding %s contains one subject", crbName)
 		subject := subjects[0]
 		assert.Equal(t, "ServiceAccount", subject.Kind, "Subject is of type ServiceAccount")

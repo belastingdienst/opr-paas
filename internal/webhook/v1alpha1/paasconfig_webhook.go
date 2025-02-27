@@ -207,6 +207,7 @@ func validatePaasConfigSpec(
 
 	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, client, spec.DecryptKeysSecret, childPath)...)
 	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, childPath)...)
+	allErrs = append(allErrs, validateValidationFields(spec.Validations, childPath)...)
 
 	if len(allErrs) > 0 {
 		logger.Error().Strs(
@@ -256,7 +257,7 @@ func validateConfigQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *fiel
 		}
 
 		// DefQuota should not be lower than MinQuota
-		if minQuantity, exists := qs.MinQuotas[resourceName]; exists {
+		if minQuantity, exists := qs.MinQuotas[resourceName]; exists && !qs.Clusterwide {
 			if defQuantity.Cmp(minQuantity) < 0 {
 				allErrs = append(allErrs, field.Invalid(
 					childPath.Child("defquota").Key(string(resourceName)),
@@ -417,6 +418,31 @@ func validateDecryptKeysSecretExists(
 		))
 	}
 
+	return allErrs
+}
+
+// validateDecryptKeysSecret ensures that the referenced Secret exists in the cluster.
+func validateValidationFields(
+	validations map[string]map[string]string,
+	rootPath *field.Path,
+) field.ErrorList {
+	var allErrs field.ErrorList
+	childPath := rootPath.Child("validations")
+	for resourceType, fieldValidations := range validations {
+		for fieldName, validationRegexp := range fieldValidations {
+			_, err := regexp.Compile(validationRegexp)
+			if err != nil {
+				allErrs = append(allErrs, field.Invalid(
+					childPath,
+					validationRegexp,
+					fmt.Errorf(
+						"failed to compile validation regexp for %s.%s: %w",
+						resourceType,
+						fieldName, err).Error(),
+				))
+			}
+		}
+	}
 	return allErrs
 }
 

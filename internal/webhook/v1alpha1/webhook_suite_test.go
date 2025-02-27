@@ -41,11 +41,14 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	cancel    context.CancelFunc
-	cfg       *rest.Config
-	ctx       context.Context
-	k8sClient client.Client
-	testEnv   *envtest.Environment
+	cancel               context.CancelFunc
+	cfg                  *rest.Config
+	ctx                  context.Context
+	k8sClient            client.Client
+	testEnv              *envtest.Environment
+	paasConfigSystem     string = "paasconfig-testns"
+	paasConfigPkSecret   string = "paasconfig-testpksecret"
+	paasConfigPrivateKey []byte
 )
 
 func TestWebhooks(t *testing.T) {
@@ -115,6 +118,10 @@ var _ = BeforeSuite(func() {
 
 	err = SetupPaasWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
+
+	// Ensure we have a namespace and privatekey for PaasConfig testing
+	createNamespace(paasConfigSystem)
+	createPaasPrivateKeySecret(paasConfigSystem, paasConfigPkSecret, paasConfigPrivateKey)
 
 	// +kubebuilder:scaffold:webhook
 

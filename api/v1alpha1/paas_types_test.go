@@ -55,7 +55,7 @@ func TestPaas_PrefixedBoolMap(t *testing.T) {
 	assert.False(t, output["paas-smt"])
 }
 
-func TestPaas_GetNsSshSecrets(t *testing.T) {
+func TestPaas_GetNsSSHSecrets(t *testing.T) {
 	paas := Paas{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "paas",
@@ -65,21 +65,21 @@ func TestPaas_GetNsSshSecrets(t *testing.T) {
 			Capabilities: PaasCapabilities{
 				"argocd": PaasCapability{
 					Enabled:    true,
-					SshSecrets: map[string]string{"capsecret1": "capsecretvalue1"},
+					SSHSecrets: map[string]string{"capsecret1": "capsecretvalue1"},
 				},
 			},
-			SshSecrets: map[string]string{"key1": "value1", "key2": "value2"},
+			SSHSecrets: map[string]string{"key1": "value1", "key2": "value2"},
 		},
 	}
 
-	output := paas.GetNsSshSecrets("nonexistingNS")
+	output := paas.GetNsSSHSecrets("nonexistingNS")
 	assert.NotNil(t, output)
 	assert.IsType(t, map[string]string{}, output)
 	assert.Contains(t, output, "key1")
 	assert.NotContains(t, output, "capsecret1")
 	assert.Equal(t, "value1", output["key1"])
 
-	output = paas.GetNsSshSecrets("argocd")
+	output = paas.GetNsSSHSecrets("argocd")
 	assert.NotNil(t, output)
 	assert.IsType(t, map[string]string{}, output)
 	assert.Contains(t, output, "key1")
@@ -267,7 +267,7 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 	// validation success works as expected
 	// key not being set which is not required defaults to config.Default
 	pc = PaasCapability{
-		GitUrl:  "https://github.com/org/repo",
+		GitURL:  "https://github.com/org/repo",
 		GitPath: "argocd/myconfig",
 		CustomFields: map[string]string{
 			"git_url":      "https://github.com/org/other-repo",

@@ -187,7 +187,7 @@ func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS)
 			return nil, err
 		}
 	}
-	return
+	return paas, err
 }
 
 // For more details, check Reconcile and its Result here:

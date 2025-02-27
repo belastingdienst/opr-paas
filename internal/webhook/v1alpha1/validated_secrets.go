@@ -26,12 +26,12 @@ func (vs *validatedSecrets) appendFromPaas(paas v1alpha1.Paas) {
 	if vs.v == nil {
 		vs.v = make(map[validatedHash]bool)
 	}
-	for _, secret := range paas.Spec.SshSecrets {
+	for _, secret := range paas.Spec.SSHSecrets {
 		hash := hashFromString(secret)
 		vs.v[hash] = true
 	}
 	for _, cap := range paas.Spec.Capabilities {
-		for _, secret := range cap.SshSecrets {
+		for _, secret := range cap.SSHSecrets {
 			hash := sha512.Sum512([]byte(secret))
 			vs.v[hash] = true
 		}
@@ -43,7 +43,7 @@ func (vs *validatedSecrets) appendFromPaasNS(paasns v1alpha1.PaasNS) {
 	if vs.v == nil {
 		vs.v = make(map[validatedHash]bool)
 	}
-	for _, secret := range paasns.Spec.SshSecrets {
+	for _, secret := range paasns.Spec.SSHSecrets {
 		hash := hashFromString(secret)
 		vs.v[hash] = true
 	}

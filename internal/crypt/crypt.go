@@ -159,9 +159,9 @@ func (c *Crypt) DecryptRsa(data []byte) (decryptedBytes []byte, err error) {
 	for _, pk := range c.privateKeys {
 		if decryptedBytes, err = pk.DecryptRsa(data, c.encryptionContext); err != nil {
 			continue
-		} else {
-			return decryptedBytes, nil
 		}
+
+		return decryptedBytes, nil
 	}
 	return nil, fmt.Errorf("unable to decrypt data with any of the private keys")
 }

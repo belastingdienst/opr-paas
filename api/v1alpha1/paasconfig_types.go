@@ -111,6 +111,10 @@ type PaasConfigSpec struct {
 	// Grant permissions to all groups according to config in configmap and role selected per group in paas.
 	// +kubebuilder:validation:Optional
 	RoleMappings ConfigRoleMappings `json:"rolemappings"`
+
+	// Set regular expressions to have the webhooks validate the fields
+	// +kubebuilder:validation:Optional
+	Validations map[string]map[string]string `json:"validations"`
 }
 
 type NamespacedName struct {
@@ -306,13 +310,13 @@ func (ccp ConfigCapPerm) ServiceAccounts() []string {
 	return sas
 }
 
-func (config PaasConfigSpec) CapabilityK8sName(capability string) (as types.NamespacedName) {
+func (config PaasConfigSpec) CapabilityK8sName(capName string) (as types.NamespacedName) {
 	as.Namespace = config.ClusterWideArgoCDNamespace
-	if cap, exists := config.Capabilities[capability]; exists {
-		as.Name = cap.AppSet
+	if capability, exists := config.Capabilities[capName]; exists {
+		as.Name = capability.AppSet
 		as.Namespace = config.ClusterWideArgoCDNamespace
 	} else {
-		as.Name = fmt.Sprintf("paas-%s", capability)
+		as.Name = fmt.Sprintf("paas-%s", capName)
 		as.Namespace = config.ClusterWideArgoCDNamespace
 	}
 	return as
@@ -348,8 +352,13 @@ func ActivePaasConfigUpdated() predicate.Predicate {
 	return predicate.Funcs{
 		// Trigger reconciliation only if the paasConfig has the Active PaasConfig is updated
 		UpdateFunc: func(e event.UpdateEvent) bool {
-			oldObj := e.ObjectOld.(*PaasConfig)
-			newObj := e.ObjectNew.(*PaasConfig)
+			oldObj, oldOk := e.ObjectOld.(*PaasConfig)
+			newObj, newOk := e.ObjectNew.(*PaasConfig)
+
+			// If type assertion fails, return false (do not trigger reconciliation)
+			if !oldOk || !newOk {
+				return false
+			}
 
 			// The 'double' status check is needed because during 'creation' of the PaasConfig, the Condition is set.
 			// Once set we check for specChanges.
