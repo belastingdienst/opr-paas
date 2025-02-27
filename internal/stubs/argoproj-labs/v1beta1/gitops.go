@@ -23,7 +23,7 @@ import (
 // +kubebuilder:object:root=true
 
 type ArgoCD struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta   `json:""`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec ArgoCDSpec `json:"spec,omitempty"`
@@ -59,7 +59,7 @@ type ArgoCDRBACSpec struct {
 
 // ArgoCDList contains a list of ArgoCD
 type ArgoCDList struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta `json:""`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []ArgoCD `json:"items"`
 }

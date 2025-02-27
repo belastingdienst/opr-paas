@@ -431,7 +431,7 @@ func (ps *PaasStatus) GetMessages() []string {
 
 // Paas is the Schema for the paas API
 type Paas struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta   `json:""`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   PaasSpec   `json:"spec,omitempty"`
@@ -492,7 +492,7 @@ func (p Paas) GetConditions() []metav1.Condition {
 
 // PaasList contains a list of Paas
 type PaasList struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta `json:""`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Paas `json:"items,omitempty"`
 }

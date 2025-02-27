@@ -46,7 +46,7 @@ type PaasNSSpec struct {
 
 // PaasNS is the Schema for the PaasNS API
 type PaasNS struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta   `json:""`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   PaasNSSpec   `json:"spec,omitempty"`
@@ -99,7 +99,7 @@ func (p PaasNS) GetConditions() []metav1.Condition {
 
 // PaasNSList contains a list of PaasNS
 type PaasNSList struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta `json:""`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []PaasNS `json:"items"`
 }
