@@ -7,7 +7,7 @@ import (
 // +kubebuilder:object:root=true
 
 type Application struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta   `json:""`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              ApplicationSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 }
@@ -83,7 +83,7 @@ type ApplicationDestination struct {
 
 // ApplicationList is list of Application resources
 type ApplicationList struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta `json:""`
 	metav1.ListMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Items           []Application `json:"items" protobuf:"bytes,2,rep,name=items"`
 }

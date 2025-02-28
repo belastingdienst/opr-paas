@@ -25,7 +25,7 @@ import (
 
 // ApplicationSet is a set of Application resources
 type ApplicationSet struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta   `json:""`
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              ApplicationSetSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 }
@@ -49,7 +49,7 @@ type ListGenerator struct {
 
 // ApplicationSetList contains a list of ApplicationSet
 type ApplicationSetList struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta `json:""`
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 	Items           []ApplicationSet `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
