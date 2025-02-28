@@ -17,6 +17,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	gitopsResources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
 	argoResources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
@@ -109,6 +110,10 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("unable to start manager")
 	}
+
+	go func() {
+		config.Watch(mgr.GetConfig(), mgr.GetHTTPClient(), mgr.GetScheme())
+	}()
 
 	if err = (&controller.PaasConfigReconciler{
 		Client: mgr.GetClient(),
