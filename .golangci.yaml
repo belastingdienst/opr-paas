@@ -116,8 +116,5 @@ linters-settings:
         disabled: true
       - name: struct-tag
       - name: superfluous-else
-        disabled: true
       - name: unchecked-type-assertion
-        disabled: true
       - name: unexported-naming
-        disabled: true
