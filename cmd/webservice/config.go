@@ -22,6 +22,8 @@ const (
 	endpointEnv         = "PAAS_ENDPOINT"
 	defaultEndpointPort = 8080
 	allowedOriginsEnv   = "PAAS_WS_ALLOWED_ORIGINS" // comma separated
+	validHostnameSize   = 63
+	maxPort             = 65363
 )
 
 type WSConfig struct {
@@ -39,8 +41,8 @@ func formatEndpoint(endpoint string) string {
 	if strings.Contains(endpoint, ":") {
 		parts := strings.Split(endpoint, ":")
 		host := parts[0]
-		if len(host) > 63 {
-			panic(fmt.Errorf("invalid hostname %s longer than 63 characters", host))
+		if len(host) > validHostnameSize {
+			panic(fmt.Errorf("invalid hostname %s longer than %d characters", host, validHostnameSize))
 		}
 
 		// Regex matches on any valid FQDN. Explanation of groups:
@@ -62,8 +64,8 @@ func formatEndpoint(endpoint string) string {
 			port = fmt.Sprintf("%d", defaultEndpointPort)
 		} else if portNum, err := strconv.Atoi(port); err != nil {
 			panic(fmt.Errorf("port %s in endpoint config is NaN", port))
-		} else if portNum < 0 || portNum > 65353 {
-			panic(fmt.Errorf("port %s not in valid RFC range (0-65363)", port))
+		} else if portNum < 0 || portNum > maxPort {
+			panic(fmt.Errorf("port %s not in valid RFC range (0-%d)", port, maxPort))
 		}
 		return fmt.Sprintf("%s:%s", host, port)
 	}

@@ -18,6 +18,27 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+type fileFormat uint
+
+const (
+	typeUnknown fileFormat = iota
+	typeJSON
+	typeYAML
+)
+
+var fileFormatString = map[fileFormat]string{
+	typeJSON:    "json",
+	typeYAML:    "yaml",
+	typeUnknown: "unknown",
+}
+
+func (ff fileFormat) String() string {
+	if s, exists := fileFormatString[ff]; exists {
+		return s
+	}
+	return typeUnknown.String()
+}
+
 type InvalidPaasFileFormat struct {
 	File string
 }
@@ -26,33 +47,33 @@ func (ip *InvalidPaasFileFormat) Error() string {
 	return fmt.Sprintf("file '%s' is not in a supported file format", ip.File)
 }
 
-func readPaasFile(file string) (*v1alpha1.Paas, string, error) {
+func readPaasFile(file string) (*v1alpha1.Paas, fileFormat, error) {
 	var paas v1alpha1.Paas
 
 	logrus.Debugf("parsing %s", file)
 	buffer, err := os.ReadFile(file)
 	if err != nil {
 		logrus.Debugf("could not read %s: %e", file, err)
-		return nil, "unable to read paas configuration file", err
+		return nil, typeUnknown, err
 	}
 
 	if len(buffer) == 0 {
-		return nil, "", fmt.Errorf("empty paas configuration file")
+		return nil, typeUnknown, fmt.Errorf("empty paas configuration file")
 	}
 
 	err = json.Unmarshal(buffer, &paas)
 	if err == nil {
-		return &paas, "json", nil
+		return &paas, typeJSON, nil
 	}
 	logrus.Debugf("could not parse %s as json: %e", file, err)
 
 	err = yaml.Unmarshal(buffer, &paas)
 	if err == nil {
-		return &paas, "yaml", nil
+		return &paas, typeYAML, nil
 	}
 	logrus.Debugf("could not parse %s as yaml: %e", file, err)
 
-	return nil, "", &InvalidPaasFileFormat{File: file}
+	return nil, typeUnknown, &InvalidPaasFileFormat{File: file}
 }
 
 func writeFile(buffer []byte, path string) error {
@@ -69,16 +90,16 @@ func writeFile(buffer []byte, path string) error {
 	return nil
 }
 
-func writeFormattedFile(paas *v1alpha1.Paas, path string, format string) error {
+func writeFormattedFile(paas *v1alpha1.Paas, path string, format fileFormat) error {
 	var buffer []byte
 	var err error
 
 	switch format {
 	default:
 		return fmt.Errorf("invalid output format: %s", format)
-	case "json":
+	case typeJSON:
 		buffer, err = json.Marshal(&paas)
-	case "yaml":
+	case typeYAML:
 		buffer, err = yaml.Marshal(&paas)
 	}
 

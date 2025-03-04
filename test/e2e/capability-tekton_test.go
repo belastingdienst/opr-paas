@@ -23,6 +23,7 @@ const (
 	paasTektonCRQ            = "paas-tekton"
 	TektonApplicationSet     = "tektonas"
 	asTektonNamespace        = "asns"
+	tektonCapName            = "tekton"
 )
 
 func TestCapabilityTekton(t *testing.T) {
@@ -30,7 +31,7 @@ func TestCapabilityTekton(t *testing.T) {
 		Requestor: "paas-user",
 		Quota:     make(quota.Quota),
 		Capabilities: api.PaasCapabilities{
-			"tekton": api.PaasCapability{
+			tektonCapName: api.PaasCapability{
 				Enabled: true,
 			},
 		},
@@ -50,7 +51,7 @@ func TestCapabilityTekton(t *testing.T) {
 
 func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapabilityTekton, t, cfg)
-	tpaasns := getOrFail(ctx, "tekton", paasWithCapabilityTekton, &api.PaasNS{}, t, cfg)
+	tpaasns := getOrFail(ctx, tektonCapName, paasWithCapabilityTekton, &api.PaasNS{}, t, cfg)
 	require.NoError(
 		t,
 		waitForCondition(ctx, cfg, tpaasns, 0, api.TypeReadyPaasNs),
@@ -68,7 +69,7 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	assert.Equal(t, paasWithCapabilityTekton, namespace.Name)
 
 	// Tekton should be enabled
-	assert.True(t, paas.Spec.Capabilities.IsCap("tekton"))
+	assert.True(t, paas.Spec.Capabilities.IsCap(tektonCapName))
 
 	// ApplicationSet exist
 	assert.NotEmpty(t, applicationSet)
@@ -134,7 +135,7 @@ func assertTektonCRB(ctx context.Context, t *testing.T, cfg *envconf.Config) con
 		subject := subjects[0]
 		assert.Equal(t, "ServiceAccount", subject.Kind, "Subject is of type ServiceAccount")
 		assert.Equal(t, paasTektonNs, subject.Namespace, "Subject is of type ServiceAccount")
-		assert.Equal(t, "pipeline", subject.Name, "Subject name is tekton")
+		assert.Equal(t, "pipeline", subject.Name, "Subject name is "+tektonCapName)
 	}
 	return ctx
 }

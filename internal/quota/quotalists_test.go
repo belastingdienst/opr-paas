@@ -11,28 +11,32 @@ import (
 )
 
 const (
-	kiB int64 = 1024
-	MiB       = kiB * kiB
-	GiB       = MiB * kiB
+	kiB            int64 = 1024
+	MiB                  = kiB * kiB
+	GiB                  = MiB * kiB
+	quotaCPUKey          = "cpu"
+	quotaMemoryKey       = "memory"
+	quotaBlockKey        = "block"
+	quotaSharedKey       = "shared"
 )
 
 var (
 	testQuotas = []map[corev1.ResourceName]resource.Quantity{
 		{
-			"cpu":    resource.MustParse("3"),
-			"memory": resource.MustParse("6Gi"),
-			"block":  resource.MustParse("100Gi"),
-			"shared": resource.MustParse("100Gi"),
+			quotaCPUKey:    resource.MustParse("3"),
+			quotaMemoryKey: resource.MustParse("6Gi"),
+			quotaBlockKey:  resource.MustParse("100Gi"),
+			quotaSharedKey: resource.MustParse("100Gi"),
 		},
 		{
-			"cpu":    resource.MustParse("6"),
-			"memory": resource.MustParse("12Gi"),
-			"block":  resource.MustParse("100Gi"),
+			quotaCPUKey:    resource.MustParse("6"),
+			quotaMemoryKey: resource.MustParse("12Gi"),
+			quotaBlockKey:  resource.MustParse("100Gi"),
 		},
 		{
-			"cpu":    resource.MustParse("3"),
-			"memory": resource.MustParse("12Gi"),
-			"block":  resource.MustParse("100Gi"),
+			quotaCPUKey:    resource.MustParse("3"),
+			quotaMemoryKey: resource.MustParse("12Gi"),
+			quotaBlockKey:  resource.MustParse("100Gi"),
 		},
 	}
 	sum_cpu            int64   = 12000
@@ -48,11 +52,11 @@ var (
 	optimal_block      int64   = 210 * GiB
 
 	minQuota = map[corev1.ResourceName]resource.Quantity{
-		"cpu": resource.MustParse("10"),
+		quotaCPUKey: resource.MustParse("10"),
 	}
 
 	maxQuota = map[corev1.ResourceName]resource.Quantity{
-		"memory": resource.MustParse("9Gi"),
+		quotaMemoryKey: resource.MustParse("9Gi"),
 	}
 )
 
@@ -62,12 +66,12 @@ func TestPaasQuotaLists_Sum(t *testing.T) {
 		quotas.Append(vals)
 	}
 	sum := quotas.Sum()
-	cpu, exists := sum["cpu"]
-	assert.True(t, exists, "cpu should exist in sum")
+	cpu, exists := sum[quotaCPUKey]
+	assert.True(t, exists, quotaCPUKey+" should exist in sum")
 	assert.Equal(t, resource.DecimalSI, cpu.Format, "CPU Should have DecimalSI format")
 	assert.Equal(t, sum_cpu, cpu.MilliValue(), "sum should have 12000 milli cpu")
-	mem, exists := sum["memory"]
-	assert.True(t, exists, "memory should exist in sum")
+	mem, exists := sum[quotaMemoryKey]
+	assert.True(t, exists, quotaMemoryKey+" should exist in sum")
 	assert.Equal(t, resource.BinarySI, mem.Format, "Memory should have BinarySI format")
 	assert.Equal(t, sum_memory, mem.Value(), "sum should have sum 30 GiB memory")
 }
@@ -78,12 +82,12 @@ func TestPaasQuotaLists_Min(t *testing.T) {
 		quotas.Append(vals)
 	}
 	min := quotas.Min()
-	cpu, exists := min["cpu"]
-	assert.True(t, exists, "cpu should exist in min")
+	cpu, exists := min[quotaCPUKey]
+	assert.True(t, exists, quotaCPUKey+" should exist in min")
 	assert.Equal(t, resource.DecimalSI, cpu.Format)
 	assert.Equal(t, min_cpu, cpu.MilliValue())
-	mem, exists := min["memory"]
-	assert.True(t, exists, "memory should exist in min")
+	mem, exists := min[quotaMemoryKey]
+	assert.True(t, exists, quotaMemoryKey+" should exist in min")
 	assert.Equal(t, resource.BinarySI, mem.Format)
 	assert.Equal(t, min_memory, mem.Value())
 }
@@ -94,11 +98,11 @@ func TestPaasQuotaLists_Max(t *testing.T) {
 		quotas.Append(vals)
 	}
 	max := quotas.Max()
-	cpu, exists := max["cpu"]
-	assert.True(t, exists, "cpu should exist in max")
+	cpu, exists := max[quotaCPUKey]
+	assert.True(t, exists, quotaCPUKey+" should exist in max")
 	assert.Equal(t, resource.DecimalSI, cpu.Format)
 	assert.Equal(t, max_cpu, cpu.MilliValue())
-	mem, exists := max["memory"]
+	mem, exists := max[quotaMemoryKey]
 	assert.True(t, exists)
 	assert.Equal(t, resource.BinarySI, mem.Format)
 	assert.Equal(t, max_memory, mem.Value())
@@ -110,12 +114,12 @@ func TestPaasQuotaLists_LargestTwo(t *testing.T) {
 		quotas.Append(vals)
 	}
 	lt := quotas.LargestTwo()
-	cpu, exists := lt["cpu"]
-	assert.True(t, exists, "cpu should exist in max")
+	cpu, exists := lt[quotaCPUKey]
+	assert.True(t, exists, quotaCPUKey+" should exist in max")
 	assert.Equal(t, resource.DecimalSI, cpu.Format)
 	assert.Equal(t, largest_two_cpu, cpu.MilliValue())
-	mem, exists := lt["memory"]
-	assert.True(t, exists, "memory should exist in max")
+	mem, exists := lt[quotaMemoryKey]
+	assert.True(t, exists, quotaMemoryKey+" should exist in max")
 	assert.Equal(t, resource.BinarySI, mem.Format)
 	assert.Equal(t, largest_two_memory, mem.Value())
 }
@@ -132,14 +136,14 @@ func TestPaasQuotaLists_OptimalValues(t *testing.T) {
 		min,
 		max,
 	)
-	cpu := optimal["cpu"]
-	min_cpu := min["cpu"]
+	cpu := optimal[quotaCPUKey]
+	min_cpu := min[quotaCPUKey]
 	assert.Equal(t, min_cpu.Value(), cpu.Value())
-	mem := optimal["memory"]
-	max_mem := max["memory"]
+	mem := optimal[quotaMemoryKey]
+	max_mem := max[quotaMemoryKey]
 	assert.Equal(t, max_mem.Value(), mem.Value())
-	block := optimal["block"]
+	block := optimal[quotaBlockKey]
 	assert.Equal(t, optimal_block, block.Value())
-	shared := optimal["shared"]
+	shared := optimal[quotaSharedKey]
 	assert.Equal(t, optimal_shared, shared.Value())
 }

@@ -84,7 +84,7 @@ var _ = Describe("Group controller", Ordered, func() {
 		// ldap managed group has a label and users (from ldap)
 		initialUsers := userv1.OptionalNames([]string{"user1", "user2"})
 		changedUsers := userv1.OptionalNames([]string{"us", "them"})
-		group.Labels = map[string]string{ldapHostLabelKey: "somehost"}
+		group.Labels = map[string]string{LdapHostLabelKey: "somehost"}
 		group.Users = initialUsers
 
 		// Create the group

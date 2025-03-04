@@ -113,7 +113,7 @@ func (pk *CryptPrivateKey) writePrivateKey() error {
 		Bytes: privateKeyBytes,
 	})
 
-	if err := os.WriteFile(pk.privateKeyPath, privateKeyPEM, 0o600); err != nil {
+	if err := os.WriteFile(pk.privateKeyPath, privateKeyPEM, fileModeUserReadWrite); err != nil {
 		return fmt.Errorf("unable to write private key: %w", err)
 	}
 	fmt.Printf("Private key written to %s\n", pk.privateKeyPath)

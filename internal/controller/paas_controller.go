@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -112,7 +111,7 @@ func (r *PaasReconciler) GetPaas(
 	// this is only an issue when object is being removed, finalizers will not be removed
 	// causing the object to be in limbo.
 	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig()) {
-		logger.Error().Msg("no config found")
+		logger.Error().Msg(noConfigFoundMsg)
 		err = r.setErrorCondition(
 			ctx,
 			paas,
@@ -125,7 +124,7 @@ func (r *PaasReconciler) GetPaas(
 			logger.Err(err).Msg("failed to update Paas status")
 			return nil, err
 		}
-		return nil, fmt.Errorf("no config found")
+		return nil, errors.New(noConfigFoundMsg)
 	}
 
 	// Add finalizer for this CR
@@ -199,8 +198,8 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	if paas, err = r.GetPaas(ctx, req); err != nil {
 		// TODO(portly-halicore-76) move to admission webhook once available
 		// Don't requeue that often when no config is found
-		if strings.Contains(err.Error(), "no config found") {
-			return ctrl.Result{RequeueAfter: time.Minute * 10}, nil
+		if strings.Contains(err.Error(), noConfigFoundMsg) {
+			return ctrl.Result{RequeueAfter: requeueTimeout}, nil
 		}
 		logger.Err(err).Msg("could not get Paas from k8s")
 		return ctrl.Result{}, err
