@@ -11,6 +11,18 @@ import (
 // This is a map so that values are unique, the key is the paas entry
 type Entries map[string]Elements
 
+// Merge merges all key/value pairs from another Entries on top of this and returns the resulting total Entries set
+func (en Entries) Merge(added Entries) Entries {
+	for key, value := range added {
+		if sourceValue, exists := en[key]; exists {
+			en[key] = sourceValue.Merge(value)
+		} else {
+			en[key] = value
+		}
+	}
+	return en
+}
+
 func (en Entries) String() string {
 	var l []string
 	for key, value := range en {
