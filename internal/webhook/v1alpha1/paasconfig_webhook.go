@@ -231,12 +231,12 @@ func validateConfigCapabilities(capabilities v1alpha1.ConfigCapabilities, rootPa
 	return allErrs
 }
 
-func validateConfigCapability(name string, cap v1alpha1.ConfigCapability, rootPath *field.Path) field.ErrorList {
+func validateConfigCapability(name string, capability v1alpha1.ConfigCapability, rootPath *field.Path) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Key(name)
 
-	allErrs = append(allErrs, validateConfigQuotaSettings(cap.QuotaSettings, childPath)...)
-	allErrs = append(allErrs, validateConfigCustomFields(cap.CustomFields, childPath)...)
+	allErrs = append(allErrs, validateConfigQuotaSettings(capability.QuotaSettings, childPath)...)
+	allErrs = append(allErrs, validateConfigCustomFields(capability.CustomFields, childPath)...)
 
 	return allErrs
 }
