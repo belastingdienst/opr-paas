@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
@@ -44,8 +45,14 @@ func TestHashData(t *testing.T) {
 	)
 }
 
-var _ = Describe("Secret controller", func() {
+var _ = Describe("Secret controller", Ordered, func() {
+
 	ctx := context.Background()
+
+	BeforeAll(func() {
+		// Set the PaasConfig so reconcilers know where to find our fixtures
+		config.SetConfig(genericConfig)
+	})
 
 	var reconciler *PaasNSReconciler
 	BeforeEach(func() {
@@ -55,7 +62,7 @@ var _ = Describe("Secret controller", func() {
 		}
 	})
 
-	When("reconciling a PaasNS with no secrets", Ordered, func() {
+	When("reconciling a PaasNS with no secrets", func() {
 		pns := &api.PaasNS{
 			ObjectMeta: metav1.ObjectMeta{Name: "foo"},
 			Spec: api.PaasNSSpec{
@@ -78,7 +85,7 @@ var _ = Describe("Secret controller", func() {
 		})
 	})
 
-	When("reconciling a PaasNS with an SshSecrets value", Ordered, func() {
+	When("reconciling a PaasNS with an SshSecrets value", func() {
 		paas := &api.Paas{ObjectMeta: metav1.ObjectMeta{
 			Name: "my-paas",
 			UID:  "abc", // Needed or owner references fail
