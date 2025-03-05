@@ -61,8 +61,6 @@ linters-settings:
         disabled: true
       - name: use-errors-new
         disabled: true
-      - name: flag-parameter
-        disabled: true
 
       # axiomatic-fixed-chimpanzee: Fixing is seperate PR's:
       - name: bare-return
