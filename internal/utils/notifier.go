@@ -83,7 +83,7 @@ func (fw *FileWatcher) watchLoop() {
 
 			// Just print the event nicely aligned, and keep track how many
 			// events we've seen.
-			fw.count += 1
+			fw.count++
 			log.Printf("secret notification: %3d/%3d %s", fw.count, fw.lastCount, e)
 		}
 	}

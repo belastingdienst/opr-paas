@@ -38,7 +38,7 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 
 		for key, secret := range paas.Spec.SSHSecrets {
 			if decrypted, err := srcCrypt.Decrypt(secret); err != nil {
-				errNum += 1
+				errNum++
 				logrus.Errorf("%s: { .spec.sshSecrets[%s] } > { error: %e }", fileName, key, err)
 			} else {
 				logrus.Infof("%s: { .spec.sshSecrets[%s] } > { checksum: %s, len %d }",
@@ -61,7 +61,7 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 						key,
 						err,
 					)
-					errNum += 1
+					errNum++
 				} else {
 					logrus.Infof("%s: { .spec.capabilities[%s].sshSecrets[%s] } > { checksum: %s, len %d }",
 						fileName,
