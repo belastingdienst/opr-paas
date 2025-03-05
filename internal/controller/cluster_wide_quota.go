@@ -197,12 +197,9 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 		if err = r.Update(ctx, quota); err != nil {
 			return err
 		}
-	} else {
-		if err = r.Create(ctx, quota); err != nil {
-			return err
-		}
 	}
-	return nil
+
+	return r.Create(ctx, quota)
 }
 
 func (r *PaasReconciler) removeFromClusterWideQuota(
@@ -240,15 +237,11 @@ func (r *PaasReconciler) removeFromClusterWideQuota(
 	}
 	quota.OwnerReferences = paas.WithoutMe(quota.OwnerReferences)
 	if len(quota.OwnerReferences) < 1 {
-		if err = r.Delete(ctx, quota); err != nil {
-			return err
-		}
-		return nil
+		return r.Delete(ctx, quota)
 	}
 	if err := r.UpdateClusterWideQuotaResources(ctx, quota); err != nil {
 		return err
-	} else if err = r.Update(ctx, quota); err != nil {
-		return err
 	}
-	return nil
+
+	return r.Update(ctx, quota)
 }
