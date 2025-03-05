@@ -109,7 +109,6 @@ linters-settings:
       - name: receiver-naming
         disabled: true
       - name: redundant-import-alias
-        disabled: true
       - name: struct-tag
       - name: superfluous-else
       - name: unchecked-type-assertion
