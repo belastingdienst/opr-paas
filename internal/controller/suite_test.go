@@ -35,16 +35,23 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	//+kubebuilder:scaffold:imports
 )
 
 var (
-	cfg       *rest.Config
-	k8sClient client.Client
-	testEnv   *envtest.Environment
-	pubkey    *rsa.PublicKey
+	cfg           *rest.Config
+	k8sClient     client.Client
+	testEnv       *envtest.Environment
+	pubkey        *rsa.PublicKey
+	genericConfig = api.PaasConfig{
+		Spec: api.PaasConfigSpec{
+			DecryptKeysSecret: api.NamespacedName{
+				Name:      "keys",
+				Namespace: "paas-system",
+			},
+		},
+	}
 )
 
 func TestControllers(t *testing.T) {
@@ -87,13 +94,6 @@ func setupPaasSys() {
 	// Save public key so we can encrypt things within tests
 	pubkey = &privkey.PublicKey
 
-	// Set the PaasConfig so reconcilers know where to find our fixtures
-	config.SetConfig(api.PaasConfig{Spec: api.PaasConfigSpec{
-		DecryptKeysSecret: api.NamespacedName{
-			Name:      "keys",
-			Namespace: "paas-system",
-		},
-	}})
 }
 
 var _ = BeforeSuite(func() {
