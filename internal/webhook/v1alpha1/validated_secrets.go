@@ -67,13 +67,13 @@ func (vs validatedSecrets) compareSecrets(
 		if vs.Is(hashFromString(secret)) {
 			continue
 		}
-		if crypt, err := getRsaFunc(); err != nil {
+		if cryptObj, err := getRsaFunc(); err != nil {
 			errs = append(errs, &field.Error{
 				Type:   field.ErrorTypeInvalid,
 				Field:  field.NewPath("spec").Child("sshSecrets").Key(secretName).String(),
 				Detail: fmt.Errorf("failed to get crypt: %w", err).Error(),
 			})
-		} else if _, err := crypt.Decrypt(secret); err != nil {
+		} else if _, err := cryptObj.Decrypt(secret); err != nil {
 			errs = append(errs, &field.Error{
 				Type:     field.ErrorTypeInvalid,
 				Field:    field.NewPath("spec").Child("sshSecrets").Key(secretName).String(),

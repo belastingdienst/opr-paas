@@ -146,7 +146,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 // validateCaps returns an error if any of the passed capabilities is not configured.
 func validateCaps(
 	ctx context.Context,
-	client client.Client,
+	_ client.Client,
 	conf v1alpha1.PaasConfigSpec,
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
@@ -168,7 +168,7 @@ func validateCaps(
 // validateGroupNames returns an error if any of the passed capabilities is not configured.
 func validateGroupNames(
 	ctx context.Context,
-	client client.Client,
+	_ client.Client,
 	conf v1alpha1.PaasConfigSpec,
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
@@ -198,12 +198,12 @@ func validateGroupNames(
 
 func validateSecrets(
 	ctx context.Context,
-	client client.Client,
+	k8sClient client.Client,
 	conf v1alpha1.PaasConfigSpec,
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	decryptRes := &corev1.Secret{}
-	if err := client.Get(ctx, types.NamespacedName{
+	if err := k8sClient.Get(ctx, types.NamespacedName{
 		Name:      conf.DecryptKeysSecret.Name,
 		Namespace: conf.DecryptKeysSecret.Namespace,
 	}, decryptRes); err != nil {
@@ -236,7 +236,7 @@ func validateSecrets(
 // Returns an internal error if the validation regexp cannot be compiled.
 func validateCustomFields(
 	ctx context.Context,
-	client client.Client,
+	_ client.Client,
 	conf v1alpha1.PaasConfigSpec,
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {

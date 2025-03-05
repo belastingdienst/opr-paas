@@ -171,14 +171,14 @@ func (pg PaasGroup) Name(defName string) string {
 type PaasGroups map[string]PaasGroup
 
 // Filtered returns a list of PaasGroups which have a key that is in the list of groups, specified as string.
-func (pgs PaasGroups) Filtered(groups []string) PaasGroups {
+func (pgs PaasGroups) Filtered(paasGroupNames []string) PaasGroups {
 	filtered := make(PaasGroups)
-	if len(groups) == 0 {
+	if len(paasGroupNames) == 0 {
 		return pgs
 	}
-	for _, groupName := range groups {
-		if group, exists := pgs[groupName]; exists {
-			filtered[groupName] = group
+	for _, paasGroupName := range paasGroupNames {
+		if paasGroup, exists := pgs[paasGroupName]; exists {
+			filtered[paasGroupName] = paasGroup
 		}
 	}
 	return filtered
@@ -201,11 +201,11 @@ func (pgs PaasGroups) Key2Name(key string) string {
 	}
 }
 
-func (pgs PaasGroups) Names() (groups []string) {
-	for name, group := range pgs {
-		groups = append(groups, group.Name(name))
+func (pgs PaasGroups) Names() (paasGroupNames []string) {
+	for name, paasGroup := range pgs {
+		paasGroupNames = append(paasGroupNames, paasGroup.Name(name))
 	}
-	return groups
+	return paasGroupNames
 }
 
 func (p Paas) GroupKey2GroupName(groupKey string) string {

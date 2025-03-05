@@ -156,19 +156,19 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	return ctrl.Result{}, nil
 }
 
-func (pcr *PaasConfigReconciler) setSuccesfullCondition(ctx context.Context, config *v1alpha1.PaasConfig) error {
-	meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{
+func (pcr *PaasConfigReconciler) setSuccesfullCondition(ctx context.Context, paasConfig *v1alpha1.PaasConfig) error {
+	meta.SetStatusCondition(&paasConfig.Status.Conditions, metav1.Condition{
 		Type:   v1alpha1.TypeActivePaasConfig,
-		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: config.Generation,
+		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: paasConfig.Generation,
 		Message: "This config is the active config!",
 	})
-	meta.SetStatusCondition(&config.Status.Conditions, metav1.Condition{
+	meta.SetStatusCondition(&paasConfig.Status.Conditions, metav1.Condition{
 		Type:   v1alpha1.TypeHasErrorsPaasConfig,
-		Status: metav1.ConditionFalse, Reason: "Reconciling", ObservedGeneration: config.Generation,
-		Message: fmt.Sprintf("Reconciled (%s) successfully", config.Name),
+		Status: metav1.ConditionFalse, Reason: "Reconciling", ObservedGeneration: paasConfig.Generation,
+		Message: fmt.Sprintf("Reconciled (%s) successfully", paasConfig.Name),
 	})
 
-	if err := pcr.Status().Update(ctx, config); err != nil {
+	if err := pcr.Status().Update(ctx, paasConfig); err != nil {
 		return err
 	}
 	return nil
