@@ -3,7 +3,7 @@ package quota_test
 import (
 	"testing"
 
-	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
+	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
@@ -21,7 +21,7 @@ func TestPaasQuotas_QuotaWithDefaults(t *testing.T) {
 		"limits.memory": resourcev1.MustParse("5Gi"),
 		"requests.cpu":  resourcev1.MustParse("700m"),
 	}
-	quotas := make(paas_quota.Quota)
+	quotas := make(paasquota.Quota)
 	for key, value := range testQuotas {
 		quotas[key] = value
 	}
