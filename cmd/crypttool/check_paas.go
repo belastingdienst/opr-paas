@@ -88,10 +88,10 @@ func checkPaasFiles(privateKeyFiles string, files []string) error {
 
 // CheckPaas determines whether a Paas can be decrypted using the provided crypt
 // it returns an error containing which secrets cannot be decrypted if any
-func CheckPaas(crypt *crypt.Crypt, paas *v1alpha1.Paas, fileName string) error {
+func CheckPaas(cryptObj *crypt.Crypt, paas *v1alpha1.Paas, fileName string) error {
 	var allErrors []string
 	for key, secret := range paas.Spec.SSHSecrets {
-		decrypted, err := crypt.Decrypt(secret)
+		decrypted, err := cryptObj.Decrypt(secret)
 		if err != nil {
 			errMessage := fmt.Errorf("%s: { .spec.sshSecrets[%s] } > { error: %w }", fileName, key, err)
 			logrus.Error(errMessage)
@@ -109,7 +109,7 @@ func CheckPaas(crypt *crypt.Crypt, paas *v1alpha1.Paas, fileName string) error {
 	for capName, capability := range paas.Spec.Capabilities {
 		logrus.Debugf("capability name: %s", capName)
 		for key, secret := range capability.GetSSHSecrets() {
-			decrypted, err := crypt.Decrypt(secret)
+			decrypted, err := cryptObj.Decrypt(secret)
 			if err != nil {
 				errMessage := fmt.Errorf(
 					"%s: { .spec.capabilities[%s].sshSecrets[%s] } > { error: %w }",

@@ -97,7 +97,6 @@ linters-settings:
       - name: import-alias-naming
         disabled: true
       - name: import-shadowing
-        disabled: true
       - name: increment-decrement
       - name: max-control-nesting
       - name: max-public-structs
