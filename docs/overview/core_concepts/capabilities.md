@@ -98,8 +98,8 @@ The ArgoCD Applicationset could look like this:
 !!! example
 
     ```yaml
-    apiversion: argoproj.io/v1alpha1
-    kind: applicationset
+    apiVersion: argoproj.io/v1alpha1
+    kind: ApplicationSet
     metadata:
       # name of the applicationset, this can be used for Paas instances with the
       # argocd capability enabled
@@ -115,7 +115,7 @@ The ArgoCD Applicationset could look like this:
       generators: []
       template:
         metadata:
-          name: "{{paas}}-cpet-capability-argocd"
+          name: "{{paas}}-capability-argocd"
         spec:
           destination:
             namespace: "{{paas}}-argocd"
@@ -123,18 +123,18 @@ The ArgoCD Applicationset could look like this:
           project: "{{paas}}"
           source:
             kustomize:
-              commonlabels:
+              commonLabels:
                 capability: argocd
                 clusterquotagroup: "{{requestor}}"
                 paas: "{{paas}}"
                 service: "{{service}}"
                 subservice: "{{subservice}}"
             path: paas-capabilities/argocd
-            repourl: "ssh://git@github.com/belastingdienst/my-paas-capabilities.git"
-            targetrevision: master
-          syncpolicy:
+            repoURL: "ssh://git@github.com/belastingdienst/my-paas-capabilities.git"
+            targetRevision: master
+          syncPolicy:
             automated:
-              selfheal: true
+              selfHeal: true
     ```
 
 ### Example Paas
