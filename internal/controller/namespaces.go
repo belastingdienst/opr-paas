@@ -38,13 +38,7 @@ func EnsureNamespace(
 		Name: ns.Name,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
-		if err = r.Create(ctx, ns); err != nil {
-			// creating the namespace failed
-			return err
-		} else {
-			// creating the namespace was successful
-			return nil
-		}
+		return r.Create(ctx, ns)
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
 		return err
