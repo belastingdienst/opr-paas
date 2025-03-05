@@ -102,11 +102,9 @@ linters-settings:
         disabled: true
       - name: max-control-nesting
       - name: max-public-structs
-        disabled: true
+        arguments: [14]
       - name: redefines-builtin-id
-        disabled: true
       - name: receiver-naming
-        disabled: true
       - name: redundant-import-alias
       - name: struct-tag
       - name: superfluous-else
