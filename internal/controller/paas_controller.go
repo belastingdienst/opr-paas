@@ -74,13 +74,13 @@ type Reconciler interface {
 // the user.
 //
 
-func (r *PaasReconciler) GetPaas(
+func (pr *PaasReconciler) GetPaas(
 	ctx context.Context,
 	req ctrl.Request,
 ) (paas *v1alpha1.Paas, err error) {
 	paas = &v1alpha1.Paas{}
 	ctx, logger := logging.GetLogComponent(ctx, "paas")
-	if err = r.Get(ctx, req.NamespacedName, paas); err != nil {
+	if err = pr.Get(ctx, req.NamespacedName, paas); err != nil {
 		return nil, client.IgnoreNotFound(err)
 	}
 
@@ -96,12 +96,12 @@ func (r *PaasReconciler) GetPaas(
 		},
 	)
 	meta.RemoveStatusCondition(&paas.Status.Conditions, v1alpha1.TypeHasErrorsPaas)
-	if err = r.Status().Update(ctx, paas); err != nil {
+	if err = pr.Status().Update(ctx, paas); err != nil {
 		logger.Err(err).Msg("failed to update Paas status")
 		return nil, err
 	}
 
-	if err := r.Get(ctx, req.NamespacedName, paas); err != nil {
+	if err := pr.Get(ctx, req.NamespacedName, paas); err != nil {
 		logger.Err(err).Msg("failed to re-fetch Paas")
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (r *PaasReconciler) GetPaas(
 	// causing the object to be in limbo.
 	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig()) {
 		logger.Error().Msg(noConfigFoundMsg)
-		err = r.setErrorCondition(
+		err = pr.setErrorCondition(
 			ctx,
 			paas,
 			fmt.Errorf(
@@ -134,7 +134,7 @@ func (r *PaasReconciler) GetPaas(
 			logger.Err(err).Msg("failed to add finalizer")
 			return nil, fmt.Errorf("failed to add finalizer")
 		}
-		if err := r.Update(ctx, paas); err != nil {
+		if err := pr.Update(ctx, paas); err != nil {
 			logger.Err(err).Msg("error updating Paas")
 			return nil, err
 		}
@@ -152,14 +152,14 @@ func (r *PaasReconciler) GetPaas(
 				Message: fmt.Sprintf("Performing finalizer operations for Paas: %s ", paas.Name),
 			})
 
-			if err := r.Status().Update(ctx, paas); err != nil {
+			if err := pr.Status().Update(ctx, paas); err != nil {
 				logger.Err(err).Msg("Failed to update Paas status")
 				return nil, err
 			}
 			// Run finalization logic for paasFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
-			if err := r.finalizePaas(ctx, paas); err != nil {
+			if err := pr.finalizePaas(ctx, paas); err != nil {
 				return nil, err
 			}
 
@@ -169,7 +169,7 @@ func (r *PaasReconciler) GetPaas(
 				Message: fmt.Sprintf("Finalizer operations for Paas %s name were successfully accomplished", paas.Name),
 			})
 
-			if err := r.Status().Update(ctx, paas); err != nil {
+			if err := pr.Status().Update(ctx, paas); err != nil {
 				logger.Err(err).Msg("Failed to update Paas status")
 				return nil, err
 			}
@@ -178,7 +178,7 @@ func (r *PaasReconciler) GetPaas(
 			// Remove paasFinalizer. Once all finalizers have been
 			// removed, the object will be deleted.
 			controllerutil.RemoveFinalizer(paas, paasFinalizer)
-			if err := r.Update(ctx, paas); err != nil {
+			if err := pr.Update(ctx, paas); err != nil {
 				return nil, err
 			}
 			logger.Info().Msg("finalization finished")
@@ -191,11 +191,11 @@ func (r *PaasReconciler) GetPaas(
 
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
-func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
+func (pr *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	paas := &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
-	ctx, logger := logging.SetControllerLogger(ctx, paas, r.Scheme, req)
+	ctx, logger := logging.SetControllerLogger(ctx, paas, pr.Scheme, req)
 
-	if paas, err = r.GetPaas(ctx, req); err != nil {
+	if paas, err = pr.GetPaas(ctx, req); err != nil {
 		// TODO(portly-halicore-76) move to admission webhook once available
 		// Don't requeue that often when no config is found
 		if strings.Contains(err.Error(), noConfigFoundMsg) {
@@ -212,42 +212,42 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 
 	paas.Status.Truncate()
 
-	if err := r.ReconcileQuotas(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.ReconcileClusterWideQuota(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.ReconcilePaasNss(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.EnsureAppProject(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.ReconcileGroups(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.EnsureLdapGroups(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.reconcileRolebindings(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.ensureAppSetCaps(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
+	if err := pr.ReconcileQuotas(ctx, paas); err != nil {
+		return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
+	} else if err = pr.ReconcileClusterWideQuota(ctx, paas); err != nil {
+		return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
+	} else if err = pr.ReconcilePaasNss(ctx, paas); err != nil {
+		return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
+	} else if err = pr.EnsureAppProject(ctx, paas); err != nil {
+		return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
+	} else if err = pr.ReconcileGroups(ctx, paas); err != nil {
+		return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
+	} else if err = pr.EnsureLdapGroups(ctx, paas); err != nil {
+		return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
+	} else if err = pr.reconcileRolebindings(ctx, paas); err != nil {
+		return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
+	} else if err = pr.ensureAppSetCaps(ctx, paas); err != nil {
+		return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
 	} else if argoCap, exists := paas.Spec.Capabilities["argocd"]; exists {
 		if argoCap.IsEnabled() {
 			logger.Info().Msg("creating Argo App for client bootstrapping")
 
 			// Create bootstrap Argo App
-			if err := r.EnsureArgoApp(ctx, paas); err != nil {
-				return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
+			if err := pr.EnsureArgoApp(ctx, paas); err != nil {
+				return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
 			}
 
-			if err := r.EnsureArgoCD(ctx, paas); err != nil {
-				return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
+			if err := pr.EnsureArgoCD(ctx, paas); err != nil {
+				return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
 			}
 		}
 	}
 
 	// Reconciling succeeded, set appropriate Condition
-	return ctrl.Result{}, r.setSuccesfullCondition(ctx, paas)
+	return ctrl.Result{}, pr.setSuccesfullCondition(ctx, paas)
 }
 
-func (r *PaasReconciler) setSuccesfullCondition(ctx context.Context, paas *v1alpha1.Paas) error {
+func (pr *PaasReconciler) setSuccesfullCondition(ctx context.Context, paas *v1alpha1.Paas) error {
 	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{
 		Type:   v1alpha1.TypeReadyPaas,
 		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: paas.Generation,
@@ -259,10 +259,10 @@ func (r *PaasReconciler) setSuccesfullCondition(ctx context.Context, paas *v1alp
 		Message: fmt.Sprintf("Reconciled (%s) successfully", paas.Name),
 	})
 
-	return r.Status().Update(ctx, paas)
+	return pr.Status().Update(ctx, paas)
 }
 
-func (r *PaasReconciler) setErrorCondition(ctx context.Context, paas *v1alpha1.Paas, err error) error {
+func (pr *PaasReconciler) setErrorCondition(ctx context.Context, paas *v1alpha1.Paas, err error) error {
 	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{
 		Type:   v1alpha1.TypeReadyPaas,
 		Status: metav1.ConditionFalse, Reason: "ReconcilingError", ObservedGeneration: paas.Generation,
@@ -274,11 +274,11 @@ func (r *PaasReconciler) setErrorCondition(ctx context.Context, paas *v1alpha1.P
 		Message: err.Error(),
 	})
 
-	return r.Status().Update(ctx, paas)
+	return pr.Status().Update(ctx, paas)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (pr *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Paas{}, builder.WithPredicates(
 			predicate.Or(
@@ -311,22 +311,22 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			}),
 			builder.WithPredicates(v1alpha1.ActivePaasConfigUpdated()),
 		).
-		Complete(r)
+		Complete(pr)
 }
 
-func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) error {
+func (pr *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) error {
 	logger := log.Ctx(ctx)
 	logger.Debug().Msg("inside Paas finalizer")
-	if err := r.FinalizeClusterQuotas(ctx, paas); err != nil {
+	if err := pr.FinalizeClusterQuotas(ctx, paas); err != nil {
 		logger.Err(err).Msg("quota finalizer error")
 		return err
-	} else if err = r.FinalizeGroups(ctx, paas); err != nil {
+	} else if err = pr.FinalizeGroups(ctx, paas); err != nil {
 		logger.Err(err).Msg("group finalizer error")
 		return err
-	} else if err = r.FinalizeExtraClusterRoleBindings(ctx, paas); err != nil {
+	} else if err = pr.FinalizeExtraClusterRoleBindings(ctx, paas); err != nil {
 		logger.Err(err).Msg("extra ClusterRoleBindings finalizer error")
 		return err
-	} else if err = r.FinalizeClusterWideQuotas(ctx, paas); err != nil {
+	} else if err = pr.FinalizeClusterWideQuotas(ctx, paas); err != nil {
 		return err
 	}
 	logger.Info().Msg("paaS successfully finalized")
