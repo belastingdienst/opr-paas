@@ -212,21 +212,23 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 
 	paas.Status.Truncate()
 
-	if err := r.ReconcileQuotas(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.ReconcileClusterWideQuota(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.ReconcilePaasNss(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.EnsureAppProject(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.ReconcileGroups(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.EnsureLdapGroups(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.reconcileRolebindings(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	} else if err = r.ensureAppSetCaps(ctx, paas); err != nil {
+	reconcilers := []func(context.Context, *v1alpha1.Paas) error{
+		r.ReconcileQuotas,
+		r.ReconcileClusterWideQuota,
+		r.ReconcilePaasNss,
+		r.EnsureAppProject,
+		r.ReconcileGroups,
+		r.EnsureLdapGroups,
+		r.reconcileRolebindings,
+	}
+
+	for _, reconcile := range reconcilers {
+		if err = reconcile(ctx, paas); err != nil {
+			return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
+		}
+	}
+
+	if err = r.ensureAppSetCaps(ctx, paas); err != nil {
 		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 	} else if argoCap, exists := paas.Spec.Capabilities["argocd"]; exists {
 		if argoCap.IsEnabled() {
