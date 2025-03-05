@@ -44,8 +44,8 @@ type PaasNSReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-func (pr PaasNSReconciler) GetScheme() *runtime.Scheme {
-	return pr.Scheme
+func (pnsr PaasNSReconciler) GetScheme() *runtime.Scheme {
+	return pnsr.Scheme
 }
 
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paasns,verbs=get;list;watch;create;update;patch;delete
@@ -59,12 +59,12 @@ func (pr PaasNSReconciler) GetScheme() *runtime.Scheme {
 // the user.
 //
 
-func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paasns *v1alpha1.PaasNS, err error) {
+func (pnsr *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paasns *v1alpha1.PaasNS, err error) {
 	paasns = &v1alpha1.PaasNS{}
 	ctx, logger := logging.GetLogComponent(ctx, paasNsComponentName)
 	logger.Info().Msg("reconciling PaasNs")
 
-	if err = r.Get(ctx, req.NamespacedName, paasns); err != nil {
+	if err = pnsr.Get(ctx, req.NamespacedName, paasns); err != nil {
 		return nil, client.IgnoreNotFound(err)
 	}
 
@@ -80,12 +80,12 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 		},
 	)
 	meta.RemoveStatusCondition(&paasns.Status.Conditions, v1alpha1.TypeHasErrorsPaasNs)
-	if err = r.Status().Update(ctx, paasns); err != nil {
+	if err = pnsr.Status().Update(ctx, paasns); err != nil {
 		logger.Err(err).Msg("Failed to update PaasNs status")
 		return nil, err
 	}
 
-	if err := r.Get(ctx, req.NamespacedName, paasns); err != nil {
+	if err := pnsr.Get(ctx, req.NamespacedName, paasns); err != nil {
 		logger.Err(err).Msg("failed to re-fetch PaasNs")
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 			logger.Error().Msg("failed to add finalizer")
 			return nil, fmt.Errorf("failed to add finalizer")
 		}
-		if err := r.Update(ctx, paasns); err != nil {
+		if err := pnsr.Update(ctx, paasns); err != nil {
 			logger.Err(err).Msg("error updating PaasNs")
 			return nil, err
 		}
@@ -110,7 +110,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 	// Finalizers will not be removed causing the object to be in limbo.
 	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig()) {
 		logger.Error().Msg(noConfigFoundMsg)
-		err = r.setErrorCondition(
+		err = pnsr.setErrorCondition(
 			ctx,
 			paasns,
 			fmt.Errorf(
@@ -135,7 +135,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 				Message: fmt.Sprintf("Performing finalizer operations for PaasNs: %s ", paasns.Name),
 			})
 
-			if err := r.Status().Update(ctx, paasns); err != nil {
+			if err := pnsr.Status().Update(ctx, paasns); err != nil {
 				logger.Err(err).Msg("failed to set PaasNs status to Downgrade")
 				return nil, err
 			}
@@ -144,7 +144,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 			// Run finalization logic for paasNsFinalizer. If the
 			// finalization logic fails, don't remove the finalizer so
 			// that we can retry during the next reconciliation.
-			if err := r.finalizePaasNs(ctx, paasns); err != nil {
+			if err := pnsr.finalizePaasNs(ctx, paasns); err != nil {
 				return nil, err
 			}
 
@@ -157,7 +157,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 				),
 			})
 
-			if err := r.Status().Update(ctx, paasns); err != nil {
+			if err := pnsr.Status().Update(ctx, paasns); err != nil {
 				logger.Err(err).Msg("failed to set successful paasNs status")
 				return nil, err
 			}
@@ -165,7 +165,7 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 			logger.Info().Msg("removing finalizer")
 			// Remove paasNsFinalizer. Once all finalizers have been removed, the object will be deleted.
 			controllerutil.RemoveFinalizer(paasns, paasNsFinalizer)
-			if err := r.Update(ctx, paasns); err != nil {
+			if err := pnsr.Update(ctx, paasns); err != nil {
 				return nil, err
 			}
 			logger.Info().Msg("finalization finished")
@@ -175,8 +175,8 @@ func (r *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paa
 	return paasns, nil
 }
 
-func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, err error) {
-	paas, _, err = r.paasFromPaasNs(ctx, paasns)
+func (pnsr *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, err error) {
+	paas, _, err = pnsr.paasFromPaasNs(ctx, paasns)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			err = fmt.Errorf("cannot find Paas %s", paasns.Spec.Paas)
@@ -185,7 +185,7 @@ func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS)
 		return nil, err
 	}
 	if !paas.AmIOwner(paasns.OwnerReferences) {
-		if err := controllerutil.SetControllerReference(paas, paasns, r.Scheme); err != nil {
+		if err := controllerutil.SetControllerReference(paas, paasns, pnsr.Scheme); err != nil {
 			return nil, err
 		}
 	}
@@ -194,11 +194,11 @@ func (r *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS)
 
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
-func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
+func (pnsr *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	paasns := &v1alpha1.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
-	ctx, logger := logging.SetControllerLogger(ctx, paasns, r.Scheme, req)
+	ctx, logger := logging.SetControllerLogger(ctx, paasns, pnsr.Scheme, req)
 
-	if paasns, err = r.GetPaasNs(ctx, req); err != nil {
+	if paasns, err = pnsr.GetPaasNs(ctx, req); err != nil {
 		// TODO(portly-halicore-76) move to admission webhook once available
 		// Don't requeue that often when no config is found
 		if strings.Contains(err.Error(), noConfigFoundMsg) {
@@ -217,38 +217,38 @@ func (r *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res
 	paasns.Status.Truncate()
 
 	var paas *v1alpha1.Paas
-	if paas, err = r.GetPaas(ctx, paasns); err != nil {
+	if paas, err = pnsr.GetPaas(ctx, paasns); err != nil {
 		// This cannot be resolved by itself, so we should not have this keep on reconciling,
 		// only try again when setErrorCondition fails
-		return ctrl.Result{}, r.setErrorCondition(ctx, paasns, err)
+		return ctrl.Result{}, pnsr.setErrorCondition(ctx, paasns, err)
 	}
 
-	err = r.ReconcileNamespaces(ctx, paas, paasns)
+	err = pnsr.ReconcileNamespaces(ctx, paas, paasns)
 	if err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
+		return ctrl.Result{}, errors.Join(err, pnsr.setErrorCondition(ctx, paasns, err))
 	}
 
-	err = r.ReconcileRolebindings(ctx, paas, paasns)
+	err = pnsr.ReconcileRolebindings(ctx, paas, paasns)
 	if err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
+		return ctrl.Result{}, errors.Join(err, pnsr.setErrorCondition(ctx, paasns, err))
 	}
 
-	err = r.ReconcileSecrets(ctx, paas, paasns)
+	err = pnsr.ReconcileSecrets(ctx, paas, paasns)
 	if err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
+		return ctrl.Result{}, errors.Join(err, pnsr.setErrorCondition(ctx, paasns, err))
 	}
 
-	err = r.ReconcileExtraClusterRoleBinding(ctx, paasns, paas)
+	err = pnsr.ReconcileExtraClusterRoleBinding(ctx, paasns, paas)
 	if err != nil {
 		logger.Err(err).Msg("reconciling Extra ClusterRoleBindings failed")
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paasns, err))
+		return ctrl.Result{}, errors.Join(err, pnsr.setErrorCondition(ctx, paasns, err))
 	}
 
 	// Reconciling succeeded, set appropriate Condition
-	return ctrl.Result{}, r.setSuccessfulCondition(ctx, paasns)
+	return ctrl.Result{}, pnsr.setSuccessfulCondition(ctx, paasns)
 }
 
-func (r *PaasNSReconciler) setSuccessfulCondition(ctx context.Context, paasNs *v1alpha1.PaasNS) error {
+func (pnsr *PaasNSReconciler) setSuccessfulCondition(ctx context.Context, paasNs *v1alpha1.PaasNS) error {
 	meta.SetStatusCondition(&paasNs.Status.Conditions, metav1.Condition{
 		Type:   v1alpha1.TypeReadyPaasNs,
 		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: paasNs.Generation,
@@ -260,10 +260,10 @@ func (r *PaasNSReconciler) setSuccessfulCondition(ctx context.Context, paasNs *v
 		Message: fmt.Sprintf("Reconciled (%s) successfully", paasNs.Name),
 	})
 
-	return r.Status().Update(ctx, paasNs)
+	return pnsr.Status().Update(ctx, paasNs)
 }
 
-func (r *PaasNSReconciler) setErrorCondition(ctx context.Context, paasNs *v1alpha1.PaasNS, err error) error {
+func (pnsr *PaasNSReconciler) setErrorCondition(ctx context.Context, paasNs *v1alpha1.PaasNS, err error) error {
 	meta.SetStatusCondition(&paasNs.Status.Conditions, metav1.Condition{
 		Type:   v1alpha1.TypeReadyPaasNs,
 		Status: metav1.ConditionFalse, Reason: "ReconcilingError", ObservedGeneration: paasNs.Generation,
@@ -275,11 +275,11 @@ func (r *PaasNSReconciler) setErrorCondition(ctx context.Context, paasNs *v1alph
 		Message: err.Error(),
 	})
 
-	return r.Status().Update(ctx, paasNs)
+	return pnsr.Status().Update(ctx, paasNs)
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PaasNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (pnsr *PaasNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.PaasNS{}, builder.WithPredicates(
 			predicate.Or(
@@ -307,15 +307,15 @@ func (r *PaasNSReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				}
 				return reqs
 			}), builder.WithPredicates(v1alpha1.ActivePaasConfigUpdated())).
-		Complete(r)
+		Complete(pnsr)
 }
 
 // nssFromNs gets all PaasNs objects from a namespace and returns a list of all the corresponding namespaces
 // It also returns PaasNS in those namespaces recursively.
-func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]int {
+func (pnsr *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]int {
 	nss := make(map[string]int)
 	pnsList := &v1alpha1.PaasNSList{}
-	if err := r.List(ctx, pnsList, &client.ListOptions{Namespace: ns}); err != nil {
+	if err := pnsr.List(ctx, pnsList, &client.ListOptions{Namespace: ns}); err != nil {
 		// In this case panic is ok, since this situation can only occur when either k8s is down,
 		// or permissions are insufficient. Both cases we should not continue executing code...
 		panic(err)
@@ -328,7 +328,7 @@ func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]
 			nss[nsName] = 1
 		}
 		// Call myself (recursively)
-		for key, value := range r.nssFromNs(ctx, nsName) {
+		for key, value := range pnsr.nssFromNs(ctx, nsName) {
 			nss[key] += value
 		}
 	}
@@ -337,10 +337,10 @@ func (r *PaasNSReconciler) nssFromNs(ctx context.Context, ns string) map[string]
 
 // nsFromPaas accepts a Paas and returns a list of all namespaces managed by this Paas
 // nsFromPaas uses nsFromNs which is recursive.
-func (r *PaasNSReconciler) nssFromPaas(ctx context.Context, paas *v1alpha1.Paas) map[string]int {
+func (pnsr *PaasNSReconciler) nssFromPaas(ctx context.Context, paas *v1alpha1.Paas) map[string]int {
 	finalNss := make(map[string]int)
 	finalNss[paas.Name] = 1
-	for key, value := range r.nssFromNs(ctx, paas.Name) {
+	for key, value := range pnsr.nssFromNs(ctx, paas.Name) {
 		finalNss[key] += value
 	}
 	return finalNss
@@ -369,20 +369,20 @@ func (r *PaasReconciler) pnsFromNs(ctx context.Context, ns string) map[string]v1
 	return nss
 }
 
-func (r *PaasNSReconciler) paasFromPaasNs(
+func (pnsr *PaasNSReconciler) paasFromPaasNs(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 ) (paas *v1alpha1.Paas, namespaces map[string]int, err error) {
 	ctx, logger := logging.GetLogComponent(ctx, paasNsComponentName)
 	paas = &v1alpha1.Paas{}
-	if err := r.Get(ctx, types.NamespacedName{Name: paasns.Spec.Paas}, paas); err != nil {
+	if err := pnsr.Get(ctx, types.NamespacedName{Name: paasns.Spec.Paas}, paas); err != nil {
 		logger.Err(err).Msg("cannot get Paas")
 		return nil, namespaces, err
 	}
 	if paasns.Namespace == paas.Name {
-		return paas, r.nssFromPaas(ctx, paas), nil
+		return paas, pnsr.nssFromPaas(ctx, paas), nil
 	} else {
-		namespaces = r.nssFromPaas(ctx, paas)
+		namespaces = pnsr.nssFromPaas(ctx, paas)
 		if _, exists := namespaces[paasns.Namespace]; exists {
 			return paas, namespaces, nil
 		} else {
@@ -402,13 +402,13 @@ func (r *PaasNSReconciler) paasFromPaasNs(
 	}
 }
 
-func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) error {
+func (pnsr *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) error {
 	ctx, logger := logging.GetLogComponent(ctx, paasNsComponentName)
 
 	cfg := config.GetConfig()
 	// If PaasNs is related to a capability, remove it from appSet
 	if _, exists := cfg.Capabilities[paasns.Name]; exists {
-		if err := r.finalizeAppSetCap(ctx, paasns); err != nil {
+		if err := pnsr.finalizeAppSetCap(ctx, paasns); err != nil {
 			err = fmt.Errorf(
 				"cannot remove paas from capability ApplicationSet belonging to Paas %s: %s",
 				paasns.Spec.Paas,
@@ -418,7 +418,7 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 		}
 	}
 
-	paas, nss, err := r.paasFromPaasNs(ctx, paasns)
+	paas, nss, err := pnsr.paasFromPaasNs(ctx, paasns)
 	if err != nil {
 		err = fmt.Errorf("cannot find Paas %s: %s", paasns.Spec.Paas, err.Error())
 		logger.Info().Msg(err.Error())
@@ -430,13 +430,13 @@ func (r *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.
 	}
 
 	logger.Info().Msg("inside PaasNs finalizer")
-	if err := r.FinalizeNamespace(ctx, paasns, paas); err != nil {
+	if err := pnsr.FinalizeNamespace(ctx, paasns, paas); err != nil {
 		err = fmt.Errorf("cannot remove namespace belonging to Paas %s: %s", paasns.Spec.Paas, err.Error())
 		return err
 	}
 	if _, isCapability := paas.Spec.Capabilities[paasns.Name]; isCapability {
 		logger.Info().Msg("paasNs is a capability, also finalizing Cluster Resource Quota")
-		if err := r.FinalizeClusterQuota(ctx, paasns); err != nil {
+		if err := pnsr.FinalizeClusterQuota(ctx, paasns); err != nil {
 			logger.Err(err).Msg(fmt.Sprintf("failure while finalizing quota %s", paasns.Name))
 			return err
 		}
