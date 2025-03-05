@@ -61,9 +61,9 @@ func (pns PaasNS) NamespaceName() string {
 	return fmt.Sprintf("%s-%s", pns.Spec.Paas, pns.Name)
 }
 
-func (p PaasNS) ClonedLabels() map[string]string {
+func (pns PaasNS) ClonedLabels() map[string]string {
 	labels := make(map[string]string)
-	for key, value := range p.Labels {
+	for key, value := range pns.Labels {
 		if key != "app.kubernetes.io/instance" {
 			labels[key] = value
 		}
@@ -71,28 +71,28 @@ func (p PaasNS) ClonedLabels() map[string]string {
 	return labels
 }
 
-func (p PaasNS) IsItMe(reference metav1.OwnerReference) bool {
-	if p.APIVersion != reference.APIVersion {
+func (pns PaasNS) IsItMe(reference metav1.OwnerReference) bool {
+	if pns.APIVersion != reference.APIVersion {
 		return false
-	} else if p.Kind != reference.Kind {
+	} else if pns.Kind != reference.Kind {
 		return false
-	} else if p.Name != reference.Name {
+	} else if pns.Name != reference.Name {
 		return false
 	}
 	return true
 }
 
-func (p PaasNS) AmIOwner(references []metav1.OwnerReference) bool {
+func (pns PaasNS) AmIOwner(references []metav1.OwnerReference) bool {
 	for _, reference := range references {
-		if p.IsItMe(reference) {
+		if pns.IsItMe(reference) {
 			return true
 		}
 	}
 	return false
 }
 
-func (p PaasNS) GetConditions() []metav1.Condition {
-	return p.Status.Conditions
+func (pns PaasNS) GetConditions() []metav1.Condition {
+	return pns.Status.Conditions
 }
 
 //+kubebuilder:object:root=true

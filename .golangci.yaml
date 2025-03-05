@@ -106,7 +106,6 @@ linters-settings:
         disabled: true
       - name: redefines-builtin-id
       - name: receiver-naming
-        disabled: true
       - name: redundant-import-alias
       - name: struct-tag
       - name: superfluous-else
