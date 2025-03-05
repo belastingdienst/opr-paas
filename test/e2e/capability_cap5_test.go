@@ -68,7 +68,7 @@ func assertCap5Created(ctx context.Context, t *testing.T, cfg *envconf.Config) c
 	assert.Len(t, applicationSetListEntries, 1)
 
 	// At least one JSON object should have "paas": "cap5paas"
-	assert.Equal(t, paasWithCapability5, applicationSetListEntries[0]["paas"])
+	assert.Contains(t, applicationSetListEntries, paasWithCapability5)
 
 	// Check whether the LabelSelector is specific to the cap5paas-cap5 namespace
 	labelSelector := cap5Quota.Spec.Selector.LabelSelector

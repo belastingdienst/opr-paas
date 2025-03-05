@@ -117,7 +117,7 @@ test: manifests generate fmt vet envtest ## Run tests.
 
 .PHONY: test-e2e
 test-e2e:
-	go test -v ./test/e2e
+	go test -count=1 -v ./test/e2e
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter & yamllint

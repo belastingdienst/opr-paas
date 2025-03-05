@@ -11,10 +11,10 @@ import (
 // This is a map so that values are unique, the key is the paas entry
 type Entries map[string]Elements
 
-func (en Entries) AsString() string {
+func (en Entries) String() string {
 	var l []string
 	for key, value := range en {
-		l = append(l, fmt.Sprintf("'%s': %s", key, value.AsString()))
+		l = append(l, fmt.Sprintf("'%s': %s", key, value.String()))
 	}
 	return fmt.Sprintf("{ %s }", strings.Join(l, ", "))
 }
