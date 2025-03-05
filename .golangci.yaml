@@ -101,7 +101,6 @@ linters-settings:
       - name: increment-decrement
         disabled: true
       - name: max-control-nesting
-        disabled: true
       - name: max-public-structs
         arguments: [14]
       - name: redefines-builtin-id
