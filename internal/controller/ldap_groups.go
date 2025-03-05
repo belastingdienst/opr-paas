@@ -23,7 +23,7 @@ import (
 
 func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 	ctx context.Context,
-	groups string,
+	groupSynListKey string,
 ) error {
 	// Create the ConfigMap
 	wlConfigMap := config.GetConfig().GroupSyncList
@@ -37,7 +37,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 			Namespace: wlConfigMap.Namespace,
 		},
 		Data: map[string]string{
-			config.GetConfig().GroupSyncListKey: groups,
+			config.GetConfig().GroupSyncListKey: groupSynListKey,
 		},
 	})
 }
