@@ -95,7 +95,6 @@ linters-settings:
 
       # hikarukin: Fixing is seperate PR's:
       - name: import-alias-naming
-        disabled: true
       - name: import-shadowing
         disabled: true
       - name: increment-decrement

@@ -5,7 +5,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
+	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -61,7 +61,7 @@ var (
 )
 
 func TestPaasQuotaLists_Sum(t *testing.T) {
-	quotas := paas_quota.NewQuotaLists()
+	quotas := paasquota.NewQuotaLists()
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
@@ -77,7 +77,7 @@ func TestPaasQuotaLists_Sum(t *testing.T) {
 }
 
 func TestPaasQuotaLists_Min(t *testing.T) {
-	quotas := paas_quota.NewQuotaLists()
+	quotas := paasquota.NewQuotaLists()
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
@@ -93,7 +93,7 @@ func TestPaasQuotaLists_Min(t *testing.T) {
 }
 
 func TestPaasQuotaLists_Max(t *testing.T) {
-	quotas := paas_quota.NewQuotaLists()
+	quotas := paasquota.NewQuotaLists()
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
@@ -109,7 +109,7 @@ func TestPaasQuotaLists_Max(t *testing.T) {
 }
 
 func TestPaasQuotaLists_LargestTwo(t *testing.T) {
-	quotas := paas_quota.NewQuotaLists()
+	quotas := paasquota.NewQuotaLists()
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
@@ -125,7 +125,7 @@ func TestPaasQuotaLists_LargestTwo(t *testing.T) {
 }
 
 func TestPaasQuotaLists_OptimalValues(t *testing.T) {
-	quotas := paas_quota.NewQuotaLists()
+	quotas := paasquota.NewQuotaLists()
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
