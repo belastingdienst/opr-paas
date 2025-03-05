@@ -150,9 +150,9 @@ func (r *PaasNSReconciler) ReconcileNamespaces(
 ) (err error) {
 	nsName := paasns.NamespaceName()
 	var nsQuota string
-	if config, exists := config.GetConfig().Capabilities[paasns.Name]; !exists {
+	if configCapability, exists := config.GetConfig().Capabilities[paasns.Name]; !exists {
 		nsQuota = paas.Name
-	} else if !config.QuotaSettings.Clusterwide {
+	} else if !configCapability.QuotaSettings.Clusterwide {
 		nsQuota = nsName
 	} else {
 		nsQuota = ClusterWideQuotaName(paasns.Name)

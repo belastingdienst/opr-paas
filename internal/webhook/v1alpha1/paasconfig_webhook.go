@@ -151,14 +151,14 @@ func (v *PaasConfigCustomValidator) ValidateDelete(
 
 func validateNoPaasConfigExists(
 	ctx context.Context,
-	client client.Client,
+	k8sClient client.Client,
 ) (warn admission.Warnings, allErrs field.ErrorList) {
 	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateNoPaasConfigExists")
 	childPath := field.NewPath("spec")
 
 	var list v1alpha1.PaasConfigList
 
-	if err := client.List(ctx, &list); err != nil {
+	if err := k8sClient.List(ctx, &list); err != nil {
 		err = fmt.Errorf("failed to retrieve PaasConfigList: %w", err)
 		logger.Error().Msg(err.Error())
 		allErrs = append(allErrs, field.InternalError(childPath, err))
@@ -174,7 +174,7 @@ func validateNoPaasConfigExists(
 
 func validatePaasConfigSpec(
 	ctx context.Context,
-	client client.Client,
+	k8sClient client.Client,
 	spec v1alpha1.PaasConfigSpec,
 ) (warn admission.Warnings, allErrs field.ErrorList) {
 	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validatePaasConfig")
@@ -205,7 +205,7 @@ func validatePaasConfigSpec(
 		}
 	}
 
-	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, client, spec.DecryptKeysSecret, childPath)...)
+	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, k8sClient, spec.DecryptKeysSecret, childPath)...)
 	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, childPath)...)
 	allErrs = append(allErrs, validateValidationFields(spec.Validations, childPath)...)
 

@@ -54,9 +54,9 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	config := config.GetConfig()
+	paasConfigSpec := config.GetConfig()
 	for capName := range paas.Spec.Capabilities {
-		if _, exists := config.Capabilities[capName]; !exists {
+		if _, exists := paasConfigSpec.Capabilities[capName]; !exists {
 			return fmt.Errorf("capability not configured")
 		}
 		// Only do this when enabled

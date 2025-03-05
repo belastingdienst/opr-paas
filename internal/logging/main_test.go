@@ -50,13 +50,13 @@ func TestSetControllerLogger(t *testing.T) {
 		},
 		Spec: v1alpha1.PaasSpec{},
 	}
-	schema := runtime.NewScheme()
-	_ = v1alpha1.AddToScheme(schema)
+	runtimeSchema := runtime.NewScheme()
+	_ = v1alpha1.AddToScheme(runtimeSchema)
 	req := controllerruntime.Request{}
 
 	output := &logSink{}
 	log.Logger = log.Output(output)
-	_, logger := SetControllerLogger(ctx, obj, schema, req)
+	_, logger := SetControllerLogger(ctx, obj, runtimeSchema, req)
 	require.NotNil(t, logger, "SetControllerLogger should return a logger")
 
 	logger.Log().Msg("some controller log")

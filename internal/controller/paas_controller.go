@@ -222,8 +222,8 @@ func (pr *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resu
 		pr.reconcileRolebindings,
 	}
 
-	for _, reconcile := range reconcilers {
-		if err = reconcile(ctx, paas); err != nil {
+	for _, reconciler := range reconcilers {
+		if err = reconciler(ctx, paas); err != nil {
 			return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
 		}
 	}
