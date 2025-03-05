@@ -18,6 +18,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -57,6 +59,12 @@ func setupPaasSys() {
 	// Create system namespace
 	err := k8sClient.Create(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: "paas-system"},
+	})
+	Expect(err).NotTo(HaveOccurred())
+
+	// Create clusterwide argo namespace
+	err = k8sClient.Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: "asns"},
 	})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -101,6 +109,7 @@ var _ = BeforeSuite(func() {
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "..", "manifests", "crd", "bases"),
 			filepath.Join("..", "..", "test", "e2e", "manifests", "openshift"),
+			filepath.Join("..", "..", "test", "e2e", "manifests", "gitops-operator"),
 		},
 		ErrorIfCRDPathMissing: true,
 
@@ -121,6 +130,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = userv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	// Add Argo to schema
+	err = v1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
