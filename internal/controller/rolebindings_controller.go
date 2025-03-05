@@ -42,24 +42,7 @@ func ensureRoleBinding(
 	found := &rbac.RoleBinding{}
 	err := r.Get(ctx, namespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
-		// Create the rolebinding
-		logger.Info().
-			Str("Namespace", rb.Namespace).
-			Str("Name", rb.Name).
-			Str("roleRef", rb.RoleRef.Name).
-			Any("subject", rb.Subjects).
-			Msg("creating RoleBinding")
-		err = r.Create(ctx, rb)
-
-		if err != nil {
-			// Creating the rolebinding failed
-			logger.Err(err).Msg("error creating rolebinding")
-			return err
-		} else {
-			// Creating the rolebinding was successful and return
-			logger.Info().Msg("created rolebinding")
-			return nil
-		}
+		return createRoleBinding(ctx, r, rb)
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
 		logger.Err(err).Msg("error getting rolebinding")
@@ -89,6 +72,32 @@ func ensureRoleBinding(
 			return err
 		}
 	}
+	return nil
+}
+
+func createRoleBinding(
+	ctx context.Context,
+	r Reconciler,
+	rb *rbac.RoleBinding,
+) error {
+	logger := log.Ctx(ctx)
+	// Create the rolebinding
+	logger.Info().
+		Str("Namespace", rb.Namespace).
+		Str("Name", rb.Name).
+		Str("roleRef", rb.RoleRef.Name).
+		Any("subject", rb.Subjects).
+		Msg("creating RoleBinding")
+	err := r.Create(ctx, rb)
+
+	if err != nil {
+		// Creating the rolebinding failed
+		logger.Err(err).Msg("error creating rolebinding")
+		return err
+	}
+
+	// Creating the rolebinding was successful and return
+	logger.Info().Msg("created rolebinding")
 	return nil
 }
 
