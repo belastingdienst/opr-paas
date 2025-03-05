@@ -66,7 +66,7 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 		for key, secret := range paas.Spec.SSHSecrets {
 			reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 			if err != nil {
-				errNum += 1
+				errNum++
 				logrus.Errorf(
 					"failed to decrypt/reencrypt %s.spec.sshSecrets[%s] in %s: %v",
 					paasName,
@@ -87,7 +87,7 @@ func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat s
 			for key, secret := range cap.GetSSHSecrets() {
 				reencrypted, err := reencryptSecret(srcCrypt, dstCrypt, secret)
 				if err != nil {
-					errNum += 1
+					errNum++
 					logrus.Errorf(
 						"failed to decrypt/reencrypt %s.spec.capabilities.%s.sshSecrets[%s] in %s: %v",
 						paasName,

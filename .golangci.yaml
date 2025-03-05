@@ -99,7 +99,6 @@ linters-settings:
       - name: import-shadowing
         disabled: true
       - name: increment-decrement
-        disabled: true
       - name: max-control-nesting
         disabled: true
       - name: max-public-structs
