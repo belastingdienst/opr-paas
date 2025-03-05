@@ -245,6 +245,35 @@ func validateConfigQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *fiel
 	var allErrs field.ErrorList
 	childPath := rootPath.Child("quotasettings")
 
+	allErrs = append(allErrs, validateConfigDefQuota(qs, childPath)...)
+	allErrs = append(allErrs, validateConfigQuotaMinMax(qs, childPath)...)
+
+	// If DefQuota, MinQuotas, or MaxQuotas are provided, ensure they aren't empty maps.
+	if qs.DefQuota != nil && len(qs.DefQuota) == 0 {
+		allErrs = append(allErrs, field.Invalid(
+			childPath.Child("defquota"),
+			qs.DefQuota,
+			"empty DefQuota map is invalid"))
+	}
+	if qs.MinQuotas != nil && len(qs.MinQuotas) == 0 {
+		allErrs = append(allErrs, field.Invalid(
+			childPath.Child("minquotas"),
+			qs.MinQuotas,
+			"empty MinQuotas map is invalid"))
+	}
+	if qs.MaxQuotas != nil && len(qs.MaxQuotas) == 0 {
+		allErrs = append(allErrs, field.Invalid(
+			childPath.Child("maxquotas"),
+			qs.MaxQuotas,
+			"empty MaxQuotas map is invalid"))
+	}
+
+	return allErrs
+}
+
+func validateConfigDefQuota(qs v1alpha1.ConfigQuotaSettings, childPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
 	for resourceName, defQuantity := range qs.DefQuota {
 		// Ensure DefQuota does not exceed MaxQuota
 		if maxQuantity, exists := qs.MaxQuotas[resourceName]; exists {
@@ -267,6 +296,12 @@ func validateConfigQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *fiel
 		}
 	}
 
+	return allErrs
+}
+
+func validateConfigQuotaMinMax(qs v1alpha1.ConfigQuotaSettings, childPath *field.Path) field.ErrorList {
+	var allErrs field.ErrorList
+
 	for resourceName, minQuantity := range qs.MinQuotas {
 		// Ensure MinQuota does not exceed MaxQuota
 		if maxQuantity, exists := qs.MaxQuotas[resourceName]; exists {
@@ -276,6 +311,14 @@ func validateConfigQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *fiel
 					minQuantity,
 					"value of MinQuota exceeds MaxQuota"))
 			}
+		}
+
+		// Every key in MinQuotas should exist in DefQuota to avoid inconsistencies.
+		if _, exists := qs.DefQuota[resourceName]; !exists {
+			allErrs = append(allErrs, field.Invalid(
+				childPath.Child("minquotas").Key(resourceName.String()),
+				qs.MinQuotas,
+				"resource key does not exist in DefQuota"))
 		}
 	}
 
@@ -289,38 +332,8 @@ func validateConfigQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *fiel
 					"value of MaxQuota is less than MinQuota"))
 			}
 		}
-	}
 
-	// If DefQuota, MinQuotas, or MaxQuotas are provided, ensure they aren't empty maps.
-	if qs.DefQuota != nil && len(qs.DefQuota) == 0 {
-		allErrs = append(allErrs, field.Invalid(
-			childPath.Child("defquota"),
-			qs.DefQuota,
-			"empty DefQuota map is invalid"))
-	}
-	if qs.MinQuotas != nil && len(qs.MinQuotas) == 0 {
-		allErrs = append(allErrs, field.Invalid(
-			childPath.Child("minquotas"),
-			qs.MinQuotas,
-			"empty MinQuotas map is invalid"))
-	}
-	if qs.MaxQuotas != nil && len(qs.MaxQuotas) == 0 {
-		allErrs = append(allErrs, field.Invalid(
-			childPath.Child("maxquotas"),
-			qs.MaxQuotas,
-			"empty MaxQuotas map is invalid"))
-	}
-
-	// Every key in MinQuotas and MaxQuotas should exist in DefQuota to avoid inconsistencies.
-	for resourceName := range qs.MinQuotas {
-		if _, exists := qs.DefQuota[resourceName]; !exists {
-			allErrs = append(allErrs, field.Invalid(
-				childPath.Child("minquotas").Key(resourceName.String()),
-				qs.MinQuotas,
-				"resource key does not exist in DefQuota"))
-		}
-	}
-	for resourceName := range qs.MaxQuotas {
+		// Every key in MaxQuotas should exist in DefQuota to avoid inconsistencies.
 		if _, exists := qs.DefQuota[resourceName]; !exists {
 			allErrs = append(allErrs, field.Invalid(
 				childPath.Child("maxquotas").Key(resourceName.String()),
