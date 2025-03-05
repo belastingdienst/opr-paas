@@ -131,7 +131,10 @@ func (pcr *PaasConfigReconciler) addFinalizer(ctx context.Context, cfg *v1alpha1
 	return false, nil
 }
 
-func (pcr *PaasConfigReconciler) updateFinalizer(ctx context.Context, cfg *v1alpha1.PaasConfig) (requeue bool, err error) {
+func (pcr *PaasConfigReconciler) updateFinalizer(
+	ctx context.Context,
+	cfg *v1alpha1.PaasConfig,
+) (requeue bool, err error) {
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("paasconfig marked for deletion")
 
