@@ -21,8 +21,8 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/controller"
 	"github.com/belastingdienst/opr-paas/internal/logging"
-	gitopsResources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
-	argoResources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+	gitopsresources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
+	argoresources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/version"
 	webhookv1alpha1 "github.com/belastingdienst/opr-paas/internal/webhook/v1alpha1"
 	"github.com/go-logr/zerologr"
@@ -56,8 +56,8 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(quotav1.AddToScheme(scheme))
 	utilruntime.Must(userv1.AddToScheme(scheme))
-	utilruntime.Must(argoResources.AddToScheme(scheme))
-	utilruntime.Must(gitopsResources.AddToScheme(scheme))
+	utilruntime.Must(argoresources.AddToScheme(scheme))
+	utilruntime.Must(gitopsresources.AddToScheme(scheme))
 
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
