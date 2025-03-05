@@ -105,7 +105,6 @@ linters-settings:
       - name: max-public-structs
         arguments: [14]
       - name: redefines-builtin-id
-        disabled: true
       - name: receiver-naming
       - name: redundant-import-alias
       - name: struct-tag
