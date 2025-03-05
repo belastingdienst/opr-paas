@@ -16,19 +16,19 @@ QuotaLists can combine these summarizing techniques to calculate the optimal val
 import (
 	"sort"
 
-	v1 "k8s.io/api/core/v1"
+	k8sv1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 )
 
 // map[paas][quotatype]value
 // type QuotaLists map[string]Quota
 type QuotaLists struct {
-	list map[v1.ResourceName][]resourcev1.Quantity
+	list map[k8sv1.ResourceName][]resourcev1.Quantity
 }
 
 func NewQuotaLists() QuotaLists {
 	return QuotaLists{
-		list: make(map[v1.ResourceName][]resourcev1.Quantity),
+		list: make(map[k8sv1.ResourceName][]resourcev1.Quantity),
 	}
 }
 

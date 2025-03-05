@@ -10,6 +10,7 @@ import (
 	"context"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	userv1 "github.com/openshift/api/user/v1"
@@ -26,6 +27,9 @@ var _ = Describe("Group controller", Ordered, func() {
 	)
 
 	BeforeAll(func() {
+		// Set the PaasConfig so reconcilers know where to find our fixtures
+		config.SetConfig(genericConfig)
+
 		paas = &api.Paas{ObjectMeta: metav1.ObjectMeta{
 			Name: "my-paas",
 			UID:  "abc", // Needed or owner references fail

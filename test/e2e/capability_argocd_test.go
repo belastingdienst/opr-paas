@@ -79,15 +79,17 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	entries, _ := getApplicationSetListEntries(argoAppSet)
 
 	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
+	assert.Contains(t, entries, paasWithArgo)
 	assert.Equal(t, map[string]string{
 		"git_path":     paasArgoGitPath,
 		"git_revision": paasArgoGitRevision,
 		"git_url":      paasArgoGitURL,
-		"paas":         paasWithArgo,
-		"requestor":    paasRequestor,
-		"service":      "paas",
-		"subservice":   "capability",
-	}, entries[0], "ApplicationSet List generator contains the correct parameters")
+		// when no groups are set, field is left out
+		"paas":       paasWithArgo,
+		"requestor":  paasRequestor,
+		"service":    "paas",
+		"subservice": "capability",
+	}, entries[paasWithArgo].GetElementsAsStringMap())
 
 	assert.NotNil(
 		t,
@@ -158,6 +160,12 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 			ExtraPermissions: true,
 		},
 	}
+	paas.Spec.Groups = api.PaasGroups{
+		"mygroup": api.PaasGroup{
+			Users: []string{"user1"},
+			Roles: []string{"view"},
+		},
+	}
 
 	// As only the Paas spec is updated via the above change, we wait for that and
 	// know that no reconciliation of PaasNs takes place so no need to wait for that.
@@ -179,7 +187,7 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		"requestor":    paasRequestor,
 		"service":      "paas",
 		"subservice":   "capability",
-	}, entries[0], "ApplicationSet List generator contains the correct parameters")
+	}, entries[paasWithArgo].GetElementsAsStringMap(), "ApplicationSet List generator contains the correct parameters")
 
 	assert.NotNil(
 		t,
@@ -191,7 +199,11 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	argocd := getOrFail(ctx, argoCapName, paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
 	assert.Equal(t, paas.UID, argocd.OwnerReferences[0].UID)
 	assert.Equal(t, "role:tester", *argocd.Spec.RBAC.DefaultPolicy)
-	assert.Equal(t, "g, system:cluster-admins, role:admin", *argocd.Spec.RBAC.Policy)
+	assert.Equal(
+		t,
+		"g, system:cluster-admins, role:admin\ng, paas-capability-argocd-mygroup, role:admin",
+		*argocd.Spec.RBAC.Policy,
+	)
 	assert.Equal(t, "[groups]", *argocd.Spec.RBAC.Scopes)
 
 	// Assert Bootstrap is now updated as described in issue #185

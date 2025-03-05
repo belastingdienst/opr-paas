@@ -69,7 +69,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Len(t, applicationSetListEntries, 1)
 
 	// At least one JSON object should have "paas": "paasnaam"
-	assert.Equal(t, paasWithCapabilitySSO, applicationSetListEntries[0]["paas"])
+	assert.Contains(t, applicationSetListEntries, paasWithCapabilitySSO)
 
 	// Check whether the LabelSelector is specific to the paasnaam-sso namespace
 	labelSelector := ssoQuota.Spec.Selector.LabelSelector

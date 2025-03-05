@@ -7,7 +7,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/quota"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8sv1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
@@ -72,7 +72,7 @@ func assertSecretCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	paas := getPaas(ctx, paasName, t, cfg)
 	assert.NotNil(t, paas)
 	// Wait for namespace created by waiting for reconciliation of sso paasns
-	ssopaasns := &api.PaasNS{ObjectMeta: v1.ObjectMeta{
+	ssopaasns := &api.PaasNS{ObjectMeta: k8sv1.ObjectMeta{
 		Name:      paasCap1,
 		Namespace: paasName,
 	}}
@@ -147,7 +147,7 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 	secrets := &corev1.SecretList{}
 	err = cfg.Client().
 		Resources().
-		List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
+		List(ctx, secrets, func(opts *k8sv1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
 	require.NoError(t, err)
 	assert.Len(t, secrets.Items, 2)
 
@@ -217,7 +217,7 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	secrets := &corev1.SecretList{}
 	err = cfg.Client().
 		Resources().
-		List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
+		List(ctx, secrets, func(opts *k8sv1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
 	require.NoError(t, err)
 	assert.Len(t, secrets.Items, 2)
 
@@ -269,7 +269,7 @@ func assertSecretRemovedAfterRemovingFromPaas(ctx context.Context, t *testing.T,
 	secrets := &corev1.SecretList{}
 	err := cfg.Client().
 		Resources().
-		List(ctx, secrets, func(opts *v1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
+		List(ctx, secrets, func(opts *k8sv1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
 	require.NoError(t, err)
 	assert.Empty(t, secrets.Items)
 
