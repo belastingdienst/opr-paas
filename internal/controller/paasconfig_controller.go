@@ -34,8 +34,8 @@ type PaasConfigReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-func (prc PaasConfigReconciler) GetScheme() *runtime.Scheme {
-	return prc.Scheme
+func (pcr PaasConfigReconciler) GetScheme() *runtime.Scheme {
+	return pcr.Scheme
 }
 
 //+kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paasconfig,verbs=get;list;watch;create;update;patch;delete
@@ -50,13 +50,13 @@ func (prc PaasConfigReconciler) GetScheme() *runtime.Scheme {
 //
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (pcr *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.PaasConfig{}).
 		WithEventFilter(
 			predicate.GenerationChangedPredicate{}, // Spec changed .
 		).
-		Complete(r)
+		Complete(pcr)
 }
 
 func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
