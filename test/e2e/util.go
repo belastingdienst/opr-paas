@@ -2,11 +2,11 @@ package e2e
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/belastingdienst/opr-paas/internal/fields"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -87,24 +87,22 @@ func listOrFail[L k8s.ObjectList](ctx context.Context, namespace string, obj L, 
 // getApplicationSetListEntries returns the parsed elements of all list generators
 // (https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-List/)
 // which are present in the passed ApplicationSet.
-func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) ([]map[string]string, error) {
-	entries := make([]map[string]string, 0)
-
+func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) (allEntries fields.Entries, err error) {
+	var generatorEntries fields.Entries
+	allEntries = make(fields.Entries)
 	for _, generator := range applicationSet.Spec.Generators {
 		if generator.List != nil {
-			for _, element := range generator.List.Elements {
-				parsed := map[string]string{}
-
-				if err := json.Unmarshal(element.Raw, &parsed); err != nil {
-					return nil, fmt.Errorf("error parsing elements as JSON: %w", err)
-				}
-
-				entries = append(entries, parsed)
+			generatorEntries, err = fields.EntriesFromJSON(generator.List.Elements)
+			if err != nil {
+				return nil, err
+			}
+			for key, entry := range generatorEntries {
+				allEntries[key] = entry
 			}
 		}
 	}
 
-	return entries, nil
+	return allEntries, nil
 }
 
 // withStatus represents a k8s object with a `.status.conditions` slice field of conditions.
