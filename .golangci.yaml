@@ -103,7 +103,7 @@ linters-settings:
       - name: max-control-nesting
         disabled: true
       - name: max-public-structs
-        disabled: true
+        arguments: [14]
       - name: redefines-builtin-id
       - name: receiver-naming
       - name: redundant-import-alias
