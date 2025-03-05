@@ -77,8 +77,8 @@ func assertAppProjectCreated(ctx context.Context, t *testing.T, cfg *envconf.Con
 	require.NoError(t, appSetListEntriesError)
 	assert.Len(t, applicationSetListEntries, 1)
 
-	// At least one JSON object should have "paas": "paasnaam"
-	assert.Equal(t, simplePaas, applicationSetListEntries[0]["paas"])
+	// paas should be in the list of entries
+	assert.Contains(t, applicationSetListEntries, simplePaas)
 
 	return ctx
 }

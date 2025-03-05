@@ -81,7 +81,7 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	assert.Len(t, applicationSetListEntries, 1)
 
 	// At least one JSON object should have "paas": "paasnaam"
-	assert.Equal(t, paasWithCapabilityTekton, applicationSetListEntries[0]["paas"])
+	assert.Contains(t, applicationSetListEntries, paasWithCapabilityTekton)
 
 	// Check whether the LabelSelector is specific to the paasnaam-Tekton namespace
 	labelSelector := tektonQuota.Spec.Selector.LabelSelector
