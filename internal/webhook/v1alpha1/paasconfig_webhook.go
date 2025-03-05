@@ -14,7 +14,7 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"github.com/belastingdienst/opr-paas/internal/validate"
-	v1 "k8s.io/api/core/v1"
+	k8sv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -422,7 +422,7 @@ func validateDecryptKeysSecretExists(
 	}
 
 	// Query the Kubernetes API to check if the Secret exists
-	secret := &v1.Secret{}
+	secret := &k8sv1.Secret{}
 	err := k8sclient.Get(ctx, client.ObjectKey{Namespace: secretRef.Namespace, Name: secretRef.Name}, secret)
 	if err != nil {
 		allErrs = append(allErrs, field.NotFound(
