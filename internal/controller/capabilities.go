@@ -109,6 +109,9 @@ func (r *PaasReconciler) ensureAppSetCap(
 	elements["paas"] = paas.Name
 	elements["service"] = service
 	elements["subservice"] = subService
+	// TODO (portly-halicore-76) make this configurable via customfields using go-template
+	// TODO (portly-halicore-76) add a unittest for this
+	elements["groups"] = paas.Spec.Groups
 	patch := client.MergeFrom(appSet.DeepCopy())
 	if listGen = getListGen(appSet.Spec.Generators); listGen == nil {
 		// create the list

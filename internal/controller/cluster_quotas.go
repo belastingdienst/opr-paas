@@ -13,7 +13,7 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
-	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
+	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -128,7 +128,7 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 	return quotas, nil
 }
 
-type PaasQuotas map[string]paas_quota.Quota
+type PaasQuotas map[string]paasquota.Quota
 
 func (r *PaasReconciler) BackendUnneededQuotas(
 	ctx context.Context,
@@ -218,7 +218,7 @@ func (r *PaasReconciler) ReconcileQuotas(
 		}
 	}
 	// TODO(portly-halicore-76) remove once quota is removed from Status in a future release
-	paas.Status.Quota = map[string]paas_quota.Quota{}
+	paas.Status.Quota = map[string]paasquota.Quota{}
 	for _, name := range r.BackendUnneededQuotas(ctx, paas) {
 		logger.Info().Msg("cleaning quota " + name + " for PAAS object ")
 		if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {

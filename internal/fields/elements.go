@@ -55,6 +55,14 @@ func (es Elements) TryGetElementAsString(key string) (string, error) {
 	return fmt.Sprintf("%v", value), nil
 }
 
+// Merge merges all key/value pairs from another Entries on top of this and returns the resulting total Entries set
+func (es Elements) Merge(added Elements) Elements {
+	for key, value := range added {
+		es[key] = value
+	}
+	return es
+}
+
 func (es Elements) String() string {
 	var l []string
 	for key := range es {

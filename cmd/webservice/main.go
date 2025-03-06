@@ -15,7 +15,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/utils"
-	_version "github.com/belastingdienst/opr-paas/internal/version"
+	"github.com/belastingdienst/opr-paas/internal/version"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -145,10 +145,10 @@ func v1CheckPaas(c *gin.Context) {
 	}
 }
 
-// version returns the operator version this webservice is built for
-func version(c *gin.Context) {
+// operatorVersion returns the operator operatorVersion this webservice is built for
+func operatorVersion(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"version": _version.PaasVersion,
+		"version": version.PaasVersion,
 	})
 }
 
@@ -210,7 +210,7 @@ func SetupRouter() *gin.Engine {
 		c.Next()
 	})
 
-	router.GET("/version", version)
+	router.GET("/version", operatorVersion)
 	router.POST("/v1/encrypt", v1Encrypt)
 	router.POST("/v1/checkpaas", v1CheckPaas)
 	router.GET("/healthz", healthz)
@@ -222,7 +222,7 @@ func SetupRouter() *gin.Engine {
 
 func main() {
 	log.Println("Starting API endpoint")
-	log.Printf("Version: %s", _version.PaasVersion)
+	log.Printf("Version: %s", version.PaasVersion)
 	gin.SetMode(gin.ReleaseMode)
 
 	router := SetupRouter()

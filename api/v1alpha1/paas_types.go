@@ -14,7 +14,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/internal/fields"
 	"github.com/belastingdienst/opr-paas/internal/groups"
-	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
+	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -48,7 +48,7 @@ type PaasSpec struct {
 
 	// Quota defines the quotas which should be set on the cluster resource quota as used by this Paas project
 	// +kubebuilder:validation:Required
-	Quota paas_quota.Quota `json:"quota"`
+	Quota paasquota.Quota `json:"quota"`
 
 	// Namespaces can be used to define extra namespaces to be created as part of this Paas project
 	// As the names are used as the names of PaasNs resources, they must comply to the DNS subdomainname regex
@@ -322,7 +322,7 @@ type PaasCapability struct {
 	CustomFields map[string]string `json:"custom_fields"`
 	// This project has its own ClusterResourceQuota settings
 	// +kubebuilder:validation:Optional
-	Quota paas_quota.Quota `json:"quota"`
+	Quota paasquota.Quota `json:"quota"`
 	// You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket
 	// They must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
 	// +kubebuilder:validation:Optional
@@ -387,7 +387,7 @@ func (pc *PaasCapability) SetDefaults() {
 	}
 }
 
-func (pc PaasCapability) Quotas() (pq paas_quota.Quota) {
+func (pc PaasCapability) Quotas() (pq paasquota.Quota) {
 	return pc.Quota
 }
 
@@ -408,7 +408,7 @@ type PaasStatus struct {
 	Messages []string `json:"messages"`
 	// Deprecated: will not be set and removed in a future release
 	// +kubebuilder:validation:Optional
-	Quota map[string]paas_quota.Quota `json:"quotas"`
+	Quota map[string]paasquota.Quota `json:"quotas"`
 	// +kubebuilder:validation:Optional
 	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }

@@ -13,7 +13,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
-	paas_quota "github.com/belastingdienst/opr-paas/internal/quota"
+	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -31,13 +31,13 @@ func (r *PaasReconciler) FetchAllPaasCapabilityResources(
 	ctx context.Context,
 	quota *quotav1.ClusterResourceQuota,
 	defaults map[corev1.ResourceName]resourcev1.Quantity,
-) (resources paas_quota.QuotaLists, err error) {
+) (resources paasquota.QuotaLists, err error) {
 	capabilityName, err := ClusterWideCapabilityName(quota.Name)
 	if err != nil {
 		return resources, err
 	}
 	paas := &v1alpha1.Paas{}
-	resources = paas_quota.NewQuotaLists()
+	resources = paasquota.NewQuotaLists()
 	for _, reference := range quota.OwnerReferences {
 		paasNamespacedName := types.NamespacedName{Name: reference.Name}
 		if reference.Kind != "Paas" || reference.APIVersion != v1alpha1.GroupVersion.String() {
@@ -66,7 +66,7 @@ func (r *PaasReconciler) UpdateClusterWideQuotaResources(
 	ctx context.Context,
 	quota *quotav1.ClusterResourceQuota,
 ) (err error) {
-	var allPaasResources paas_quota.QuotaLists
+	var allPaasResources paasquota.QuotaLists
 	if capabilityName, err := ClusterWideCapabilityName(quota.ObjectMeta.Name); err != nil {
 		return err
 	} else if configCapability, exists := config.GetConfig().Capabilities[capabilityName]; !exists {
