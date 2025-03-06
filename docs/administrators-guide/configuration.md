@@ -45,7 +45,7 @@ Example PaasConfig
           groupNames: "^[a-z0-9-]*$"
       debug: false
       groupsynclist:
-        namespace: chp-cronjobs
+        namespace: prod-cronjobs
         name: groupsynclist
       ldap:
         host: ${PROD_LDAP_HOST}

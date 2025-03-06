@@ -150,7 +150,8 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 							customField2Key: {},
 						},
 					},
-				}},
+				},
+			},
 		}
 		config.SetConfig(paasConfig)
 		reconciler = &PaasReconciler{
