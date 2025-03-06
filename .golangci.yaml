@@ -63,8 +63,6 @@ linters-settings:
         disabled: true
       - name: flag-parameter
         disabled: true
-      - name: var-declaration
-        disabled: true
 
       # axiomatic-fixed-chimpanzee: Fixing is seperate PR's:
       - name: bare-return
