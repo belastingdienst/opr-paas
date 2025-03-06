@@ -21,6 +21,7 @@ func writeFile(t *testing.T, path string, data string) {
 		panic(fmt.Errorf("unable to write to file: %w", err))
 	}
 }
+
 func Test_FolderChanged(t *testing.T) {
 	// Create folder
 	tmpDir, err := os.MkdirTemp("", "notifierFolderTest")

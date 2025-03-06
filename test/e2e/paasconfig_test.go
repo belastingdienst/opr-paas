@@ -15,8 +15,7 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
-//TODO: Move as many test as possible to webhook (unit)tests
-
+// TODO: Move as many test as possible to webhook (unit)tests
 func TestPaasConfig(t *testing.T) {
 	testenv.Test(
 		t,

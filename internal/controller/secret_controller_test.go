@@ -46,7 +46,6 @@ func TestHashData(t *testing.T) {
 }
 
 var _ = Describe("Secret controller", Ordered, func() {
-
 	ctx := context.Background()
 
 	BeforeAll(func() {
