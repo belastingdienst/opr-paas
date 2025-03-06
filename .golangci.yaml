@@ -59,11 +59,7 @@ linters-settings:
         disabled: true
       - name: indent-error-flow
         disabled: true
-      - name: unused-receiver
-        disabled: true
       - name: use-errors-new
-        disabled: true
-      - name: unused-parameter
         disabled: true
       - name: flag-parameter
         disabled: true

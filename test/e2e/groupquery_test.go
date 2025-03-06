@@ -188,7 +188,8 @@ func assertLdapGroupRemovedAfterUpdatingKey(ctx context.Context, t *testing.T, c
 		"updated-second-ldap-group": api.PaasGroup{
 			Query: updatedGroup2Query,
 			Roles: []string{"viewer"},
-		}}
+		},
+	}
 
 	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
