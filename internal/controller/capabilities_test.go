@@ -47,7 +47,8 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 					"argocd": {
 						AppSet: "argoas",
 					},
-				}},
+				},
+			},
 		}
 		reconciler = &PaasReconciler{
 			Client: k8sClient,

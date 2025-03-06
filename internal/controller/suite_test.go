@@ -93,7 +93,6 @@ func setupPaasSys() {
 
 	// Save public key so we can encrypt things within tests
 	pubkey = &privkey.PublicKey
-
 }
 
 var _ = BeforeSuite(func() {
