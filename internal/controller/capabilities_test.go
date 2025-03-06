@@ -8,8 +8,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
-	"reflect"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -20,65 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
-
-func groupFromInterface(iface interface{}) (group api.PaasGroup, err error) {
-	switch v := reflect.ValueOf(iface); v.Kind() {
-	case reflect.Map:
-		iter := v.MapRange()
-		for iter.Next() {
-			value := iter.Value()
-			if value.Kind() == reflect.Interface {
-				value = reflect.ValueOf(value.Interface())
-			}
-			switch key := iter.Key().String(); key {
-			case "query":
-				group.Query = value.String()
-			case "roles", "users":
-				var stringList []string
-				if value.Kind() != reflect.Slice {
-					return api.PaasGroup{},
-						fmt.Errorf("%s value is not a slice (%d), %s", key, value.Kind(), value.String())
-				}
-				for i := 0; i < value.Len(); i++ {
-					subValue := value.Index(i)
-					if subValue.Kind() == reflect.Interface {
-						subValue = reflect.ValueOf(subValue.Interface())
-					}
-					stringList = append(stringList, subValue.String())
-				}
-				if key == "roles" {
-					group.Roles = stringList
-				} else {
-					group.Users = stringList
-				}
-			default:
-				return api.PaasGroup{}, fmt.Errorf("unexpected field in group: %s", key)
-			}
-		}
-	default:
-		return api.PaasGroup{}, fmt.Errorf("input is not a map (%s)", v.String())
-	}
-	return group, nil
-}
-
-func groupsFromInterface(iface interface{}) (groups api.PaasGroups, err error) {
-	groups = make(api.PaasGroups)
-	switch v := reflect.ValueOf(iface); v.Kind() {
-	case reflect.Map:
-		iter := v.MapRange()
-		for iter.Next() {
-			key := iter.Key().String()
-			group, err := groupFromInterface(iter.Value().Interface())
-			if err != nil {
-				return nil, fmt.Errorf("groups value cannot be converted to group: %w", err)
-			}
-			groups[key] = group
-		}
-	default:
-		return nil, fmt.Errorf("input is not a map: %s", v.String())
-	}
-	return groups, nil
-}
 
 var _ = Describe("Capabilities controller", Ordered, func() {
 	const (
@@ -218,18 +157,12 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 						"git_path":      "",
 						"git_revision":  "",
 						"git_url":       "",
-						"groups":        "",
+						"groups":        "map[ldapgroup:map[query:CN=group1OU=example roles:[admin]] usergroup:map[query: roles:[edit view] users:[user1 user2]]]",
 						"paas":          paasName,
 						"requestor":     "my",
 						"service":       serviceName,
 						"subservice":    "paas",
 					}))
-				groupsObj, ok := elements["groups"]
-				Expect(ok).To(BeTrue())
-
-				groups, err := groupsFromInterface(groupsObj)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(groups).To(Equal(paas.Spec.Groups))
 			})
 		})
 
