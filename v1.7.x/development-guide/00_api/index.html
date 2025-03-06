@@ -1,0 +1,1921 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Dutch Tax Office">
+      
+      
+        <link rel="canonical" href="https://belastingdienst.github.io/opr-paas/v1.7.x/development-guide/00_api/">
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../20_issues/">
+      
+      
+      <link rel="icon" href="../../about/branding/paas-logo-v1-32x32px.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.7">
+    
+    
+      
+        <title>API Reference - opr-paas</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.8608ea7d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        
+        <link rel="stylesheet" href="../../assets/external/fonts.googleapis.com/css.49ea35f2.css">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+      
+        <meta  property="og:type"  content="website" >
+      
+        <meta  property="og:title"  content="API Reference - opr-paas" >
+      
+        <meta  property="og:description"  content="None" >
+      
+        <meta  property="og:image"  content="https://belastingdienst.github.io/opr-paas/v1.7.x/assets/images/social/development-guide/00_api.png" >
+      
+        <meta  property="og:image:type"  content="image/png" >
+      
+        <meta  property="og:image:width"  content="1200" >
+      
+        <meta  property="og:image:height"  content="630" >
+      
+        <meta  property="og:url"  content="https://belastingdienst.github.io/opr-paas/v1.7.x/development-guide/00_api/" >
+      
+        <meta  name="twitter:card"  content="summary_large_image" >
+      
+        <meta  name="twitter:title"  content="API Reference - opr-paas" >
+      
+        <meta  name="twitter:description"  content="None" >
+      
+        <meta  name="twitter:image"  content="https://belastingdienst.github.io/opr-paas/v1.7.x/assets/images/social/development-guide/00_api.png" >
+      
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+          <aside class="md-banner md-banner--warning">
+            <div class="md-banner__inner md-grid md-typeset">
+              
+  You're not viewing the latest version.
+  <a href="../../.."> 
+    <strong>Click here to go to latest.</strong>
+  </a>
+
+            </div>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("../.."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
+          </aside>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="opr-paas" class="md-header__button md-logo" aria-label="opr-paas" data-md-component="logo">
+      
+  <img src="../../about/branding/paas-logo-v1-180x180px.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            opr-paas
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/belastingdienst/opr-paas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    opr-paas
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../overview/" class="md-tabs__link">
+          
+  
+    
+  
+  Overview
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../administrators-guide/capabilities/" class="md-tabs__link">
+          
+  
+    
+  
+  Administrator Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user-guide/01_basic-usage/" class="md-tabs__link">
+          
+  
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+    
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../about/branding/" class="md-tabs__link">
+          
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="opr-paas" class="md-nav__button md-logo" aria-label="opr-paas" data-md-component="logo">
+      
+  <img src="../../about/branding/paas-logo-v1-180x180px.png" alt="logo">
+
+    </a>
+    opr-paas
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/belastingdienst/opr-paas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    opr-paas
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+    <a href="../../overview/" class="md-nav__link">
+      
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+    <a href="../../administrators-guide/capabilities/" class="md-nav__link">
+      
+  
+  <span class="md-ellipsis">
+    Administrator Guide
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+    <a href="../../user-guide/01_basic-usage/" class="md-nav__link">
+      
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Developer Guide
+    
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Developer Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      Packages
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cpetbelastingdienstnlv1alpha1" class="md-nav__link">
+    <span class="md-ellipsis">
+      cpet.belastingdienst.nl/v1alpha1
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cpet.belastingdienst.nl/v1alpha1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resource-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resource Types
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../20_issues/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Raising issues
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../21_security-issues/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Raising security issues
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../30_submitting-a-pr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Submitting a Pull Request
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../31_writing-good-pull-request/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Writing Good Pull Requests
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../40_e2e-tests/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    End to end testing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../50_notes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer notes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../60_writing-documentation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Writing Documentation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../e2e-test-details/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    E2E test cases for opr-paas
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../maintaining/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Maintenance
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../about/branding/" class="md-nav__link">
+      
+  
+  <span class="md-ellipsis">
+    About
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+  
+
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      Packages
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cpetbelastingdienstnlv1alpha1" class="md-nav__link">
+    <span class="md-ellipsis">
+      cpet.belastingdienst.nl/v1alpha1
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="cpet.belastingdienst.nl/v1alpha1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#resource-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Resource Types
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/belastingdienst/opr-paas/edit/main/docs/development-guide/00_api.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h1>
+<h2 id="packages">Packages<a class="headerlink" href="#packages" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="#cpetbelastingdienstnlv1alpha1">cpet.belastingdienst.nl/v1alpha1</a></li>
+</ul>
+<h2 id="cpetbelastingdienstnlv1alpha1">cpet.belastingdienst.nl/v1alpha1<a class="headerlink" href="#cpetbelastingdienstnlv1alpha1" title="Permanent link">&para;</a></h2>
+<p>Package v1alpha1 contains API Schema definitions for the  v1alpha1 API group</p>
+<h3 id="resource-types">Resource Types<a class="headerlink" href="#resource-types" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="#paas">Paas</a></li>
+<li><a href="#paasconfig">PaasConfig</a></li>
+<li><a href="#paasconfiglist">PaasConfigList</a></li>
+<li><a href="#paaslist">PaasList</a></li>
+<li><a href="#paasns">PaasNS</a></li>
+<li><a href="#paasnslist">PaasNSList</a></li>
+</ul>
+<h4 id="configargopermissions">ConfigArgoPermissions<a class="headerlink" href="#configargopermissions" title="Permanent link">&para;</a></h4>
+<p>Deprecated: ArgoCD specific code will be removed from the operator</p>
+<p><em>Appears in:</em>
+- <a href="#paasconfigspec">PaasConfigSpec</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>default_policy</code> <em>string</em></td>
+<td>Deprecated: ArgoCD specific code will be removed from the operator<br />The optional default policy which is set in the ArgoCD instance</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>resource_name</code> <em>string</em></td>
+<td>Deprecated: ArgoCD specific code will be removed from the operator<br />The name of the ArgoCD instance to apply ArgoPermissions to</td>
+<td></td>
+<td>MinLength: 1 <br />Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>role</code> <em>string</em></td>
+<td>Deprecated: ArgoCD specific code will be removed from the operator<br />The name of the role to add to Groups set in ArgoPermissions</td>
+<td></td>
+<td>MinLength: 1 <br />Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>header</code> <em>string</em></td>
+<td>Deprecated: ArgoCD specific code will be removed from the operator<br />The header value to set in ArgoPermissions</td>
+<td></td>
+<td>MinLength: 1 <br />Required: {} <br /></td>
+</tr>
+</tbody>
+</table>
+<h4 id="configcapperm">ConfigCapPerm<a class="headerlink" href="#configcapperm" title="Permanent link">&para;</a></h4>
+<p><em>Underlying type:</em> <em>object</em></p>
+<p><em>Appears in:</em>
+- <a href="#configcapability">ConfigCapability</a></p>
+<h4 id="configcapabilities">ConfigCapabilities<a class="headerlink" href="#configcapabilities" title="Permanent link">&para;</a></h4>
+<p><em>Underlying type:</em> <em><a href="#map[string]configcapability">map[string]ConfigCapability</a></em></p>
+<p><em>Appears in:</em>
+- <a href="#paasconfigspec">PaasConfigSpec</a></p>
+<h4 id="configcapability">ConfigCapability<a class="headerlink" href="#configcapability" title="Permanent link">&para;</a></h4>
+<p><em>Appears in:</em>
+- <a href="#configcapabilities">ConfigCapabilities</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>applicationset</code> <em>string</em></td>
+<td>Name of the ArgoCD ApplicationSet which manages this capability</td>
+<td></td>
+<td>MinLength: 1 <br />Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>quotas</code> <em><a href="#configquotasettings">ConfigQuotaSettings</a></em></td>
+<td>Quota settings for this capability</td>
+<td></td>
+<td>Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>extra_permissions</code> <em><a href="#configcapperm">ConfigCapPerm</a></em></td>
+<td>Extra permissions set for this capability</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>default_permissions</code> <em><a href="#configcapperm">ConfigCapPerm</a></em></td>
+<td>Default permissions set for this capability</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>custom_fields</code> <em>object (keys:string, values:<a href="#configcustomfield">ConfigCustomField</a>)</em></td>
+<td>Settings to allow specific configuration specific to a capability</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="configcustomfield">ConfigCustomField<a class="headerlink" href="#configcustomfield" title="Permanent link">&para;</a></h4>
+<p><em>Appears in:</em>
+- <a href="#configcapability">ConfigCapability</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>validation</code> <em>string</em></td>
+<td>Regular expression for validating input, defaults to '', which means no validation.</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>default</code> <em>string</em></td>
+<td>Set a default when no value is specified, defaults to ''.<br />Only applies when Required is false.</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>required</code> <em>boolean</em></td>
+<td>Define if the value must be specified in the PaaS.<br />When set to true, and no value is set, PaasNs has error in status field, and capability is not built.<br />When set to false, and no value is set, Default is used.</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+</tbody>
+</table>
+<h4 id="configldap">ConfigLdap<a class="headerlink" href="#configldap" title="Permanent link">&para;</a></h4>
+<p><em>Appears in:</em>
+- <a href="#paasconfigspec">PaasConfigSpec</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>host</code> <em>string</em></td>
+<td>LDAP server hostname</td>
+<td></td>
+<td>MinLength: 1 <br />Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>port</code> <em>integer</em></td>
+<td>LDAP server port</td>
+<td></td>
+<td>Minimum: 1 <br />Required: {} <br /></td>
+</tr>
+</tbody>
+</table>
+<h4 id="configquotasettings">ConfigQuotaSettings<a class="headerlink" href="#configquotasettings" title="Permanent link">&para;</a></h4>
+<p><em>Appears in:</em>
+- <a href="#configcapability">ConfigCapability</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>clusterwide</code> <em>boolean</em></td>
+<td>Is this a clusterwide quota or not</td>
+<td>false</td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>ratio</code> <em>float</em></td>
+<td>The ratio of the requested quota which will be applied to the total quota</td>
+<td></td>
+<td>Format: float <br />Maximum: 1 <br />Minimum: 0 <br />Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>defaults</code> <em>object (keys:<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#resourcename-v1-core">ResourceName</a>, values:<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#quantity-resource-api">Quantity</a>)</em></td>
+<td>The default quota which the enabled capability gets</td>
+<td></td>
+<td>Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>min</code> <em>object (keys:<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#resourcename-v1-core">ResourceName</a>, values:<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#quantity-resource-api">Quantity</a>)</em></td>
+<td>The minimum quota which the enabled capability gets</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>max</code> <em>object (keys:<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#resourcename-v1-core">ResourceName</a>, values:<a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#quantity-resource-api">Quantity</a>)</em></td>
+<td>The maximum quota which the capability gets</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+</tbody>
+</table>
+<h4 id="configrolemappings">ConfigRoleMappings<a class="headerlink" href="#configrolemappings" title="Permanent link">&para;</a></h4>
+<p><em>Underlying type:</em> <em>object</em></p>
+<p><em>Appears in:</em>
+- <a href="#paasconfigspec">PaasConfigSpec</a></p>
+<h4 id="namespacedname">NamespacedName<a class="headerlink" href="#namespacedname" title="Permanent link">&para;</a></h4>
+<p><em>Appears in:</em>
+- <a href="#paasconfigspec">PaasConfigSpec</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code> <em>string</em></td>
+<td></td>
+<td></td>
+<td>MinLength: 1 <br />Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>namespace</code> <em>string</em></td>
+<td></td>
+<td></td>
+<td>MinLength: 1 <br />Required: {} <br /></td>
+</tr>
+</tbody>
+</table>
+<h4 id="paas">Paas<a class="headerlink" href="#paas" title="Permanent link">&para;</a></h4>
+<p>Paas is the Schema for the paas API</p>
+<p><em>Appears in:</em>
+- <a href="#paaslist">PaasList</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiVersion</code> <em>string</em></td>
+<td><code>cpet.belastingdienst.nl/v1alpha1</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>kind</code> <em>string</em></td>
+<td><code>Paas</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>metadata</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta">ObjectMeta</a></em></td>
+<td>Refer to Kubernetes API documentation for fields of <code>metadata</code>.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>spec</code> <em><a href="#paasspec">PaasSpec</a></em></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="paascapabilities">PaasCapabilities<a class="headerlink" href="#paascapabilities" title="Permanent link">&para;</a></h4>
+<p><em>Underlying type:</em> <em><a href="#map[string]paascapability">map[string]PaasCapability</a></em></p>
+<p><em>Appears in:</em>
+- <a href="#paasspec">PaasSpec</a></p>
+<h4 id="paascapability">PaasCapability<a class="headerlink" href="#paascapability" title="Permanent link">&para;</a></h4>
+<p><em>Appears in:</em>
+- <a href="#paascapabilities">PaasCapabilities</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code> <em>boolean</em></td>
+<td>Do we want to use this capability, default false</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>gitUrl</code> <em>string</em></td>
+<td>The URL that contains the Applications / Application Sets to be used by this capability</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>gitRevision</code> <em>string</em></td>
+<td>The revision of the git repo that contains the Applications / Application Sets to be used by this capability</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>gitPath</code> <em>string</em></td>
+<td>the path in the git repo that contains the Applications / Application Sets to be used by this capability</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>custom_fields</code> <em>object (keys:string, values:string)</em></td>
+<td>Custom fields to configure this specific Capability</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>quota</code> <em><a href="#quota">Quota</a></em></td>
+<td>This project has its own ClusterResourceQuota settings</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>sshSecrets</code> <em>object (keys:string, values:string)</em></td>
+<td>You can add ssh keys (which is a type of secret) for capability to use for access to bitBucket<br />They must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>extra_permissions</code> <em>boolean</em></td>
+<td>You can enable extra permissions for the service accounts belonging to this capability<br />Exact definitions is configured in Paas Configmap</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+</tbody>
+</table>
+<h4 id="paasconfig">PaasConfig<a class="headerlink" href="#paasconfig" title="Permanent link">&para;</a></h4>
+<p><em>Appears in:</em>
+- <a href="#paasconfiglist">PaasConfigList</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiVersion</code> <em>string</em></td>
+<td><code>cpet.belastingdienst.nl/v1alpha1</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>kind</code> <em>string</em></td>
+<td><code>PaasConfig</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>metadata</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta">ObjectMeta</a></em></td>
+<td>Refer to Kubernetes API documentation for fields of <code>metadata</code>.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>spec</code> <em><a href="#paasconfigspec">PaasConfigSpec</a></em></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="paasconfiglist">PaasConfigList<a class="headerlink" href="#paasconfiglist" title="Permanent link">&para;</a></h4>
+<p>PaasConfigList contains a list of PaasConfig</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiVersion</code> <em>string</em></td>
+<td><code>cpet.belastingdienst.nl/v1alpha1</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>kind</code> <em>string</em></td>
+<td><code>PaasConfigList</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>metadata</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta">ListMeta</a></em></td>
+<td>Refer to Kubernetes API documentation for fields of <code>metadata</code>.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>items</code> <em><a href="#paasconfig">PaasConfig</a> array</em></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="paasconfigspec">PaasConfigSpec<a class="headerlink" href="#paasconfigspec" title="Permanent link">&para;</a></h4>
+<p><em>Appears in:</em>
+- <a href="#paasconfig">PaasConfig</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>decryptKeySecret</code> <em><a href="#namespacedname">NamespacedName</a></em></td>
+<td>DecryptKeysSecret is a reference to the secret containing the DecryptKeys</td>
+<td></td>
+<td>Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>debug</code> <em>boolean</em></td>
+<td>Enable debug information generation or not</td>
+<td>false</td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>capabilities</code> <em><a href="#configcapabilities">ConfigCapabilities</a></em></td>
+<td>A map with zero or more ConfigCapability</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>groupsynclist</code> <em><a href="#namespacedname">NamespacedName</a></em></td>
+<td>Deprecated: GroupSyncList code will be removed from the operator to make it more generic<br />A reference to a configmap containing a groupsynclist of LDAP groups to be synced using LDAP sync</td>
+<td></td>
+<td>Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>groupsynclist_key</code> <em>string</em></td>
+<td>Deprecated: GroupSyncListKey code will be removed from the operator to make it more generic<br />A key in the configures GroupSyncList which will contain the LDAP groups to be synced using LDAP sync</td>
+<td>groupsynclist.txt</td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>ldap</code> <em><a href="#configldap">ConfigLdap</a></em></td>
+<td>LDAP configuration for the operator to add to Groups</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>argopermissions</code> <em><a href="#configargopermissions">ConfigArgoPermissions</a></em></td>
+<td>Deprecated: ArgoCD specific code will be removed from the operator<br />Permissions to set for ArgoCD instance</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>clusterwide_argocd_namespace</code> <em>string</em></td>
+<td>Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects<br />Deprecated: ArgoCD specific code will be removed from the operator</td>
+<td></td>
+<td>MinLength: 1 <br />Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>quota_label</code> <em>string</em></td>
+<td>Label which is added to clusterquotas</td>
+<td>clusterquotagroup</td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>requestor_label</code> <em>string</em></td>
+<td>Name of the label used to define who is the contact for this resource</td>
+<td>requestor</td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>managed_by_label</code> <em>string</em></td>
+<td>Name of the label used to define by whom the resource is managed.</td>
+<td>argocd.argoproj.io/managed-by</td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>exclude_appset_name</code> <em>string</em></td>
+<td>Deprecated: ArgoCD specific code will be removed from the operator<br />Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application</td>
+<td></td>
+<td>MinLength: 1 <br />Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>rolemappings</code> <em><a href="#configrolemappings">ConfigRoleMappings</a></em></td>
+<td>Grant permissions to all groups according to config in configmap and role selected per group in paas.</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>validations</code> <em>object (keys:string, values:object)</em></td>
+<td>Set regular expressions to have the webhooks validate the fields</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+</tbody>
+</table>
+<h4 id="paasgroup">PaasGroup<a class="headerlink" href="#paasgroup" title="Permanent link">&para;</a></h4>
+<p><em>Appears in:</em>
+- <a href="#paasgroups">PaasGroups</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>query</code> <em>string</em></td>
+<td>A fully qualified LDAP query which will be used by the Group Sync Operator to sync users to the defined group.<br /><br />When set in combination with <code>users</code>, the Group Sync Operator will overwrite the manually assigned users.<br />Therefore, this field is mutually exclusive with <code>group.users</code>.</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>users</code> <em>string array</em></td>
+<td>A list of LDAP users which are added to the defined group.<br /><br />When set in combination with <code>users</code>, the Group Sync Operator will overwrite the manually assigned users.<br />Therefore, this field is mutually exclusive with <code>group.query</code>.</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>roles</code> <em>string array</em></td>
+<td>List of roles, as defined in the <code>PaasConfig</code> which the users in this group get assigned via a rolebinding.</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+</tbody>
+</table>
+<h4 id="paasgroups">PaasGroups<a class="headerlink" href="#paasgroups" title="Permanent link">&para;</a></h4>
+<p><em>Underlying type:</em> <em><a href="#map[string]paasgroup">map[string]PaasGroup</a></em></p>
+<p><em>Appears in:</em>
+- <a href="#paasspec">PaasSpec</a></p>
+<h4 id="paaslist">PaasList<a class="headerlink" href="#paaslist" title="Permanent link">&para;</a></h4>
+<p>PaasList contains a list of Paas</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiVersion</code> <em>string</em></td>
+<td><code>cpet.belastingdienst.nl/v1alpha1</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>kind</code> <em>string</em></td>
+<td><code>PaasList</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>metadata</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta">ListMeta</a></em></td>
+<td>Refer to Kubernetes API documentation for fields of <code>metadata</code>.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>items</code> <em><a href="#paas">Paas</a> array</em></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="paasns">PaasNS<a class="headerlink" href="#paasns" title="Permanent link">&para;</a></h4>
+<p>PaasNS is the Schema for the PaasNS API</p>
+<p><em>Appears in:</em>
+- <a href="#paasnslist">PaasNSList</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiVersion</code> <em>string</em></td>
+<td><code>cpet.belastingdienst.nl/v1alpha1</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>kind</code> <em>string</em></td>
+<td><code>PaasNS</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>metadata</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#objectmeta-v1-meta">ObjectMeta</a></em></td>
+<td>Refer to Kubernetes API documentation for fields of <code>metadata</code>.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>spec</code> <em><a href="#paasnsspec">PaasNSSpec</a></em></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="paasnslist">PaasNSList<a class="headerlink" href="#paasnslist" title="Permanent link">&para;</a></h4>
+<p>PaasNSList contains a list of PaasNS</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apiVersion</code> <em>string</em></td>
+<td><code>cpet.belastingdienst.nl/v1alpha1</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>kind</code> <em>string</em></td>
+<td><code>PaasNSList</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>metadata</code> <em><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#listmeta-v1-meta">ListMeta</a></em></td>
+<td>Refer to Kubernetes API documentation for fields of <code>metadata</code>.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>items</code> <em><a href="#paasns">PaasNS</a> array</em></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h4 id="paasnsspec">PaasNSSpec<a class="headerlink" href="#paasnsspec" title="Permanent link">&para;</a></h4>
+<p>PaasNSSpec defines the desired state of PaasNS</p>
+<p><em>Appears in:</em>
+- <a href="#paasns">PaasNS</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>paas</code> <em>string</em></td>
+<td>The <code>metadata.name</code> of the Paas which created the namespace in which this PaasNS is applied</td>
+<td></td>
+<td>MinLength: 1 <br />Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>groups</code> <em>string array</em></td>
+<td>Keys of the groups, as defined in the related <code>paas</code>, which should get access to<br />the namespace created by this PaasNS. When not set, all groups as defined in the related<br /><code>paas</code> get access to the namespace created by this PaasNS.</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>sshSecrets</code> <em>object (keys:string, values:string)</em></td>
+<td>SSHSecrets which should exist in the namespace created through this PaasNS,<br />the values are the encrypted secrets through Crypt</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+</tbody>
+</table>
+<h4 id="paasspec">PaasSpec<a class="headerlink" href="#paasspec" title="Permanent link">&para;</a></h4>
+<p>PaasSpec defines the desired state of Paas</p>
+<p><em>Appears in:</em>
+- <a href="#paas">Paas</a></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+<th>Default</th>
+<th>Validation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>capabilities</code> <em><a href="#paascapabilities">PaasCapabilities</a></em></td>
+<td>Capabilities is a subset of capabilities that will be available in this Paas Project</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>requestor</code> <em>string</em></td>
+<td>Requestor is an informational field which decides on the requestor (also application responsible)</td>
+<td></td>
+<td>MinLength: 1 <br />Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>groups</code> <em><a href="#paasgroups">PaasGroups</a></em></td>
+<td>Groups define k8s groups, based on an LDAP query or a list of LDAP users, which get access to the namespaces<br />belonging to this Paas. Per group, RBAC roles can be defined.</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>quota</code> <em><a href="#quota">Quota</a></em></td>
+<td>Quota defines the quotas which should be set on the cluster resource quota as used by this Paas project</td>
+<td></td>
+<td>Required: {} <br /></td>
+</tr>
+<tr>
+<td><code>namespaces</code> <em>string array</em></td>
+<td>Namespaces can be used to define extra namespaces to be created as part of this Paas project<br />As the names are used as the names of PaasNs resources, they must comply to the DNS subdomainname regex<br />See https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names for more info</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>sshSecrets</code> <em>object (keys:string, values:string)</em></td>
+<td>You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket.<br />They must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+<tr>
+<td><code>managedByPaas</code> <em>string</em></td>
+<td>Indicated by which 3rd party Paas's ArgoCD this Paas is managed</td>
+<td></td>
+<td>Optional: {} <br /></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 Tax Administration of The Netherlands, software and documentation licensed under EUPL.
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.action.edit", "navigation.expand", "navigation.path", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.top", "navigation.prune", "search.suggest", "search.share", "toc.follow"], "search": "../../assets/javascripts/workers/search.f8cc74c7.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c8b220af.min.js"></script>
+      
+    
+  </body>
+</html>
