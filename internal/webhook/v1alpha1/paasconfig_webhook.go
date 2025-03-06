@@ -131,7 +131,7 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
-func (v *PaasConfigCustomValidator) ValidateDelete(
+func (*PaasConfigCustomValidator) ValidateDelete(
 	ctx context.Context,
 	obj runtime.Object,
 ) (admission.Warnings, error) {
