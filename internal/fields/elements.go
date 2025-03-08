@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -52,7 +53,7 @@ func (es Elements) TryGetElementAsString(key string) (string, error) {
 	if ok {
 		return value, nil
 	}
-	return fmt.Sprintf("%v", value), nil
+	return fmt.Sprintf("%v", element), nil
 }
 
 // Merge merges all key/value pairs from another Entries on top of this and returns the resulting total Entries set
@@ -65,11 +66,13 @@ func (es Elements) Merge(added Elements) Elements {
 
 func (es Elements) String() string {
 	var l []string
-	for key := range es {
-		value, err := es.TryGetElementAsString(key)
-		if err != nil {
-			panic("this is impossible, looping through keys in Elements object, and key cannot be fount, weird.")
-		}
+	keys := make([]string, 0, len(es))
+	for k := range es {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		value := es.GetElementAsString(key)
 		key = strings.ReplaceAll(key, "'", "\\'")
 		value = strings.ReplaceAll(value, "'", "\\'")
 		l = append(l, fmt.Sprintf("'%s': '%s'", key, value))
