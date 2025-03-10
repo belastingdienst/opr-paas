@@ -238,6 +238,13 @@ spec:
                 description: Name of the label used to define by whom the resource
                   is managed.
                 type: string
+              managed_by_suffix:
+                default: argocd
+                description: |-
+                  Deprecated: ManagedBySuffix is a temporary implementation, to be replaced by go template functionality
+                  once available
+                  Suffix to be appended to the managed-by-label
+                type: string
               quota_label:
                 default: clusterquotagroup
                 description: Label which is added to clusterquotas

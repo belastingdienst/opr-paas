@@ -176,9 +176,10 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 			Host: "ldap.example.com",
 			Port: 13,
 		},
-		ManagedByLabel: "argocd.argoproj.io/manby",
-		RequestorLabel: "o.lbl",
-		QuotaLabel:     "q.lbl",
+		ManagedByLabel:  "argocd.argoproj.io/manby",
+		ManagedBySuffix: "argocd",
+		RequestorLabel:  "o.lbl",
+		QuotaLabel:      "q.lbl",
 		RoleMappings: map[string][]string{
 			"default": {"admin"},
 			"viewer":  {"view"},
