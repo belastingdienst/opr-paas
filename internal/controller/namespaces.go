@@ -26,8 +26,8 @@ import (
 
 // ensureNamespace ensures Namespace presence in given namespace.
 func EnsureNamespace(
-	r client.Client,
 	ctx context.Context,
+	r client.Client,
 	paas *v1alpha1.Paas,
 	ns *corev1.Namespace,
 	scheme *runtime.Scheme,
@@ -38,13 +38,7 @@ func EnsureNamespace(
 		Name: ns.Name,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
-		if err = r.Create(ctx, ns); err != nil {
-			// creating the namespace failed
-			return err
-		} else {
-			// creating the namespace was successful
-			return nil
-		}
+		return r.Create(ctx, ns)
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
 		return err
@@ -55,16 +49,10 @@ func EnsureNamespace(
 	}
 	var changed bool
 	for key, value := range ns.ObjectMeta.Labels {
-		if orgValue, exists := found.ObjectMeta.Labels[key]; !exists {
-			// Not set yet
-		} else if orgValue != value {
-			// different
-		} else {
-			// No action required
-			continue
+		if orgValue, exists := found.ObjectMeta.Labels[key]; !exists || orgValue != value {
+			changed = true
+			found.ObjectMeta.Labels[key] = value
 		}
-		changed = true
-		found.ObjectMeta.Labels[key] = value
 	}
 	if changed {
 		return r.Update(ctx, found)
@@ -161,7 +149,7 @@ func (r *PaasNSReconciler) ReconcileNamespaces(
 	var ns *corev1.Namespace
 	if ns, err = BackendNamespace(ctx, paas, nsName, nsQuota, r.Scheme); err != nil {
 		return fmt.Errorf("failure while defining namespace %s: %s", nsName, err.Error())
-	} else if err = EnsureNamespace(r.Client, ctx, paas, ns, r.Scheme); err != nil {
+	} else if err = EnsureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
 		return fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
 	}
 	return err

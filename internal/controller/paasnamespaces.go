@@ -99,11 +99,11 @@ func (r *PaasReconciler) FinalizePaasNss(ctx context.Context, paas *v1alpha1.Paa
 		// Reassign to make sure to use the referenced address of the current iteration
 		pns := pns
 
-		if !paas.AmIOwner(pns.OwnerReferences) {
-			// logger.Info().Msg("skipping finalization", "Namespace", ns.Name, "Reason", "I am not owner")
-		} else if _, isEnabled := enabledNs[pns.Name]; isEnabled {
-			// logger.Info().Msg("skipping finalization", "Namespace", ns.Name, "Reason", "Should be there")
-		} else if err := r.Delete(ctx, &pns); err != nil {
+		if _, isEnabled := enabledNs[pns.Name]; !paas.AmIOwner(pns.OwnerReferences) || isEnabled {
+			continue
+		}
+
+		if err := r.Delete(ctx, &pns); err != nil {
 			return err
 		}
 	}
@@ -119,7 +119,7 @@ func (r *PaasReconciler) ReconcilePaasNss(
 	if ns, err := BackendNamespace(ctx, paas, paas.Name, paas.Name, r.Scheme); err != nil {
 		logger.Err(err).Msgf("failure while defining namespace %s", paas.Name)
 		return err
-	} else if err = EnsureNamespace(r.Client, ctx, paas, ns, r.Scheme); err != nil {
+	} else if err = EnsureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
 		logger.Err(err).Msgf("failure while creating namespace %s", paas.Name)
 		return err
 	} else {

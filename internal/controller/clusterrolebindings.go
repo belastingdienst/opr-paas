@@ -28,8 +28,8 @@ const crbNameFormat string = "paas-%s"
 
 // getClusterRoleBinding returns a ClusterRoleBinding to enable extra permissions for certain capabilities.
 func getClusterRoleBinding(
-	r client.Client,
 	ctx context.Context,
+	r client.Client,
 	role string,
 ) (crb *rbac.ClusterRoleBinding, err error) {
 	crbName := fmt.Sprintf(crbNameFormat, role)
@@ -45,8 +45,8 @@ func getClusterRoleBinding(
 }
 
 func updateClusterRoleBinding(
-	r client.Client,
 	ctx context.Context,
+	r client.Client,
 	crb *rbac.ClusterRoleBinding,
 ) (err error) {
 	logger := log.Ctx(ctx)
@@ -174,11 +174,11 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 	permissions := capConfig.ExtraPermissions.AsConfigRolesSas(capability.WithExtraPermissions())
 	permissions.Merge(capConfig.DefaultPermissions.AsConfigRolesSas(true))
 	for role, sas := range permissions {
-		if crb, err = getClusterRoleBinding(r.Client, ctx, role); err != nil {
+		if crb, err = getClusterRoleBinding(ctx, r.Client, role); err != nil {
 			return err
 		}
 		if addOrUpdateCrb(ctx, paasns, crb, sas) {
-			if err := updateClusterRoleBinding(r.Client, ctx, crb); err != nil {
+			if err := updateClusterRoleBinding(ctx, r.Client, crb); err != nil {
 				return err
 			}
 		}
@@ -206,7 +206,7 @@ func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 	}
 	for _, role := range capRoles {
 		roleName := fmt.Sprintf(crbNameFormat, role)
-		crb, err := getClusterRoleBinding(r.Client, ctx, role)
+		crb, err := getClusterRoleBinding(ctx, r.Client, role)
 		if err != nil {
 			return err
 		}
@@ -220,7 +220,7 @@ func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
 			continue
 		}
 		logger.Info().Msgf("updating rolebinding %s after cleaning SA's for '%s'", roleName, nsRe)
-		if err := updateClusterRoleBinding(r.Client, ctx, crb); err != nil {
+		if err := updateClusterRoleBinding(ctx, r.Client, crb); err != nil {
 			return err
 		}
 	}
