@@ -102,6 +102,13 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	ManagedByLabel string `json:"managed_by_label"`
 
+	// Deprecated: ManagedBySuffix is a temporary implementation, to be replaced by go template functionality
+	// once available
+	// Suffix to be appended to the managed-by-label
+	// +kubebuilder:default:=argocd
+	// +kubebuilder:validation:Optional
+	ManagedBySuffix string `json:"managed_by_suffix"`
+
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
 	// +kubebuilder:validation:MinLength=1
