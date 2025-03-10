@@ -77,7 +77,6 @@ linters-settings:
       - name: empty-block
         disabled: true
       - name: empty-lines
-        disabled: true
       - name: exported
         disabled: true
       - name: function-length
