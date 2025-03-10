@@ -305,18 +305,18 @@ func (pr *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				// Enqueue all Paas objects
 				var reqs []reconcile.Request
 				var paasList v1alpha1.PaasList
-				if err := mgr.GetClient().List(context.Background(), &paasList); err == nil {
-					for _, p := range paasList.Items {
-						reqs = append(reqs, reconcile.Request{
-							NamespacedName: types.NamespacedName{
-								Namespace: p.Namespace,
-								Name:      p.Name,
-							},
-						})
-					}
-				} else {
+				if err := mgr.GetClient().List(context.Background(), &paasList); err != nil {
 					mgr.GetLogger().Error(err, "unable to list paases")
 					return nil
+				}
+
+				for _, p := range paasList.Items {
+					reqs = append(reqs, reconcile.Request{
+						NamespacedName: types.NamespacedName{
+							Namespace: p.Namespace,
+							Name:      p.Name,
+						},
+					})
 				}
 
 				return reqs

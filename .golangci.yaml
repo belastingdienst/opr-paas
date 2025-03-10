@@ -75,7 +75,6 @@ linters-settings:
               - github.com/onsi/ginkgo/v2
               - github.com/onsi/gomega
       - name: early-return
-        disabled: true
       - name: empty-block
       - name: empty-lines
       - name: exported
