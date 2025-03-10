@@ -38,13 +38,7 @@ func EnsureNamespace(
 		Name: ns.Name,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
-		if err = r.Create(ctx, ns); err != nil {
-			// creating the namespace failed
-			return err
-		} else {
-			// creating the namespace was successful
-			return nil
-		}
+		return r.Create(ctx, ns)
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
 		return err
@@ -55,16 +49,10 @@ func EnsureNamespace(
 	}
 	var changed bool
 	for key, value := range ns.ObjectMeta.Labels {
-		if orgValue, exists := found.ObjectMeta.Labels[key]; !exists {
-			// Not set yet
-		} else if orgValue != value {
-			// different
-		} else {
-			// No action required
-			continue
+		if orgValue, exists := found.ObjectMeta.Labels[key]; !exists || orgValue != value {
+			changed = true
+			found.ObjectMeta.Labels[key] = value
 		}
-		changed = true
-		found.ObjectMeta.Labels[key] = value
 	}
 	if changed {
 		return r.Update(ctx, found)
