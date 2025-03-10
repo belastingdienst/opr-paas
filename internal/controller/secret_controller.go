@@ -40,19 +40,13 @@ func (r *PaasNSReconciler) EnsureSecret(
 	err := r.Get(ctx, namespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Create the secret
-		if err = r.Create(ctx, secret); err != nil {
-			return err
-		}
-		return nil
+		return r.Create(ctx, secret)
 	} else if err != nil {
 		// Error that isn't due to the secret not existing
 		return err
-	} else {
-		if err = r.Update(ctx, secret); err != nil {
-			return err
-		}
-		return nil
 	}
+
+	return r.Update(ctx, secret)
 }
 
 func hashData(original string) string {
