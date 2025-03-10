@@ -55,16 +55,10 @@ func EnsureNamespace(
 	}
 	var changed bool
 	for key, value := range ns.ObjectMeta.Labels {
-		if orgValue, exists := found.ObjectMeta.Labels[key]; !exists {
-			// Not set yet
-		} else if orgValue != value {
-			// different
-		} else {
-			// No action required
-			continue
+		if orgValue, exists := found.ObjectMeta.Labels[key]; !exists || orgValue != value {
+			changed = true
+			found.ObjectMeta.Labels[key] = value
 		}
-		changed = true
-		found.ObjectMeta.Labels[key] = value
 	}
 	if changed {
 		return r.Update(ctx, found)
