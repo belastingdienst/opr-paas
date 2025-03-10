@@ -82,7 +82,6 @@ linters-settings:
       - name: function-length
         disabled: true
       - name: if-return
-        disabled: true
 
       # hikarukin: Fixing is seperate PR's:
       - name: import-alias-naming
