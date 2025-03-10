@@ -9,7 +9,7 @@ profile: cover.out
 
 # (optional; but recommended to set)
 # When specified reported file paths will not contain local prefix in the output.
-local-prefix: 'github.com/mannemsolutions/pgcustodian'
+local-prefix: 'github.com/belastingdienst/opr-paas'
 
 # Holds coverage thresholds percentages, values should be in range [0-100].
 threshold:
@@ -42,8 +42,7 @@ override:
 exclude:
   # Exclude files or packages matching their paths
   paths:
-    - cmd
-    - e2e
+    - internal/stubs
 
 # File name of go-test-coverage breakdown file, which can be used to
 # analyze coverage difference.
