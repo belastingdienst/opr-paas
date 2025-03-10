@@ -13,23 +13,20 @@ import (
 	"reflect"
 	"strings"
 
-	"sigs.k8s.io/controller-runtime/pkg/builder"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
-
+	"github.com/rs/zerolog/log"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
 	"k8s.io/apimachinery/pkg/api/meta"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
@@ -127,52 +124,60 @@ func (pnsr *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (
 
 	if paasns.GetDeletionTimestamp() != nil {
 		logger.Info().Msg("paasNS object marked for deletion")
-		if controllerutil.ContainsFinalizer(paasns, paasNsFinalizer) {
-			// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
-			meta.SetStatusCondition(&paasns.Status.Conditions, metav1.Condition{
-				Type:   v1alpha1.TypeDegradedPaasNs,
-				Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: paasns.Generation,
-				Message: fmt.Sprintf("Performing finalizer operations for PaasNs: %s ", paasns.Name),
-			})
-
-			if err := pnsr.Status().Update(ctx, paasns); err != nil {
-				logger.Err(err).Msg("failed to set PaasNs status to Downgrade")
-				return nil, err
-			}
-
-			logger.Info().Msg("finalizing PaasNs")
-			// Run finalization logic for paasNsFinalizer. If the
-			// finalization logic fails, don't remove the finalizer so
-			// that we can retry during the next reconciliation.
-			if err := pnsr.finalizePaasNs(ctx, paasns); err != nil {
-				return nil, err
-			}
-
-			meta.SetStatusCondition(&paasns.Status.Conditions, metav1.Condition{
-				Type:   v1alpha1.TypeDegradedPaasNs,
-				Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: paasns.Generation,
-				Message: fmt.Sprintf(
-					"Finalizer operations for PaasNs %s name were successfully accomplished",
-					paasns.Name,
-				),
-			})
-
-			if err := pnsr.Status().Update(ctx, paasns); err != nil {
-				logger.Err(err).Msg("failed to set successful paasNs status")
-				return nil, err
-			}
-
-			logger.Info().Msg("removing finalizer")
-			// Remove paasNsFinalizer. Once all finalizers have been removed, the object will be deleted.
-			controllerutil.RemoveFinalizer(paasns, paasNsFinalizer)
-			if err := pnsr.Update(ctx, paasns); err != nil {
-				return nil, err
-			}
-			logger.Info().Msg("finalization finished")
-		}
-		return nil, nil
+		return nil, pnsr.updateFinalizer(ctx, paasns)
 	}
+
 	return paasns, nil
+}
+
+func (pnsr *PaasNSReconciler) updateFinalizer(ctx context.Context, paasns *v1alpha1.PaasNS) error {
+	logger := log.Ctx(ctx)
+
+	if controllerutil.ContainsFinalizer(paasns, paasNsFinalizer) {
+		// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
+		meta.SetStatusCondition(&paasns.Status.Conditions, metav1.Condition{
+			Type:   v1alpha1.TypeDegradedPaasNs,
+			Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: paasns.Generation,
+			Message: fmt.Sprintf("Performing finalizer operations for PaasNs: %s ", paasns.Name),
+		})
+
+		if err := pnsr.Status().Update(ctx, paasns); err != nil {
+			logger.Err(err).Msg("failed to set PaasNs status to Downgrade")
+			return err
+		}
+
+		logger.Info().Msg("finalizing PaasNs")
+		// Run finalization logic for paasNsFinalizer. If the
+		// finalization logic fails, don't remove the finalizer so
+		// that we can retry during the next reconciliation.
+		if err := pnsr.finalizePaasNs(ctx, paasns); err != nil {
+			return err
+		}
+
+		meta.SetStatusCondition(&paasns.Status.Conditions, metav1.Condition{
+			Type:   v1alpha1.TypeDegradedPaasNs,
+			Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: paasns.Generation,
+			Message: fmt.Sprintf(
+				"Finalizer operations for PaasNs %s name were successfully accomplished",
+				paasns.Name,
+			),
+		})
+
+		if err := pnsr.Status().Update(ctx, paasns); err != nil {
+			logger.Err(err).Msg("failed to set successful paasNs status")
+			return err
+		}
+
+		logger.Info().Msg("removing finalizer")
+		// Remove paasNsFinalizer. Once all finalizers have been removed, the object will be deleted.
+		controllerutil.RemoveFinalizer(paasns, paasNsFinalizer)
+		if err := pnsr.Update(ctx, paasns); err != nil {
+			return err
+		}
+		logger.Info().Msg("finalization finished")
+	}
+
+	return nil
 }
 
 func (pnsr *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, err error) {
