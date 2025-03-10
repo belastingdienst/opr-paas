@@ -47,7 +47,6 @@ func TestElementsFromImproperJSON(t *testing.T) {
 }
 
 func TestAsStringMap(t *testing.T) {
-	t.Logf("%v", 6.0)
 	assert.Equal(
 		t,
 		map[string]string{
@@ -78,6 +77,7 @@ func TestElementsAsString(t *testing.T) {
 	require.NotNil(t, elements)
 	assert.Equal(t, expected, elements.String())
 }
+
 func TestGetElementAsString(t *testing.T) {
 	require.NotNil(t, elements)
 	for _, key := range []string{key1, key2, key3, key4} {
