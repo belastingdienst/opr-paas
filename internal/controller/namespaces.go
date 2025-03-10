@@ -26,8 +26,8 @@ import (
 
 // ensureNamespace ensures Namespace presence in given namespace.
 func EnsureNamespace(
-	r client.Client,
 	ctx context.Context,
+	r client.Client,
 	paas *v1alpha1.Paas,
 	ns *corev1.Namespace,
 	scheme *runtime.Scheme,
@@ -149,7 +149,7 @@ func (r *PaasNSReconciler) ReconcileNamespaces(
 	var ns *corev1.Namespace
 	if ns, err = BackendNamespace(ctx, paas, nsName, nsQuota, r.Scheme); err != nil {
 		return fmt.Errorf("failure while defining namespace %s: %s", nsName, err.Error())
-	} else if err = EnsureNamespace(r.Client, ctx, paas, ns, r.Scheme); err != nil {
+	} else if err = EnsureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
 		return fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
 	}
 	return err
