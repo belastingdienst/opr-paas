@@ -11,19 +11,18 @@ import (
 	"fmt"
 	"reflect"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
+	"github.com/rs/zerolog/log"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const paasconfigFinalizer = "paasconfig.cpet.belastingdienst.nl/finalizer"
@@ -75,56 +74,15 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 	logger.Info().Msg("reconciling PaasConfig")
 
-	// Add finalizer for this CR
-	if !controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
-		if ok := controllerutil.AddFinalizer(cfg, paasconfigFinalizer); !ok {
-			return errResult, fmt.Errorf("failed to add finalizer")
-		}
-		if err := pcr.Update(ctx, cfg); err != nil {
-			logger.Err(err).Msg("error updating PaasConfig")
-			return errResult, nil
-		}
-		logger.Info().Msg("added finalizer to PaasConfig")
+	if requeue, err := pcr.addFinalizer(ctx, cfg); requeue {
+		return errResult, err
 	}
 
 	if cfg.GetDeletionTimestamp() != nil {
-		logger.Info().Msg("paasconfig marked for deletion")
-		if controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
-			// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
-			meta.SetStatusCondition(&cfg.Status.Conditions, metav1.Condition{
-				Type:   v1alpha1.TypeDegradedPaasConfig,
-				Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: cfg.Generation,
-				Message: fmt.Sprintf("Performing finalizer operations for PaasConfig: %s ", cfg.Name),
-			})
-
-			if err := pcr.Status().Update(ctx, cfg); err != nil {
-				logger.Err(err).Msg("Failed to update PaasConfig status")
-				return errResult, nil
-			}
-
-			logger.Info().Msg("config reset successfully")
-			meta.SetStatusCondition(&cfg.Status.Conditions, metav1.Condition{
-				Type:   v1alpha1.TypeDegradedPaasConfig,
-				Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: cfg.Generation,
-				Message: fmt.Sprintf(
-					"Finalizer operations for PaasConfig %s name were successfully accomplished",
-					cfg.Name,
-				),
-			})
-
-			if err := pcr.Status().Update(ctx, cfg); err != nil {
-				logger.Err(err).Msg("Failed to update PaasConfig status")
-				return errResult, nil
-			}
-
-			if ok := controllerutil.RemoveFinalizer(cfg, paasconfigFinalizer); !ok {
-				return errResult, fmt.Errorf("failed to add finalizer")
-			}
-			if err := pcr.Update(ctx, cfg); err != nil {
-				logger.Err(err).Msg("error updating PaasConfig")
-				return errResult, nil
-			}
+		if requeue, err := pcr.updateFinalizer(ctx, cfg); requeue {
+			return errResult, err
 		}
+
 		return ctrl.Result{}, nil
 	}
 
@@ -132,7 +90,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if reflect.DeepEqual(cfg.Spec, config.GetConfig()) {
 		logger.Debug().Msg("Config already equals desired state")
 		// Reconciling succeeded, set appropriate Condition
-		err := pcr.setSuccesfullCondition(ctx, cfg)
+		err := pcr.setSuccessfulCondition(ctx, cfg)
 		if err != nil {
 			logger.Err(err).Msg("failed to update PaasConfig status")
 			return errResult, nil
@@ -148,7 +106,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	logger.Debug().Msg("set active PaasConfig successfully")
 
 	// Reconciling succeeded, set appropriate Condition
-	err := pcr.setSuccesfullCondition(ctx, cfg)
+	err := pcr.setSuccessfulCondition(ctx, cfg)
 	if err != nil {
 		logger.Err(err).Msg("failed to update PaasConfig status")
 		return errResult, nil
@@ -156,7 +114,71 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	return ctrl.Result{}, nil
 }
 
-func (pcr *PaasConfigReconciler) setSuccesfullCondition(ctx context.Context, paasConfig *v1alpha1.PaasConfig) error {
+func (pcr *PaasConfigReconciler) addFinalizer(ctx context.Context, cfg *v1alpha1.PaasConfig) (requeue bool, err error) {
+	logger := log.Ctx(ctx)
+
+	if !controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
+		if ok := controllerutil.AddFinalizer(cfg, paasconfigFinalizer); !ok {
+			return true, fmt.Errorf("failed to add finalizer")
+		}
+		if err := pcr.Update(ctx, cfg); err != nil {
+			logger.Err(err).Msg("error updating PaasConfig")
+			return true, nil
+		}
+		logger.Info().Msg("added finalizer to PaasConfig")
+	}
+
+	return false, nil
+}
+
+func (pcr *PaasConfigReconciler) updateFinalizer(
+	ctx context.Context,
+	cfg *v1alpha1.PaasConfig,
+) (requeue bool, err error) {
+	logger := log.Ctx(ctx)
+	logger.Info().Msg("paasconfig marked for deletion")
+
+	if controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
+		// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
+		meta.SetStatusCondition(&cfg.Status.Conditions, metav1.Condition{
+			Type:   v1alpha1.TypeDegradedPaasConfig,
+			Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: cfg.Generation,
+			Message: fmt.Sprintf("Performing finalizer operations for PaasConfig: %s ", cfg.Name),
+		})
+
+		if err := pcr.Status().Update(ctx, cfg); err != nil {
+			logger.Err(err).Msg("Failed to update PaasConfig status")
+			return true, nil
+		}
+
+		logger.Info().Msg("config reset successfully")
+		meta.SetStatusCondition(&cfg.Status.Conditions, metav1.Condition{
+			Type:   v1alpha1.TypeDegradedPaasConfig,
+			Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: cfg.Generation,
+			Message: fmt.Sprintf(
+				"Finalizer operations for PaasConfig %s name were successfully accomplished",
+				cfg.Name,
+			),
+		})
+
+		if err := pcr.Status().Update(ctx, cfg); err != nil {
+			logger.Err(err).Msg("Failed to update PaasConfig status")
+			return true, nil
+		}
+
+		if ok := controllerutil.RemoveFinalizer(cfg, paasconfigFinalizer); !ok {
+			return true, fmt.Errorf("failed to add finalizer")
+		}
+		if err := pcr.Update(ctx, cfg); err != nil {
+			logger.Err(err).Msg("error updating PaasConfig")
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (pcr *PaasConfigReconciler) setSuccessfulCondition(ctx context.Context, paasConfig *v1alpha1.PaasConfig) error {
 	meta.SetStatusCondition(&paasConfig.Status.Conditions, metav1.Condition{
 		Type:   v1alpha1.TypeActivePaasConfig,
 		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: paasConfig.Generation,
