@@ -67,11 +67,11 @@ func EntriesFromJSON(data []apiextensionsv1.JSON) (Entries, error) {
 			return nil, err
 		} else {
 			key := entry.Key()
-			if key != "" {
-				e[key] = entry
-			} else {
+			if key == "" {
 				return nil, fmt.Errorf(`json data "%s" does not contain a "paas" field`, raw)
 			}
+
+			e[key] = entry
 		}
 	}
 	return e, nil
