@@ -119,7 +119,7 @@ func (r *PaasReconciler) ReconcilePaasNss(
 	if ns, err := BackendNamespace(ctx, paas, paas.Name, paas.Name, r.Scheme); err != nil {
 		logger.Err(err).Msgf("failure while defining namespace %s", paas.Name)
 		return err
-	} else if err = EnsureNamespace(r.Client, ctx, paas, ns, r.Scheme); err != nil {
+	} else if err = EnsureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
 		logger.Err(err).Msgf("failure while creating namespace %s", paas.Name)
 		return err
 	} else {
