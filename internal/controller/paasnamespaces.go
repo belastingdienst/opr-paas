@@ -63,10 +63,7 @@ func (r *PaasReconciler) ensurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 		Namespace: pns.Namespace,
 	}, found)
 	if err != nil && errors.IsNotFound(err) {
-		if err = r.Create(ctx, pns); err != nil {
-			return err
-		}
-		return nil
+		return r.Create(ctx, pns)
 	} else if err != nil {
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
@@ -139,9 +136,5 @@ func (r *PaasReconciler) ReconcilePaasNss(
 		}
 	}
 	logger.Info().Msg("cleaning obsolete namespaces ")
-	if err := r.FinalizePaasNss(ctx, paas); err != nil {
-		return err
-	}
-
-	return nil
+	return r.FinalizePaasNss(ctx, paas)
 }

@@ -190,8 +190,5 @@ func (pcr *PaasConfigReconciler) setSuccessfulCondition(ctx context.Context, paa
 		Message: fmt.Sprintf("Reconciled (%s) successfully", paasConfig.Name),
 	})
 
-	if err := pcr.Status().Update(ctx, paasConfig); err != nil {
-		return err
-	}
-	return nil
+	return pcr.Status().Update(ctx, paasConfig)
 }
