@@ -85,7 +85,7 @@ func BackendNamespace(
 	logger.Info().Msgf("setting Quotagroup %s", quota)
 	ns.ObjectMeta.Labels[config.GetConfig().QuotaLabel] = quota
 
-	argoNameSpace := fmt.Sprintf("%s-argocd", paas.ManagedByPaas())
+	argoNameSpace := fmt.Sprintf("%s-%s", paas.ManagedByPaas(), config.GetConfig().ManagedBySuffix)
 	logger.Info().Msg("setting managed_by_label")
 	ns.ObjectMeta.Labels[config.GetConfig().ManagedByLabel] = argoNameSpace
 
