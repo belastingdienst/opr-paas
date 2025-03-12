@@ -18,11 +18,13 @@ import (
 	"slices"
 	"testing"
 
+	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
 	"github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -133,6 +135,12 @@ var _ = BeforeSuite(func() {
 
 	// Add Argo to schema
 	err = v1alpha1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = quotav1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = argocd.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
