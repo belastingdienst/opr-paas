@@ -163,22 +163,22 @@ With this example (combined with the operator config example), the following wou
 That there is also options to manage users with a federated solution.
 For more information, see [ldap integration with groupsynclist](groupsynclist.md).
 
-### PaasNs
+### PaasNS
 
-DevOps engineers could additionally create a PaasNs with the following definition:
+DevOps engineers could additionally create a PaasNS with the following definition:
 
 !!! example
 
     ```yaml
     ---
     apiVersion: cpet.belastingdienst.nl/v1alpha1
-    kind: PaasNs
+    kind: PaasNS
     metadata:
       # The name of the resulting namespace would be my-paas-adminonly ([paas name]-[paasns name])
       name: adminonly
       namespace: my-paas-argocd
     spec:
-      Paas: my-paas
+      paas: my-paas
       # The namespace would only contain RoleBindings for the `my-paas-us` group, which drills
       # down to the `admin`, `edit`, `view`, `alert-routing-edit`, and `monitoring-edit` ClusterRoles.
       groups:
