@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	appName = "paas-bootstrap"
-	capName = "argocd"
+	argoAppName = "paas-bootstrap"
+	argoCapName = "argocd"
 )
 
 // ensureArgoApp ensures ArgoApp presence in given argo application.
@@ -33,11 +33,11 @@ func (r *PaasReconciler) EnsureArgoApp(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	ctx, logger := logging.GetLogComponent(ctx, capName)
-	namespace := fmt.Sprintf("%s-%s", paas.Name, capName)
+	ctx, logger := logging.GetLogComponent(ctx, argoCapName)
+	namespace := fmt.Sprintf("%s-%s", paas.Name, argoCapName)
 	namespacedName := types.NamespacedName{
 		Namespace: namespace,
-		Name:      appName,
+		Name:      argoAppName,
 	}
 
 	// See if argo application exists and create if it doesn't
@@ -64,12 +64,12 @@ func (r *PaasReconciler) backendArgoApp(
 	paas *v1alpha1.Paas,
 ) (*argo.Application, error) {
 	logger := log.Ctx(ctx)
-	logger.Info().Msgf("defining %s Argo Application", appName)
+	logger.Info().Msgf("defining %s Argo Application", argoAppName)
 
-	namespace := fmt.Sprintf("%s-%s", paas.Name, capName)
-	argoConfig := paas.Spec.Capabilities[capName]
+	namespace := fmt.Sprintf("%s-%s", paas.Name, argoCapName)
+	argoConfig := paas.Spec.Capabilities[argoCapName]
 	argoConfig.SetDefaults()
-	fields, err := argoConfig.CapExtraFields(config.GetConfig().Capabilities[capName].CustomFields)
+	fields, err := argoConfig.CapExtraFields(config.GetConfig().Capabilities[argoCapName].CustomFields)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (r *PaasReconciler) backendArgoApp(
 			APIVersion: "argoproj.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      appName,
+			Name:      argoAppName,
 			Namespace: namespace,
 			Labels:    paas.ClonedLabels(),
 		},
