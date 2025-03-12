@@ -39,7 +39,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 		Name: "paas-config",
 	},
 	Spec: v1alpha1.PaasConfigSpec{
-		ClusterWideArgoCDNamespace: "asns",
+		ArgoEnabled: true,
 		ArgoPermissions: v1alpha1.ConfigArgoPermissions{
 			ResourceName:  "argocd",
 			DefaultPolicy: "role:tester",
@@ -167,11 +167,18 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 				},
 			},
 		},
-		Debug: false,
+		ClusterWideArgoCDNamespace: "asns",
+		Debug:                      false,
 		DecryptKeysSecret: v1alpha1.NamespacedName{
 			Name:      "example-keys",
 			Namespace: "paas-system",
 		},
+		ExcludeAppSetName: "whatever",
+		GroupSyncList: v1alpha1.NamespacedName{
+			Namespace: "gsns",
+			Name:      "wlname",
+		},
+		GroupSyncListKey: "groupsynclist.txt",
 		LDAP: v1alpha1.ConfigLdap{
 			Host: "ldap.example.com",
 			Port: 13,
@@ -184,12 +191,6 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 			"default": {"admin"},
 			"viewer":  {"view"},
 		},
-		GroupSyncList: v1alpha1.NamespacedName{
-			Namespace: "gsns",
-			Name:      "wlname",
-		},
-		GroupSyncListKey:  "groupsynclist.txt",
-		ExcludeAppSetName: "whatever",
 	},
 }
 
