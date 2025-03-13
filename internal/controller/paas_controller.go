@@ -241,7 +241,9 @@ func (pr *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resu
 	if err = pr.ensureAppSetCaps(ctx, paas); err != nil {
 		return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
 	} else if argoCap, exists := paas.Spec.Capabilities["argocd"]; exists {
-		if argoCap.IsEnabled() {
+		if !config.GetConfig().ArgoEnabled {
+			logger.Info().Msg("ArgoCD specific code is disabled")
+		} else if argoCap.IsEnabled() {
 			logger.Info().Msg("creating Argo App for client bootstrapping")
 
 			// Create bootstrap Argo App

@@ -66,12 +66,12 @@ To add user namespaces, the following options are available:
     ```yaml
     ---
     apiVersion: cpet.belastingdienst.nl/v1alpha1
-    kind: PaasNs
+    kind: PaasNS
     metadata:
       name: my-ns
       namespace: my-paas-argocd
     spec:
-      Paas: my-paas
+      paas: my-paas
     ```
 
 - Yet another option would be to create a PaasNs resource using automation such as
