@@ -27,6 +27,10 @@ func (r *PaasReconciler) EnsureAppProject(
 	paas *v1alpha1.Paas,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "appproject")
+	if !config.GetConfig().ArgoEnabled {
+		logger.Info().Msg("ArgoCD specific code is disabled")
+		return nil
+	}
 	logger.Info().Msg("creating Argo Project")
 	project, err := r.BackendAppProject(ctx, paas)
 	if err != nil {
