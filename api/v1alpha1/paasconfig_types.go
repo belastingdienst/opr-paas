@@ -81,6 +81,12 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	ArgoPermissions ConfigArgoPermissions `json:"argopermissions"`
 
+	// Deprecated: ArgoCD specific code will be removed from the operator
+	// Option to enable or disable ArgoCD specific Code
+	// +kubebuilder:default:=true
+	// +kubebuilder:validation:Optional
+	ArgoEnabled bool `json:"argoenabled"`
+
 	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// +kubebuilder:validation:MinLength=1

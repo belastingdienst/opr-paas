@@ -37,6 +37,12 @@ spec:
             type: object
           spec:
             properties:
+              argoenabled:
+                default: true
+                description: |-
+                  Deprecated: ArgoCD specific code will be removed from the operator
+                  Option to enable or disable ArgoCD specific Code
+                type: boolean
               argopermissions:
                 description: |-
                   Deprecated: ArgoCD specific code will be removed from the operator
