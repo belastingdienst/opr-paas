@@ -69,18 +69,18 @@ These namespaces count towards the global quota requested by the Paas.
 
 ## Adding PaasNs resources
 
-Alternatively, a PaasNs resource could be added to a namespace belonging to the Paas.
-Read more about this feature in [the PaasNs documentation](../overview/core_concepts/paasns.md).
+Alternatively, a PaasNS resource could be added to a namespace belonging to the Paas.
+Read more about this feature in [the PaasNS documentation](../overview/core_concepts/paasns.md).
 
 !!! example
 
     ```yaml
     ---
     apiVersion: cpet.belastingdienst.nl/v1alpha1
-    kind: PaasNs
+    kind: PaasNS
     metadata:
       name: my-ns
       namespace: my-paas-argocd
     spec:
-      Paas: tst-tst
+      paas: tst-tst
     ```

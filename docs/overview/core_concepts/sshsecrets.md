@@ -130,7 +130,7 @@ original SSH secret is not removed.
     ```yaml
     ---
     apiVersion: cpet.belastingdienst.nl/v1alpha1
-    kind: PaasNs
+    kind: PaasNS
     metadata:
       name: my-ns
       namespace: my-paas-argocd
