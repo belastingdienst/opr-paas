@@ -1,7 +1,7 @@
 name: CI run on PR
 on:
   pull_request:
-    types: [ opened, synchronize, reopened, ready_for_review ]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 env:
   # Golang version to use across CI steps
@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Fails in order to indicate that pull request needs to be marked as ready to review and other checks needs to pass.
         run: exit 1
-  
+
   codechanges:
     if: ${{ github.event.pull_request.draft == false }}
     runs-on: ubuntu-22.04
@@ -39,7 +39,7 @@ jobs:
               - '!.github/**'
             ci:
               - '.github/workflows/ci-run-on-pr.yaml'
-  
+
   check-go:
     name: Ensure Go modules synchronicity
     runs-on: ubuntu-22.04
@@ -60,7 +60,7 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code -- .
-  
+
   lint-go:
     name: Lint Go code
     runs-on: ubuntu-22.04
@@ -82,7 +82,7 @@ jobs:
         with:
           version: v1.64.5
           args: --verbose
-  
+
   code-gen:
     name: Check generated code
     runs-on: ubuntu-22.04
@@ -97,13 +97,15 @@ jobs:
           make manifests
           make generate
           git diff --exit-code -- .
-  
+
   unit-test:
     name: Run unit tests
     runs-on: ubuntu-22.04
     if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
       - codechanges
+    permissions:
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # v4.0.0
@@ -113,12 +115,51 @@ jobs:
           go-version: ${{ env.GOLANG_VERSION }}
       - name: Test
         run: make test
+      - name: check test coverage
+        id: coverage
+        uses: vladopajic/go-test-coverage@v2
+        with:
+          config: .testcoverage.yaml
+          profile: cover.out
+          continue-on-error: true # Should fail after coverage comment is posted
       - name: Generate test results artifacts
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: unittests-coverage
           path: cover.out
-  
+      - name: find pull request ID
+        run: |
+          PR_ID=${GITHUB_REF_NAME%%/merge}
+          echo "PR_ID: $PR_ID"
+
+          if [ "$PR_ID" != "null" ]; then
+            echo "pull_request_id=$PR_ID" >> $GITHUB_ENV
+          else
+            echo "No open pull request found for this branch."
+          fi
+      - name: post coverage report
+        if: env.pull_request_id
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          comment-tag: coverage-report
+          pr-number: ${{ env.pull_request_id }}
+          message: |
+            go-test-coverage report:
+            ```
+            ${{ fromJSON(steps.coverage.outputs.report) }}```
+      - name: 'finally check coverage'
+        if: steps.coverage.outcome == 'failure'
+        shell: bash
+        run: echo "coverage check failed" && exit 1
+      - name: create badge
+        uses: vladopajic/go-test-coverage@v2
+        with:
+          profile: cover.out
+          threshold-total: 42
+          git-token: ${{ github.ref_name == 'main' && secrets.GITHUB_TOKEN || '' }}
+          git-branch: badges
+
   e2e-test:
     name: Run e2e tests against deployed image
     runs-on: ubuntu-22.04
@@ -173,9 +214,9 @@ jobs:
         if: ${{ failure() }}
       - name: Clean test fixtures
         run: rm -rf /tmp/paas-e2e
-  
+
   test-coverage:
-    name: Analyze test coverage
+    name: Report test coverage
     if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     runs-on: ubuntu-22.04
     needs:
@@ -195,11 +236,3 @@ jobs:
         with:
           name: full-coverage-report
           path: full-coverage
-      - name: Report coverage threshold
-        run: |
-          coverage=$(go tool cover -func=cover.out | grep "total:" | awk '{print $NF}' | cut -d'%' -f1)
-          if [ "$(echo "$coverage < 80" | bc)" -eq 1 ]; then
-            echo -e "\033[31mERR: Coverage is less than 80% ($coverage%). Please improve the tests.\033[0m"
-          else
-            echo -e "\033[32mINFO: Coverage is sufficient ($coverage%). Good job!\033[0m"
-          fi
