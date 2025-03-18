@@ -114,7 +114,8 @@ vet: ## Run go vet against code.
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out -coverpkg=./...
+
 
 .PHONY: test-e2e
 test-e2e:
@@ -366,6 +367,5 @@ install-go-test-coverage:
 	go install github.com/vladopajic/go-test-coverage/v2@latest
 
 .PHONY: check-coverage
-check-coverage: install-go-test-coverage
-	go test $$(go list ./... | grep -v /e2e) -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
+check-coverage: install-go-test-coverage test
 	${GOBIN}/go-test-coverage --config=./.testcoverage.yaml
