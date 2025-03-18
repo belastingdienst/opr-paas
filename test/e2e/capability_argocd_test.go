@@ -183,7 +183,6 @@ func assertArgoCDUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		"git_path":     paasArgoGitPath,
 		"git_revision": updatedRevision,
 		"git_url":      paasArgoGitURL,
-		"groups":       "map[mygroup:map[query: roles:[view] users:[user1]]]",
 		"paas":         paasWithArgo,
 		"requestor":    paasRequestor,
 		"service":      "paas",
