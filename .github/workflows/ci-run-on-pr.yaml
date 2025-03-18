@@ -137,9 +137,17 @@ jobs:
           else
             echo "No open pull request found for this branch."
           fi
+      - name: create badge
+        uses: vladopajic/go-test-coverage@v2
+        with:
+          profile: cover.out
+          threshold-total: 42
+          git-token: ${{ github.ref_name == 'main' && secrets.GITHUB_TOKEN || '' }}
+          git-branch: badges
       - name: post coverage report
         if: env.pull_request_id
         uses: thollander/actions-comment-pull-request@v3
+        continue-on-error: true #we need pull_request_target or this will fail when not running pr in BD organisation
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           comment-tag: coverage-report
@@ -152,13 +160,6 @@ jobs:
         if: steps.coverage.outcome == 'failure'
         shell: bash
         run: echo "coverage check failed" && exit 1
-      - name: create badge
-        uses: vladopajic/go-test-coverage@v2
-        with:
-          profile: cover.out
-          threshold-total: 42
-          git-token: ${{ github.ref_name == 'main' && secrets.GITHUB_TOKEN || '' }}
-          git-branch: badges
 
   e2e-test:
     name: Run e2e tests against deployed image
