@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+//revive:disable-next-line
 func TestReadPaasFile(t *testing.T) {
 	expectedPaas := &v1alpha1.Paas{
 		TypeMeta: metav1.TypeMeta{

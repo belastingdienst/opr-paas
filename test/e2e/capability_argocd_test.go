@@ -55,6 +55,7 @@ func TestCapabilityArgoCD(t *testing.T) {
 		t,
 		features.New("ArgoCD Capability").
 			Setup(createPaasFn(paasWithArgo, paasSpec)).
+			Assess("ArgoCD namespace is created", assertArgoCDNsCreated).
 			Assess("ArgoCD application is created", assertArgoCDCreated).
 			Assess("ArgoCD application is updated", assertArgoCDUpdated).
 			Assess("ArgoCD application has ClusterRoleBindings", assertArgoCRB).
@@ -63,8 +64,7 @@ func TestCapabilityArgoCD(t *testing.T) {
 	)
 }
 
-func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	paas := getPaas(ctx, paasWithArgo, t, cfg)
+func assertArgoCDNsCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	argopaasns := &api.PaasNS{ObjectMeta: metav1.ObjectMeta{
 		Name:      argoCapName,
 		Namespace: paasWithArgo,
@@ -97,7 +97,11 @@ func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		"ArgoCD namespace created",
 	)
 
-	// Assert ArgoCD creation
+	return ctx
+}
+
+func assertArgoCDCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+	paas := getPaas(ctx, paasWithArgo, t, cfg)
 	argocd := getOrFail(ctx, argoCapName, paasArgoNs, &v1beta1.ArgoCD{}, t, cfg)
 	assert.Equal(t, paas.UID, argocd.OwnerReferences[0].UID)
 	assert.Equal(t, "role:tester", *argocd.Spec.RBAC.DefaultPolicy)

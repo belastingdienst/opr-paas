@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+//revive:disable-next-line
 func Test_formatEndpoint(t *testing.T) {
 	// test: empty endpoint
 	output := formatEndpoint("")

@@ -80,7 +80,6 @@ linters-settings:
       - name: exported
         disabled: true
       - name: function-length
-        disabled: true
       - name: if-return
 
       # hikarukin: Fixing is seperate PR's:
