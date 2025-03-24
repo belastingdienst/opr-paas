@@ -75,19 +75,8 @@ func Test_getRSA(t *testing.T) {
 	_crypt = nil
 	getConfig()
 
-	// generate private/public keys
-	t.Log("creating temp private key")
-	priv, err := os.CreateTemp("", "private")
-	require.NoError(t, err, "Creating tempfile for private key")
-	defer os.Remove(priv.Name()) // clean up
-
-	t.Log("creating temp public key")
-	pub, err := os.CreateTemp("", "public")
-	require.NoError(t, err, "Creating tempfile for public key")
-	defer os.Remove(pub.Name()) // clean up
-
-	t.Log("generating new keys and creating crypt")
-	crypt.GenerateKeyPair(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
+	pub, priv, toDefer := makeCrypt(t)
+	defer toDefer()
 
 	// test: non-existing public key should panic
 	getConfig()
@@ -206,6 +195,7 @@ func Test_readyz(t *testing.T) {
 	assert.Equal(t, expected["message"], value)
 }
 
+//revive:disable-next-line
 func Test_v1CheckPaas(t *testing.T) {
 	// Allow all origins for test
 	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
@@ -214,20 +204,8 @@ func Test_v1CheckPaas(t *testing.T) {
 	_config = nil
 	_crypt = nil
 
-	priv, err := os.CreateTemp("", "private")
-	require.NoError(t, err, "Creating tempfile for private key")
-	defer os.Remove(priv.Name()) // clean up
-
-	pub, err := os.CreateTemp("", "public")
-	require.NoError(t, err, "Creating tempfile for public key")
-	defer os.Remove(pub.Name()) // clean up
-
-	// Set env for ws Config
-	t.Setenv("PAAS_PUBLIC_KEY_PATH", pub.Name())    //nolint:errcheck // this is fine in test
-	t.Setenv("PAAS_PRIVATE_KEYS_PATH", priv.Name()) //nolint:errcheck // this is fine in test
-
-	// Generate keyPair to be used during test
-	crypt.GenerateKeyPair(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
+	_, _, toDefer := makeCrypt(t)
+	defer toDefer()
 
 	// Encrypt secret for test
 	rsa := getRsa("testPaas")
@@ -347,4 +325,27 @@ func TestBuildCSP(t *testing.T) {
 	// revive:disable-next-line
 	expected = "default-src 'none'; script-src 'self' http://example.com; style-src 'self' http://example.com; img-src 'self' http://example.com; connect-src 'self' http://example.com; font-src 'self' http://example.com; object-src 'none'"
 	assert.Equal(t, expected, buildCSP(externalHosts))
+}
+
+func makeCrypt(t *testing.T) (pub, priv *os.File, toDefer func()) {
+	// generate private/public keys
+	t.Log("creating temp private key")
+	priv, err := os.CreateTemp("", "private")
+	require.NoError(t, err, "Creating tempfile for private key")
+
+	t.Log("creating temp public key")
+	pub, err = os.CreateTemp("", "public")
+	require.NoError(t, err, "Creating tempfile for public key")
+
+	// Set env for ws Config
+	t.Setenv("PAAS_PUBLIC_KEY_PATH", pub.Name())    //nolint:errcheck // this is fine in test
+	t.Setenv("PAAS_PRIVATE_KEYS_PATH", priv.Name()) //nolint:errcheck // this is fine in test
+
+	// Generate keyPair to be used during test
+	crypt.GenerateKeyPair(priv.Name(), pub.Name()) //nolint:errcheck // this is fine in test
+
+	return pub, priv, func() { // clean up function
+		os.Remove(priv.Name())
+		os.Remove(pub.Name())
+	}
 }

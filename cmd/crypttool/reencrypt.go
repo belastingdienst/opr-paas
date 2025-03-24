@@ -36,6 +36,7 @@ func reencryptSecret(srcCrypt *crypt.Crypt, dstCrypt *crypt.Crypt, secret string
 	return reencrypted, nil
 }
 
+//revive:disable-next-line
 func reencryptFiles(privateKeyFiles string, publicKeyFile string, outputFormat string, files []string) error {
 	var errNum int
 	for _, fileName := range files {
