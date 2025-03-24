@@ -75,9 +75,8 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 
 	BeforeEach(func() {
 		const (
-			groupTemplate = `system:cluster-admins, role:admin
-{{ range $groupName, $group := .Paas.Spec.Groups }}g, {{ $groupName }}, role:admin
-{{end}}`
+			groupTemplate = `g, system:cluster-admins, role:admin{{ range $groupName, $group := .Paas.Spec.Groups }}
+g, {{ $groupName }}, role:admin{{end}}`
 		)
 		ctx = context.Background()
 		paasConfig = api.PaasConfig{
@@ -148,10 +147,9 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 			})
 			It("should create an appset entry with proper data", func() {
 				const (
-					expectedPolicy = `system:cluster-admins, role:admin
+					expectedPolicy = `g, system:cluster-admins, role:admin
 g, ` + group1 + `, role:admin
-g, ` + group2 + `, role:admin
-`
+g, ` + group2 + `, role:admin`
 				)
 				err := reconciler.ensureAppSetCap(ctx, paas, capName)
 				Expect(err).NotTo(HaveOccurred())

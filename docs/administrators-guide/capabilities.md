@@ -125,6 +125,8 @@ The following configuration can be set:
 - validation: A regular expression used to validate input in a Paas
 - required: When set to true, an error is returned when the custom field is not defined in a Paas
 - default: When set, a Paas without the custom field set will use this default instead.
+- template: When set to a valid go template, the template is processed against the current Paas
+  and PaasConfig end results are added as one or more custom fields in the applicationset.
 
 \*\* note: `required` and `default` are mutually exclusive.
 
@@ -164,6 +166,170 @@ The following would happen:
   - key: key_123
   - revision: main
 - From here, kustomize could use these values to be set on all resources create by the cluster-wide ArgoCD for this capability for this Paas
+
+### Notes on templating
+
+- Template takes precendence over default. With custom fields with a configured template defaults have no effect.
+  Same goes for validation and required. They jave no effect on templated custom fields.
+- Paas takes precedence over templates. When a custom field is configured in the paas, the value can be overruled in the Paas.
+  Validation and 'being required' do take effect for these fields.
+  **note**: mixing default and required with templates is not advicable.
+- Templates return a string, which if it can be parsed as yaml into a map or list,
+  will create a multivalue, where the custom field name is suffixed with either the map keys, or list indexes.
+
+### Examples of templating
+
+You can now generate a argocd policy by ranging over the groups in the paas:
+
+!!! example
+
+    ```yml
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: PaasConfig
+    metadata:
+      name: opr-paas-config
+    spec:
+      clusterwide_argocd_namespace: paas-capabilities-argocd
+      capabilities:
+        mycap:
+          ApplicationSet: mycap-as
+          custom_fields:
+            "argocd-policies":
+              template: |
+                system:cluster-admins, role:admin
+                {{ range $groupName, $group := .Paas.Spec.Groups }}g, {{ $groupName }}, role:admin
+                {{end}}
+            my-custom-revision:
+              validation: '^(main|develop|feature-.*)$'
+              default: main
+          quotas:
+            defaults:
+              limits.cpu: "8"
+    ```
+
+You can also enable debugging in the capability when paasconfig has debugging enabled:
+
+!!! example
+
+    ```yml
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: PaasConfig
+    metadata:
+      name: opr-paas-config
+    spec:
+      clusterwide_argocd_namespace: paas-capabilities-argocd
+      capabilities:
+        mycap:
+          ApplicationSet: mycap-as
+          custom_fields:
+            "debug":
+              template: |
+                {{ .Config.Debug }}
+            my-custom-revision:
+              validation: '^(main|develop|feature-.*)$'
+              default: main
+          quotas:
+            defaults:
+              limits.cpu: "8"
+    ```
+
+You can return a map and create multiple keys (string suffix).
+
+This would create 2 keys:
+
+!!! example
+
+    ```yml
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: PaasConfig
+    metadata:
+      name: opr-paas-config
+    spec:
+      clusterwide_argocd_namespace: paas-capabilities-argocd
+      capabilities:
+        mycap:
+          ApplicationSet: mycap-as
+          custom_fields:
+            "paas_config":
+              template: |
+                debug: {{ .Config.Debug }}
+                argo: {{ .Config.ArgoEnabled }}
+            my-custom-revision:
+              validation: '^(main|develop|feature-.*)$'
+              default: main
+          quotas:
+            defaults:
+              limits.cpu: "8"
+    ```
+
+Like so:
+
+!!! example
+
+    ```yml
+    apiVersion: argoproj.io/v1alpha1
+    kind: ApplicationSet
+    metadata:
+      name: mycap-as
+      namespace: paas-capabilities-argocd
+    spec:
+      generators:
+        - list:
+            elements:
+              - paas_config_debug: true
+                paas_config_argo: false
+      ...
+    ```
+
+You can also return a list and create multiple keys (number suffix).
+
+This would create 3 keys:
+
+!!! example
+
+    ```yml
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: PaasConfig
+    metadata:
+      name: opr-paas-config
+    spec:
+      clusterwide_argocd_namespace: paas-capabilities-argocd
+      capabilities:
+        mycap:
+          ApplicationSet: mycap-as
+          custom_fields:
+            "paas_config":
+              template: |
+                - {{ .Config.Debug }}
+                - {{ .Config.ArgoEnabled }}
+                - custom fields with templating is cool
+            my-custom-revision:
+              validation: '^(main|develop|feature-.*)$'
+              default: main
+          quotas:
+            defaults:
+              limits.cpu: "8"
+    ```
+
+Like so:
+
+!!! example
+
+    ```yml
+    apiVersion: argoproj.io/v1alpha1
+    kind: ApplicationSet
+    metadata:
+      name: mycap-as
+      namespace: paas-capabilities-argocd
+    spec:
+      generators:
+        - list:
+            elements:
+              - paas_config_0: true
+                paas_config_1: false
+                paas_config_2: custom fields with templating is cool
+      ...
+    ```
 
 ### More info
 
