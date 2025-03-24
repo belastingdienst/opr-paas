@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 var _ = Describe("Creating a PaasConfig", Ordered, func() {
@@ -195,7 +196,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(err).Error().To(Not(HaveOccurred()))
-				Expect(warn).To(BeEmpty())
+				Expect(warn).To(Equal(admission.Warnings{"spec.excludeappsetname: deprecated"}))
 			})
 		})
 		Context("having a capability defined with a custom_field", func() {
