@@ -123,7 +123,7 @@ jobs:
           profile: cover.out
           continue-on-error: true # Should fail after coverage comment is posted
       - name: Generate test results artifacts
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: unittests-coverage
           path: cover.out
@@ -208,7 +208,7 @@ jobs:
         run: kubectl logs deployment/paas-controller-manager -n paas-system > /tmp/e2e-deployed-operator-logs-${{ github.run_id }}.log
         if: ${{ failure() }}
       - name: Upload operator deployment log on failure
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: e2e-deployed-operator-logs-${{ github.run_id }}.log
           path: /tmp/e2e-deployed-operator-logs-${{ github.run_id }}.log
@@ -233,7 +233,7 @@ jobs:
       - name: Generate and print report
         run: go tool cover -func=cover.out > full-coverage
       - name: Upload test-coverage artifact
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: full-coverage-report
           path: full-coverage
