@@ -227,7 +227,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # v4.0.0
       - name: Get unit test code coverage
-        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
         with:
           name: unittests-coverage
       - name: Generate and print report
