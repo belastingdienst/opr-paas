@@ -98,6 +98,10 @@ spec:
                               When set to true, and no value is set, PaasNs has error in status field, and capability is not built.
                               When set to false, and no value is set, Default is used.
                             type: boolean
+                          template:
+                            description: You can now use a go-template string to use
+                              Paas and PaasConfig variables and compile a value
+                            type: string
                           validation:
                             description: Regular expression for validating input,
                               defaults to '', which means no validation.

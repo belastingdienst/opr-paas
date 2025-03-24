@@ -13,6 +13,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/logging"
+	"github.com/belastingdienst/opr-paas/internal/templating"
 	"github.com/belastingdienst/opr-paas/internal/validate"
 	k8sv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -399,6 +400,17 @@ func validateConfigCustomField(
 					customfield.Default,
 					fmt.Sprintf("value does not match %s", customfield.Validation)))
 			}
+		}
+	}
+
+	if customfield.Template != "" {
+		err := templating.NewTemplater(v1alpha1.Paas{}, v1alpha1.PaasConfig{}).Verify(name, customfield.Template)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(
+				childPath.Child("template"),
+				customfield.Template,
+				err.Error(),
+			))
 		}
 	}
 

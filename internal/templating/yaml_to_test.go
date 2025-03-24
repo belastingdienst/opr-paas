@@ -7,14 +7,12 @@ import (
 )
 
 func TestYamlToMap(t *testing.T) {
-	var (
-		exampleYaml string = `
+	var exampleYaml string = `
 key1: val1
 key2: val2
 key3: valc
 key4: vald
 `
-	)
 	parsed, err := yamlToMap([]byte(exampleYaml))
 	assert.NoError(t, err)
 	expected := TemplateResult{
@@ -33,15 +31,32 @@ key4: vald
 	assert.Equal(t, expected, parsed.AsResult(""))
 }
 
-func TestYamlToList(t *testing.T) {
+func TestResultMerge(t *testing.T) {
 	var (
-		exampleYaml string = `
+		tr1 = TemplateResult{
+			"key1": "val1",
+			"key2": "val2",
+		}
+		tr2 = TemplateResult{
+			"key2": "1",
+			"key3": "val3",
+		}
+		expected = TemplateResult{
+			"key1": "val1",
+			"key2": "1",
+			"key3": "val3",
+		}
+	)
+	assert.Equal(t, expected, tr1.Merge(tr2))
+}
+
+func TestYamlToList(t *testing.T) {
+	var exampleYaml string = `
 - vala
 - valb
 - val3
 - val4
 `
-	)
 	parsed, err := yamlToList([]byte(exampleYaml))
 	assert.NoError(t, err)
 	expected := TemplateResult{

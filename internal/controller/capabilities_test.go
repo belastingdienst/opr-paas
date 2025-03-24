@@ -74,6 +74,11 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 	})
 
 	BeforeEach(func() {
+		const (
+			groupTemplate = `system:cluster-admins, role:admin
+{{ range $groupName, $group := .Paas.Spec.Groups }}g, {{ $groupName }}, role:admin
+{{end}}`
+		)
 		ctx = context.Background()
 		paasConfig = api.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
@@ -87,6 +92,15 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 						CustomFields: map[string]api.ConfigCustomField{
 							customField1Key: {},
 							customField2Key: {},
+							"argocd_default_policy": {
+								Default: "",
+							},
+							"argocd_policy": {
+								Template: groupTemplate,
+							},
+							"argocd_scopes": {
+								Default: "[groups]",
+							},
 						},
 					},
 				},
@@ -133,6 +147,12 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should create an appset entry with proper data", func() {
+				const (
+					expectedPolicy = `system:cluster-admins, role:admin
+g, ` + group1 + `, role:admin
+g, ` + group2 + `, role:admin
+`
+				)
 				err := reconciler.ensureAppSetCap(ctx, paas, capName)
 				Expect(err).NotTo(HaveOccurred())
 				appSet = &appv1.ApplicationSet{}
@@ -152,15 +172,18 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 				elements := entries[paasName]
 				Expect(elements.GetElementsAsStringMap()).To(Equal(
 					map[string]string{
-						customField1Key: customField1Value,
-						customField2Key: customField2Value,
-						"git_path":      "",
-						"git_revision":  "",
-						"git_url":       "",
-						"paas":          paasName,
-						"requestor":     "my",
-						"service":       serviceName,
-						"subservice":    "paas",
+						customField1Key:         customField1Value,
+						customField2Key:         customField2Value,
+						"git_path":              "",
+						"git_revision":          "",
+						"git_url":               "",
+						"paas":                  paasName,
+						"argocd_default_policy": "",
+						"argocd_policy":         expectedPolicy,
+						"argocd_scopes":         "[groups]",
+						"requestor":             "my",
+						"service":               serviceName,
+						"subservice":            "paas",
 					}))
 			})
 		})

@@ -16,6 +16,7 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/fields"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/templating"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -100,21 +101,23 @@ func (r *PaasReconciler) ensureAppSetCap(
 		return err
 	}
 
-	capability := paas.Spec.Capabilities[capName]
-	if elements, err = capability.CapExtraFields(config.GetConfig().Capabilities[capName].CustomFields); err != nil {
+	myConfig := config.GetConfig()
+	templater := templating.NewTemplater(*paas, v1alpha1.PaasConfig{Spec: myConfig})
+	templatedElements, err := templater.CapCustomFieldsToMap(capName)
+	if err != nil {
 		return err
 	}
+	capability := paas.Spec.Capabilities[capName]
+	capElements, err := capability.CapExtraFields(myConfig.Capabilities[capName].CustomFields)
+	if err != nil {
+		return err
+	}
+	elements = templatedElements.AsFieldElements().Merge(capElements)
 	service, subService := splitToService(paas.Name)
 	elements["requestor"] = paas.Spec.Requestor
 	elements["paas"] = paas.Name
 	elements["service"] = service
 	elements["subservice"] = subService
-	// TODO (portly-halicore-76) make this configurable via customfields using go-template
-	// TODO (portly-halicore-76) add a unittest for this
-	// TODO (devotional-phoenix-97) temp rollback.
-	// argocd cannot cope with non-string values, unless key = "values" and contents is map[string]string
-	// Proper fix with go-template, but for now, don;t break things
-	//elements["groups"] = paas.Spec.Groups
 	patch := client.MergeFrom(appSet.DeepCopy())
 	if listGen = getListGen(appSet.Spec.Generators); listGen == nil {
 		// create the list
