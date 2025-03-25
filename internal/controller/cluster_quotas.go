@@ -87,7 +87,7 @@ func (r *PaasReconciler) backendQuota(
 			Selector: quotav1.ClusterResourceQuotaSelector{
 				LabelSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						config.GetConfigSpec().QuotaLabel: quotaName,
+						config.GetConfig().Spec.QuotaLabel: quotaName,
 					},
 				},
 			},
@@ -110,7 +110,7 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (quotas []*quotav1.ClusterResourceQuota, err error) {
-	paasConfigSpec := config.GetConfigSpec()
+	paasConfigSpec := config.GetConfig().Spec
 	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
 	for name, cap := range paas.Spec.Capabilities {
 		if capConfig, exists := paasConfigSpec.Capabilities[name]; !exists {
@@ -134,7 +134,7 @@ func (r *PaasReconciler) BackendUnneededQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (quotas []string) {
-	paasConfigSpec := config.GetConfigSpec()
+	paasConfigSpec := config.GetConfig().Spec
 	for name, cap := range paas.Spec.Capabilities {
 		if capConfig, exists := paasConfigSpec.Capabilities[name]; !exists {
 			quotas = append(quotas, fmt.Sprintf("%s-%s", paas.Name, name))

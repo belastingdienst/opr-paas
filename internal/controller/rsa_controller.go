@@ -29,7 +29,7 @@ func (r *PaasNSReconciler) getRsaPrivateKeys(
 ) (*crypt.CryptPrivateKeys, error) {
 	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
 	rsaSecret := &corev1.Secret{}
-	cfg := config.GetConfigSpec()
+	cfg := config.GetConfig().Spec
 	namespacedName := cfg.DecryptKeysSecret
 
 	err := r.Get(ctx, types.NamespacedName{

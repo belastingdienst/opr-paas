@@ -69,7 +69,7 @@ func (r *PaasReconciler) UpdateClusterWideQuotaResources(
 	var allPaasResources paasquota.QuotaLists
 	if capabilityName, err := ClusterWideCapabilityName(quota.ObjectMeta.Name); err != nil {
 		return err
-	} else if configCapability, exists := config.GetConfigSpec().Capabilities[capabilityName]; !exists {
+	} else if configCapability, exists := config.GetConfig().Spec.Capabilities[capabilityName]; !exists {
 		return fmt.Errorf("missing capability config for %s", capabilityName)
 	} else if !configCapability.QuotaSettings.Clusterwide {
 		return fmt.Errorf("running UpdateClusterWideQuota for non-clusterwide quota %s", quota.ObjectMeta.Name)
@@ -106,7 +106,7 @@ func backendClusterWideQuota(
 			Selector: quotav1.ClusterResourceQuotaSelector{
 				LabelSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						config.GetConfigSpec().QuotaLabel: quotaName,
+						config.GetConfig().Spec.QuotaLabel: quotaName,
 					},
 				},
 			},
@@ -170,7 +170,7 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 	var quota *quotav1.ClusterResourceQuota
 	var exists bool
 	quotaName := ClusterWideQuotaName(capabilityName)
-	if paasConfigSpec, exists := config.GetConfigSpec().Capabilities[capabilityName]; !exists {
+	if paasConfigSpec, exists := config.GetConfig().Spec.Capabilities[capabilityName]; !exists {
 		return fmt.Errorf("capability %s does not seem to exist in configuration", capabilityName)
 	} else if !paasConfigSpec.QuotaSettings.Clusterwide {
 		return nil
@@ -209,7 +209,7 @@ func (r *PaasReconciler) removeFromClusterWideQuota(
 	quotaName := fmt.Sprintf("%s%s", cwqPrefix, capabilityName)
 	var capConfig v1alpha1.ConfigCapability
 	var exists bool
-	if capConfig, exists = config.GetConfigSpec().Capabilities[capabilityName]; !exists {
+	if capConfig, exists = config.GetConfig().Spec.Capabilities[capabilityName]; !exists {
 		// If a Paas was created with a capability that was nog yet configured, we should be able to delete it.
 		// Returning an error would block deletion.
 		return nil

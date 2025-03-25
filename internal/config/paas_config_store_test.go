@@ -13,13 +13,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetConfigSpecWithEmptyConfigStore(t *testing.T) {
-	actual := GetConfigSpec()
+func TestGetConfigWithEmptyConfigStore(t *testing.T) {
+	actual := GetConfig()
 
 	assert.Empty(t, actual)
 }
 
-func TestGetConfigSpec(t *testing.T) {
+func TestGetConfig(t *testing.T) {
 	cnf = &PaasConfigStore{
 		currentConfig: v1alpha1.PaasConfig{
 			Spec: v1alpha1.PaasConfigSpec{
@@ -28,8 +28,8 @@ func TestGetConfigSpec(t *testing.T) {
 		},
 	}
 
-	actual := GetConfigSpec()
+	actual := GetConfig()
 
 	assert.NotEmpty(t, actual)
-	assert.True(t, actual.Debug)
+	assert.True(t, actual.Spec.Debug)
 }

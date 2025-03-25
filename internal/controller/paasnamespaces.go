@@ -42,7 +42,7 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 	}
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("defining")
-	pns.ObjectMeta.Labels[config.GetConfigSpec().RequestorLabel] = paas.Spec.Requestor
+	pns.ObjectMeta.Labels[config.GetConfig().Spec.RequestorLabel] = paas.Spec.Requestor
 
 	logger.Info().Msg("setting Owner")
 

@@ -22,18 +22,11 @@ type PaasConfigStore struct {
 
 var cnf = &PaasConfigStore{}
 
-// GetConfigSpec retrieVes the current configuration
+// GetConfig retrieVes the current configuration
 func GetConfig() v1alpha1.PaasConfig {
 	cnf.mutex.RLock()
 	defer cnf.mutex.RUnlock()
 	return cnf.currentConfig
-}
-
-// GetConfigSpec retrieVes the current configuration
-func GetConfigSpec() v1alpha1.PaasConfigSpec {
-	cnf.mutex.RLock()
-	defer cnf.mutex.RUnlock()
-	return cnf.currentConfig.Spec
 }
 
 // SetConfig updates the current configuration
