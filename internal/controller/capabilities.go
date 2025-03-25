@@ -55,7 +55,7 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
-	paasConfigSpec := config.GetConfig()
+	paasConfigSpec := config.GetConfigSpec()
 	for capName := range paas.Spec.Capabilities {
 		if _, exists := paasConfigSpec.Capabilities[capName]; !exists {
 			return fmt.Errorf("capability not configured")
@@ -80,7 +80,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	var err error
 	var elements fields.Elements
 	// See if AppSet exists raise error if it doesn't
-	namespacedName := config.GetConfig().CapabilityK8sName(capName)
+	namespacedName := config.GetConfigSpec().CapabilityK8sName(capName)
 	appSet := &appv1.ApplicationSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Applicationset",
@@ -102,13 +102,13 @@ func (r *PaasReconciler) ensureAppSetCap(
 	}
 
 	myConfig := config.GetConfig()
-	templater := templating.NewTemplater(*paas, v1alpha1.PaasConfig{Spec: myConfig})
+	templater := templating.NewTemplater(*paas, myConfig)
 	templatedElements, err := templater.CapCustomFieldsToMap(capName)
 	if err != nil {
 		return err
 	}
 	capability := paas.Spec.Capabilities[capName]
-	capElements, err := capability.CapExtraFields(myConfig.Capabilities[capName].CustomFields)
+	capElements, err := capability.CapExtraFields(myConfig.Spec.Capabilities[capName].CustomFields)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := config.GetConfig().CapabilityK8sName(paasns.Name)
+	asNamespacedName := config.GetConfigSpec().CapabilityK8sName(paasns.Name)
 	ctx, logger := logging.GetLogComponent(ctx, "appset")
 	logger.Info().Msgf("reconciling %s Applicationset", paasns.Name)
 	err := r.Get(ctx, asNamespacedName, as)

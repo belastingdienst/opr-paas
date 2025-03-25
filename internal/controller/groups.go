@@ -105,12 +105,12 @@ func (r *PaasReconciler) backendGroup(
 			Annotations: map[string]string{
 				ldapUIDAnnotationKey: group.Query,
 				ldapURLAnnotationKey: fmt.Sprintf("%s:%d",
-					config.GetConfig().LDAP.Host,
-					config.GetConfig().LDAP.Port,
+					config.GetConfigSpec().LDAP.Host,
+					config.GetConfigSpec().LDAP.Port,
 				),
 			},
 		}
-		g.ObjectMeta.Labels[LdapHostLabelKey] = config.GetConfig().LDAP.Host
+		g.ObjectMeta.Labels[LdapHostLabelKey] = config.GetConfigSpec().LDAP.Host
 	} else {
 		g.ObjectMeta = metav1.ObjectMeta{
 			Name:   groupName,

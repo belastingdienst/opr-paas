@@ -110,7 +110,7 @@ func (pr *PaasReconciler) GetPaas(
 	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
 	// this is only an issue when object is being removed, finalizers will not be removed
 	// causing the object to be in limbo.
-	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig()) {
+	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfigSpec()) {
 		logger.Error().Msg(noConfigFoundMsg)
 		err = pr.setErrorCondition(
 			ctx,
@@ -241,7 +241,7 @@ func (pr *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resu
 	if err = pr.ensureAppSetCaps(ctx, paas); err != nil {
 		return ctrl.Result{}, errors.Join(err, pr.setErrorCondition(ctx, paas, err))
 	} else if argoCap, exists := paas.Spec.Capabilities["argocd"]; exists {
-		if !config.GetConfig().ArgoEnabled {
+		if !config.GetConfigSpec().ArgoEnabled {
 			logger.Info().Msg("ArgoCD specific code is disabled")
 		} else if argoCap.IsEnabled() {
 			logger.Info().Msg("creating Argo App for client bootstrapping")

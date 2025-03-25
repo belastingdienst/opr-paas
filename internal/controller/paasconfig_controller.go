@@ -86,8 +86,8 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return ctrl.Result{}, nil
 	}
 
-	// As there can be reasons why we reconcile again, we check if there is a diff in the desired state vs GetConfig()
-	if reflect.DeepEqual(cfg.Spec, config.GetConfig()) {
+	// As there can be reasons why we reconcile again, we check if there is a diff in the desired state vs GetConfigSpec()
+	if reflect.DeepEqual(cfg.Spec, config.GetConfigSpec()) {
 		logger.Debug().Msg("Config already equals desired state")
 		// Reconciling succeeded, set appropriate Condition
 		err := pcr.setSuccessfulCondition(ctx, cfg)
@@ -99,7 +99,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	logger.Info().Msg("configuration has changed")
-	if !reflect.DeepEqual(cfg.Spec.DecryptKeysSecret, config.GetConfig().DecryptKeysSecret) {
+	if !reflect.DeepEqual(cfg.Spec.DecryptKeysSecret, config.GetConfigSpec().DecryptKeysSecret) {
 		resetCrypts()
 	}
 	// Update the shared configuration store

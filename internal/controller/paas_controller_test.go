@@ -218,7 +218,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		It("should create an argocd", func() {
 			argo := &gitops.ArgoCD{}
 			argoName := types.NamespacedName{
-				Name:      config.GetConfig().ArgoPermissions.ResourceName,
+				Name:      config.GetConfigSpec().ArgoPermissions.ResourceName,
 				Namespace: capNamespace,
 			}
 			err := k8sClient.Get(ctx, argoName, argo)
@@ -280,7 +280,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		})
 
 		It("should not create an argocd", func() {
-			argocdName := config.GetConfig().ArgoPermissions.ResourceName
+			argocdName := config.GetConfigSpec().ArgoPermissions.ResourceName
 			argo := &gitops.ArgoCD{}
 			argoName := types.NamespacedName{
 				Name:      argocdName,
@@ -329,7 +329,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		})
 
 		It("should not create an argocd", func() {
-			argocdName := config.GetConfig().ArgoPermissions.ResourceName
+			argocdName := config.GetConfigSpec().ArgoPermissions.ResourceName
 			argo := &gitops.ArgoCD{}
 			argoName := types.NamespacedName{
 				Name:      argocdName,

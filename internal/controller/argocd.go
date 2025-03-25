@@ -31,8 +31,8 @@ func (r *PaasReconciler) EnsureArgoCD(
 
 	namespace := fmt.Sprintf("%s-%s", paas.Name, "argocd")
 
-	defaultPolicy := config.GetConfig().ArgoPermissions.DefaultPolicy
-	policy := config.GetConfig().ArgoPermissions.FromGroups(paas.GroupNames())
+	defaultPolicy := config.GetConfigSpec().ArgoPermissions.DefaultPolicy
+	policy := config.GetConfigSpec().ArgoPermissions.FromGroups(paas.GroupNames())
 	scopes := "[groups]"
 
 	argo := &argocd.ArgoCD{
@@ -41,7 +41,7 @@ func (r *PaasReconciler) EnsureArgoCD(
 			APIVersion: "argoproj.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      config.GetConfig().ArgoPermissions.ResourceName,
+			Name:      config.GetConfigSpec().ArgoPermissions.ResourceName,
 			Namespace: namespace,
 		},
 		Spec: argocd.ArgoCDSpec{

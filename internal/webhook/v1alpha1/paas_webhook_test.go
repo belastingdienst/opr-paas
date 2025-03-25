@@ -162,7 +162,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should deny creation when a capability custom field is not configured", func() {
-			conf := config.GetConfig()
+			conf := config.GetConfigSpec()
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
 					"bar": {},
@@ -199,7 +199,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should deny creation when a capability is missing a required custom field", func() {
-			conf := config.GetConfig()
+			conf := config.GetConfigSpec()
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
 					"bar": {Required: true},
@@ -230,7 +230,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should deny creation when a custom field does not match validation regex", func() {
-			conf := config.GetConfig()
+			conf := config.GetConfigSpec()
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
 					"bar": {Validation: "^\\d+$"}, // Must be an integer
@@ -350,7 +350,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should warn when quota limits are set higher than requests", func() {
-			conf := config.GetConfig()
+			conf := config.GetConfigSpec()
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{}
 			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
 
@@ -383,7 +383,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should warn when extra permissions are requested for a capability that are not configured", func() {
-			conf := config.GetConfig()
+			conf := config.GetConfigSpec()
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
 				ExtraPermissions: v1alpha1.ConfigCapPerm{
 					"bar": []string{"baz"},
