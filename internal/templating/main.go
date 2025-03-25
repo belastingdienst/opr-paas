@@ -2,6 +2,7 @@ package templating
 
 import (
 	"bytes"
+	"github.com/Masterminds/sprig/v3"
 	"text/template"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -20,13 +21,13 @@ func NewTemplater(paas api.Paas, config api.PaasConfig) Templater {
 }
 
 func (t Templater) Verify(name string, templatedText string) error {
-	_, err := template.New(name).Parse(templatedText)
+	_, err := template.New(name).Funcs(sprig.FuncMap()).Parse(templatedText)
 	return err
 }
 
 func (t Templater) TemplateToString(name string, templatedText string) (string, error) {
 	buf := new(bytes.Buffer)
-	tmpl, err := template.New(name).Parse(templatedText)
+	tmpl, err := template.New(name).Funcs(sprig.FuncMap()).Parse(templatedText)
 	if err != nil {
 		return "", err
 	}
