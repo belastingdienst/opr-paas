@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 var _ = Describe("Creating a PaasConfig", Ordered, func() {
@@ -95,6 +96,27 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 				_, err := validator.ValidateCreate(ctx, obj)
 				Expect(err).Error().To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(`failed to compile validation regexp for paas.groupName`))
+			})
+		})
+		Context("with deprecated fields", func() {
+			It("should raise an error", func() {
+				obj.Spec.ArgoPermissions = v1alpha1.ConfigArgoPermissions{
+					Header: "something",
+				}
+				obj.Spec.GroupSyncListKey = "something.txt"
+				obj.Spec.GroupSyncList = v1alpha1.NamespacedName{
+					Name: "something",
+				}
+				warn, err := validator.ValidateCreate(ctx, obj)
+
+				Expect(err).Error().NotTo(HaveOccurred())
+				Expect(warn).To(HaveLen(4))
+				Expect(warn).To(ContainElements(
+					"spec.argopermissions: deprecated",
+					"spec.excludeappsetname: deprecated",
+					"spec.groupsynclistkey: deprecated",
+					"spec.groupsynclist: deprecated",
+				))
 			})
 		})
 		Context("and a PaasConfig resource already exists", func() {
@@ -174,7 +196,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(err).Error().To(Not(HaveOccurred()))
-				Expect(warn).To(BeEmpty())
+				Expect(warn).To(Equal(admission.Warnings{"spec.excludeappsetname: deprecated"}))
 			})
 		})
 		Context("having a capability defined with a custom_field", func() {
@@ -358,5 +380,40 @@ var _ = Describe("Updating a PaasConfig", Ordered, func() {
 					ContainSubstring(`failed to compile validation regexp for paas.groupName`))
 			})
 		})
+	})
+})
+
+var _ = Describe("Deleting a PaasConfig", Ordered, func() {
+	var (
+		obj       *v1alpha1.PaasConfig
+		validator PaasConfigCustomValidator
+	)
+
+	BeforeEach(func() {
+		obj = &v1alpha1.PaasConfig{
+			ObjectMeta: metav1.ObjectMeta{Name: "newPaasConfig"},
+			Spec: v1alpha1.PaasConfigSpec{
+				DecryptKeysSecret: v1alpha1.NamespacedName{
+					Name:      paasConfigPkSecret,
+					Namespace: paasConfigSystem,
+				},
+			},
+		}
+		validator = PaasConfigCustomValidator{client: k8sClient}
+	})
+
+	It("should not accept another resource type", func() {
+		obj := &corev1.Secret{}
+		warn, err := validator.ValidateDelete(ctx, obj)
+
+		Expect(warn).To(BeEmpty())
+		Expect(err).Error().To(MatchError("expected a PaasConfig object but got *v1.Secret"))
+	})
+
+	It("should not return warnings nor an error", func() {
+		warn, err := validator.ValidateDelete(ctx, obj)
+
+		Expect(warn).To(BeEmpty())
+		Expect(err).Error().To(Not(HaveOccurred()))
 	})
 })

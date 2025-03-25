@@ -81,7 +81,7 @@ func (v *PaasConfigCustomValidator) ValidateCreate(
 	}
 
 	// Ensure all required fields and values are there
-	if warnings, flderr := validatePaasConfigSpec(ctx, v.client, paasconfig.Spec); flderr != nil {
+	if warnings, flderr := validatePaasConfigSpec(ctx, v.client, paasconfig.Spec); flderr != nil || len(warnings) > 0 {
 		warn = append(warn, warnings...)
 		allErrs = append(allErrs, flderr...)
 	}
@@ -112,7 +112,7 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(
 	logger.Info().Msgf("validation for updating of PaasConfig %s", paasconfig.GetName())
 
 	// Ensure all required fields and values are there
-	if warnings, flderr := validatePaasConfigSpec(ctx, v.client, paasconfig.Spec); flderr != nil {
+	if warnings, flderr := validatePaasConfigSpec(ctx, v.client, paasconfig.Spec); flderr != nil || len(warnings) > 0 {
 		warn = append(warn, warnings...)
 		allErrs = append(allErrs, flderr...)
 	}

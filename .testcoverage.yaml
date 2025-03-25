@@ -36,8 +36,6 @@ override:
   # (default is 80, as configured above in this example).
   #- path: ^pkg/lib/foo$
   #  threshold: 100
-  - path: ^internal/webhook/v1alpha1$
-    threshold: 77
   - path: ^internal/controller$
     threshold: 32
   - path: ^api/v1alpha1$
@@ -97,8 +95,6 @@ override:
     threshold: 45
   - path: internal/validate/main.go
     threshold: 62
-  - path: internal/webhook/v1alpha1/paasconfig_webhook.go
-    threshold: 68
 
 # Holds regexp rules which will exclude matched files or packages
 # from coverage statistics.
