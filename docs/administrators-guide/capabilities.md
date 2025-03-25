@@ -128,7 +128,8 @@ The following configuration can be set:
 - template: When set to a valid go template, the template is processed against the current Paas
   and PaasConfig end results are added as one or more custom fields in the applicationset.
 
-\*\* note: `required` and `default` are mutually exclusive.
+!!! Note
+    `required` and `default` are mutually exclusive.
 
 When set, a Paas can set these custom_fields, which brings them to the generators field in the Application created by the ApplicationSet for this specific Paas.
 
@@ -173,7 +174,7 @@ The following would happen:
   Same goes for validation and required. They jave no effect on templated custom fields.
 - Paas takes precedence over templates. When a custom field is configured in the paas, the value can be overruled in the Paas.
   Validation and 'being required' do take effect for these fields.
-  **note**: mixing default and required with templates is not advicable.
+  **note**: mixing default and required with templates is not advisable.
 - Templates return a string, which if it can be parsed as yaml into a map or list,
   will create a multivalue, where the custom field name is suffixed with either the map keys, or list indexes.
 
@@ -194,11 +195,10 @@ You can now generate a argocd policy by ranging over the groups in the paas:
         mycap:
           ApplicationSet: mycap-as
           custom_fields:
-            "argocd-policies":
+            argocd-policies:
               template: |
-                system:cluster-admins, role:admin
-                {{ range $groupName, $group := .Paas.Spec.Groups }}g, {{ $groupName }}, role:admin
-                {{end}}
+                g, system:cluster-admins, role:admin{{ range $groupName, $group := .Paas.Spec.Groups }}
+                g, {{ $groupName }}, role:admin{{end}}
             my-custom-revision:
               validation: '^(main|develop|feature-.*)$'
               default: main
@@ -207,7 +207,15 @@ You can now generate a argocd policy by ranging over the groups in the paas:
               limits.cpu: "8"
     ```
 
-You can also enable debugging in the capability when paasconfig has debugging enabled:
+!!! Note
+    In the above example, you see the first line and the range on line 1, and the templated lines and end block on line 2.
+    This causes that for every line a \n and after that a new row is inserted.
+    This in turn leaves out the ending \n, which is unwanted.
+
+    So, if you happen to see a |+ and extra \n in the resulting appset list generator value,
+    this can be fixed by changing they way all is joined / seperated on lines in the template.
+
+You can reference values from the PaasConfig as well by referencing `.Config`:
 
 !!! example
 
@@ -222,9 +230,9 @@ You can also enable debugging in the capability when paasconfig has debugging en
         mycap:
           ApplicationSet: mycap-as
           custom_fields:
-            "debug":
+            debug:
               template: |
-                {{ .Config.Debug }}
+                {{ .Config.Spec.Debug }}
             my-custom-revision:
               validation: '^(main|develop|feature-.*)$'
               default: main
@@ -252,8 +260,8 @@ This would create 2 keys:
           custom_fields:
             "paas_config":
               template: |
-                debug: {{ .Config.Debug }}
-                argo: {{ .Config.ArgoEnabled }}
+                debug: {{ .Config.Spec.Debug }}
+                argo: {{ .Config.Spec.ArgoEnabled }}
             my-custom-revision:
               validation: '^(main|develop|feature-.*)$'
               default: main
@@ -262,7 +270,7 @@ This would create 2 keys:
               limits.cpu: "8"
     ```
 
-Like so:
+Which results in the following applicationSet entries:
 
 !!! example
 
@@ -281,7 +289,7 @@ Like so:
       ...
     ```
 
-You can also return a list and create multiple keys (number suffix).
+You can also specify a list in the .Template spec and create multiple keys (number suffix).
 
 This would create 3 keys:
 
@@ -300,8 +308,8 @@ This would create 3 keys:
           custom_fields:
             "paas_config":
               template: |
-                - {{ .Config.Debug }}
-                - {{ .Config.ArgoEnabled }}
+                - {{ .Config.Spec.Debug }}
+                - {{ .Config.Spec.ArgoEnabled }}
                 - custom fields with templating is cool
             my-custom-revision:
               validation: '^(main|develop|feature-.*)$'
