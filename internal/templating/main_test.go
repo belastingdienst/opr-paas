@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/templating"
 	"github.com/stretchr/testify/assert"
@@ -82,6 +83,7 @@ func TestVerify(t *testing.T) {
 	assert.NoError(t, templater.Verify("paasname2", `{{ .NotAPaas.Name}}`),
 		"invalid object names are not yet evaluated")
 }
+
 func TestValidTemplateToString(t *testing.T) {
 	for i, test := range []struct {
 		template string
@@ -96,6 +98,7 @@ func TestValidTemplateToString(t *testing.T) {
 		assert.Equal(t, test.expected, templated)
 	}
 }
+
 func TestInValidTemplateToString(t *testing.T) {
 	tpl := templating.NewTemplater(paas, paasConfig)
 	templated, err := tpl.TemplateToString("invalid", "{{ .NotAPaas.Name }")
@@ -115,14 +118,16 @@ func TestValidTemplateToMap(t *testing.T) {
 		{
 			key:      "mystring",
 			template: "{{ .Paas.Name }}",
-			expected: templating.TemplateResult{"mystring": paasName}},
+			expected: templating.TemplateResult{"mystring": paasName},
+		},
 		{
 			key:      "mymap",
 			template: `{"a":"b","c":"d"}`,
 			expected: templating.TemplateResult{
 				"mymap_a": "b",
 				"mymap_c": "d",
-			}},
+			},
+		},
 		{
 			key:      "mylist",
 			template: `["a","b","c","d"]`,
@@ -131,7 +136,8 @@ func TestValidTemplateToMap(t *testing.T) {
 				"mylist_1": "b",
 				"mylist_2": "c",
 				"mylist_3": "d",
-			}},
+			},
+		},
 	} {
 		tpl := templating.NewTemplater(paas, paasConfig)
 		templated, err := tpl.TemplateToMap(test.key, test.template)
@@ -148,4 +154,51 @@ func TestInValidTemplateToMap(t *testing.T) {
 	templated, err = tpl.TemplateToMap("invalid", "{{ .NotAPaas.Name }}")
 	assert.Error(t, err)
 	assert.Nil(t, templated)
+}
+
+func TestCapCustomFieldsToMap(t *testing.T) {
+	const (
+		myTemplate = `system:cluster-admins, role:admin
+{{range $groupName, $groupConfig := .Paas.Spec.Groups }}g, {{ $groupName }}, role:admin
+{{end}}`
+	)
+	var (
+		paas = v1alpha1.Paas{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "paas",
+			},
+			Spec: v1alpha1.PaasSpec{
+				Groups: v1alpha1.PaasGroups{
+					"my-group-1": v1alpha1.PaasGroup{},
+					"my-group-2": v1alpha1.PaasGroup{},
+				},
+			},
+		}
+		paasConfig = v1alpha1.PaasConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "my-config",
+			},
+			Spec: v1alpha1.PaasConfigSpec{
+				Capabilities: v1alpha1.ConfigCapabilities{
+					"my-cap": v1alpha1.ConfigCapability{
+						CustomFields: map[string]v1alpha1.ConfigCustomField{
+							"argocd-policy": {
+								Template: myTemplate,
+							},
+						},
+					},
+				},
+			},
+		}
+		expected = templating.TemplateResult{
+			"argocd-policy": `system:cluster-admins, role:admin
+g, my-group-1, role:admin
+g, my-group-2, role:admin
+`,
+		}
+	)
+	tpl := templating.NewTemplater(paas, paasConfig)
+	tplResults, err := tpl.CapCustomFieldsToMap("my-cap")
+	assert.NoError(t, err)
+	assert.Equal(t, expected, tplResults)
 }

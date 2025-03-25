@@ -360,7 +360,7 @@ func (pc *PaasCapability) CapExtraFields(
 			}
 		} else if fieldConf.Required {
 			issues = append(issues, fmt.Errorf("value %s is required", key))
-		} else {
+		} else if fieldConf.Template == "" || fieldConf.Default != "" {
 			elements[key] = fieldConf.Default
 		}
 	}

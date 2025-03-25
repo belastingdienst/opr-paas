@@ -52,3 +52,18 @@ func (t Templater) TemplateToMap(name string, templatedText string) (result Temp
 	}
 	return TemplateResult{name: yamlData}, nil
 }
+
+func (t Templater) CapCustomFieldsToMap(capName string) (result TemplateResult, err error) {
+	result = make(TemplateResult)
+	capConfig := t.Config.Spec.Capabilities[capName]
+	for name, fieldConfig := range capConfig.CustomFields {
+		if fieldConfig.Template != "" {
+			fieldResult, err := t.TemplateToMap(name, fieldConfig.Template)
+			if err != nil {
+				return nil, err
+			}
+			result = result.Merge(fieldResult)
+		}
+	}
+	return result, nil
+}

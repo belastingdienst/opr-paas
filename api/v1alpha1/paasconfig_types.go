@@ -237,6 +237,9 @@ type ConfigCustomField struct {
 	// Only applies when Required is false.
 	// +kubebuilder:validation:Optional
 	Default string `json:"default"`
+	// You can now use a go-template string to use Paas and PaasConfig variables and compile a value
+	// +kubebuilder:validation:Optional
+	Template string `json:"template"`
 	// Define if the value must be specified in the PaaS.
 	// When set to true, and no value is set, PaasNs has error in status field, and capability is not built.
 	// When set to false, and no value is set, Default is used.

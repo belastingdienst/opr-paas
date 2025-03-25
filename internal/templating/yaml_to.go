@@ -3,12 +3,15 @@ package templating
 import (
 	"fmt"
 
+	"github.com/belastingdienst/opr-paas/internal/fields"
 	"gopkg.in/yaml.v3"
 )
 
-type TemplateMapResult map[string]interface{}
-type TemplateListResult []interface{}
-type TemplateResult map[string]string
+type (
+	TemplateMapResult  fields.Elements
+	TemplateListResult []interface{}
+	TemplateResult     map[string]string
+)
 
 func (tmr TemplateMapResult) AsResult(prefix string) (result TemplateResult) {
 	result = make(TemplateResult)
@@ -29,6 +32,25 @@ func (tlr TemplateListResult) AsResult(prefix string) (result TemplateResult) {
 	for i, value := range tlr {
 		key := fmt.Sprintf("%s%d", prefix, i)
 		result[key] = fmt.Sprintf("%v", value)
+	}
+	return result
+}
+
+func (tmr TemplateResult) Merge(other TemplateResult) (result TemplateResult) {
+	result = make(TemplateResult)
+	for key, value := range tmr {
+		result[key] = value
+	}
+	for key, value := range other {
+		result[key] = value
+	}
+	return result
+}
+
+func (tmr TemplateResult) AsFieldElements() (result fields.Elements) {
+	result = make(fields.Elements)
+	for key, value := range tmr {
+		result[key] = value
 	}
 	return result
 }

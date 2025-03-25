@@ -89,7 +89,6 @@ func createRoleBinding(
 		Any("subject", rb.Subjects).
 		Msg("creating RoleBinding")
 	err := r.Create(ctx, rb)
-
 	if err != nil {
 		// Creating the rolebinding failed
 		logger.Err(err).Msg("error creating rolebinding")
