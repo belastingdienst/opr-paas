@@ -368,8 +368,10 @@ func validateConfigCustomField(
 	var allErrs field.ErrorList
 	childPath := rootPath.Child("customfields").Key(name)
 
-	// Can't set both Required and Default
-	if customfield.Required && customfield.Default != "" {
+	// Can't set a combination of Required, Default, and Template
+	if (customfield.Required && customfield.Default != "") ||
+		(customfield.Required && customfield.Template != "") ||
+		(customfield.Template != "" && customfield.Default != "") {
 		allErrs = append(allErrs, field.Invalid(
 			childPath,
 			"",
