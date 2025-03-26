@@ -107,7 +107,7 @@ type paasSpecValidator func(
 func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	var warnings []string
-	conf := config.GetConfig()
+	conf := config.GetConfig().Spec
 	// Check for uninitialized config
 	if conf.DecryptKeysSecret.Name == "" {
 		return nil, apierrors.NewInternalError(fmt.Errorf("uninitialized PaasConfig"))
@@ -244,7 +244,7 @@ func validateCustomFields(
 
 	for cname, c := range paas.Spec.Capabilities {
 		// validateCaps() has already ensured the capability configuration exists
-		if _, err := c.CapExtraFields(config.GetConfig().Capabilities[cname].CustomFields); err != nil {
+		if _, err := c.CapExtraFields(config.GetConfig().Spec.Capabilities[cname].CustomFields); err != nil {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("capabilities").Key(cname),
 				"custom_fields",

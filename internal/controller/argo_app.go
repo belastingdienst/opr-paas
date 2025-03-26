@@ -69,7 +69,7 @@ func (r *PaasReconciler) backendArgoApp(
 	namespace := fmt.Sprintf("%s-%s", paas.Name, argoCapName)
 	argoConfig := paas.Spec.Capabilities[argoCapName]
 	argoConfig.SetDefaults()
-	fields, err := argoConfig.CapExtraFields(config.GetConfig().Capabilities[argoCapName].CustomFields)
+	fields, err := argoConfig.CapExtraFields(config.GetConfig().Spec.Capabilities[argoCapName].CustomFields)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (r *PaasReconciler) backendArgoApp(
 					Group:        "argoproj.io",
 					JSONPointers: []string{"/spec/generators"},
 					Kind:         "ApplicationSet",
-					Name:         config.GetConfig().ExcludeAppSetName,
+					Name:         config.GetConfig().Spec.ExcludeAppSetName,
 				},
 			},
 			Project: "default",

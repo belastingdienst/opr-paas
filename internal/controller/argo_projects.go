@@ -27,7 +27,7 @@ func (r *PaasReconciler) EnsureAppProject(
 	paas *v1alpha1.Paas,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "appproject")
-	if !config.GetConfig().ArgoEnabled {
+	if !config.GetConfig().Spec.ArgoEnabled {
 		logger.Info().Msg("ArgoCD specific code is disabled")
 		return nil
 	}
@@ -80,7 +80,7 @@ func (r *PaasReconciler) BackendAppProject(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: config.GetConfig().ClusterWideArgoCDNamespace,
+			Namespace: config.GetConfig().Spec.ClusterWideArgoCDNamespace,
 			Labels:    paas.ClonedLabels(),
 			// Only removes appProject when apps no longer reference appProject
 			Finalizers: []string{
