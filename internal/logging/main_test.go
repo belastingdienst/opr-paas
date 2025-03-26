@@ -70,6 +70,18 @@ func TestSetControllerLogger(t *testing.T) {
 	assert.Contains(t, logLine, `"object":{"Namespace":"","Name":""}`)
 }
 
+func TestSetControllerLoggerUnknownGVK(t *testing.T) {
+	ctx := context.Background()
+	runtimeSchema := runtime.NewScheme()
+	obj := &v1alpha1.Paas{}
+	output := &logSink{}
+	log.Logger = log.Output(output)
+	_, logger := SetControllerLogger(ctx, obj, runtimeSchema, controllerruntime.Request{})
+
+	assert.NotNil(t, logger)
+	assert.Contains(t, output.Index(0), "no kind is registered for the type v1alpha1.Paas")
+}
+
 func TestSetWebhookLogger(t *testing.T) {
 	ctx := context.TODO()
 	obj := &v1alpha1.Paas{

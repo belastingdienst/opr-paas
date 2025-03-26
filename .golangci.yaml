@@ -47,7 +47,7 @@ linters-settings:
         arguments:
           - allowStrs: '""'
             allowInts: '0,1,2,3'
-            ignoreFuncs: "assert\\.Len"
+            ignoreFuncs: "assert\\.Len,require\\.Len"
             maxLitCount: '5'
       - name: line-length-limit
         severity: warning
