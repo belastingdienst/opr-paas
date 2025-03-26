@@ -374,6 +374,7 @@ func (pc *PaasCapability) WithExtraPermissions() bool {
 	return pc.Enabled && pc.ExtraPermissions
 }
 
+// Deprecated: pc.Enabled will be removed
 func (pc *PaasCapability) IsEnabled() bool {
 	return pc.Enabled
 }

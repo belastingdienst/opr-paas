@@ -21,17 +21,11 @@ rules:
 - apiGroups:
   - argoproj.io
   resources:
-  - applications
   - applicationsets
-  - appprojects
-  - argocds
   verbs:
-  - create
-  - delete
   - get
   - list
   - patch
-  - update
   - watch
 - apiGroups:
   - cpet.belastingdienst.nl
