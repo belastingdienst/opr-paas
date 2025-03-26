@@ -44,8 +44,6 @@ override:
     threshold: 65
   - path: ^internal/config$
     threshold: 23
-  - path: ^internal/logging$
-    threshold: 77
 
   - path: api/v1alpha1/paasconfig_types.go
     threshold: 15
