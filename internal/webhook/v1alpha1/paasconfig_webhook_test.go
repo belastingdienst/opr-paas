@@ -237,26 +237,28 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					}
 				}
 			})
-			It("should fail when both required and default are set", func() {
+			It("should fail when any combination of required, default and template are set", func() {
 				// Add cap for testing
-				obj.Spec.Capabilities = v1alpha1.ConfigCapabilities{
-					"ValidatedCap": v1alpha1.ConfigCapability{
-						AppSet: "custom-field-appset",
-						QuotaSettings: v1alpha1.ConfigQuotaSettings{
-							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
-								corev1.ResourceCPU: resourcev1.MustParse("5000m"),
+				for _, test := range []v1alpha1.ConfigCustomField{
+					{Default: "something", Required: true},
+					{Template: "{{ .Paas.Metadata.Name }}", Required: true},
+					{Template: "{{ .Paas.Metadata.Name }}", Default: "something"},
+				} {
+					fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
+					obj.Spec.Capabilities = v1alpha1.ConfigCapabilities{
+						"ValidatedCap": v1alpha1.ConfigCapability{
+							AppSet: "custom-field-appset",
+							QuotaSettings: v1alpha1.ConfigQuotaSettings{
+								DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+									corev1.ResourceCPU: resourcev1.MustParse("5000m"),
+								},
 							},
+							CustomFields: map[string]v1alpha1.ConfigCustomField{"to-test": test},
 						},
-						CustomFields: map[string]v1alpha1.ConfigCustomField{
-							"with-validation": {
-								Default:  "something",
-								Required: true,
-							},
-						},
-					},
+					}
+					_, err := validator.ValidateCreate(ctx, obj)
+					Expect(err).Error().To(HaveOccurred())
 				}
-				_, err := validator.ValidateCreate(ctx, obj)
-				Expect(err).Error().To(HaveOccurred())
 			})
 			It("should verify Template field to be valid", func() {
 				tests := []struct {
