@@ -48,8 +48,6 @@ override:
     threshold: 23
   - path: ^internal/logging$
     threshold: 77
-  - path: ^internal/validate$
-    threshold: 62
 
   - path: api/v1alpha1/paasconfig_types.go
     threshold: 15
@@ -93,8 +91,6 @@ override:
     threshold: 12
   - path: internal/groups/groups.go
     threshold: 45
-  - path: internal/validate/main.go
-    threshold: 62
 
 # Holds regexp rules which will exclude matched files or packages
 # from coverage statistics.
