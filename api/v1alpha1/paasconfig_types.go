@@ -117,8 +117,7 @@ type PaasConfigSpec struct {
 
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	ExcludeAppSetName string `json:"exclude_appset_name"`
 
 	// Grant permissions to all groups according to config in configmap and role selected per group in paas.

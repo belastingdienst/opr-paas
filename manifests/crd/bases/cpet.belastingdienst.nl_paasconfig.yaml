@@ -204,7 +204,6 @@ spec:
                 description: |-
                   Deprecated: ArgoCD specific code will be removed from the operator
                   Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
-                minLength: 1
                 type: string
               groupsynclist:
                 description: |-
@@ -283,7 +282,6 @@ spec:
             required:
             - clusterwide_argocd_namespace
             - decryptKeySecret
-            - exclude_appset_name
             - groupsynclist
             type: object
           status:
