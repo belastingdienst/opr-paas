@@ -2,8 +2,9 @@ package templating
 
 import (
 	"bytes"
-	"github.com/Masterminds/sprig/v3"
 	"text/template"
+
+	"github.com/Masterminds/sprig/v3"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 )
