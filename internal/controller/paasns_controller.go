@@ -105,7 +105,7 @@ func (pnsr *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (
 	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
 	// This is only an issue when object is being removed.
 	// Finalizers will not be removed causing the object to be in limbo.
-	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig()) {
+	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig().Spec) {
 		logger.Error().Msg(noConfigFoundMsg)
 		err = pnsr.setErrorCondition(
 			ctx,
@@ -410,7 +410,7 @@ func (pnsr *PaasNSReconciler) paasFromPaasNs(
 func (pnsr *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) error {
 	ctx, logger := logging.GetLogComponent(ctx, paasNsComponentName)
 
-	cfg := config.GetConfig()
+	cfg := config.GetConfig().Spec
 	// If PaasNs is related to a capability, remove it from appSet
 	if _, exists := cfg.Capabilities[paasns.Name]; exists {
 		if err := pnsr.finalizeAppSetCap(ctx, paasns); err != nil {

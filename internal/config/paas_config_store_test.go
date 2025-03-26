@@ -21,11 +21,15 @@ func TestGetConfigWithEmptyConfigStore(t *testing.T) {
 
 func TestGetConfig(t *testing.T) {
 	cnf = &PaasConfigStore{
-		currentConfig: v1alpha1.PaasConfigSpec{Debug: true},
+		currentConfig: v1alpha1.PaasConfig{
+			Spec: v1alpha1.PaasConfigSpec{
+				Debug: true,
+			},
+		},
 	}
 
 	actual := GetConfig()
 
 	assert.NotEmpty(t, actual)
-	assert.True(t, actual.Debug)
+	assert.True(t, actual.Spec.Debug)
 }

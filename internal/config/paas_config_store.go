@@ -16,14 +16,14 @@ import (
 
 // PaasConfigStore is a thread-safe store for the current PaasConfig
 type PaasConfigStore struct {
-	currentConfig v1alpha1.PaasConfigSpec
+	currentConfig v1alpha1.PaasConfig
 	mutex         sync.RWMutex
 }
 
 var cnf = &PaasConfigStore{}
 
-// GetConfig retrieves the current configuration
-func GetConfig() v1alpha1.PaasConfigSpec {
+// GetConfig retrieVes the current configuration
+func GetConfig() v1alpha1.PaasConfig {
 	cnf.mutex.RLock()
 	defer cnf.mutex.RUnlock()
 	return cnf.currentConfig
@@ -33,5 +33,5 @@ func GetConfig() v1alpha1.PaasConfigSpec {
 func SetConfig(newConfig v1alpha1.PaasConfig) {
 	cnf.mutex.Lock()
 	defer cnf.mutex.Unlock()
-	cnf.currentConfig = newConfig.Spec
+	cnf.currentConfig = newConfig
 }
