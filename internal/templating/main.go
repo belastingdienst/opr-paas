@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"text/template"
 
-	"github.com/Masterminds/sprig/v3"
+	"github.com/go-sprout/sprout"
+	"github.com/go-sprout/sprout/group/all"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 )
@@ -21,14 +22,31 @@ func NewTemplater(paas api.Paas, config api.PaasConfig) Templater {
 	}
 }
 
+func (t Templater) getSproutFuncs() (template.FuncMap, error) {
+	handler := sprout.New()
+	err := handler.AddGroups(all.RegistryGroup())
+	if err != nil {
+		return nil, err
+	}
+	return handler.Build(), nil
+}
+
 func (t Templater) Verify(name string, templatedText string) error {
-	_, err := template.New(name).Funcs(sprig.FuncMap()).Parse(templatedText)
+	funcs, err := t.getSproutFuncs()
+	if err != nil {
+		return err
+	}
+	_, err = template.New(name).Funcs(funcs).Parse(templatedText)
 	return err
 }
 
 func (t Templater) TemplateToString(name string, templatedText string) (string, error) {
 	buf := new(bytes.Buffer)
-	tmpl, err := template.New(name).Funcs(sprig.FuncMap()).Parse(templatedText)
+	funcs, err := t.getSproutFuncs()
+	if err != nil {
+		return "", err
+	}
+	tmpl, err := template.New(name).Funcs(funcs).Parse(templatedText)
 	if err != nil {
 		return "", err
 	}
