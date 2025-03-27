@@ -12,6 +12,7 @@ package v1alpha1
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -90,7 +91,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(warn, err).Error().NotTo(HaveOccurred())
 			Expect(err).Error().NotTo(HaveOccurred())
 		})
-		It("Should deny creation when the paas name does not meet validation rule", func() {
+		It("Should validation paas name", func() {
 			const paasNameValidation = "^([a-z0-9]{3})-([a-z0-9]{3})$"
 			conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"name": paasNameValidation}}
 
@@ -106,6 +107,52 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 
 			Expect(validator.ValidateCreate(ctx, obj)).Error().
 				To(MatchError(ContainSubstring("capability not configured")))
+		})
+		It("Should validate the requestor field", func() {
+			for _, test := range []struct {
+				requestor  string
+				validation string
+				valid      bool
+			}{
+				{requestor: "valid-requestor", validation: "^[a-z-]+$", valid: true},
+				{requestor: "invalid-requestor", validation: "^[a-z]+$", valid: false},
+				{requestor: "", validation: "^.$", valid: false},
+			} {
+				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
+				conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"requestor": test.validation}}
+				config.SetConfig(conf)
+				obj.Spec.Requestor = test.requestor
+				warn, err := validator.ValidateCreate(ctx, obj)
+				Expect(warn).To(BeNil())
+				if test.valid {
+					Expect(warn, err).Error().NotTo(HaveOccurred())
+				} else {
+					Expect(warn, err).Error().To(HaveOccurred())
+				}
+			}
+		})
+		It("Should validate namespace names", func() {
+			for _, test := range []struct {
+				name       string
+				validation string
+				valid      bool
+			}{
+				{name: "valid-name", validation: "^[a-z-]+$", valid: true},
+				{name: "invalid-name", validation: "^[a-z]+$", valid: false},
+				{name: "", validation: "^.$", valid: false},
+			} {
+				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
+				conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"namespaceName": test.validation}}
+				config.SetConfig(conf)
+				obj.Spec.Namespaces = []string{test.name}
+				warn, err := validator.ValidateCreate(ctx, obj)
+				Expect(warn).To(BeNil())
+				if test.valid {
+					Expect(warn, err).Error().NotTo(HaveOccurred())
+				} else {
+					Expect(warn, err).Error().To(HaveOccurred())
+				}
+			}
 		})
 		It("Should deny creation when a capability is set that is not configured", func() {
 			obj = &v1alpha1.Paas{
@@ -307,7 +354,6 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				if test.valid {
 					Expect(warnings).To(BeNil())
 					Expect(errors).ToNot(HaveOccurred())
-
 				} else {
 					Expect(warnings, errors).Error().To(HaveOccurred())
 					Expect(errors).To(MatchError(SatisfyAll(

@@ -114,10 +114,12 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 
 	for _, val := range []paasSpecValidator{
 		validatePaasName,
+		validatePaasRequestor,
 		validateCaps,
 		validateSecrets,
 		validateCustomFields,
 		validateGroupNames,
+		validatePaasNamespaceNames,
 	} {
 		if errs, err := val(ctx, v.client, conf, paas); err != nil {
 			return nil, apierrors.NewInternalError(err)
@@ -165,7 +167,7 @@ func validateCaps(
 	return errs, nil
 }
 
-// validatePaasName returns an error if any of the passed capabilities is not configured.
+// validatePaasName returns an error if the name of the paas does not meet validations.
 func validatePaasName(
 	ctx context.Context,
 	_ client.Client,
@@ -174,15 +176,70 @@ func validatePaasName(
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
-	nameValidationRE := conf.GetValidationRE("paas", "name")
+	nameValidationRE := config.GetConfig().GetValidationRE("paas", "name")
 	if nameValidationRE == nil {
 		return nil, nil
 	}
 	if !nameValidationRE.Match([]byte(paas.Name)) {
 		errs = append(errs, field.Invalid(
-			field.NewPath("metadat").Key("name"),
+			field.NewPath("metadata").Key("name"),
 			paas.Name,
 			fmt.Sprintf("paas name does not match configured validation regex `%s`", nameValidationRE.String()),
+		))
+	}
+
+	return errs, nil
+}
+
+// validatePaasNamespaces returns an error for every namespace that does not meet validations.
+func validatePaasNamespaceNames(
+	ctx context.Context,
+	_ client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
+	var errs []*field.Error
+
+	// We use same value for paas.spec.namespaces and paasns.metadata.name validation.
+	// Unless both are set.
+	nameValidationRE := config.GetConfig().GetValidationRE("paas", "namespaceName")
+	if nameValidationRE == nil {
+		nameValidationRE = config.GetConfig().GetValidationRE("paasNs", "name")
+	}
+	if nameValidationRE == nil {
+		return nil, nil
+	}
+	for index, namespace := range paas.Spec.Namespaces {
+		if !nameValidationRE.Match([]byte(namespace)) {
+			errs = append(errs, field.Invalid(
+				field.NewPath("spec").Child("namespaces").Index(index),
+				namespace,
+				fmt.Sprintf("paas name does not match configured validation regex `%s`", nameValidationRE.String()),
+			))
+		}
+	}
+
+	return errs, nil
+}
+
+// validatePaasRequestor returns an error if any of the passed capabilities is not configured.
+func validatePaasRequestor(
+	ctx context.Context,
+	_ client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
+	var errs []*field.Error
+
+	nameValidationRE := config.GetConfig().GetValidationRE("paas", "requestor")
+	if nameValidationRE == nil {
+		return nil, nil
+	}
+	if !nameValidationRE.Match([]byte(paas.Spec.Requestor)) {
+		errs = append(errs, field.Invalid(
+			field.NewPath("spec").Key("requestor"),
+			paas.Name,
+			fmt.Sprintf("paas requestor does not match configured validation regex `%s`", nameValidationRE.String()),
 		))
 	}
 
@@ -197,7 +254,7 @@ func validateGroupNames(
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
-	groupNameValidationRE := conf.GetValidationRE("paas", "groupName")
+	groupNameValidationRE := config.GetConfig().GetValidationRE("paas", "groupName")
 	if groupNameValidationRE == nil {
 		return nil, nil
 	}
