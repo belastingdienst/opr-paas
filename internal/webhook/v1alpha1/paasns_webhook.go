@@ -12,6 +12,7 @@ import (
 	"reflect"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -101,6 +102,8 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 			Detail: fmt.Errorf("expected a PaasNS object but got %T", obj).Error(),
 		}
 	}
+
+	errs = append(errs, validatePaasNsName(paasns.Name)...)
 
 	paas, err := getPaas(ctx, v.client, paasns.Spec.Paas)
 	if err != nil {
@@ -259,6 +262,25 @@ func compareGroups(subGroups []string, superGroups []string) (errs field.ErrorLi
 				Detail:   fmt.Errorf("group %s does not exist in paas groups (%v)", group, superGroups).Error(),
 			})
 		}
+	}
+	return errs
+}
+
+// validatePaasNsName returns an error when the naam of the PaasNs does not meet validations RE
+func validatePaasNsName(name string) (errs field.ErrorList) {
+	nameValidationRE := config.GetConfig().GetValidationRE("paasNs", "name")
+	if nameValidationRE == nil {
+		nameValidationRE = config.GetConfig().GetValidationRE("paas", "namespaceName")
+	}
+	if nameValidationRE == nil {
+		return nil
+	}
+	if !nameValidationRE.Match([]byte(name)) {
+		errs = append(errs, field.Invalid(
+			field.NewPath("metadata").Key("name"),
+			name,
+			fmt.Sprintf("paasns name does not match configured validation regex `%s`", nameValidationRE.String()),
+		))
 	}
 	return errs
 }
