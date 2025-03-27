@@ -22,7 +22,7 @@ func NewTemplater(paas api.Paas, config api.PaasConfig) Templater {
 	}
 }
 
-func (t Templater) getFuncs() (template.FuncMap, error) {
+func (t Templater) getSproutFuncs() (template.FuncMap, error) {
 	handler := sprout.New()
 	err := handler.AddGroups(all.RegistryGroup())
 	if err != nil {
@@ -32,7 +32,7 @@ func (t Templater) getFuncs() (template.FuncMap, error) {
 }
 
 func (t Templater) Verify(name string, templatedText string) error {
-	funcs, err := t.getFuncs()
+	funcs, err := t.getSproutFuncs()
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (t Templater) Verify(name string, templatedText string) error {
 
 func (t Templater) TemplateToString(name string, templatedText string) (string, error) {
 	buf := new(bytes.Buffer)
-	funcs, err := t.getFuncs()
+	funcs, err := t.getSproutFuncs()
 	if err != nil {
 		return "", err
 	}

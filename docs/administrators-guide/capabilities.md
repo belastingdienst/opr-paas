@@ -177,10 +177,11 @@ The following would happen:
   **note**: mixing default and required with templates is not advisable.
 - Templates return a string, which if it can be parsed as yaml into a map or list,
   will create a multivalue, where the custom field name is suffixed with either the map keys, or list indexes.
+- To validate your templates more easily, it is advised to use https://repeatit.io/
 
 ### Examples of templating
 
-You can now generate a argocd policy by ranging over the groups in the paas:
+You can now generate an argocd policy by ranging over the groups in the paas:
 
 !!! example
 
