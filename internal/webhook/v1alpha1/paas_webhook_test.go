@@ -12,7 +12,6 @@ package v1alpha1
 import (
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -35,6 +34,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		oldObj    *v1alpha1.Paas
 		validator PaasCustomValidator
 		mycrypt   *crypt.Crypt
+		conf      v1alpha1.PaasConfig
 	)
 
 	BeforeAll(func() {
@@ -50,7 +50,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		obj = &v1alpha1.Paas{}
 		oldObj = &v1alpha1.Paas{}
 		validator = PaasCustomValidator{k8sClient}
-		conf := v1alpha1.PaasConfig{
+		conf = v1alpha1.PaasConfig{
 			Spec: v1alpha1.PaasConfigSpec{
 				DecryptKeysSecret: v1alpha1.NamespacedName{
 					Name:      "keys",
@@ -64,11 +64,6 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 								corev1.ResourceLimitsCPU: resourcev1.MustParse("5"),
 							},
 						},
-					},
-				},
-				Validations: map[string]map[string]string{
-					"paas": {
-						"groupName": "^[a-z0-9-]{1,63}$",
 					},
 				},
 			},
@@ -94,6 +89,23 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			warn, err := validator.ValidateCreate(ctx, obj)
 			Expect(warn, err).Error().NotTo(HaveOccurred())
 			Expect(err).Error().NotTo(HaveOccurred())
+		})
+		It("Should deny creation when the paas name does not meet validation rule", func() {
+			const paasNameValidation = "^([a-z0-9]{3})-([a-z0-9]{3})$"
+			conf.Spec.Validations = map[string]map[string]string{"paas": {"name": paasNameValidation}}
+
+			config.SetConfig(conf)
+			obj = &v1alpha1.Paas{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "this-is-invalid",
+				},
+				Spec: v1alpha1.PaasSpec{
+					Capabilities: v1alpha1.PaasCapabilities{"foo": v1alpha1.PaasCapability{}},
+				},
+			}
+
+			Expect(validator.ValidateCreate(ctx, obj)).Error().
+				To(MatchError(ContainSubstring("capability not configured")))
 		})
 		It("Should deny creation when a capability is set that is not configured", func() {
 			obj = &v1alpha1.Paas{
@@ -266,56 +278,44 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			))
 		})
 
-		It("Should allow groups with valid names", func() {
+		It("Should validate group names", func() {
+			conf.Spec.Validations = map[string]map[string]string{"paas": {"groupName": "^[a-z0-9-]{1,63}$"}}
+			config.SetConfig(conf)
 			var (
 				validChars = "abcdefghijklmknopqrstuvwzyz-0123456789"
-				validNames = []string{
-					validChars,
-					strings.Repeat(validChars, 3)[0:63],
-				}
 			)
-			for _, validName := range validNames {
+			for _, test := range []struct {
+				name  string
+				valid bool
+			}{
+				{name: validChars, valid: true},
+				{name: strings.Repeat(validChars, 3)[0:63], valid: true},
+				{name: "_" + validChars, valid: false},
+				{name: "A" + validChars, valid: false},
+				{name: strings.Repeat(validChars, 3)[0:64], valid: false},
+			} {
 				validGroupNamePaas := &v1alpha1.Paas{
 					Spec: v1alpha1.PaasSpec{
 						Groups: map[string]v1alpha1.PaasGroup{
-							validName: {
+							test.name: {
 								Users: []string{"bar"},
 							},
 						},
 					},
 				}
 				warnings, errors := validator.ValidateCreate(ctx, validGroupNamePaas)
-				Expect(warnings).To(BeNil())
-				Expect(errors).ToNot(HaveOccurred())
+				if test.valid {
+					Expect(warnings).To(BeNil())
+					Expect(errors).ToNot(HaveOccurred())
+
+				} else {
+					Expect(warnings, errors).Error().To(HaveOccurred())
+					Expect(errors).To(MatchError(SatisfyAll(
+						ContainSubstring("group name does not match configured validation regex"))))
+				}
 			}
 		})
 
-		It("Should deny groups with invalid names", func() {
-			var (
-				validChars   = "abcdefghijklmknopqrstuvwzyz-0123456789"
-				invalidNames = []string{
-					"_" + validChars,
-					"A" + validChars,
-					strings.Repeat(validChars, 3)[0:64],
-				}
-			)
-			for _, invalidName := range invalidNames {
-				fmt.Fprintf(GinkgoWriter, "DEBUG - InvalidName: %s", invalidName)
-				invalidGroupNamePaas := &v1alpha1.Paas{
-					Spec: v1alpha1.PaasSpec{
-						Groups: map[string]v1alpha1.PaasGroup{
-							invalidName: {
-								Users: []string{"bar"},
-							},
-						},
-					},
-				}
-				warnings, errors := validator.ValidateCreate(ctx, invalidGroupNamePaas)
-				Expect(warnings, errors).Error().To(HaveOccurred())
-				Expect(errors).To(MatchError(SatisfyAll(
-					ContainSubstring("group name does not match configured validation regex"))))
-			}
-		})
 		It("Should warn when a group contains both users and a query", func() {
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
