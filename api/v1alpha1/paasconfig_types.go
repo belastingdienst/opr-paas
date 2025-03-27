@@ -9,6 +9,7 @@ package v1alpha1
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -126,7 +127,34 @@ type PaasConfigSpec struct {
 
 	// Set regular expressions to have the webhooks validate the fields
 	// +kubebuilder:validation:Optional
-	Validations map[string]map[string]string `json:"validations"`
+	Validations PaasConfigValidations `json:"validations"`
+}
+
+type PaasConfigTypeValidations map[string]string
+type PaasConfigValidations map[string]PaasConfigTypeValidations
+
+func (pctv PaasConfigTypeValidations) getValidationRE(fieldName string) *regexp.Regexp {
+	if validation, exists := pctv[fieldName]; !exists {
+		return nil
+	} else {
+		return regexp.MustCompile(validation)
+	}
+}
+
+func (pcv PaasConfigValidations) getValidationRE(crd string, fieldName string) *regexp.Regexp {
+	if validations, exists := pcv[crd]; !exists {
+		return nil
+	} else {
+		return validations.getValidationRE(fieldName)
+	}
+}
+
+func (pcs PaasConfigSpec) GetValidationRE(crd string, fieldName string) *regexp.Regexp {
+	if pcs.Validations == nil {
+		return nil
+	} else {
+		return pcs.Validations.getValidationRE(crd, fieldName)
+	}
 }
 
 type NamespacedName struct {

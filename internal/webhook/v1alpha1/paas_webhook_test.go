@@ -92,7 +92,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 		It("Should deny creation when the paas name does not meet validation rule", func() {
 			const paasNameValidation = "^([a-z0-9]{3})-([a-z0-9]{3})$"
-			conf.Spec.Validations = map[string]map[string]string{"paas": {"name": paasNameValidation}}
+			conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"name": paasNameValidation}}
 
 			config.SetConfig(conf)
 			obj = &v1alpha1.Paas{
@@ -279,7 +279,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should validate group names", func() {
-			conf.Spec.Validations = map[string]map[string]string{"paas": {"groupName": "^[a-z0-9-]{1,63}$"}}
+			conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"groupName": "^[a-z0-9-]{1,63}$"}}
 			config.SetConfig(conf)
 			var (
 				validChars = "abcdefghijklmknopqrstuvwzyz-0123456789"

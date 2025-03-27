@@ -9,7 +9,6 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -166,7 +165,7 @@ func validateCaps(
 	return errs, nil
 }
 
-// validateGroupNames returns an error if any of the passed capabilities is not configured.
+// validatePaasName returns an error if any of the passed capabilities is not configured.
 func validatePaasName(
 	ctx context.Context,
 	_ client.Client,
@@ -174,21 +173,16 @@ func validatePaasName(
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
-	paasValidations, exists := conf.Validations["paas"]
-	if !exists {
-		return nil, nil
-	}
-	nameValidation, exists := paasValidations["name"]
-	if !exists {
-		return nil, nil
-	}
-	nameValidationRE := regexp.MustCompile(nameValidation)
 
+	nameValidationRE := conf.GetValidationRE("paas", "name")
+	if nameValidationRE == nil {
+		return nil, nil
+	}
 	if !nameValidationRE.Match([]byte(paas.Name)) {
 		errs = append(errs, field.Invalid(
 			field.NewPath("metadat").Key("name"),
 			paas.Name,
-			fmt.Sprintf("paas name does not match configured validation regex `%s`", nameValidation),
+			fmt.Sprintf("paas name does not match configured validation regex `%s`", nameValidationRE.String()),
 		))
 	}
 
@@ -203,22 +197,18 @@ func validateGroupNames(
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
-	paasValidations, exists := conf.Validations["paas"]
-	if !exists {
+	groupNameValidationRE := conf.GetValidationRE("paas", "groupName")
+	if groupNameValidationRE == nil {
 		return nil, nil
 	}
-	groupNameValidation, exists := paasValidations["groupName"]
-	if !exists {
-		return nil, nil
-	}
-	groupNameValidationRE := regexp.MustCompile(groupNameValidation)
 
 	for groupName := range paas.Spec.Groups {
 		if !groupNameValidationRE.Match([]byte(groupName)) {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("groups").Key(groupName),
 				groupName,
-				fmt.Sprintf("group name does not match configured validation regex `%s`", groupNameValidation),
+				fmt.Sprintf("group name does not match configured validation regex `%s`",
+					groupNameValidationRE.String()),
 			))
 		}
 	}

@@ -48,7 +48,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					Name:      paasConfigPkSecret,
 					Namespace: paasConfigSystem,
 				},
-				Validations: map[string]map[string]string{
+				Validations: v1alpha1.PaasConfigValidations{
 					"paas": {
 						"groupNames": "[0-9a-z-]{1,63}",
 					},
@@ -67,7 +67,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					Port: 3310,
 				},
 				ExcludeAppSetName: "Another something",
-				Validations: map[string]map[string]string{
+				Validations: v1alpha1.PaasConfigValidations{
 					"paas": {
 						"groupNames": "[0-9A-Za-z-]{1,128}",
 					},
@@ -318,7 +318,7 @@ var _ = Describe("Updating a PaasConfig", Ordered, func() {
 					Name:      paasConfigPkSecret,
 					Namespace: paasConfigSystem,
 				},
-				Validations: map[string]map[string]string{
+				Validations: v1alpha1.PaasConfigValidations{
 					"paas": {
 						"groupNames": "[0-9a-z-]{1,63}",
 					},
