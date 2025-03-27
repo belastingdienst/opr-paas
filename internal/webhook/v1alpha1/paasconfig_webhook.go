@@ -450,7 +450,7 @@ func validateDecryptKeysSecretExists(
 
 // validateDecryptKeysSecret ensures that the referenced Secret exists in the cluster.
 func validateValidationFields(
-	validations map[string]map[string]string,
+	validations v1alpha1.PaasConfigValidations,
 	rootPath *field.Path,
 ) field.ErrorList {
 	var allErrs field.ErrorList
