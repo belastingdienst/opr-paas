@@ -114,6 +114,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	}
 
 	for _, val := range []paasSpecValidator{
+		validatePaasName,
 		validateCaps,
 		validateSecrets,
 		validateCustomFields,
@@ -160,6 +161,35 @@ func validateCaps(
 				"capability not configured",
 			))
 		}
+	}
+
+	return errs, nil
+}
+
+// validateGroupNames returns an error if any of the passed capabilities is not configured.
+func validatePaasName(
+	ctx context.Context,
+	_ client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
+	var errs []*field.Error
+	paasValidations, exists := conf.Validations["paas"]
+	if !exists {
+		return nil, nil
+	}
+	nameValidation, exists := paasValidations["name"]
+	if !exists {
+		return nil, nil
+	}
+	nameValidationRE := regexp.MustCompile(nameValidation)
+
+	if !nameValidationRE.Match([]byte(paas.Name)) {
+		errs = append(errs, field.Invalid(
+			field.NewPath("metadat").Key("name"),
+			paas.Name,
+			fmt.Sprintf("paas name does not match configured validation regex `%s`", nameValidation),
+		))
 	}
 
 	return errs, nil
