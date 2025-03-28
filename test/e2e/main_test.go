@@ -12,7 +12,6 @@ import (
 	"os"
 	"testing"
 
-	argoprojlabsv1beta1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
 	argoprojv1alpha1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
@@ -285,9 +284,6 @@ func registerSchemes(cfg *envconf.Config) error {
 		return err
 	} else if err = argoprojv1alpha1.AddToScheme(scheme); err != nil {
 		return err
-	} else if err = argoprojlabsv1beta1.AddToScheme(scheme); err != nil {
-		return err
 	}
-
 	return nil
 }
