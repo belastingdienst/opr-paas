@@ -101,17 +101,6 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			},
 			Spec: argocd.ApplicationSetSpec{
 				Generators: []argocd.ApplicationSetGenerator{},
-				Template: argocd.ApplicationSetTemplate{
-					ApplicationSetTemplateMeta: argocd.ApplicationSetTemplateMeta{},
-					Spec: argocd.ApplicationSpec{
-						Destination: argocd.ApplicationDestination{
-							Server:    "somewhere.org",
-							Namespace: "default",
-							Name:      "somewhere",
-						},
-						Project: "someproj",
-					},
-				},
 			},
 		}
 	})
