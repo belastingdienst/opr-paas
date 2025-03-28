@@ -33,7 +33,6 @@ type ApplicationSet struct {
 // ApplicationSetSpec represents a class of application set state.
 type ApplicationSetSpec struct {
 	Generators []ApplicationSetGenerator `json:"generators" protobuf:"bytes,2,name=generators"`
-	Template   ApplicationSetTemplate    `json:"template" protobuf:"bytes,3,name=template"`
 }
 
 // ApplicationSetGenerator represents a generator at the top level of an ApplicationSet.
@@ -53,18 +52,4 @@ type ApplicationSetList struct {
 	metav1.TypeMeta `json:""`
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 	Items           []ApplicationSet `json:"items" protobuf:"bytes,2,rep,name=items"`
-}
-
-// ApplicationSetTemplate represents argocd ApplicationSpec
-type ApplicationSetTemplate struct {
-	ApplicationSetTemplateMeta `json:"metadata" protobuf:"bytes,1,name=metadata"`
-	Spec                       ApplicationSpec `json:"spec" protobuf:"bytes,2,name=spec"`
-}
-
-type ApplicationSetTemplateMeta struct {
-	Name        string            `json:"name,omitempty" protobuf:"bytes,1,name=name"`
-	Namespace   string            `json:"namespace,omitempty" protobuf:"bytes,2,name=namespace"`
-	Labels      map[string]string `json:"labels,omitempty" protobuf:"bytes,3,name=labels"`
-	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,4,name=annotations"`
-	Finalizers  []string          `json:"finalizers,omitempty" protobuf:"bytes,5,name=finalizers"`
 }
