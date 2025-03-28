@@ -88,12 +88,13 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		validSecret1Key string = "validSecret1"
 		validSecret2    string
 		validator       PaasNSCustomValidator
+		conf            v1alpha1.PaasConfig
 	)
 
 	BeforeAll(func() {
 		var err error
 
-		conf := v1alpha1.PaasConfig{
+		conf = v1alpha1.PaasConfig{
 			Spec: v1alpha1.PaasConfigSpec{
 				DecryptKeysSecret: v1alpha1.NamespacedName{
 					Name:      paasPkSecret,
@@ -178,6 +179,15 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
+		conf = v1alpha1.PaasConfig{
+			Spec: v1alpha1.PaasConfigSpec{
+				DecryptKeysSecret: v1alpha1.NamespacedName{
+					Name:      paasPkSecret,
+					Namespace: paasSystem,
+				},
+			},
+		}
+		config.SetConfig(conf)
 		validator = PaasNSCustomValidator{k8sClient}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
@@ -222,6 +232,26 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			obj.Spec.Paas = "changing this should fail"
 			_, err := validator.ValidateUpdate(ctx, oldObj, obj)
 			Expect(err.Error()).To(ContainSubstring("field is immutable"))
+		})
+		It("Should validate paasns name", func() {
+			for _, test := range []struct {
+				name       string
+				validation string
+				valid      bool
+			}{
+				{name: "valid-name", validation: "^[a-z-]+$", valid: true},
+				{name: "invalid-name", validation: "^[a-z]+$", valid: false},
+				{name: "", validation: "^.$", valid: false},
+			} {
+				conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paasNs": {"name": test.validation}}
+				config.SetConfig(conf)
+				obj.ObjectMeta.Name = test.name
+				if test.valid {
+					warn, err := validator.ValidateCreate(ctx, obj)
+					Expect(warn).To(BeNil())
+					Expect(warn, err).Error().NotTo(HaveOccurred())
+				}
+			}
 		})
 	})
 

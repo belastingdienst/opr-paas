@@ -126,7 +126,7 @@ type PaasConfigSpec struct {
 
 	// Set regular expressions to have the webhooks validate the fields
 	// +kubebuilder:validation:Optional
-	Validations map[string]map[string]string `json:"validations"`
+	Validations PaasConfigValidations `json:"validations"`
 }
 
 type NamespacedName struct {

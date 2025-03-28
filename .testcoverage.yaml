@@ -94,6 +94,7 @@ exclude:
     - cmd
     - e2e
     - internal/stubs
+    - api/v1alpha1/zz_generated.deepcopy.go
 
 # File name of go-test-coverage breakdown file, which can be used to
 # analyze coverage difference.

@@ -48,7 +48,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					Name:      paasConfigPkSecret,
 					Namespace: paasConfigSystem,
 				},
-				Validations: map[string]map[string]string{
+				Validations: v1alpha1.PaasConfigValidations{
 					"paas": {
 						"groupNames": "[0-9a-z-]{1,63}",
 					},
@@ -67,7 +67,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					Port: 3310,
 				},
 				ExcludeAppSetName: "Another something",
-				Validations: map[string]map[string]string{
+				Validations: v1alpha1.PaasConfigValidations{
 					"paas": {
 						"groupNames": "[0-9A-Za-z-]{1,128}",
 					},
@@ -318,7 +318,7 @@ var _ = Describe("Updating a PaasConfig", Ordered, func() {
 					Name:      paasConfigPkSecret,
 					Namespace: paasConfigSystem,
 				},
-				Validations: map[string]map[string]string{
+				Validations: v1alpha1.PaasConfigValidations{
 					"paas": {
 						"groupNames": "[0-9a-z-]{1,63}",
 					},
@@ -362,6 +362,40 @@ var _ = Describe("Updating a PaasConfig", Ordered, func() {
 				warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
 				Expect(err).Error().To(Not(HaveOccurred()))
 				Expect(warn).To(BeEmpty())
+			})
+		})
+		Context("having a capability with invalid name", func() {
+			It("Should validate capability names against validation in new config", func() {
+				for _, test := range []struct {
+					name       string
+					validation string
+					valid      bool
+				}{
+					{name: "valid-name", validation: "^[a-z-]+$", valid: true},
+					{name: "invalid-name", validation: "^[a-z]+$", valid: false},
+					{name: "", validation: "^.$", valid: false},
+				} {
+					obj.Spec.Capabilities = v1alpha1.ConfigCapabilities{
+						test.name: v1alpha1.ConfigCapability{
+							AppSet: "my-appset",
+							QuotaSettings: v1alpha1.ConfigQuotaSettings{
+								DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+									corev1.ResourceCPU: resourcev1.MustParse("5000m"),
+								},
+							},
+						},
+					}
+					obj.Spec.Validations = v1alpha1.PaasConfigValidations{
+						"paasConfig": {"capabilityName": test.validation}}
+					warn, err := validator.ValidateCreate(ctx, obj)
+					if test.valid {
+						Expect(warn).To(BeEmpty())
+						Expect(err).Error().NotTo(HaveOccurred())
+					} else {
+						Expect(warn).To(BeEmpty())
+						Expect(err).Error().To(HaveOccurred())
+					}
+				}
 			})
 		})
 	})
