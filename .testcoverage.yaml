@@ -40,8 +40,6 @@ override:
     threshold: 30
   - path: ^api/v1alpha1$
     threshold: 68
-  - path: ^api/v1alpha2$
-    threshold: 77
   - path: ^internal/crypt$
     threshold: 65
   - path: ^internal/config$
