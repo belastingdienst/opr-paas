@@ -17,7 +17,8 @@ const (
 	TypeReadyPaas = "Ready"
 	// TypeHasErrorsPaas represents the status used when the Paas reconciliation holds errors.
 	TypeHasErrorsPaas = "HasErrors"
-	// TypeDegradedPaas represents the status used when the Paas is deleted and the finalizer operations are yet to occur.
+	// TypeDegradedPaas represents the status used when the Paas is deleted and the finalizer operations are yet to
+	// occur.
 	TypeDegradedPaas = "Degraded"
 )
 
@@ -100,6 +101,7 @@ type PaasNamespace struct {
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
 	// +kubebuilder:validation:Optional
+	//revive:disable-next-line
 	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
@@ -108,7 +110,7 @@ type PaasStatus struct {
 
 // Paas is the Schema for the paas API
 type Paas struct {
-	metav1.TypeMeta   `json:",inline"`
+	metav1.TypeMeta   `json:""`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   PaasSpec   `json:"spec,omitempty"`
@@ -119,7 +121,7 @@ type Paas struct {
 
 // PaasList contains a list of Paas
 type PaasList struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta `json:""`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Paas `json:"items"`
 }
