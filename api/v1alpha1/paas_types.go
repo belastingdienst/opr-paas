@@ -427,6 +427,7 @@ func (ps *PaasStatus) GetMessages() []string {
 }
 
 //+kubebuilder:object:root=true
+//+kubebuilder:storageversion
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=paas,scope=Cluster
 
