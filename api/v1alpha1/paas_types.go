@@ -428,6 +428,8 @@ func (ps *PaasStatus) GetMessages() []string {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:storageversion
+// +kubebuilder:conversion:hub
 // +kubebuilder:resource:path=paas,scope=Cluster
 
 // Paas is the Schema for the paas API
