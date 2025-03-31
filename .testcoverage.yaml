@@ -23,7 +23,7 @@ threshold:
 
   # (optional; default 0)
   # Minimum overall project coverage percentage required.
-  total: 45
+  total: 55
 
 # Holds regexp rules which will override thresholds for matched files or packages
 # using their paths.
@@ -39,7 +39,7 @@ override:
   - path: ^internal/controller$
     threshold: 30
   - path: ^api/v1alpha1$
-    threshold: 32
+    threshold: 68
   - path: ^internal/crypt$
     threshold: 65
   - path: ^internal/config$
