@@ -40,6 +40,8 @@ override:
     threshold: 30
   - path: ^api/v1alpha1$
     threshold: 32
+  - path: ^api/v1alpha2$
+    threshold: 77
   - path: ^internal/crypt$
     threshold: 65
   - path: ^internal/config$
@@ -47,8 +49,6 @@ override:
 
   - path: api/v1alpha1/paasconfig_types.go
     threshold: 10
-  - path: api/v1alpha1/zz_generated.deepcopy.go
-    threshold: 13
   - path: internal/config/watcher.go
     threshold: 0
   - path: internal/controller/argo_app.go
@@ -94,6 +94,7 @@ exclude:
     - cmd
     - e2e
     - internal/stubs
+    - zz_generated.*\.go$
 
 # File name of go-test-coverage breakdown file, which can be used to
 # analyze coverage difference.
