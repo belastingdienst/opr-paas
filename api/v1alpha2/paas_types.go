@@ -46,7 +46,7 @@ type PaasSpec struct {
 	// +kubebuilder:validation:Optional
 	Namespaces PaasNamespaces `json:"namespaces"`
 
-	// Secretes must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
+	// Secrets must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
 	// +kubebuilder:validation:Optional
 	Secrets map[string]string `json:"secrets"`
 
@@ -96,6 +96,14 @@ type PaasGroups map[string]PaasGroup
 type PaasNamespaces map[string]PaasNamespace
 
 type PaasNamespace struct {
+	// Keys of groups which should get access to this namespace. When not set it defaults to all groups listed in
+	// `spec.groups`.
+	// +kubebuilder:validation:Optional
+	Groups []string `json:"groups"`
+	// Secrets which should exist in this namespace, the values must be encrypted with a key pair referenced by
+	// `spec.decryptKeySecret` from the active PaasConfig.
+	// +kubebuilder:validation:Optional
+	Secrets map[string]string `json:"secrets"`
 }
 
 // PaasStatus defines the observed state of Paas

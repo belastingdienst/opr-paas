@@ -330,6 +330,21 @@ spec:
                 type: string
               namespaces:
                 additionalProperties:
+                  properties:
+                    groups:
+                      description: |-
+                        Keys of groups which should get access to this namespace. When not set it defaults to all groups listed in
+                        `spec.groups`.
+                      items:
+                        type: string
+                      type: array
+                    secrets:
+                      additionalProperties:
+                        type: string
+                      description: |-
+                        Secrets which should exist in this namespace, the values must be encrypted with a key pair referenced by
+                        `spec.decryptKeySecret` from the active PaasConfig.
+                      type: object
                   type: object
                 description: Namespaces can be used to define extra namespaces to
                   be created as part of this Paas project
@@ -352,7 +367,7 @@ spec:
               secrets:
                 additionalProperties:
                   type: string
-                description: Secretes must be encrypted with a public key, for which
+                description: Secrets must be encrypted with a public key, for which
                   the private key should be added to the DecryptKeySecret
                 type: object
             required:
