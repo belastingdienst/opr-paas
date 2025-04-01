@@ -115,6 +115,7 @@ type PaasStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:resource:path=paas,scope=Cluster
 
 // Paas is the Schema for the paas API
 type Paas struct {
