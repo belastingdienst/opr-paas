@@ -75,6 +75,50 @@ func (p *Paas) ConvertFrom(srcRaw conversion.Hub) error {
 		return fmt.Errorf("cannot convert %s/%s: must be v1alpha1", src.Namespace, src.Name)
 	}
 
-	// TODO(AxiomaticFixedChimpanzee): Implement conversion logic from v1alpha1 to v1alpha2
+	p.ObjectMeta = src.ObjectMeta
+	p.Status.Conditions = src.Status.Conditions
+	p.Spec.Requestor = src.Spec.Requestor
+	p.Spec.Quota = src.Spec.Quota
+	p.Spec.Capabilities = make(PaasCapabilities)
+	p.Spec.Groups = make(PaasGroups)
+	p.Spec.Namespaces = make(PaasNamespaces)
+	p.Spec.Secrets = src.Spec.SSHSecrets
+	p.Spec.ManagedByPaas = src.Spec.ManagedByPaas
+
+	for name, capability := range src.Spec.Capabilities {
+		fields := make(map[string]string)
+		for f := range capability.CustomFields {
+			fields[f] = capability.CustomFields[f]
+		}
+		if capability.GitURL != "" {
+			fields["gitUrl"] = capability.GitURL
+		}
+		if capability.GitRevision != "" {
+			fields["gitRevision"] = capability.GitRevision
+		}
+		if capability.GitPath != "" {
+			fields["gitPath"] = capability.GitPath
+		}
+
+		p.Spec.Capabilities[name] = PaasCapability{
+			CustomFields:     fields,
+			Quota:            capability.Quota,
+			Secrets:          capability.SSHSecrets,
+			ExtraPermissions: capability.ExtraPermissions,
+		}
+	}
+
+	for name, group := range src.Spec.Groups {
+		p.Spec.Groups[name] = PaasGroup{
+			Query: group.Query,
+			Users: group.Users,
+			Roles: group.Roles,
+		}
+	}
+
+	for _, name := range src.Spec.Namespaces {
+		p.Spec.Namespaces[name] = PaasNamespace{}
+	}
+
 	return nil
 }
