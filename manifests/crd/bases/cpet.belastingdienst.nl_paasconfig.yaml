@@ -275,6 +275,9 @@ spec:
                 additionalProperties:
                   additionalProperties:
                     type: string
+                  description: |-
+                    Configure custom validations for a specific CRD (e.a. paas, paasConfig or PaasNs).
+                    Refer to https://belastingdienst.github.io/opr-paas/latest/administrators-guide/validations/ for more info.
                   type: object
                 description: Set regular expressions to have the webhooks validate
                   the fields

@@ -207,8 +207,9 @@ func validatePaasConfigSpec(
 	}
 
 	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, k8sClient, spec.DecryptKeysSecret, childPath)...)
-	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, childPath)...)
 	allErrs = append(allErrs, validateValidationFields(spec.Validations, childPath)...)
+	allErrs = append(allErrs, validateConfigCapabilityNames(spec, childPath)...)
+	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, childPath)...)
 
 	if len(allErrs) > 0 {
 		logger.Error().Strs(
@@ -227,6 +228,30 @@ func validateConfigCapabilities(capabilities v1alpha1.ConfigCapabilities, rootPa
 
 	for name, capability := range capabilities {
 		allErrs = append(allErrs, validateConfigCapability(name, capability, childPath)...)
+	}
+
+	return allErrs
+}
+
+func validateConfigCapabilityNames(spec v1alpha1.PaasConfigSpec, rootPath *field.Path) field.ErrorList {
+	var validationRE *regexp.Regexp
+	childPath := rootPath.Child("capabilities")
+	if spec.Validations == nil {
+		return nil
+	} else if validationRE = spec.Validations.GetValidationRE("paasConfig", "capabilityName"); validationRE == nil {
+		return nil
+	}
+
+	var allErrs field.ErrorList
+
+	for name := range spec.Capabilities {
+		if !validationRE.Match([]byte(name)) {
+			allErrs = append(allErrs, field.Invalid(
+				childPath.Key(name),
+				name,
+				fmt.Sprintf("capability name does not match configured validation regex `%s`", validationRE.String()),
+			))
+		}
 	}
 
 	return allErrs
@@ -450,7 +475,7 @@ func validateDecryptKeysSecretExists(
 
 // validateDecryptKeysSecret ensures that the referenced Secret exists in the cluster.
 func validateValidationFields(
-	validations map[string]map[string]string,
+	validations v1alpha1.PaasConfigValidations,
 	rootPath *field.Path,
 ) field.ErrorList {
 	var allErrs field.ErrorList

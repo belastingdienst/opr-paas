@@ -8,13 +8,10 @@ date: 2025-02-27
 
 # Introduction
 
-With release v1.5.0 we have added webhook validations, verifying groupnames against RFC 1035.
-With release v1.5.1, we have expanded the group names validation to be configurable with a regular expression.
-We might expand this feature to configure validation on other fields in future releases.
+Most fields in the CRD are checked directly with kubebuilder validations,
+But some fields can be validated with a regular expression that is configurable through the PaasConfig:
 
-## Example PaasConfig
-
-Below snippet shows how to set a regular expression on group names in a paas:
+Below snippet shows how validations can be configured for the complete set of vailable validations:
 
 !!! example
 
@@ -26,6 +23,23 @@ Below snippet shows how to set a regular expression on group names in a paas:
     spec:
       validations:
         paas:
-          groupNames: "^[a-z0-9-]*$"
+          # Validate name of Paas
+          name: "^[a-z0-9-]*$"
+          # Validate name of groups in paas
+          groupName: "^[a-z0-9-]*$"
+          # Validate name of namespaces in paas
+          namespaceName: "^[a-z0-9-]*$"
+          # Validate requestor field in paas
+          requestor: "^[a-z0-9-]*$"
+        paasConfig:
+          # Validate name of capability in config
+          capabilityName: "^[a-z0-9-]*$"
+        paasNs:
+          # Validate name of paasNs
+          name: "^[a-z0-9-]*$"
     ...
     ```
+
+!!! note
+If only one of `PaasConfig.spec.validations.paas.namespaceName`, and `PaasConfig.validations.paasNs.name` is set,
+both PaasNs names and Paas.Spec.Namespaces are validated with the same validation rule.

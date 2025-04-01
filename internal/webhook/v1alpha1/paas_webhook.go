@@ -9,7 +9,6 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
-	"regexp"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -114,10 +113,13 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	}
 
 	for _, val := range []paasSpecValidator{
+		validatePaasName,
+		validatePaasRequestor,
 		validateCaps,
 		validateSecrets,
 		validateCustomFields,
 		validateGroupNames,
+		validatePaasNamespaceNames,
 	} {
 		if errs, err := val(ctx, v.client, conf, paas); err != nil {
 			return nil, apierrors.NewInternalError(err)
@@ -165,7 +167,86 @@ func validateCaps(
 	return errs, nil
 }
 
-// validateGroupNames returns an error if any of the passed capabilities is not configured.
+// validatePaasName returns an error if the name of the paas does not meet validations.
+func validatePaasName(
+	ctx context.Context,
+	_ client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
+	var errs []*field.Error
+
+	nameValidationRE := config.GetConfig().GetValidationRE("paas", "name")
+	if nameValidationRE == nil {
+		return nil, nil
+	}
+	if !nameValidationRE.Match([]byte(paas.Name)) {
+		errs = append(errs, field.Invalid(
+			field.NewPath("metadata").Key("name"),
+			paas.Name,
+			fmt.Sprintf("paas name does not match configured validation regex `%s`", nameValidationRE.String()),
+		))
+	}
+
+	return errs, nil
+}
+
+// validatePaasNamespaceNames returns an error for every namespace that does not meet validations.
+func validatePaasNamespaceNames(
+	ctx context.Context,
+	_ client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
+	var errs []*field.Error
+
+	// We use same value for paas.spec.namespaces and paasns.metadata.name validation.
+	// Unless both are set.
+	nameValidationRE := config.GetConfig().GetValidationRE("paas", "namespaceName")
+	if nameValidationRE == nil {
+		nameValidationRE = config.GetConfig().GetValidationRE("paasNs", "name")
+	}
+	if nameValidationRE == nil {
+		return nil, nil
+	}
+	for index, namespace := range paas.Spec.Namespaces {
+		if !nameValidationRE.Match([]byte(namespace)) {
+			errs = append(errs, field.Invalid(
+				field.NewPath("spec").Child("namespaces").Index(index),
+				namespace,
+				fmt.Sprintf("paas name does not match configured validation regex `%s`", nameValidationRE.String()),
+			))
+		}
+	}
+
+	return errs, nil
+}
+
+// validatePaasRequestor returns an error if The requestor field in a Paas does not meet with validation RE
+func validatePaasRequestor(
+	ctx context.Context,
+	_ client.Client,
+	conf v1alpha1.PaasConfigSpec,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
+	var errs []*field.Error
+
+	nameValidationRE := config.GetConfig().GetValidationRE("paas", "requestor")
+	if nameValidationRE == nil {
+		return nil, nil
+	}
+	if !nameValidationRE.Match([]byte(paas.Spec.Requestor)) {
+		errs = append(errs, field.Invalid(
+			field.NewPath("spec").Key("requestor"),
+			paas.Name,
+			fmt.Sprintf("paas requestor does not match configured validation regex `%s`", nameValidationRE.String()),
+		))
+	}
+
+	return errs, nil
+}
+
+// validateGroupNames returns an error for every group name that does not meet validations RE
 func validateGroupNames(
 	ctx context.Context,
 	_ client.Client,
@@ -173,22 +254,18 @@ func validateGroupNames(
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
-	paasValidations, exists := conf.Validations["paas"]
-	if !exists {
+	groupNameValidationRE := config.GetConfig().GetValidationRE("paas", "groupName")
+	if groupNameValidationRE == nil {
 		return nil, nil
 	}
-	groupNameValidation, exists := paasValidations["groupName"]
-	if !exists {
-		return nil, nil
-	}
-	groupNameValidationRE := regexp.MustCompile(groupNameValidation)
 
 	for groupName := range paas.Spec.Groups {
 		if !groupNameValidationRE.Match([]byte(groupName)) {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("groups").Key(groupName),
 				groupName,
-				fmt.Sprintf("group name does not match configured validation regex `%s`", groupNameValidation),
+				fmt.Sprintf("group name does not match configured validation regex `%s`",
+					groupNameValidationRE.String()),
 			))
 		}
 	}
