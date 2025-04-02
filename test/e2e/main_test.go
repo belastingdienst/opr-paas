@@ -16,8 +16,10 @@ import (
 	argoprojv1alpha1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
@@ -277,16 +279,15 @@ func registerSchemes(cfg *envconf.Config) error {
 	}
 	scheme := r.GetScheme()
 
-	if err = v1alpha1.AddToScheme(scheme); err != nil {
-		return err
-	} else if err = quotav1.AddToScheme(scheme); err != nil {
-		return err
-	} else if err = userv1.AddToScheme(scheme); err != nil {
-		return err
-	} else if err = argoprojv1alpha1.AddToScheme(scheme); err != nil {
-		return err
-	} else if err = argoprojlabsv1beta1.AddToScheme(scheme); err != nil {
-		return err
+	for _, install := range []func(*runtime.Scheme) error{
+		v1alpha1.AddToScheme,
+		v1alpha2.AddToScheme,
+		quotav1.Install,
+		userv1.Install,
+		argoprojv1alpha1.AddToScheme,
+		argoprojlabsv1beta1.AddToScheme,
+	} {
+		install(scheme)
 	}
 
 	return nil
