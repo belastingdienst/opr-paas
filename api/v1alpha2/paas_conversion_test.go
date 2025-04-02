@@ -84,10 +84,10 @@ var exV1Alpha2 = &Paas{
 		Capabilities: PaasCapabilities{
 			"argocd": {
 				CustomFields: map[string]string{
-					"field1":      "value",
-					"gitUrl":      "ssh://git@example.com/some-repo.git",
-					"gitRevision": "main",
-					"gitPath":     ".",
+					"field1":       "value",
+					"git_url":      "ssh://git@example.com/some-repo.git",
+					"git_revision": "main",
+					"git_path":     ".",
 				},
 				Quota: quota.Quota{
 					corev1.ResourceRequestsCPU: resource.MustParse("250m"),

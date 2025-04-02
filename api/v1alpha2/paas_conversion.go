@@ -14,6 +14,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
+const (
+	gitUrlKey      = "git_url"
+	gitRevisionKey = "git_revision"
+	gitPathKey     = "git_path"
+)
+
 // ConvertTo converts this Paas (v1alpha2) to the Hub version (v1alpha1).
 func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 	dst, ok := dstRaw.(*v1alpha1.Paas)
@@ -33,12 +39,12 @@ func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 
 	for name, capability := range p.Spec.Capabilities {
 		fields := capability.DeepCopy().CustomFields
-		gitUrl := fields["gitUrl"]
-		gitRevision := fields["gitRevision"]
-		gitPath := fields["gitPath"]
-		delete(fields, "gitUrl")
-		delete(fields, "gitRevision")
-		delete(fields, "gitPath")
+		gitUrl := fields[gitUrlKey]
+		gitRevision := fields[gitRevisionKey]
+		gitPath := fields[gitPathKey]
+		delete(fields, gitUrlKey)
+		delete(fields, gitRevisionKey)
+		delete(fields, gitPathKey)
 
 		dst.Spec.Capabilities[name] = v1alpha1.PaasCapability{
 			Enabled:          true,
@@ -91,13 +97,13 @@ func (p *Paas) ConvertFrom(srcRaw conversion.Hub) error {
 			fields[f] = capability.CustomFields[f]
 		}
 		if capability.GitURL != "" {
-			fields["gitUrl"] = capability.GitURL
+			fields[gitUrlKey] = capability.GitURL
 		}
 		if capability.GitRevision != "" {
-			fields["gitRevision"] = capability.GitRevision
+			fields[gitRevisionKey] = capability.GitRevision
 		}
 		if capability.GitPath != "" {
-			fields["gitPath"] = capability.GitPath
+			fields[gitPathKey] = capability.GitPath
 		}
 
 		p.Spec.Capabilities[name] = PaasCapability{
