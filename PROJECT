@@ -41,7 +41,6 @@ resources:
   version: v1alpha1
 - api:
     crdVersion: v1
-    namespaced: true
   domain: cpet.belastingdienst.nl
   kind: Paas
   path: github.com/belastingdienst/opr-paas/api/v1alpha2

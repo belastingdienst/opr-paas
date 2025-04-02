@@ -8,6 +8,7 @@ package v1alpha2
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -20,7 +21,50 @@ func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 		return fmt.Errorf("cannot convert to %s/%s: must be v1alpha1", dst.Namespace, dst.Name)
 	}
 
-	// TODO(AxiomaticFixedChimpanzee): Implement conversion logic from v1alpha2 to v1alpha1
+	dst.ObjectMeta = p.ObjectMeta
+	dst.Status.Conditions = p.Status.Conditions
+	dst.Spec.Requestor = p.Spec.Requestor
+	dst.Spec.Quota = p.Spec.Quota
+	dst.Spec.Capabilities = make(v1alpha1.PaasCapabilities)
+	dst.Spec.Groups = make(v1alpha1.PaasGroups)
+	dst.Spec.Namespaces = make([]string, 0)
+	dst.Spec.SSHSecrets = p.Spec.Secrets
+	dst.Spec.ManagedByPaas = p.Spec.ManagedByPaas
+
+	for name, capability := range p.Spec.Capabilities {
+		fields := capability.DeepCopy().CustomFields
+		gitUrl := fields["gitUrl"]
+		gitRevision := fields["gitRevision"]
+		gitPath := fields["gitPath"]
+		delete(fields, "gitUrl")
+		delete(fields, "gitRevision")
+		delete(fields, "gitPath")
+
+		dst.Spec.Capabilities[name] = v1alpha1.PaasCapability{
+			Enabled:          true,
+			GitURL:           gitUrl,
+			GitRevision:      gitRevision,
+			GitPath:          gitPath,
+			CustomFields:     fields,
+			Quota:            capability.Quota,
+			SSHSecrets:       capability.Secrets,
+			ExtraPermissions: capability.ExtraPermissions,
+		}
+	}
+
+	for name, group := range p.Spec.Groups {
+		dst.Spec.Groups[name] = v1alpha1.PaasGroup{
+			Query: group.Query,
+			Users: group.Users,
+			Roles: group.Roles,
+		}
+	}
+
+	for name := range p.Spec.Namespaces {
+		dst.Spec.Namespaces = append(dst.Spec.Namespaces, name)
+	}
+	sort.Strings(dst.Spec.Namespaces)
+
 	return nil
 }
 
@@ -31,6 +75,50 @@ func (p *Paas) ConvertFrom(srcRaw conversion.Hub) error {
 		return fmt.Errorf("cannot convert %s/%s: must be v1alpha1", src.Namespace, src.Name)
 	}
 
-	// TODO(AxiomaticFixedChimpanzee): Implement conversion logic from v1alpha1 to v1alpha2
+	p.ObjectMeta = src.ObjectMeta
+	p.Status.Conditions = src.Status.Conditions
+	p.Spec.Requestor = src.Spec.Requestor
+	p.Spec.Quota = src.Spec.Quota
+	p.Spec.Capabilities = make(PaasCapabilities)
+	p.Spec.Groups = make(PaasGroups)
+	p.Spec.Namespaces = make(PaasNamespaces)
+	p.Spec.Secrets = src.Spec.SSHSecrets
+	p.Spec.ManagedByPaas = src.Spec.ManagedByPaas
+
+	for name, capability := range src.Spec.Capabilities {
+		fields := make(map[string]string)
+		for f := range capability.CustomFields {
+			fields[f] = capability.CustomFields[f]
+		}
+		if capability.GitURL != "" {
+			fields["gitUrl"] = capability.GitURL
+		}
+		if capability.GitRevision != "" {
+			fields["gitRevision"] = capability.GitRevision
+		}
+		if capability.GitPath != "" {
+			fields["gitPath"] = capability.GitPath
+		}
+
+		p.Spec.Capabilities[name] = PaasCapability{
+			CustomFields:     fields,
+			Quota:            capability.Quota,
+			Secrets:          capability.SSHSecrets,
+			ExtraPermissions: capability.ExtraPermissions,
+		}
+	}
+
+	for name, group := range src.Spec.Groups {
+		p.Spec.Groups[name] = PaasGroup{
+			Query: group.Query,
+			Users: group.Users,
+			Roles: group.Roles,
+		}
+	}
+
+	for _, name := range src.Spec.Namespaces {
+		p.Spec.Namespaces[name] = PaasNamespace{}
+	}
+
 	return nil
 }
