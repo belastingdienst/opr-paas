@@ -40,9 +40,9 @@ type PaasNSSpec struct {
 	SSHSecrets map[string]string `json:"sshSecrets"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:resource:path=paasns,scope=Namespaced
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:resource:path=paasns,scope=Namespaced
 
 // PaasNS is the Schema for the PaasNS API
 type PaasNS struct {
@@ -95,7 +95,7 @@ func (pns PaasNS) GetConditions() []metav1.Condition {
 	return pns.Status.Conditions
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // PaasNSList contains a list of PaasNS
 type PaasNSList struct {

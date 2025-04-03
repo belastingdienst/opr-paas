@@ -426,9 +426,9 @@ func (ps *PaasStatus) GetMessages() []string {
 	return ps.Messages
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:resource:path=paas,scope=Cluster
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:resource:path=paas,scope=Cluster
 
 // Paas is the Schema for the paas API
 type Paas struct {
@@ -489,7 +489,7 @@ func (p Paas) GetConditions() []metav1.Condition {
 	return p.Status.Conditions
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // PaasList contains a list of Paas
 type PaasList struct {

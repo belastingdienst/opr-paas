@@ -36,7 +36,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	//+kubebuilder:scaffold:imports
+	// +kubebuilder:scaffold:imports
 )
 
 var scheme = runtime.NewScheme()
@@ -60,7 +60,7 @@ func init() {
 	utilruntime.Must(gitopsresources.AddToScheme(scheme))
 
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 }
 
 func main() {
@@ -202,7 +202,7 @@ func configureManager(f *flags) ctrl.Manager {
 	}).SetupWithManager(mgr); err != nil {
 		log.Fatal().Err(err).Str("controller", "PaasNS").Msg("unable to create controller")
 	}
-	//+kubebuilder:scaffold:builder
+	// +kubebuilder:scaffold:builder
 
 	configureWebhooks(mgr)
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
