@@ -16,72 +16,81 @@ Some examples of capabilities include:
 - observing your Paas resources with Grafana
 - configuring federated Authentication and Authorization with keycloak
 
-Adding capabilities does not require code changes / building new images. It only requires:
+Configuring capabilities does not require code changes / building new images. It only requires:
 
-1. a git repository for the cluster-wide ArgoCD to be used for deploying the capability for a Paas which has the capability enabled
-2. an ApplicationSet in the namespace of the cluster-wide ArgoCD to point to the git repository
-3. configuration for the Paas operator pointing to the ApplicationSet and specifying default quota to be used when no quota is specified for this capability in the Paas
+1. configuration for the Paas operator via `PaasConfig`
+2. an ApplicationSet in the namespace of the cluster-wide ArgoCD
+3. a git repository for the cluster-wide ArgoCD to be used for deploying the capability for a Paas which has the capability enabled
 
-## Configuring the ApplicationSet
+## Configuring capabilities in the PaasConfig
 
-Cluster administrators can configure the ApplicationSet to be used for this specific capability.
-Imagine a cluster-wide ArgoCD to manage capabilities for Paas'es.
-It is deployed in the namespace `paas-capabilities-argocd`.
-To enable any capability, `spec.clusterwide_argocd_namespace` needs to be set to `paas-capabilities-argocd`, so that the Paas operator will locate ApplicationSets for capabilities in this namespace.
-And for a new capability (e.a. `new-capability`), there should be an ApplicationSet to manage resources for this new capability.
-This ApplicationSet should be created in `paas-capabilities-argocd`, and it's name (e.a. `new-capability`) should be configured in PaasConfig (`spec.capabilities["new-capability"].ApplicationSet`).
-After setting this configuration, for every Paas with the capability `new-capability` enabled, the Paas operator will
-`GET` the ApplicationSet `paas-capabilities-argocd.new-capability`, add the Paas to the list generator and update the ApplicationSet definition..
-This in turn will create a new Application for the capability for this Paas, and ArgoCD will create and manage the resources.
+On every cluster running the Paas operator, a PaasConfig resource is defined.
+This PaasConfig resource holds the specific configuration for the operator.
+For each capability an entry needs to be set in `spec.capabilities` map. An example can be found below.
+Furthermore, the Paas operator needs to know the namespace where to search for ApplicationSets managing the capability (`spec.clusterwide_argocd_namespace`).
 
-### Example ApplicationSet
+### Example PaasConfig with a capability
+
+Below example shows all configuration required to configure a capability.
 
 !!! example
 
     ```yml
-    apiVersion: argoproj.io/v1alpha1
-    kind: ApplicationSet
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    kind: PaasConfig
     metadata:
-      name: mycap-as
-      namespace: paas-capabilities-argocd
+      name: opr-paas-config
     spec:
-      generators: []
-      template:
-        metadata:
-          name: '{{paas}}-capability-mycap'
-        spec:
-          destination:
-            namespace: '{{paas}}-mycap'
-            server: 'https://kubernetes.default.svc'
-          project: '{{paas}}'
-          source:
-            kustomize:
-              commonLabels:
-                capability: mycap
-                clusterquotagroup: '{{requestor}}'
-                paas: '{{paas}}'
-                service: '{{service}}'
-                subservice: '{{subservice}}'
-                key: '{{my-custom-key}}'
-                revision: '{{my-custom-revision}}'
-            path: paas-capabilities/mycap
-            repoURL: 'https://www.github.com/belastingdienst/opr-paas-capabilities.git'
-            targetRevision: main
-          syncPolicy:
-            automated:
-              selfHeal: true
+      clusterwide_argocd_namespace: paas-capabilities-argocd
+      capabilities:
+        mycap:
+          ApplicationSet: mycap-as
+          default_permissions:
+            my-service-account:
+              - my-cluster-role
+          extra_permissions:
+            my-extra-service-account:
+              - my-extra-cluster-role
+          custom_fields:
+            my-custom-key:
+              validation: '^key_[0-9]+$'
+              required: true
+            my-custom-revision:
+              validation: '^(main|develop|feature-.*)$'
+              default: main
+          quotas:
+            clusterwide: true
+            defaults:
+              limits.cpu: "8"
+              limits.memory: 8Gi
+              requests.cpu: "4"
+              requests.memory: 5Gi
+              requests.storage: "5Gi"
+            min:
+              limits.cpu: "1"
+              limits.memory: 1Gi
+              requests.cpu: "500Mi"
+              requests.memory: 500Mi
+            max:
+              limits.cpu: "16"
+              limits.memory: 16Gi
+              requests.cpu: "16"
+              requests.memory: 16Gi
+              requests.storage: "10Gi"
+              thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
+            ratio: 0.1
     ```
 
-## Configuring quota
+### Configuring quota
 
-For every Capabilities for every Paas, a separate ClusterResourceQuota is created.
+For every Capability for every Paas, a separate ClusterResourceQuota is created.
 Quotas can be set in a Paas, and when not set, the Capability configuration can have a Default which will be used instead.
 Furthermore, the capability configuration can also have a min and max value set.
 The Paas operator will use the value as set in the Paas, and these Default, Min and Max settings to come to the proper value to be set in the ClusterResourceQuota set on the namespace.
 Beyond these options, a capability can also be configured to use cluster-wide Quota with the `spec.capabilities["new-capability"].quotas.clusterwide`
 and `spec.capabilities["new-capability"].quotas.raio`.
 
-### More info
+#### More info
 
 For more information please check:
 
@@ -89,7 +98,7 @@ For more information please check:
 - [api-guide on capability quota configuration](../development-guide/00_api.md#configcapability)
 - [api-guide on capability quota in the Paas](../development-guide/00_api.md#paascapability)
 
-## Configuring permissions
+### Configuring permissions
 
 For every capability the Paas operator can grant permissions to service accounts.
 There are two options:
@@ -99,7 +108,7 @@ There are two options:
   The main goal for extra permissions is to start off with higher permissions to get started, and revert them when a lower permissive option is available (e.a. lower permissions are set as default permissions).
   Customers starting with extra permissions can test with default permissions and return to extra permissions if they run into issues.
 
-### More info
+#### More info
 
 For more information on Default permissions and Extra permissions please revert to:
 
@@ -107,7 +116,7 @@ For more information on Default permissions and Extra permissions please revert 
 - [api-guide on capability configuration in the PaasConfig](../development-guide/00_api.md#configcapability)
 - [api-guide on capability configuration in the Paas](../development-guide/00_api.md#paascapability)
 
-## Configuring custom fields
+### Configuring custom fields
 
 Capabilities might require options to be set in a Paas. The fields to be set would be specific to a capability.
 Some examples include:
@@ -133,7 +142,7 @@ The following configuration can be set:
 
 When set, a Paas can set these custom_fields, which brings them to the generators field in the Application created by the ApplicationSet for this specific Paas.
 
-### Example of how a custom field operates
+#### Example of how a custom field operates
 
 Image than on a cluster with
 
@@ -166,20 +175,28 @@ The following would happen:
 - the new application would have the following set in `spec.source.kustomize.commonLabels`:
   - key: key_123
   - revision: main
-- From here, kustomize could use these values to be set on all resources create by the cluster-wide ArgoCD for this capability for this Paas
+- From here, Kustomize could use these values to be set on all resources create by the cluster-wide ArgoCD for this capability for this Paas
 
-### Notes on templating
+#### Templating
 
-- Template takes precendence over default. With custom fields with a configured template defaults have no effect.
-  Same goes for validation and required. They jave no effect on templated custom fields.
-- Paas takes precedence over templates. When a custom field is configured in the paas, the value can be overruled in the Paas.
-  Validation and 'being required' do take effect for these fields.
-  **note**: mixing default and required with templates is not advisable.
-- Templates return a string, which if it can be parsed as yaml into a map or list,
-  will create a multivalue, where the custom field name is suffixed with either the map keys, or list indexes.
-- To validate your templates more easily, it is advised to use https://repeatit.io/
+The templating feature allows administrators to dynamically generate values for custom fields in the ApplicationSet without 
+requiring users to explicitly specify these values in their Paas. This provides flexibility by enabling values to be derived from 
+the Paas, the PaasConfig, or a combination of both. The template support Go templating syntax, in which all values from the Paas 
+and PaasConfig can be referenced, more examples below. In addition to the default Go template functions, we've added support for
+[all Sprout](https://docs.atom.codes/sprout/groups/all) Go template functions.
 
-### Examples of templating
+#### Notes:
+- **Precedence**: When a custom field is configured with a template, it will take precedence over other settings like default, 
+validation, and required. This means that the template value will override any default or validation settings configured for that 
+field.
+- **Overrides**: Paas values will take precedence over template values. If a custom field is defined in the Paas, its value will 
+override the template.
+- **Multi-value Fields**: Templates return a string, which, if it can be parsed as YAML into a map or list, will result in a 
+multi-value entry in the ApplicationSet. The custom field name will be suffixed with the map keys or list indexes.
+- **Template Validation**: For easier validation and debugging of templates, we recommend using [Repeat It](https://repeatit.io/), 
+an online tool to test and validate your Go templates.
+
+#### Examples
 
 You can now generate an argocd policy by ranging over the groups in the paas:
 
@@ -340,7 +357,7 @@ Like so:
       ...
     ```
 
-### More info
+#### More info
 
 For more information on Custom Fields please revert to:
 
@@ -349,61 +366,52 @@ For more information on Custom Fields please revert to:
 - [api-guide on capability configuration in the PaasConfig](../development-guide/00_api.md#configcustomfield)
 - [api-guide on capability configuration in the Paas](../development-guide/00_api.md#paascapability)
 
-## Configuring capabilities in the PaasConfig
+## Configuring the ApplicationSet
 
-On every cluster running the Paas operator, a PaasConfig resource is defined.
-This PaasConfig resource holds the specific configuration for the operator.
-For each capability a chapter needs to be set in `spec.capabilities`. An example can be found below.
-Furthermore, the Paas operator needs to know the namespace where to search for ApplicationSets managing the capability (`spec.clusterwide_argocd_namespace`).
+Cluster administrators can configure the ApplicationSet to be used for this specific capability.
+Imagine a cluster-wide ArgoCD to manage capabilities for Paas'es.
+It is deployed in the namespace `paas-capabilities-argocd`.
+To enable any capability, `spec.clusterwide_argocd_namespace` needs to be set to `paas-capabilities-argocd`, so that the Paas operator will locate ApplicationSets for capabilities in this namespace.
+And for a new capability (e.a. `new-capability`), there should be an ApplicationSet to manage resources for this new capability.
+This ApplicationSet should be created in `paas-capabilities-argocd`, and it's name (e.a. `new-capability`) should be configured in PaasConfig (`spec.capabilities["new-capability"].ApplicationSet`).
+After setting this configuration, for every Paas with the capability `new-capability` enabled, the Paas operator will
+`GET` the ApplicationSet `paas-capabilities-argocd.new-capability`, add the Paas to the list generator and update the ApplicationSet definition..
+This in turn will create a new Application for the capability for this Paas, and ArgoCD will create and manage the resources.
 
-### Example PaasConfig with a capability
-
-Below example shows all configuration required to configure a capability.
+### Example ApplicationSet
 
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
-    kind: PaasConfig
+    apiVersion: argoproj.io/v1alpha1
+    kind: ApplicationSet
     metadata:
-      name: opr-paas-config
+      name: mycap-as
+      namespace: paas-capabilities-argocd
     spec:
-      clusterwide_argocd_namespace: paas-capabilities-argocd
-      capabilities:
-        mycap:
-          ApplicationSet: mycap-as
-          default_permissions:
-            my-service-account:
-              - my-cluster-role
-          extra_permissions:
-            my-extra-service-account:
-              - my-extra-cluster-role
-          custom_fields:
-            my-custom-key:
-              validation: '^key_[0-9]+$'
-              required: true
-            my-custom-revision:
-              validation: '^(main|develop|feature-.*)$'
-              default: main
-          quotas:
-            clusterwide: true
-            defaults:
-              limits.cpu: "8"
-              limits.memory: 8Gi
-              requests.cpu: "4"
-              requests.memory: 5Gi
-              requests.storage: "5Gi"
-            min:
-              limits.cpu: "1"
-              limits.memory: 1Gi
-              requests.cpu: "500Mi"
-              requests.memory: 500Mi
-            max:
-              limits.cpu: "16"
-              limits.memory: 16Gi
-              requests.cpu: "16"
-              requests.memory: 16Gi
-              requests.storage: "10Gi"
-              thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
-            ratio: 0.1
+      generators: []
+      template:
+        metadata:
+          name: '{{paas}}-capability-mycap'
+        spec:
+          destination:
+            namespace: '{{paas}}-mycap'
+            server: 'https://kubernetes.default.svc'
+          project: '{{paas}}'
+          source:
+            kustomize:
+              commonLabels:
+                capability: mycap
+                clusterquotagroup: '{{requestor}}'
+                paas: '{{paas}}'
+                service: '{{service}}'
+                subservice: '{{subservice}}'
+                key: '{{my-custom-key}}'
+                revision: '{{my-custom-revision}}'
+            path: paas-capabilities/mycap
+            repoURL: 'https://www.github.com/belastingdienst/opr-paas-capabilities.git'
+            targetRevision: main
+          syncPolicy:
+            automated:
+              selfHeal: true
     ```
