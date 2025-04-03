@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -61,8 +60,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					"cap5": v1alpha1.ConfigCapability{
 						AppSet: "someAppset",
 						QuotaSettings: v1alpha1.ConfigQuotaSettings{
-							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
-								corev1.ResourceLimitsCPU: resourcev1.MustParse("5"),
+							DefQuota: map[corev1.ResourceName]resource.Quantity{
+								corev1.ResourceLimitsCPU: resource.MustParse("5"),
 							},
 						},
 					},

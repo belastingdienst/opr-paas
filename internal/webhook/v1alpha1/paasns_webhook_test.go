@@ -70,14 +70,14 @@ func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte,
 
 var _ = Describe("PaasNS Webhook", Ordered, func() {
 	var (
-		paasSystem      string = "paasnssystem"
-		paasPkSecret    string = "paasns-pk-secret"
-		paasName        string = "mypaas"
-		otherPaasName   string = "myotherpaas"
-		groupName1      string = "mygroup1"
-		groupName2      string = "mygroup2"
-		otherGroup      string = "myothergroup"
-		paasNsName      string = "mypaasns"
+		paasSystem      = "paasnssystem"
+		paasPkSecret    = "paasns-pk-secret"
+		paasName        = "mypaas"
+		otherPaasName   = "myotherpaas"
+		groupName1      = "mygroup1"
+		groupName2      = "mygroup2"
+		otherGroup      = "myothergroup"
+		paasNsName      = "mypaasns"
 		privateKey      []byte
 		paas            *v1alpha1.Paas
 		obj             *v1alpha1.PaasNS
@@ -85,7 +85,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		mycrypt         *crypt.Crypt
 		paasSecret      string
 		validSecret1    string
-		validSecret1Key string = "validSecret1"
+		validSecret1Key = "validSecret1"
 		validSecret2    string
 		validator       PaasNSCustomValidator
 		conf            v1alpha1.PaasConfig
@@ -222,7 +222,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		})
 		It("Should deny creation", func() {
 			By("simulating PaasNs creation in Namespace for other Paas")
-			obj.ObjectMeta.Namespace = otherPaasName
+			obj.Namespace = otherPaasName
 			warn, err := validator.ValidateCreate(ctx, obj)
 			Expect(warn, err).Error().To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("paasns not in namespace belonging to paas %s", paasName))
@@ -245,7 +245,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			} {
 				conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paasNs": {"name": test.validation}}
 				config.SetConfig(conf)
-				obj.ObjectMeta.Name = test.name
+				obj.Name = test.name
 				if test.valid {
 					warn, err := validator.ValidateCreate(ctx, obj)
 					Expect(warn).To(BeNil())

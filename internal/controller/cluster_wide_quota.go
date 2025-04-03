@@ -67,12 +67,12 @@ func (r *PaasReconciler) UpdateClusterWideQuotaResources(
 	quota *quotav1.ClusterResourceQuota,
 ) (err error) {
 	var allPaasResources paasquota.QuotaLists
-	if capabilityName, err := ClusterWideCapabilityName(quota.ObjectMeta.Name); err != nil {
+	if capabilityName, err := ClusterWideCapabilityName(quota.Name); err != nil {
 		return err
 	} else if configCapability, exists := config.GetConfig().Spec.Capabilities[capabilityName]; !exists {
 		return fmt.Errorf("missing capability config for %s", capabilityName)
 	} else if !configCapability.QuotaSettings.Clusterwide {
-		return fmt.Errorf("running UpdateClusterWideQuota for non-clusterwide quota %s", quota.ObjectMeta.Name)
+		return fmt.Errorf("running UpdateClusterWideQuota for non-clusterwide quota %s", quota.Name)
 	} else if allPaasResources, err = r.FetchAllPaasCapabilityResources(ctx,
 		quota,
 		configCapability.QuotaSettings.DefQuota,

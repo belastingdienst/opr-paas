@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/templating"
 	"github.com/stretchr/testify/assert"
@@ -163,25 +162,25 @@ func TestCapCustomFieldsToMap(t *testing.T) {
 {{end}}`
 	)
 	var (
-		paas = v1alpha1.Paas{
+		paas = api.Paas{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas",
 			},
-			Spec: v1alpha1.PaasSpec{
-				Groups: v1alpha1.PaasGroups{
-					"my-group-1": v1alpha1.PaasGroup{},
-					"my-group-2": v1alpha1.PaasGroup{},
+			Spec: api.PaasSpec{
+				Groups: api.PaasGroups{
+					"my-group-1": api.PaasGroup{},
+					"my-group-2": api.PaasGroup{},
 				},
 			},
 		}
-		paasConfig = v1alpha1.PaasConfig{
+		paasConfig = api.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "my-config",
 			},
-			Spec: v1alpha1.PaasConfigSpec{
-				Capabilities: v1alpha1.ConfigCapabilities{
-					"my-cap": v1alpha1.ConfigCapability{
-						CustomFields: map[string]v1alpha1.ConfigCustomField{
+			Spec: api.PaasConfigSpec{
+				Capabilities: api.ConfigCapabilities{
+					"my-cap": api.ConfigCapability{
+						CustomFields: map[string]api.ConfigCustomField{
 							"argocd-policy": {
 								Template: myTemplate,
 							},

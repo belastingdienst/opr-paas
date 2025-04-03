@@ -42,7 +42,7 @@ func (r *PaasReconciler) GetPaasNs(ctx context.Context, paas *v1alpha1.Paas, nam
 	}
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("defining")
-	pns.ObjectMeta.Labels[config.GetConfig().Spec.RequestorLabel] = paas.Spec.Requestor
+	pns.Labels[config.GetConfig().Spec.RequestorLabel] = paas.Spec.Requestor
 
 	logger.Info().Msg("setting Owner")
 
@@ -75,7 +75,7 @@ func (r *PaasReconciler) ensurePaasNs(ctx context.Context, paas *v1alpha1.Paas, 
 	found.Spec.Paas = pns.Spec.Paas
 	found.Spec.Groups = pns.Spec.Groups
 	found.Spec.SSHSecrets = pns.Spec.SSHSecrets
-	found.ObjectMeta.Labels = pns.ObjectMeta.Labels
+	found.Labels = pns.Labels
 	logger.Info().Str("PaasNs", pns.Name).Msg("updating PaasNs")
 	return r.Update(ctx, found)
 }

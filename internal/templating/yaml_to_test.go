@@ -7,7 +7,7 @@ import (
 )
 
 func TestYamlToMap(t *testing.T) {
-	var exampleYaml string = `
+	var exampleYaml = `
 key1: val1
 key2: val2
 key3: valc
@@ -51,7 +51,7 @@ func TestResultMerge(t *testing.T) {
 }
 
 func TestYamlToList(t *testing.T) {
-	var exampleYaml string = `
+	var exampleYaml = `
 - vala
 - valb
 - val3
