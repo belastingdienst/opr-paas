@@ -26,7 +26,7 @@ Configuring capabilities does not require code changes / building new images. It
 
 On every cluster running the Paas operator, a PaasConfig resource is defined.
 This PaasConfig resource holds the specific configuration for the operator.
-For each capability a chapter needs to be set in `spec.capabilities`. An example can be found below.
+For each capability an entry needs to be set in `spec.capabilities` map. An example can be found below.
 Furthermore, the Paas operator needs to know the namespace where to search for ApplicationSets managing the capability (`spec.clusterwide_argocd_namespace`).
 
 ### Example PaasConfig with a capability
@@ -367,16 +367,6 @@ For more information on Custom Fields please revert to:
 - [Example capability ApplicationSet with custom_fields being set as commonLabels](#example-ApplicationSet)
 - [api-guide on capability configuration in the PaasConfig](../development-guide/00_api.md#configcustomfield)
 - [api-guide on capability configuration in the Paas](../development-guide/00_api.md#paascapability)
-
-tekton for Continuous Integration of your application components
-- observing your Paas resources with Grafana
-- configuring federated Authentication and Authorization with keycloak
-
-Adding capabilities does not require code changes / building new images. It only requires:
-
-1. a git repository for the cluster-wide ArgoCD to be used for deploying the capability for a Paas which has the capability enabled
-2. an ApplicationSet in the namespace of the cluster-wide ArgoCD to point to the git repository
-3. configuration for the Paas operator pointing to the ApplicationSet and specifying default quota to be used when no quota is specified for this capability in the Paas
 
 ## Configuring the ApplicationSet
 
