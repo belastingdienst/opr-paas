@@ -48,10 +48,10 @@ func EnsureNamespace(
 		}
 	}
 	var changed bool
-	for key, value := range ns.ObjectMeta.Labels {
-		if orgValue, exists := found.ObjectMeta.Labels[key]; !exists || orgValue != value {
+	for key, value := range ns.Labels {
+		if orgValue, exists := found.Labels[key]; !exists || orgValue != value {
 			changed = true
-			found.ObjectMeta.Labels[key] = value
+			found.Labels[key] = value
 		}
 	}
 	if changed {
@@ -83,14 +83,14 @@ func BackendNamespace(
 		Spec: corev1.NamespaceSpec{},
 	}
 	logger.Info().Msgf("setting Quotagroup %s", quota)
-	ns.ObjectMeta.Labels[config.GetConfig().Spec.QuotaLabel] = quota
+	ns.Labels[config.GetConfig().Spec.QuotaLabel] = quota
 
 	argoNameSpace := fmt.Sprintf("%s-%s", paas.ManagedByPaas(), config.GetConfig().Spec.ManagedBySuffix)
 	logger.Info().Msg("setting managed_by_label")
-	ns.ObjectMeta.Labels[config.GetConfig().Spec.ManagedByLabel] = argoNameSpace
+	ns.Labels[config.GetConfig().Spec.ManagedByLabel] = argoNameSpace
 
 	logger.Info().Msg("setting requestor_label")
-	ns.ObjectMeta.Labels[config.GetConfig().Spec.RequestorLabel] = paas.Spec.Requestor
+	ns.Labels[config.GetConfig().Spec.RequestorLabel] = paas.Spec.Requestor
 
 	logger.Info().Str("Paas", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
 	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {

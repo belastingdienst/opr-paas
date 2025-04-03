@@ -175,7 +175,7 @@ func (r *PaasReconciler) reconcileRolebindings(
 	paas *v1alpha1.Paas,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
-	for _, paasns := range r.pnsFromNs(ctx, paas.ObjectMeta.Name) {
+	for _, paasns := range r.pnsFromNs(ctx, paas.Name) {
 		roles := make(map[string][]string)
 
 		// Guarantee use of value for current iteration when referencing

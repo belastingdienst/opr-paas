@@ -428,9 +428,9 @@ func TestPaasStatus_Truncate(t *testing.T) {
 
 func Test_Paas_ClonedAnnotations(t *testing.T) {
 	paas := Paas{}
-	paas.ObjectMeta.Annotations = make(map[string]string)
+	paas.Annotations = make(map[string]string)
 	for i := 0; i < 3; i++ {
-		paas.ObjectMeta.Annotations[fmt.Sprintf("key %d", i)] = fmt.Sprintf("value %d", i)
+		paas.Annotations[fmt.Sprintf("key %d", i)] = fmt.Sprintf("value %d", i)
 	}
 
 	output := paas.ClonedAnnotations()

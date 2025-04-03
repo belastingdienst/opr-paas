@@ -110,7 +110,7 @@ func (r *PaasReconciler) backendGroup(
 				),
 			},
 		}
-		g.ObjectMeta.Labels[LdapHostLabelKey] = config.GetConfig().Spec.LDAP.Host
+		g.Labels[LdapHostLabelKey] = config.GetConfig().Spec.LDAP.Host
 	} else {
 		g.ObjectMeta = metav1.ObjectMeta{
 			Name:   groupName,
@@ -118,7 +118,7 @@ func (r *PaasReconciler) backendGroup(
 		}
 		g.Users = group.Users
 	}
-	g.ObjectMeta.Labels[ManagedByLabelKey] = ManagedByLabelValue
+	g.Labels[ManagedByLabelKey] = ManagedByLabelValue
 
 	if err := controllerutil.SetOwnerReference(paas, g, r.Scheme); err != nil {
 		return nil, err
@@ -188,7 +188,7 @@ func (r *PaasReconciler) ReconcileGroups(
 	}
 	for _, group := range desiredGroups {
 		if err := r.EnsureGroup(ctx, paas, group); err != nil {
-			logger.Err(err).Msgf("failure while reconciling group %s", group.ObjectMeta.Name)
+			logger.Err(err).Msgf("failure while reconciling group %s", group.Name)
 			return err
 		}
 	}
@@ -258,10 +258,10 @@ func (r *PaasReconciler) getExistingGroups(
 	}
 	for _, group := range groups.Items {
 		if paas.AmIOwner(group.OwnerReferences) {
-			logger.Debug().Msgf("existing group %s owned by Paas %s", group.ObjectMeta.Name, paas.Name)
+			logger.Debug().Msgf("existing group %s owned by Paas %s", group.Name, paas.Name)
 			existingGroups = append(existingGroups, &group)
 		}
-		logger.Debug().Msgf("existing group %s not owned by Paas %s", group.ObjectMeta.Name, paas.Name)
+		logger.Debug().Msgf("existing group %s not owned by Paas %s", group.Name, paas.Name)
 	}
 	logger.Debug().Msgf("found %d existing groups owned by Paas %s", len(existingGroups), paas.Name)
 	return existingGroups, nil

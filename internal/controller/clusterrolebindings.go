@@ -137,7 +137,7 @@ func addOrUpdateCrb(
 	sas map[string]bool,
 ) (changed bool) {
 	logger := log.Ctx(ctx)
-	crbName := crb.ObjectMeta.Name
+	crbName := crb.Name
 	for sa, add := range sas {
 		if add {
 			if isAdded := addSAToClusterRoleBinding(crb, paasns.NamespaceName(), sa); isAdded {
@@ -165,7 +165,7 @@ func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
 	var crb *rbac.ClusterRoleBinding
 	capability, capExists := paas.Spec.Capabilities[paasns.Name]
 	capConfig, capConfigExists := config.GetConfig().Spec.Capabilities[paasns.Name]
-	if !(capConfigExists || capExists) {
+	if !capConfigExists && !capExists {
 		return err
 	}
 

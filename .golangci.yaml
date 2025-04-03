@@ -11,7 +11,7 @@ linters:
     - ineffassign
     - misspell
     - revive
-    # - staticcheck
+    - staticcheck
     - unused
   settings:
     revive:
@@ -66,6 +66,16 @@ linters:
         - name: superfluous-else
         - name: unchecked-type-assertion
         - name: unexported-naming
+    staticcheck:
+      checks:
+        - all
+        - '-ST1000'
+        - '-ST1003'
+        - '-ST1016'
+        - '-SA1019'
+        - '-ST1020'
+        - '-ST1021'
+        - '-ST1022'
   exclusions:
     generated: lax
     rules:
