@@ -191,8 +191,6 @@ validation, and required. This means that the template value will override any d
 field.
 - **Overrides**: Paas values will take precedence over template values. If a custom field is defined in the Paas, its value will 
 override the template.
-- **Default and Required**: It is not recommended to mix the default or required options with templates. When a template is used, 
-default values and required constraints do not apply.
 - **Multi-value Fields**: Templates return a string, which, if it can be parsed as YAML into a map or list, will result in a 
 multi-value entry in the ApplicationSet. The custom field name will be suffixed with the map keys or list indexes.
 - **Template Validation**: For easier validation and debugging of templates, we recommend using [Repeat It](https://repeatit.io/), 
