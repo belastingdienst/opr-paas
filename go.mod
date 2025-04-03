@@ -1,7 +1,6 @@
 module github.com/belastingdienst/opr-paas
 
 go 1.24.0
-
 require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible
@@ -10,7 +9,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.32.3
 	k8s.io/apimachinery v0.32.3
 	k8s.io/client-go v0.32.3
-	sigs.k8s.io/controller-runtime v0.20.3
+	sigs.k8s.io/controller-runtime v0.20.4
 )
 
 require (
