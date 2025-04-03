@@ -10,7 +10,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.32.3
 	k8s.io/apimachinery v0.32.3
 	k8s.io/client-go v0.32.3
-	sigs.k8s.io/controller-runtime v0.20.3
+	sigs.k8s.io/controller-runtime v0.20.4
 )
 
 require (
@@ -20,7 +20,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.23.3
 	github.com/onsi/gomega v1.36.3
 	github.com/rs/zerolog v1.34.0
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	sigs.k8s.io/e2e-framework v0.6.0
 )
 
