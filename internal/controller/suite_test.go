@@ -18,7 +18,6 @@ import (
 	"slices"
 	"testing"
 
-	gitops "github.com/belastingdienst/opr-paas/internal/stubs/argoproj-labs/v1beta1"
 	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/go-logr/zerologr"
@@ -131,10 +130,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = userv1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	// Add Argo to schema
-	err = gitops.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = quotav1.AddToScheme(scheme.Scheme)
