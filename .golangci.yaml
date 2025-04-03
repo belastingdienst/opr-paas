@@ -1,98 +1,89 @@
+---
+version: "2"
 run:
-  timeout: 5m
   allow-parallel-runners: true
-
-issues:
-  # don't skip warning about doc comments
-  # don't exclude the default set of lint
-  exclude-use-default: false
-  # restore some of the defaults
-  # (fill in the rest as needed)
-  exclude-rules:
-    - path: 'internal/*'
-      linters:
-        - dupl
 linters:
-  disable-all: true
+  default: none
   enable:
-    #- dupl
-    #- errcheck
-    # WARN The linter 'exportloopref' is deprecated (since v1.60.2) due to: Since Go1.22 (loopvar) this linter is no longer relevant. Replaced by copyloopvar.
-    # ERRO [linters_context] exportloopref: This linter is fully inactivated: it will not produce any reports.
-    #- exportloopref
     - ginkgolinter
-    #- goconst
     - gocyclo
-    - gofmt
-    - goimports
-    - gosimple
     - govet
     - ineffassign
-    # - lll
     - misspell
-    #- nakedret
-    #- prealloc
     - revive
-    #- staticcheck
-    - typecheck
-    #- unconvert
-    #- unparam
+    # - staticcheck
     - unused
-
-linters-settings:
-  revive:
+  settings:
+    revive:
+      rules:
+        - name: comment-spacings
+        - name: add-constant
+          arguments:
+            - allowInts: 0,1,2,3
+              allowStrs: '""'
+              ignoreFuncs: assert\.Len,require\.Len
+              maxLitCount: "5"
+        - name: line-length-limit
+          arguments:
+            - 120
+          severity: warning
+          exclude:
+            - ""
+        - name: comment-spacings
+          disabled: true
+        - name: indent-error-flow
+          disabled: true
+        - name: use-errors-new
+          disabled: true
+        - name: bare-return
+        - name: cognitive-complexity
+          disabled: true
+        - name: context-as-argument
+        - name: cyclomatic
+          disabled: true
+        - name: dot-imports
+          arguments:
+            - allowedPackages:
+                - github.com/onsi/ginkgo/v2
+                - github.com/onsi/gomega
+        - name: early-return
+        - name: empty-block
+        - name: empty-lines
+        - name: exported
+          disabled: true
+        - name: function-length
+        - name: if-return
+        - name: import-alias-naming
+        - name: import-shadowing
+        - name: increment-decrement
+        - name: max-control-nesting
+        - name: max-public-structs
+          arguments:
+            - 14
+        - name: redefines-builtin-id
+        - name: receiver-naming
+        - name: redundant-import-alias
+        - name: struct-tag
+        - name: superfluous-else
+        - name: unchecked-type-assertion
+        - name: unexported-naming
+  exclusions:
+    generated: lax
     rules:
-      - name: comment-spacings
-      - name: add-constant
-        arguments:
-          - allowStrs: '""'
-            allowInts: '0,1,2,3'
-            ignoreFuncs: "assert\\.Len,require\\.Len"
-            maxLitCount: '5'
-      - name: line-length-limit
-        severity: warning
-        exclude: ['']
-        arguments: [120]
-
-      # devotional-phoenix: Fixing is seperate PR's:
-      - name: comment-spacings
-        disabled: true
-      - name: indent-error-flow
-        disabled: true
-      - name: use-errors-new
-        disabled: true
-
-      # axiomatic-fixed-chimpanzee: Fixing is seperate PR's:
-      - name: bare-return
-      - name: cognitive-complexity
-        disabled: true
-      - name: context-as-argument
-      - name: cyclomatic
-        disabled: true
-      - name: dot-imports
-        arguments:
-          - allowedPackages:
-              - github.com/onsi/ginkgo/v2
-              - github.com/onsi/gomega
-      - name: early-return
-      - name: empty-block
-      - name: empty-lines
-      - name: exported
-        disabled: true
-      - name: function-length
-      - name: if-return
-
-      # hikarukin: Fixing is seperate PR's:
-      - name: import-alias-naming
-      - name: import-shadowing
-      - name: increment-decrement
-      - name: max-control-nesting
-      - name: max-public-structs
-        arguments: [14]
-      - name: redefines-builtin-id
-      - name: receiver-naming
-      - name: redundant-import-alias
-      - name: struct-tag
-      - name: superfluous-else
-      - name: unchecked-type-assertion
-      - name: unexported-naming
+      - linters:
+          - dupl
+        path: internal/*
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
