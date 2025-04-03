@@ -16,7 +16,6 @@ linters:
   settings:
     revive:
       rules:
-        - name: comment-spacings
         - name: add-constant
           arguments:
             - allowInts: 0,1,2,3
@@ -30,13 +29,13 @@ linters:
           exclude:
             - ""
         - name: comment-spacings
-          disabled: true
         - name: indent-error-flow
           disabled: true
         - name: use-errors-new
           disabled: true
         - name: bare-return
         - name: cognitive-complexity
+          # TODO: wait for https://github.com/golangci/golangci-lint/pull/5663
           disabled: true
         - name: context-as-argument
         - name: cyclomatic

@@ -148,7 +148,7 @@ func (*PaasConfigCustomValidator) ValidateDelete(
 	return nil, nil
 }
 
-//----- actual checks
+// ----- actual checks
 
 func validateNoPaasConfigExists(
 	ctx context.Context,
