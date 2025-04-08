@@ -5,8 +5,3 @@ metadata:
   namespace: asns
 spec:
   generators: []
-  template:
-    metadata: {}
-    spec:
-      destination: {}
-      project: 'dummy'

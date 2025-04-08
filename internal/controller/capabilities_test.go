@@ -117,17 +117,6 @@ g, {{ $groupName }}, role:admin{{end}}`
 			},
 			Spec: appv1.ApplicationSetSpec{
 				Generators: []appv1.ApplicationSetGenerator{},
-				Template: appv1.ApplicationSetTemplate{
-					ApplicationSetTemplateMeta: appv1.ApplicationSetTemplateMeta{},
-					Spec: appv1.ApplicationSpec{
-						Destination: appv1.ApplicationDestination{
-							Server:    "somewhere.org",
-							Namespace: "default",
-							Name:      "somewhere",
-						},
-						Project: "someproj",
-					},
-				},
 			},
 		}
 		err := k8sClient.Create(ctx, appSet)
