@@ -63,18 +63,18 @@ For example, we would prefer the use of "Install the package using..." over
 Break down information into logical sections and use headings and subheadings to
 guide the reader. This makes it easier for users to find the information they need.
 
-Ensure that you place your documentation in the right sub-section for your intended
+Ensure that you place your documentation in the right subsection for your intended
 reader.
 
 **Use Lists and Bullet Points**:
 When presenting multiple items or steps, use lists to improve readability.
 
-**Include Examples and Call Outs**:
+**Include Examples and Call-Outs**:
 Provide code snippets or command-line examples where applicable to illustrate
 your points.
 
 !!! tip
-    Use call outs like this to highlight important information.
+    Use call-outs like this to highlight important information.
     You can use "note", "abstract", "info", "tip", "success", "question", "warning",
     "failure", "danger", "bug", "example" and "quote".
     

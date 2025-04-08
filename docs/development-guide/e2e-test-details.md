@@ -229,25 +229,17 @@ _The capabilities are also used to test clusterwide quotas_
 
 ### Capability ArgoCD
 
-What we test: creating a `Paas` with the `ArgoCD` capability enabled.
+What we test: creating a `Paas` with a capability named: `ArgoCD` enabled.
 
 Scenarios:
 
-1.  A minimal `Paas` with ArgoCD capability enabled.<br/><br/>
+1.  A minimal `Paas` with a capability named: `ArgoCD` enabled.<br/><br/>
     **Given** a minimal `Paas` and `ArgoCD` capability configuration,<br/>
     **when** the minimal `Paas` is created with the `ArgoCD` capability enabled,<br/>
     **then** the list entry in the applicationset should have been created,<br/>
     **and** a namespace with the name `paasname-argocd` should have been created,<br/>
-    **and** an ArgoCD Application should have been created in namespaces,<br/>
     **and** a quota with the name `paasname-argocd` should have been created,<br/>
-    **and** the ArgoCD Application and quota conform to the points below.
-
-    ArgoCD Application points:
-
-    1. Assess gitUrl, path etc. exist in spec;
-    2. Assess RBAC .. determine how;
-    3. Assess Secrets exist in namespace and in argo...?
-    4. Assess Exclude appset is included in spec as ignoreDiff;
+    **and** quota conform to the points below.
 
     Quota points:
 
@@ -280,17 +272,13 @@ Default_permissions points:
 3.  Assess that a rolebinding for `alert-routing-edit` is created
 4.  Assess that the `alert-routing-edit` rolebinding contains the `tekton` service account
 
-### Capability Grafana
-
-Check Quota
-
 ### Capability SSO
 
-What we test: creating a `Paas` with the `SSO` capability enabled.
+What we test: creating a `Paas` with a capability named: `SSO` enabled.
 
 Scenarios:
 
-1. A minimal `Paas` with SSO capability enabled and no capability quota.<br/><br/>
+1. A minimal `Paas` with a capability named `SSO` enabled without a capability quota.<br/><br/>
    **Given** a minimal `Paas` and `SSO` capability configuration,<br/>
    **when** the minimal `Paas` is created with the `SSO` capability enabled,<br/>
    **then** the list entry in the applicationset should have been created,<br/>
@@ -319,5 +307,4 @@ What we test: adding a new capability with configuration
 
 Scenarios:
 
-1. Add config for a new cap4 and check that it works as expecten when included in a Paas
-2. Add cap5 in a Paas and check that it does not work when not yet defined in config
+1. Add cap5 in a Paas and check that it does not work when not yet defined in config

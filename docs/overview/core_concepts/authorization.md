@@ -156,8 +156,6 @@ With this example (combined with the operator config example), the following wou
   there will be RoleBindings for `admin`. They will all contain the groups `us` group;
 - For all namespaces (`my-paas-cicd`, `my-paas-test`, `my-paas-prod` and `my-paas-argocd`),
   there will be RoleBindings for `view`. They will all contain the groups `my-paas-us`, and `my-paas-them`;
-- The `argocd-service` deployed in `my-paas-argocd` will have admin permissions set
-  for all users in group `my-paas-us` and group `my-paas-them`;
 
 !!! Note
 That there is also options to manage users with a federated solution.
@@ -188,9 +186,6 @@ DevOps engineers could additionally create a PaasNS with the following definitio
 ## Caveats
 
 - All groups will have the permissions as specified in the Paas.
-- The RBAC block of the Paas argocd capability can be externally managed.
-  That also means that changing the groups, operator config, etc. does not automatically
-  apply to existing ArgoCD deployments.
 - Next to permissions on groups and users, there is also capabilities to implement
   permissions for service accounts. See [extra_permissions](../../administrators-guide/capabilities.md#configuring-permissions) for
   more info.

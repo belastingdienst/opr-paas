@@ -25,13 +25,6 @@ Read more about Paas capabilities in our [core concepts](../overview/core_concep
       name: tst-tst
     spec:
       capabilities:
-        argocd:
-          enabled: true
-          custom_fields
-            gitPath: environments/production
-            gitRevision: main
-            gitUrl: >-
-              ssh://git@git.example.nl/example/example-repo.git
         grafana:
           enabled: true
         sso:

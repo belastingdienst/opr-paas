@@ -8,7 +8,7 @@ date: 2024-07-01
 
 # Introduction to the Paas Operator
 
-In a micro-service environment organizations can easily build and maintain thousands
+In a microservice environment organizations can easily build and maintain thousands
 of apps. For each app there is a development process which consists of many types of
 technologies utilizing many types of resources.
 
@@ -19,7 +19,7 @@ Some examples include:
 - CD infrastructure;
 - image repositories to hold image artifacts;
 - the actual namespace running the end application;
-- and more..
+- and more...
 
 Many of these artifacts can be deployed separately for every app, and would then run in their own namespace.
 

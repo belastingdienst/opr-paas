@@ -173,10 +173,6 @@ This would result in:
   - `my-paas-grafana` has `limits.cpu` overridden to "5", `requests.cpu` defaulting to "1" and `limits.memory` set to '2Gi';
 - a `my-paas` namespace with a `argocd` PaasNs and a `grafana` PaasNs;
 - a namespace called `my-paas-argocd` linked to the `my-paas-argocd` `ClusterResourceQuota`;
-  The `applicationset` has an extra entry for the namespace so that the cluster-wide
-  ArgoCD will create a namespaced ArgoCD deployment in this namespace. The Paas operator
-  creates a bootstrap application which points to the root folder (`.`) of main
-  branch of the `ssh://git@github.com/belastingdienst/my-paas-repo.git` repository.
 - a namespace called `my-paas-grafana` linked to the `my-paas-grafana` `ClusterResourceQuota`;
   The `applicationset` has an extra entry for the namespace so that the cluster-wide
   ArgoCD will create a grafana deployment in this namespace.

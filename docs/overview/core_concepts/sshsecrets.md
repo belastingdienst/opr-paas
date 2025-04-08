@@ -37,15 +37,14 @@ Both of these tools require access to the private key to be usable...
 
 - A DevOps engineer generates a SSH key pair;
 - The DevOps engineer configures his public SSH key to be accepted by his git
-  repository (e.a. github, gitlab, gitea, bitbucket, etc.)
+  repository (e.a. GitHub, gitlab, gitea, bitbucket, etc.)
 - The DevOps engineer encrypts the private SSH key with the api, or with the CLI;
   Encryption is done using the Paas public key (the result can only be decrypted
   using the Paas private key).
   The result is called a `sshSecret`.
 - The DevOps engineer creates (or modifies) a Paas with the `sshSecret`;
 - Paas controller creates a PaasNs with the `sshSecret` included;
-- PaasNs controller creates the required namespaces, ArgoCD resource and ArgoCD
-  repo definition (which is a K8S secret);
+- PaasNs controller creates the required namespaces;
 - ArgoCD contacts git and uses the secret to authenticate;
 - ArgoCD creates resources as is defined in the git repository;
 - Application comes alive;
@@ -64,7 +63,6 @@ blockdiag {
   "SSH private key" [color = "greenyellow"];
   "Paas public key" [color = "pink"];
   "Paas private key" [color = "pink"];
-  "ArgoCD repo (secret)" [color = orange];
 }
 ```
 

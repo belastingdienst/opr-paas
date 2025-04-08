@@ -22,7 +22,7 @@ At the very least a Paas resource has the following defined:
 - `quota`, which sets the amount of quota for all namespaces that are part of
   this Paas (capability namespaces excluded)
 
-Additionally the following optional settings can also be defined:
+Additionally, the following optional settings can also be defined:
 
 - `capabilities`, which can be used to enable Paas extensions such as an ArgoCD to
   manage all Paas namespaces, Grafana to monitor Paas namespaces, etc. More information

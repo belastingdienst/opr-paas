@@ -10,7 +10,7 @@ date: 2024-08-21
 
 We have a bunch of end-to-end tests that can be used by you to verify whether the
 operator still works as expected after you made any code changes. These tests are
-also part of our continues integration pipeline on Github.
+also part of our continues integration pipeline on GitHub.
 
 ## Prerequisites
 

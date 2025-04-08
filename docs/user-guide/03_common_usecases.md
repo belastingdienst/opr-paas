@@ -8,10 +8,10 @@ date: 2025-01-20
 
 # Common use cases
 
-## Develop and deploy a new micro service
+## Develop and deploy a new microservice
 
 In this example, a developer has created some java code which is to become a new
-micro service running on a k8s cluster.
+microservice running on a k8s cluster.
 
 In this organization, we have a very proactive and forthcoming group of administrators,
 which have enabled their dev teams with the following capabilities:
@@ -23,14 +23,14 @@ which have enabled their dev teams with the following capabilities:
 - argocd;
 - grafana;
 
-Of course, this developer requires all of these capabilities and additionally he
+Of course, this developer requires all of these capabilities, and additionally he
 requires a namespace for his production environment. Furthermore, this developer
-will setup options to dynamically create and destroy test namespaces with the (micro)
+will set up options to dynamically create and destroy test namespaces with the (micro)
 service being deployed fully functional.
 
 ### Defining the Paas
 
-Lets first define the Paas:
+Let's first define the Paas:
 
 !!! example
 
