@@ -30,7 +30,7 @@ jobs:
 
       - name: Generate LICENSES.md and evaluate licenses
         if: ${{ matrix.goarch == 'amd64' && matrix.goos == 'linux' }}
-        uses: mvdkleijn/licenses-action@460c50b2b78b9e51fa9570bba5f803255a199b72 # v1.2.2
+        uses: mvdkleijn/licenses-action@6a6e38196451b10d8e263745301ecd660cf45035 # v1.2.3
         with:
           # We only use the linux_amd64 variant here for generating the LICENSES.md
           sbom: sources_linux_amd64.sbom.xml
