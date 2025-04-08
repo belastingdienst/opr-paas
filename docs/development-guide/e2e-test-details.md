@@ -229,13 +229,13 @@ _The capabilities are also used to test clusterwide quotas_
 
 ### Capability ArgoCD
 
-What we test: creating a `Paas` with a capability named: `ArgoCD` enabled.
+What we test: creating a `Paas` with a capability named: `argocd` enabled.
 
 Scenarios:
 
-1.  A minimal `Paas` with a capability named: `ArgoCD` enabled.<br/><br/>
-    **Given** a minimal `Paas` and `ArgoCD` capability configuration,<br/>
-    **when** the minimal `Paas` is created with the `ArgoCD` capability enabled,<br/>
+1.  A minimal `Paas` with a capability named: `argocd` enabled.<br/><br/>
+    **Given** a minimal `Paas` and `argocd` capability configuration,<br/>
+    **when** the minimal `Paas` is created with the `argocd` capability enabled,<br/>
     **then** the list entry in the applicationset should have been created,<br/>
     **and** a namespace with the name `paasname-argocd` should have been created,<br/>
     **and** a quota with the name `paasname-argocd` should have been created,<br/>
@@ -274,13 +274,13 @@ Default_permissions points:
 
 ### Capability SSO
 
-What we test: creating a `Paas` with a capability named: `SSO` enabled.
+What we test: creating a `Paas` with a capability named: `sso` enabled.
 
 Scenarios:
 
-1. A minimal `Paas` with a capability named `SSO` enabled without a capability quota.<br/><br/>
-   **Given** a minimal `Paas` and `SSO` capability configuration,<br/>
-   **when** the minimal `Paas` is created with the `SSO` capability enabled,<br/>
+1. A minimal `Paas` with a capability named `sso` enabled without a capability quota.<br/><br/>
+   **Given** a minimal `Paas` and `sso` capability configuration,<br/>
+   **when** the minimal `Paas` is created with the `sso` capability enabled,<br/>
    **then** the list entry in the applicationset should have been created,<br/>
    **and** a namespace with the name `paasname-sso` should have been created,<br/>
    **and** a quota with the name `paasname-sso` should have been created,<br/>
