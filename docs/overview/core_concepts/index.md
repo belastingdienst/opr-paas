@@ -10,8 +10,8 @@ date: 2025-01-20
 
 By leveraging the Paas operator, an organization can:
 
-- bring together all resources of a micro services into a single unit called a Paas
+- bring together all resources of a microservices into a single unit called a Paas
 - maintain multi tenancy between Paas instances
-- enable developers with capabilities to be used as part of the process behind maintaining the micro services
+- enable developers with capabilities to be used as part of the process behind maintaining the microservices
 
 Read more about these and other Core Concepts of the Paas operator in these pages.

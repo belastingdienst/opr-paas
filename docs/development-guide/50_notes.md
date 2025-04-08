@@ -12,4 +12,4 @@ Developer notes
 - Because of dependency issues we decided to use a stub instead of importing all
   dependencies behind the original code of ArgoCD.
   
-  More info in `internal/stubs/argocd/v1beta1`
+  More info in `internal/stubs/argoproj/v1alpha1`

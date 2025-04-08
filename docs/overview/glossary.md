@@ -28,10 +28,10 @@ For more details, see the [relevant details in the administrators section](admin
 ## Crypttool
 
 The crypttool is a small command-line utility that allows a user to perform some
-simple operations with regards to secrets in a Paas.
+simple operations in regard to secrets in a Paas.
 
 Basic functionality includes sub-commands for `encrypt`, `decrypt` and `re-encrypt`
-with regards to Paas related secrets.
+in regard to Paas related secrets.
 
 The `re-encrypt` sub-command specifically will parse the yaml/json file for a Paas,
 decrypt the SSH secrets with the previous private key, re-encrypt with the new public
