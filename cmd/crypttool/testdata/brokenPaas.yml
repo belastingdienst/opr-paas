@@ -1,6 +1,0 @@
----
-apiVersion: cpet.belastingdienst.nl/v1alpha1
-someKind: Paas
-metadata:
-  name: tst-tst
-spec:
