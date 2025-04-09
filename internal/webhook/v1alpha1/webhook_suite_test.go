@@ -46,8 +46,8 @@ var (
 	ctx                  context.Context
 	k8sClient            client.Client
 	testEnv              *envtest.Environment
-	paasConfigSystem     string = "paasconfig-testns"
-	paasConfigPkSecret   string = "paasconfig-testpksecret"
+	paasConfigSystem     = "paasconfig-testns"
+	paasConfigPkSecret   = "paasconfig-testpksecret"
 	paasConfigPrivateKey []byte
 )
 
