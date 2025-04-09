@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/internal/crypt"
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/internal/quota"
 	k8sv1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 

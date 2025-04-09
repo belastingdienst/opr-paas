@@ -4,8 +4,8 @@ import (
 	"crypto/sha512"
 	"fmt"
 
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 

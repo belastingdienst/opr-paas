@@ -35,8 +35,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/crypt"
 	// +kubebuilder:scaffold:imports
 )
 

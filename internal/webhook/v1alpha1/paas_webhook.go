@@ -10,9 +10,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
-	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"github.com/belastingdienst/opr-paas/internal/quota"
 	corev1 "k8s.io/api/core/v1"

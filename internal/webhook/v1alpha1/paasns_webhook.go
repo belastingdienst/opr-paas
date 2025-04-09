@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
-	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"

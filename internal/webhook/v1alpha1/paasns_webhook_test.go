@@ -11,9 +11,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
-	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

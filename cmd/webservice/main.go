@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/belastingdienst/opr-paas/internal/crypt"
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/internal/utils"
 	"github.com/belastingdienst/opr-paas/internal/version"
 	"github.com/gin-contrib/cors"
