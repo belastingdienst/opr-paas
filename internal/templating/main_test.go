@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/templating"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,32 +34,32 @@ var (
 		"role3",
 		"role4",
 	}
-	paas = api.Paas{
+	paas = v1alpha1.Paas{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: paasName,
 			UID:  "abc", // Needed or owner references fail
 		},
-		Spec: api.PaasSpec{
+		Spec: v1alpha1.PaasSpec{
 			Requestor: capName,
-			Capabilities: api.PaasCapabilities{
-				capName: api.PaasCapability{
+			Capabilities: v1alpha1.PaasCapabilities{
+				capName: v1alpha1.PaasCapability{
 					Enabled: true,
 				},
 			},
-			Groups: api.PaasGroups{
-				group1: api.PaasGroup{Query: group1Query, Roles: group1Roles},
-				group2: api.PaasGroup{Users: group2Users, Roles: group2Roles},
+			Groups: v1alpha1.PaasGroups{
+				group1: v1alpha1.PaasGroup{Query: group1Query, Roles: group1Roles},
+				group2: v1alpha1.PaasGroup{Users: group2Users, Roles: group2Roles},
 			},
 		},
 	}
-	paasConfig = api.PaasConfig{
+	paasConfig = v1alpha1.PaasConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: paasConfigName,
 		},
-		Spec: api.PaasConfigSpec{
-			Capabilities: map[string]api.ConfigCapability{
+		Spec: v1alpha1.PaasConfigSpec{
+			Capabilities: map[string]v1alpha1.ConfigCapability{
 				capName: {
-					CustomFields: map[string]api.ConfigCustomField{
+					CustomFields: map[string]v1alpha1.ConfigCustomField{
 						customField1Key: {},
 						customField2Key: {},
 					},

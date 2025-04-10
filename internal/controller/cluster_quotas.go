@@ -67,9 +67,9 @@ func (r *PaasReconciler) backendQuota(
 ) *quotav1.ClusterResourceQuota {
 	var quotaName string
 	if suffix == "" {
-		quotaName = paas.ObjectMeta.Name
+		quotaName = paas.Name
 	} else {
-		quotaName = fmt.Sprintf("%s-%s", paas.ObjectMeta.Name, suffix)
+		quotaName = fmt.Sprintf("%s-%s", paas.Name, suffix)
 	}
 	_, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("defining quota")
@@ -212,7 +212,7 @@ func (r *PaasReconciler) ReconcileQuotas(
 		for _, q := range quotas {
 			logger.Info().Msg("creating quota " + q.Name + " for PAAS object ")
 			if err := r.EnsureQuota(ctx, paas, q); err != nil {
-				logger.Err(err).Msgf("failure while creating quota %s", q.ObjectMeta.Name)
+				logger.Err(err).Msgf("failure while creating quota %s", q.Name)
 				return err
 			}
 		}

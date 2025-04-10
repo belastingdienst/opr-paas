@@ -63,7 +63,7 @@ func TestPaasNS_ClonedLabels(t *testing.T) {
 	assert.Empty(t, output)
 
 	// subtest: single label not to be cloned
-	pns.ObjectMeta.Labels[excludedLabel] = "something"
+	pns.Labels[excludedLabel] = "something"
 	output = pns.ClonedLabels()
 	require.NotNil(t, output)
 	assert.Empty(t, output)
@@ -72,13 +72,13 @@ func TestPaasNS_ClonedLabels(t *testing.T) {
 
 	// subtest: multiple labels
 	for i := 0; i < 3; i++ {
-		pns.ObjectMeta.Labels[fmt.Sprintf("key %d", i)] = fmt.Sprintf("key %d", i)
+		pns.Labels[fmt.Sprintf("key %d", i)] = fmt.Sprintf("key %d", i)
 	}
 
 	output = pns.ClonedLabels()
 	require.NotNil(t, output)
 	assert.Len(t, output, 3)
-	for k := range pns.ObjectMeta.Labels {
+	for k := range pns.Labels {
 		if k == excludedLabel {
 			require.NotContains(t, output, k)
 		} else {
@@ -87,7 +87,7 @@ func TestPaasNS_ClonedLabels(t *testing.T) {
 	}
 
 	// subtest: single clonable label
-	pns.ObjectMeta.Labels = map[string]string{"key": "something"}
+	pns.Labels = map[string]string{"key": "something"}
 
 	output = pns.ClonedLabels()
 	require.NotNil(t, output)
