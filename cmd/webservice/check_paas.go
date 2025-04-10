@@ -15,7 +15,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 
-	"github.com/belastingdienst/opr-paas/internal/crypt"
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/sirupsen/logrus"
 )
 

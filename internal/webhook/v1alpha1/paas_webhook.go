@@ -10,9 +10,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
-	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"github.com/belastingdienst/opr-paas/internal/quota"
 	corev1 "k8s.io/api/core/v1"
@@ -35,6 +35,7 @@ func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
 }
 
 // revive:disable:line-length-limit
+// revive:disable:unused-parameter
 
 // NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
 // Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
@@ -136,13 +137,13 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 		return nil, nil
 	} else if len(allErrs) == 0 {
 		return warnings, nil
-	} else {
-		return warnings, apierrors.NewInvalid(
-			schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "Paas"},
-			paas.Name,
-			allErrs,
-		)
 	}
+
+	return warnings, apierrors.NewInvalid(
+		schema.GroupKind{Group: v1alpha1.GroupVersion.Group, Kind: "Paas"},
+		paas.Name,
+		allErrs,
+	)
 }
 
 // validateCaps returns an error if any of the passed capabilities is not configured.

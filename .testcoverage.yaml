@@ -23,7 +23,7 @@ threshold:
 
   # (optional; default 0)
   # Minimum overall project coverage percentage required.
-  total: 55
+  total: 50
 
 # Holds regexp rules which will override thresholds for matched files or packages
 # using their paths.

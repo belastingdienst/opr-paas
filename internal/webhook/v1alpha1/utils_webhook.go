@@ -9,8 +9,8 @@ package v1alpha1
 import (
 	"context"
 
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	cnf "github.com/belastingdienst/opr-paas/internal/config"
-	"github.com/belastingdienst/opr-paas/internal/crypt"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
@@ -20,7 +20,7 @@ import (
 
 var (
 	crypts             map[string]*crypt.Crypt
-	decryptPrivateKeys *crypt.CryptPrivateKeys
+	decryptPrivateKeys *crypt.PrivateKeys
 )
 
 // TODO: devotional-phoenix-97: We should refine this code and the entire crypt implementation including caching.
@@ -32,7 +32,7 @@ func resetCrypts() {
 }
 
 // getRsaPrivateKeys fetches secret, compares to cached private keys, resets crypts if needed, and returns keys
-func getRsaPrivateKeys(ctx context.Context, _c client.Client) (*crypt.CryptPrivateKeys, error) {
+func getRsaPrivateKeys(ctx context.Context, _c client.Client) (*crypt.PrivateKeys, error) {
 	ctx, logger := logging.GetLogComponent(ctx, "webhook_getRsaPrivateKeys")
 	rsaSecret := &corev1.Secret{}
 	config := cnf.GetConfig().Spec
