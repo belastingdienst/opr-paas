@@ -57,7 +57,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Equal(t, paasWithCapabilitySSO, namespace.Name)
 
 	// SSO should be enabled
-	assert.True(t, paas.Spec.Capabilities.IsCap("sso"))
+	assert.Contains(t, paas.Spec.Capabilities, "sso")
 
 	// ApplicationSet exist
 	assert.NotEmpty(t, applicationSet)

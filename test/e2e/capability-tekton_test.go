@@ -69,7 +69,7 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	assert.Equal(t, paasWithCapabilityTekton, namespace.Name)
 
 	// Tekton should be enabled
-	assert.True(t, paas.Spec.Capabilities.IsCap(tektonCapName))
+	assert.Contains(t, paas.Spec.Capabilities, tektonCapName)
 
 	// ApplicationSet exist
 	assert.NotEmpty(t, applicationSet)
