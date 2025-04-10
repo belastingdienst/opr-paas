@@ -1,5 +1,5 @@
 ---
-version: "2"
+version: '2'
 run:
   allow-parallel-runners: true
 linters:
@@ -21,18 +21,17 @@ linters:
             - allowInts: 0,1,2,3
               allowStrs: '""'
               ignoreFuncs: assert\.Len,require\.Len
-              maxLitCount: "5"
+              maxLitCount: '5'
         - name: line-length-limit
           arguments:
             - 120
           severity: warning
           exclude:
-            - ""
+            - ''
         - name: comment-spacings
         - name: indent-error-flow
           disabled: true
         - name: use-errors-new
-          disabled: true
         - name: bare-return
         - name: cognitive-complexity
           # TODO: wait for https://github.com/golangci/golangci-lint/pull/5663
