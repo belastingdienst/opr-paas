@@ -60,8 +60,8 @@ var (
 	}
 )
 
-func TestPaasQuotaLists_Sum(t *testing.T) {
-	quotas := paasquota.NewQuotaLists()
+func TestPaasQuotas_Sum(t *testing.T) {
+	quotas := paasquota.NewQuotas()
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
@@ -76,8 +76,8 @@ func TestPaasQuotaLists_Sum(t *testing.T) {
 	assert.Equal(t, sum_memory, mem.Value(), "sum should have sum 30 GiB memory")
 }
 
-func TestPaasQuotaLists_Min(t *testing.T) {
-	quotas := paasquota.NewQuotaLists()
+func TestPaasQuotas_Min(t *testing.T) {
+	quotas := paasquota.NewQuotas()
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
@@ -92,8 +92,8 @@ func TestPaasQuotaLists_Min(t *testing.T) {
 	assert.Equal(t, min_memory, mem.Value())
 }
 
-func TestPaasQuotaLists_Max(t *testing.T) {
-	quotas := paasquota.NewQuotaLists()
+func TestPaasQuotas_Max(t *testing.T) {
+	quotas := paasquota.NewQuotas()
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
@@ -108,8 +108,8 @@ func TestPaasQuotaLists_Max(t *testing.T) {
 	assert.Equal(t, max_memory, mem.Value())
 }
 
-func TestPaasQuotaLists_LargestTwo(t *testing.T) {
-	quotas := paasquota.NewQuotaLists()
+func TestPaasQuotas_LargestTwo(t *testing.T) {
+	quotas := paasquota.NewQuotas()
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
@@ -124,8 +124,8 @@ func TestPaasQuotaLists_LargestTwo(t *testing.T) {
 	assert.Equal(t, largest_two_memory, mem.Value())
 }
 
-func TestPaasQuotaLists_OptimalValues(t *testing.T) {
-	quotas := paasquota.NewQuotaLists()
+func TestPaasQuotas_OptimalValues(t *testing.T) {
+	quotas := paasquota.NewQuotas()
 	for _, vals := range testQuotas {
 		quotas.Append(vals)
 	}
