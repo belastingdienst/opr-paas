@@ -58,7 +58,7 @@ var _ = Describe("Group controller", Ordered, func() {
 
 	It("should create the group if it does not exist", func() {
 		group.Users = []string{"hank", "pete"}
-		err := reconciler.EnsureGroup(ctx, paas, group)
+		err := reconciler.ensureGroup(ctx, paas, group)
 		Expect(err).NotTo(HaveOccurred())
 
 		found := &userv1.Group{}
@@ -75,7 +75,7 @@ var _ = Describe("Group controller", Ordered, func() {
 		// Modify users
 		group.Users = []string{"user1", "user2"}
 
-		err = reconciler.EnsureGroup(ctx, paas, group)
+		err = reconciler.ensureGroup(ctx, paas, group)
 		Expect(err).NotTo(HaveOccurred())
 
 		updated := &userv1.Group{}
@@ -98,7 +98,7 @@ var _ = Describe("Group controller", Ordered, func() {
 		// Modify users
 		group.Users = changedUsers
 
-		err = reconciler.EnsureGroup(ctx, paas, group)
+		err = reconciler.ensureGroup(ctx, paas, group)
 		Expect(err).NotTo(HaveOccurred())
 
 		updated := &userv1.Group{}
@@ -114,7 +114,7 @@ var _ = Describe("Group controller", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(group.OwnerReferences).To(BeEmpty())
 
-		err = reconciler.EnsureGroup(ctx, paas, group)
+		err = reconciler.ensureGroup(ctx, paas, group)
 		Expect(err).NotTo(HaveOccurred())
 
 		updated := &userv1.Group{}

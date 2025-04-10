@@ -41,10 +41,12 @@ type PaasReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// GetScheme is a simple getter for the Scheme of the Paas Controller logic
 func (pr PaasReconciler) GetScheme() *runtime.Scheme {
 	return pr.Scheme
 }
 
+// Reconciler reconciles a Paas object
 type Reconciler interface {
 	Get(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error
 	Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
@@ -74,7 +76,7 @@ type Reconciler interface {
 // the user.
 //
 
-func (pr *PaasReconciler) GetPaas(
+func (pr *PaasReconciler) getPaas(
 	ctx context.Context,
 	req ctrl.Request,
 ) (paas *v1alpha1.Paas, err error) {
@@ -199,13 +201,14 @@ func (pr *PaasReconciler) updateFinalizer(
 	return nil
 }
 
+// Reconcile is the main entrypoint for Reconcilliation of a Paas resource
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
 func (pr *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	paas := &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
 	ctx, logger := logging.SetControllerLogger(ctx, paas, pr.Scheme, req)
 
-	if paas, err = pr.GetPaas(ctx, req); err != nil {
+	if paas, err = pr.getPaas(ctx, req); err != nil {
 		// TODO(portly-halicore-76) move to admission webhook once available
 		// Don't requeue that often when no config is found
 		if strings.Contains(err.Error(), noConfigFoundMsg) {
@@ -223,11 +226,11 @@ func (pr *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resu
 	paas.Status.Truncate()
 
 	reconcilers := []func(context.Context, *v1alpha1.Paas) error{
-		pr.ReconcileQuotas,
-		pr.ReconcileClusterWideQuota,
-		pr.ReconcilePaasNss,
-		pr.ReconcileGroups,
-		pr.EnsureLdapGroups,
+		pr.reconcileQuotas,
+		pr.reconcileClusterWideQuota,
+		pr.reconcilePaasNss,
+		pr.reconcileGroups,
+		pr.ensureLdapGroups,
 		pr.reconcileRolebindings,
 	}
 
@@ -315,16 +318,16 @@ func (pr *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (pr *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) error {
 	logger := log.Ctx(ctx)
 	logger.Debug().Msg("inside Paas finalizer")
-	if err := pr.FinalizeClusterQuotas(ctx, paas); err != nil {
+	if err := pr.finalizeClusterQuotas(ctx, paas); err != nil {
 		logger.Err(err).Msg("quota finalizer error")
 		return err
-	} else if err = pr.FinalizeGroups(ctx, paas); err != nil {
+	} else if err = pr.finalizeGroups(ctx, paas); err != nil {
 		logger.Err(err).Msg("group finalizer error")
 		return err
-	} else if err = pr.FinalizeExtraClusterRoleBindings(ctx, paas); err != nil {
+	} else if err = pr.finalizeExtraClusterRoleBindings(ctx, paas); err != nil {
 		logger.Err(err).Msg("extra ClusterRoleBindings finalizer error")
 		return err
-	} else if err = pr.FinalizeClusterWideQuotas(ctx, paas); err != nil {
+	} else if err = pr.finalizeClusterWideQuotas(ctx, paas); err != nil {
 		return err
 	}
 	logger.Info().Msg("paaS successfully finalized")

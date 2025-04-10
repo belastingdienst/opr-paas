@@ -34,6 +34,7 @@ type PaasConfigReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// GetScheme is a simple getter for the Scheme of the PaasConfig Controller logic
 func (pcr PaasConfigReconciler) GetScheme() *runtime.Scheme {
 	return pcr.Scheme
 }
@@ -59,6 +60,7 @@ func (pcr *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(pcr)
 }
 
+// Reconcile is the main entrypoint for Reconcilliation of a PaasConfig resource
 func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	cfg := &v1alpha1.PaasConfig{}
 	ctx, _ = logging.SetControllerLogger(ctx, cfg, pcr.Scheme, req)

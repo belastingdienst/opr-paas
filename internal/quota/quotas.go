@@ -20,18 +20,22 @@ import (
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 )
 
-// map[paas][quotatype]value
-// type Quotas map[string]Quota
+// Quotas is a struct to merge multiple resources.
+// For every resource name, it hols a list of all quantities that has been appended
 type Quotas struct {
 	list map[k8sv1.ResourceName][]resourcev1.Quantity
 }
 
+// NewQuotas can be used to instantiate a new block (running make on the internal list)
 func NewQuotas() Quotas {
 	return Quotas{
 		list: make(map[k8sv1.ResourceName][]resourcev1.Quantity),
 	}
 }
 
+// Append can be used to append quotas.
+// For resource names that had previously been fed, it appends to the existing list.
+// For new resource names is creates a new list.
 func (pcr *Quotas) Append(quotas Quota) {
 	for key, value := range quotas {
 		if values, exists := pcr.list[key]; exists {
@@ -42,6 +46,7 @@ func (pcr *Quotas) Append(quotas Quota) {
 	}
 }
 
+// Sum will return a quota with for every resource name the sum of the list of quota's previously appended
 func (pcr Quotas) Sum() Quota {
 	quotaResources := make(Quota)
 	for key, values := range pcr.list {
@@ -54,6 +59,8 @@ func (pcr Quotas) Sum() Quota {
 	return quotaResources
 }
 
+// LargestTwo returns a Quota with the sum of the largest two Quotas for each resource name that was previously
+// appended.
 func (pcr Quotas) LargestTwo() Quota {
 	quotaResources := make(Quota)
 	for key, values := range pcr.list {
@@ -69,6 +76,7 @@ func (pcr Quotas) LargestTwo() Quota {
 	return quotaResources
 }
 
+// Max returns a Quota with the largest Quota for each resource name that was previously appended.
 func (pcr Quotas) Max() Quota {
 	quotaResources := make(Quota)
 	for key, values := range pcr.list {
@@ -82,6 +90,7 @@ func (pcr Quotas) Max() Quota {
 	return quotaResources
 }
 
+// Min returns a Quota with the smallest Quota for each resource name that was previously appended.
 func (pcr Quotas) Min() Quota {
 	quotaResources := make(Quota)
 	for key, values := range pcr.list {
@@ -95,6 +104,8 @@ func (pcr Quotas) Min() Quota {
 	return quotaResources
 }
 
+// OptimalValues calculates optimal values using multiple angles largest of (minimum, sum*ratio, largest two),
+// capped by max
 func (pcr Quotas) OptimalValues(ratio float64, minQuotas Quota, maxQuotas Quota) Quota {
 	// Calculate resources with 3 different approaches and select largest value
 	approaches := NewQuotas()

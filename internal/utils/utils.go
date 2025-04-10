@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 )
 
+// PathToFileList can be fed multiple paths, which it will walk and return a fill list of all files in the path /
+// subdirectories
 func PathToFileList(paths []string) ([]string, error) {
 	files := make(map[string]bool)
 	for _, path := range paths {
