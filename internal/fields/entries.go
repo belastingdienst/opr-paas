@@ -60,6 +60,7 @@ func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
 	return list, nil
 }
 
+// EntriesFromJSON can be used to pass a list of json data and parse it to Entries
 func EntriesFromJSON(data []apiextensionsv1.JSON) (Entries, error) {
 	e := Entries{}
 	for _, raw := range data {

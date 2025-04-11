@@ -2,7 +2,7 @@ package v1alpha1
 
 import "regexp"
 
-// Configure custom validations for a specific CRD (e.a. paas, paasConfig or PaasNs).
+// PaasConfigTypeValidations can have custom validations for a specific CRD (e.a. paas, paasConfig or PaasNs).
 // Refer to https://belastingdienst.github.io/opr-paas/latest/administrators-guide/validations/ for more info.
 type PaasConfigTypeValidations map[string]string
 

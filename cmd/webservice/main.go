@@ -25,13 +25,13 @@ import (
 var (
 	_crypt     map[string]*crypt.Crypt
 	_cryptLock sync.RWMutex
-	_config    *WSConfig
+	_config    *wsConfig
 	_fw        *utils.FileWatcher
 )
 
-func getConfig() *WSConfig {
+func getConfig() *wsConfig {
 	if _config == nil {
-		config := NewWSConfig()
+		config := newWSConfig()
 		_config = &config
 	}
 
@@ -166,7 +166,7 @@ func readyz(c *gin.Context) {
 	})
 }
 
-func SetupRouter() *gin.Engine {
+func setupRouter() *gin.Engine {
 	router := gin.New()
 
 	// CORS
@@ -225,7 +225,7 @@ func main() {
 	log.Printf("Version: %s", version.PaasVersion)
 	gin.SetMode(gin.ReleaseMode)
 
-	router := SetupRouter()
+	router := setupRouter()
 
 	ep := getConfig().Endpoint
 	log.Printf("Listening on: %s", ep)

@@ -56,7 +56,7 @@ func assertCap5Created(ctx context.Context, t *testing.T, cfg *envconf.Config) c
 	assert.Equal(t, paasWithCapability5, namespace.Name)
 
 	// cap5 should be enabled
-	assert.True(t, paas.Spec.Capabilities.IsCap("cap5"))
+	assert.Contains(t, paas.Spec.Capabilities, "cap5")
 
 	// ApplicationSet exist
 	assert.NotEmpty(t, applicationSet)

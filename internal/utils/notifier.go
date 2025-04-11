@@ -7,6 +7,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+// FileWatcher is a struct that can watch for file changes
 type FileWatcher struct {
 	watcher   *fsnotify.Watcher
 	files     []string
@@ -14,7 +15,7 @@ type FileWatcher struct {
 	lastCount int
 }
 
-// watch keeps track of changes on paths and runs callbackFunc when they change
+// NewFileWatcher creates a FileWatcher resource and runs the watch method in a separate thread
 func NewFileWatcher(paths ...string) *FileWatcher {
 	fw := &FileWatcher{
 		files: paths,
@@ -26,6 +27,7 @@ func NewFileWatcher(paths ...string) *FileWatcher {
 	return fw
 }
 
+// WasTriggered is true when a filechange was noticed
 func (fw *FileWatcher) WasTriggered() bool {
 	if fw.lastCount != fw.count {
 		fw.lastCount = fw.count
@@ -37,6 +39,8 @@ func (fw *FileWatcher) WasTriggered() bool {
 	return false
 }
 
+// Refresh can be used to (re-)add files to the watcher (e.a. if filechanges have been noticed which might mean that
+// directory contents have changed)
 func (fw *FileWatcher) Refresh() (err error) {
 	// Notes from fsnotify.Watcher.Add():
 	// - A path can only be watched once; watching it more than once is a no-op and will not return an error.

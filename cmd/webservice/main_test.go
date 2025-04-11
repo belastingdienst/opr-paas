@@ -50,7 +50,7 @@ func Test_getConfig(t *testing.T) {
 	assert.NotNil(t, config.PublicKeyPath)
 	assert.Equal(t, "/secrets/paas/publicKey", config.PublicKeyPath)
 
-	_config = &WSConfig{
+	_config = &wsConfig{
 		PublicKeyPath:  "/some/weird/path",
 		Endpoint:       ":3000",
 		AllowedOrigins: []string{"http://example.com"},
@@ -126,7 +126,7 @@ func TestNoSniffIsSet(t *testing.T) {
 	// Allow all origins for test
 	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
 
-	router := SetupRouter()
+	router := setupRouter()
 	w := performRequest(router, "GET", "/version")
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "nosniff", w.Header().Get("X-Content-Type-Options"))
@@ -140,7 +140,7 @@ func Test_version(t *testing.T) {
 		"version": v.PaasVersion,
 	}
 
-	router := SetupRouter()
+	router := setupRouter()
 	w := performRequest(router, "GET", "/version")
 	assert.Equal(t, http.StatusOK, w.Code)
 
@@ -161,7 +161,7 @@ func Test_healthz(t *testing.T) {
 		"message": "healthy",
 	}
 
-	router := SetupRouter()
+	router := setupRouter()
 	w := performRequest(router, "GET", "/healthz")
 	assert.Equal(t, http.StatusOK, w.Code)
 
@@ -182,7 +182,7 @@ func Test_readyz(t *testing.T) {
 		"message": "ready",
 	}
 
-	router := SetupRouter()
+	router := setupRouter()
 	w := performRequest(router, "GET", "/readyz")
 	assert.Equal(t, http.StatusOK, w.Code)
 
@@ -214,7 +214,7 @@ func Test_v1CheckPaas(t *testing.T) {
 	require.NoError(t, err)
 
 	getConfig()
-	router := SetupRouter()
+	router := setupRouter()
 
 	w := httptest.NewRecorder()
 
@@ -292,7 +292,7 @@ func Test_v1CheckPaasInternalServerError(t *testing.T) {
 	_crypt = nil
 	getConfig()
 
-	router := SetupRouter()
+	router := setupRouter()
 
 	w := httptest.NewRecorder()
 

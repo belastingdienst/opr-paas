@@ -31,13 +31,13 @@ func (r *PaasReconciler) FetchAllPaasCapabilityResources(
 	ctx context.Context,
 	quota *quotav1.ClusterResourceQuota,
 	defaults map[corev1.ResourceName]resourcev1.Quantity,
-) (resources paasquota.QuotaLists, err error) {
+) (resources paasquota.Quotas, err error) {
 	capabilityName, err := ClusterWideCapabilityName(quota.Name)
 	if err != nil {
 		return resources, err
 	}
 	paas := &v1alpha1.Paas{}
-	resources = paasquota.NewQuotaLists()
+	resources = paasquota.NewQuotas()
 	for _, reference := range quota.OwnerReferences {
 		paasNamespacedName := types.NamespacedName{Name: reference.Name}
 		if reference.Kind != "Paas" || reference.APIVersion != v1alpha1.GroupVersion.String() {
@@ -66,7 +66,7 @@ func (r *PaasReconciler) UpdateClusterWideQuotaResources(
 	ctx context.Context,
 	quota *quotav1.ClusterResourceQuota,
 ) (err error) {
-	var allPaasResources paasquota.QuotaLists
+	var allPaasResources paasquota.Quotas
 	if capabilityName, err := ClusterWideCapabilityName(quota.Name); err != nil {
 		return err
 	} else if configCapability, exists := config.GetConfig().Spec.Capabilities[capabilityName]; !exists {
