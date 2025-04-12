@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -119,7 +120,7 @@ func (pcr *PaasConfigReconciler) addFinalizer(ctx context.Context, cfg *v1alpha1
 
 	if !controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
 		if ok := controllerutil.AddFinalizer(cfg, paasconfigFinalizer); !ok {
-			return true, fmt.Errorf("failed to add finalizer")
+			return true, errors.New("failed to add finalizer")
 		}
 		if err := pcr.Update(ctx, cfg); err != nil {
 			logger.Err(err).Msg("error updating PaasConfig")
@@ -167,7 +168,7 @@ func (pcr *PaasConfigReconciler) updateFinalizer(
 		}
 
 		if ok := controllerutil.RemoveFinalizer(cfg, paasconfigFinalizer); !ok {
-			return true, fmt.Errorf("failed to add finalizer")
+			return true, errors.New("failed to add finalizer")
 		}
 		if err := pcr.Update(ctx, cfg); err != nil {
 			logger.Err(err).Msg("error updating PaasConfig")
