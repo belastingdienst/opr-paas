@@ -51,11 +51,11 @@ func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
 	sort.Strings(keys)
 	for _, key := range keys {
 		entry := en[key]
-		if data, err := entry.AsJSON(); err != nil {
+		data, err := entry.AsJSON()
+		if err != nil {
 			return nil, err
-		} else {
-			list = append(list, apiextensionsv1.JSON{Raw: data})
 		}
+		list = append(list, apiextensionsv1.JSON{Raw: data})
 	}
 	return list, nil
 }
@@ -63,16 +63,16 @@ func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
 func EntriesFromJSON(data []apiextensionsv1.JSON) (Entries, error) {
 	e := Entries{}
 	for _, raw := range data {
-		if entry, err := ElementsFromJSON(raw.Raw); err != nil {
+		entry, err := ElementsFromJSON(raw.Raw)
+		if err != nil {
 			return nil, err
-		} else {
-			key := entry.Key()
-			if key == "" {
-				return nil, fmt.Errorf(`json data "%s" does not contain a "paas" field`, raw)
-			}
-
-			e[key] = entry
 		}
+		key := entry.Key()
+		if key == "" {
+			return nil, fmt.Errorf(`json data "%s" does not contain a "paas" field`, raw)
+		}
+
+		e[key] = entry
 	}
 	return e, nil
 }

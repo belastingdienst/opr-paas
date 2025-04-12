@@ -40,23 +40,21 @@ func (r *PaasReconciler) EnsureQuota(
 		if err = r.Create(ctx, quota); err != nil {
 			// creating the quota failed
 			return err
-		} else {
-			// creating the quota was successful
-			return nil
 		}
+		// creating the quota was successful
+		return nil
 	} else if err != nil {
 		// Error that isn't due to the quota not existing
 		return err
-	} else {
-		// Update the quota
-		found.OwnerReferences = quota.OwnerReferences
-		found.Spec = quota.Spec
-		if err = r.Update(ctx, found); err != nil {
-			// updating the quota failed
-			return err
-		}
-		return nil
 	}
+	// Update the quota
+	found.OwnerReferences = quota.OwnerReferences
+	found.Spec = quota.Spec
+	if err = r.Update(ctx, found); err != nil {
+		// updating the quota failed
+		return err
+	}
+	return nil
 }
 
 // backendQuota is a code for Creating Quota
@@ -157,10 +155,9 @@ func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha
 	} else if err != nil {
 		logger.Err(err).Msg("error retrieving info")
 		return err
-	} else {
-		logger.Info().Msg("deleting")
-		return r.Delete(ctx, obj)
 	}
+	logger.Info().Msg("deleting")
+	return r.Delete(ctx, obj)
 }
 
 func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1alpha1.PaasNS) error {
@@ -175,10 +172,9 @@ func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1a
 	} else if err != nil {
 		logger.Err(err).Msg("error retrieving info")
 		return err
-	} else {
-		logger.Info().Msg("deleting")
-		return r.Delete(ctx, obj)
 	}
+	logger.Info().Msg("deleting")
+	return r.Delete(ctx, obj)
 }
 
 func (r *PaasReconciler) FinalizeClusterQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
@@ -206,15 +202,15 @@ func (r *PaasReconciler) ReconcileQuotas(
 	ctx, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("creating quotas for Paas")
 	// Create quotas if needed
-	if quotas, err := r.BackendEnabledQuotas(ctx, paas); err != nil {
+	quotas, err := r.BackendEnabledQuotas(ctx, paas)
+	if err != nil {
 		return err
-	} else {
-		for _, q := range quotas {
-			logger.Info().Msg("creating quota " + q.Name + " for PAAS object ")
-			if err := r.EnsureQuota(ctx, paas, q); err != nil {
-				logger.Err(err).Msgf("failure while creating quota %s", q.Name)
-				return err
-			}
+	}
+	for _, q := range quotas {
+		logger.Info().Msg("creating quota " + q.Name + " for PAAS object ")
+		if err := r.EnsureQuota(ctx, paas, q); err != nil {
+			logger.Err(err).Msgf("failure while creating quota %s", q.Name)
+			return err
 		}
 	}
 	// TODO(portly-halicore-76) remove once quota is removed from Status in a future release

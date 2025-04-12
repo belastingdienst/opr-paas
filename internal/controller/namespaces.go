@@ -126,9 +126,8 @@ func (r *PaasNSReconciler) FinalizeNamespace(
 	} else if err = r.Delete(ctx, found); err != nil {
 		// deleting the namespace failed
 		return err
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func (r *PaasNSReconciler) ReconcileNamespaces(
