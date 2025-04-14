@@ -55,6 +55,7 @@ type PaasSpec struct {
 	ManagedByPaas string `json:"managedByPaas"`
 }
 
+// PaasCapability holds all information for a capability
 type PaasCapability struct {
 	// Custom fields to configure this specific Capability
 	// +kubebuilder:validation:Optional
@@ -71,8 +72,10 @@ type PaasCapability struct {
 	ExtraPermissions bool `json:"extra_permissions"`
 }
 
+// PaasCapabilities holds all capabilities enabled in a Paas
 type PaasCapabilities map[string]PaasCapability
 
+// PaasGroup can hold information about a group in the paas.spec.groups block
 type PaasGroup struct {
 	// A fully qualified LDAP query which will be used by the Group Sync Operator to sync users to the defined group.
 	//
@@ -91,10 +94,13 @@ type PaasGroup struct {
 	Roles []string `json:"roles"`
 }
 
+// PaasGroups hold all groups in a paas.spec.groups
 type PaasGroups map[string]PaasGroup
 
+// PaasNamespaces is a key, value store of all defined Namespaces
 type PaasNamespaces map[string]PaasNamespace
 
+// PaasNamespace holds all info regarding a Paas managed Namespace (groups and secrets)
 type PaasNamespace struct {
 	// Keys of groups which should get access to this namespace. When not set it defaults to all groups listed in
 	// `spec.groups`.
@@ -126,6 +132,7 @@ type Paas struct {
 	Status PaasStatus `json:"status,omitempty"`
 }
 
+// GetConditions is required to allow a Paas to be used as a withStatus interface in our e2e test framework
 func (p *Paas) GetConditions() []metav1.Condition {
 	return p.Status.Conditions
 }
