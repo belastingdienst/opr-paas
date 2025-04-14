@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/fields"
+	"github.com/belastingdienst/opr-paas/internal/paasresource"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -114,7 +114,7 @@ func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) (allEntri
 func waitForStatus(
 	ctx context.Context,
 	cfg *envconf.Config,
-	obj v1alpha1.Resource,
+	obj paasresource.Resource,
 	oldGeneration int64,
 	match func(conds []metav1.Condition) bool,
 ) error {
@@ -130,7 +130,7 @@ func waitForStatus(
 
 			// Filter out all non-current status conditions
 			conds := make([]metav1.Condition, 0)
-			for _, c := range *object.(v1alpha1.Resource).GetConditions() {
+			for _, c := range *object.(paasresource.Resource).GetConditions() {
 				if currentGen == c.ObservedGeneration {
 					conds = append(conds, c)
 				}
@@ -144,7 +144,7 @@ func waitForStatus(
 			"failed waiting for %s to be reconciled: %w and has status block: %v",
 			fetched.GetName(),
 			err,
-			fetched.(v1alpha1.Resource).GetConditions(),
+			fetched.(paasresource.Resource).GetConditions(),
 		)
 	}
 
@@ -155,7 +155,7 @@ func waitForStatus(
 func waitForCondition(
 	ctx context.Context,
 	cfg *envconf.Config,
-	obj v1alpha1.Resource,
+	obj paasresource.Resource,
 	oldGeneration int64,
 	readyCondition string,
 ) error {
@@ -165,7 +165,7 @@ func waitForCondition(
 }
 
 // createSync creates the resource, blocking until the given status condition is true.
-func createSync(ctx context.Context, cfg *envconf.Config, obj v1alpha1.Resource, readyCondition string) error {
+func createSync(ctx context.Context, cfg *envconf.Config, obj paasresource.Resource, readyCondition string) error {
 	if err := cfg.Client().Resources().Create(ctx, obj); err != nil {
 		return fmt.Errorf("failed to create %s: %w", obj.GetName(), err)
 	}
@@ -174,7 +174,7 @@ func createSync(ctx context.Context, cfg *envconf.Config, obj v1alpha1.Resource,
 }
 
 // updateSync updates the resource, blocking until the given status condition is true.
-func updateSync(ctx context.Context, cfg *envconf.Config, obj v1alpha1.Resource, readyCondition string) error {
+func updateSync(ctx context.Context, cfg *envconf.Config, obj paasresource.Resource, readyCondition string) error {
 	gen := obj.GetGeneration()
 
 	if err := cfg.Client().Resources().Update(ctx, obj); err != nil {

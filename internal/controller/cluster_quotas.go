@@ -27,7 +27,6 @@ import (
 
 func (r *PaasReconciler) ensureQuota(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
 	quota *quotav1.ClusterResourceQuota,
 ) error {
 	// See if quota already exists and create if it doesn't
@@ -130,7 +129,6 @@ func (r *PaasReconciler) backendEnabledQuotas(
 type PaasQuotas map[string]paasquota.Quota
 
 func (r *PaasReconciler) backendUnneededQuotas(
-	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (quotas []string) {
 	paasConfigSpec := config.GetConfig().Spec
@@ -144,7 +142,7 @@ func (r *PaasReconciler) backendUnneededQuotas(
 	return quotas
 }
 
-func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, paas *v1alpha1.Paas, quotaName string) error {
+func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, quotaName string) error {
 	ctx, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
@@ -172,7 +170,7 @@ func (r *PaasReconciler) finalizeClusterQuotas(ctx context.Context, paas *v1alph
 	var err error
 	for _, suffix := range suffixes {
 		quotaName := fmt.Sprintf("%s%s", paas.Name, suffix)
-		if cleanErr := r.finalizeClusterQuota(ctx, paas, quotaName); cleanErr != nil {
+		if cleanErr := r.finalizeClusterQuota(ctx, quotaName); cleanErr != nil {
 			err = cleanErr
 		}
 	}
@@ -192,16 +190,16 @@ func (r *PaasReconciler) reconcileQuotas(
 	}
 	for _, q := range quotas {
 		logger.Info().Msg("creating quota " + q.Name + " for PAAS object ")
-		if err := r.ensureQuota(ctx, paas, q); err != nil {
+		if err := r.ensureQuota(ctx, q); err != nil {
 			logger.Err(err).Msgf("failure while creating quota %s", q.Name)
 			return err
 		}
 	}
 	// TODO(portly-halicore-76) remove once quota is removed from Status in a future release
 	paas.Status.Quota = map[string]paasquota.Quota{}
-	for _, name := range r.backendUnneededQuotas(ctx, paas) {
+	for _, name := range r.backendUnneededQuotas(paas) {
 		logger.Info().Msg("cleaning quota " + name + " for PAAS object ")
-		if err := r.finalizeClusterQuota(ctx, paas, name); err != nil {
+		if err := r.finalizeClusterQuota(ctx, name); err != nil {
 			logger.Err(err).Msgf("failure while finalizing quota %s", name)
 			return err
 		}

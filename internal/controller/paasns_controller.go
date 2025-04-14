@@ -16,6 +16,7 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
+	"github.com/belastingdienst/opr-paas/internal/paasresource"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -122,7 +123,7 @@ func (r *PaasReconciler) getPaasNS(ctx context.Context, req ctrl.Request) (paasn
 	return paasns, nil
 }
 
-func (r *PaasReconciler) getPaas(ctx context.Context, resource v1alpha1.Resource) (paas *v1alpha1.Paas, err error) {
+func (r *PaasReconciler) getPaas(ctx context.Context, resource paasresource.Resource) (paas *v1alpha1.Paas, err error) {
 	if paas, ok := resource.(*v1alpha1.Paas); ok {
 		return paas, nil
 	}
