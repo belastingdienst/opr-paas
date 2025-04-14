@@ -1,7 +1,7 @@
 package v1alpha1
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
@@ -83,7 +83,7 @@ func TestValidatedSecretsCompareRsaError(t *testing.T) {
 		paasSecret2: cap1secret2,
 	}
 	rsaFn := func() (*crypt.Crypt, error) {
-		return nil, fmt.Errorf("crypt failure")
+		return nil, errors.New("crypt failure")
 	}
 	errs := validatedSecrets{}.compareSecrets(unvalidated, rsaFn)
 

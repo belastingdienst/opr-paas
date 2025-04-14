@@ -115,7 +115,7 @@ func (pr *PaasReconciler) GetPaas(
 		err = pr.setErrorCondition(
 			ctx,
 			paas,
-			fmt.Errorf(
+			errors.New(
 				//revive:disable-next-line
 				"please reach out to your system administrator as there is no Paasconfig available to reconcile against",
 			),
@@ -132,7 +132,7 @@ func (pr *PaasReconciler) GetPaas(
 		logger.Info().Msg("paas has no finalizer yet")
 		if ok := controllerutil.AddFinalizer(paas, paasFinalizer); !ok {
 			logger.Err(err).Msg("failed to add finalizer")
-			return nil, fmt.Errorf("failed to add finalizer")
+			return nil, errors.New("failed to add finalizer")
 		}
 		if err := pr.Update(ctx, paas); err != nil {
 			logger.Err(err).Msg("error updating Paas")
