@@ -153,7 +153,7 @@ func (r *PaasReconciler) backendSecrets(
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) ([]*corev1.Secret, error) {
-	secrets := make(map[string]string)
+	secrets := map[string]string{}
 
 	// From the PaasNS resource
 	maps.Copy(secrets, paasns.Spec.SSHSecrets)

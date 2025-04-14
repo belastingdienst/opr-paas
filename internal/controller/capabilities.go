@@ -4,6 +4,7 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
+// Package controller has all logic for reconciling Paas resources
 package controller
 
 import (
