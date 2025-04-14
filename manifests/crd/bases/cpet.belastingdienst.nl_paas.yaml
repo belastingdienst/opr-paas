@@ -271,6 +271,7 @@ spec:
             properties:
               capabilities:
                 additionalProperties:
+                  description: PaasCapability holds all information for a capability
                   properties:
                     custom_fields:
                       additionalProperties:
@@ -303,6 +304,8 @@ spec:
                 type: object
               groups:
                 additionalProperties:
+                  description: PaasGroup can hold information about a group in the
+                    paas.spec.groups block
                   properties:
                     query:
                       description: |-
@@ -336,6 +339,8 @@ spec:
                 type: string
               namespaces:
                 additionalProperties:
+                  description: PaasNamespace holds all info regarding a Paas managed
+                    Namespace (groups and secrets)
                   properties:
                     groups:
                       description: |-
