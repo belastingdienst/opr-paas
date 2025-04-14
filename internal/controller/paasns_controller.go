@@ -221,7 +221,7 @@ func (r *PaasReconciler) setSuccessfulCondition(ctx context.Context, paasNs *v1a
 // nssFromNs gets all PaasNs objects from a namespace and returns a list of all the corresponding namespaces
 // It also returns PaasNS in those namespaces recursively.
 func (r *PaasReconciler) nssFromNs(ctx context.Context, ns string) map[string]int {
-	nss := make(map[string]int)
+	nss := map[string]int{}
 	pnsList := &v1alpha1.PaasNSList{}
 	if err := r.List(ctx, pnsList, &client.ListOptions{Namespace: ns}); err != nil {
 		// In this case panic is ok, since this situation can only occur when either k8s is down,
@@ -246,7 +246,7 @@ func (r *PaasReconciler) nssFromNs(ctx context.Context, ns string) map[string]in
 // nsFromPaas accepts a Paas and returns a list of all namespaces managed by this Paas
 // nsFromPaas uses nsFromNs which is recursive.
 func (r *PaasReconciler) nssFromPaas(ctx context.Context, paas *v1alpha1.Paas) map[string]int {
-	finalNss := make(map[string]int)
+	finalNss := map[string]int{}
 	finalNss[paas.Name] = 1
 	for key, value := range r.nssFromNs(ctx, paas.Name) {
 		finalNss[key] += value
@@ -257,7 +257,7 @@ func (r *PaasReconciler) nssFromPaas(ctx context.Context, paas *v1alpha1.Paas) m
 // nsFromNs gets all PaasNs objects from a namespace and returns a list of all the corresponding namespaces
 // It also returns PaasNS in those namespaces recursively.
 func (r *PaasReconciler) pnsFromNs(ctx context.Context, ns string) map[string]v1alpha1.PaasNS {
-	nss := make(map[string]v1alpha1.PaasNS)
+	nss := map[string]v1alpha1.PaasNS{}
 	pnsList := &v1alpha1.PaasNSList{}
 	if err := r.List(ctx, pnsList, &client.ListOptions{Namespace: ns}); err != nil {
 		return nss
@@ -306,47 +306,4 @@ func (r *PaasReconciler) paasFromPaasNs(
 		paas.Name,
 		strings.Join(nss, ", "))
 	return nil, map[string]int{}, err
-}
-
-func (r *PaasReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) error {
-	ctx, logger := logging.GetLogComponent(ctx, paasNsComponentName)
-
-	cfg := config.GetConfig().Spec
-	// If PaasNs is related to a capability, remove it from appSet
-	if _, exists := cfg.Capabilities[paasns.Name]; exists {
-		if err := r.finalizeAppSetCap(ctx, paasns); err != nil {
-			err = fmt.Errorf(
-				"cannot remove paas from capability ApplicationSet belonging to Paas %s: %s",
-				paasns.Spec.Paas,
-				err.Error(),
-			)
-			return err
-		}
-	}
-
-	paas, nss, err := r.paasFromPaasNs(ctx, paasns)
-	if err != nil {
-		err = fmt.Errorf("cannot find Paas %s: %s", paasns.Spec.Paas, err.Error())
-		logger.Info().Msg(err.Error())
-		return nil
-	} else if nss[paasns.NamespaceName()] > 1 {
-		err = errors.New("this is not the only paasns managing this namespace, silently removing this paasns")
-		logger.Info().Msg(err.Error())
-		return nil
-	}
-
-	logger.Info().Msg("inside PaasNs finalizer")
-	if err := r.finalizeNamespace(ctx, paasns, paas); err != nil {
-		err = fmt.Errorf("cannot remove namespace belonging to Paas %s: %s", paasns.Spec.Paas, err.Error())
-		return err
-	}
-	if _, isCapability := paas.Spec.Capabilities[paasns.Name]; isCapability {
-		logger.Info().Msg("paasNs is a capability, also finalizing Cluster Resource Quota")
-		if err := r.finalizeClusterQuota(ctx, paas, paasns.NamespaceName()); err != nil {
-			logger.Err(err).Msg(fmt.Sprintf("failure while finalizing quota %s", paasns.Name))
-			return err
-		}
-	}
-	logger.Info().Msg("paasNs successfully finalized")
-	return nil
 }

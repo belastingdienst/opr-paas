@@ -17,7 +17,7 @@ const (
 
 // intersect finds the intersection of 2 lists of strings
 func intersect(l1 []string, l2 []string) (li []string) {
-	s := make(map[string]bool)
+	s := map[string]bool{}
 	for _, key := range l1 {
 		s[key] = false
 	}

@@ -19,7 +19,7 @@ var (
 
 // resetCrypts removes all crypts and resets decryptSecretPrivateKeys
 func resetCrypts() {
-	crypts = make(map[string]*crypt.Crypt)
+	crypts = map[string]*crypt.Crypt{}
 	decryptPrivateKeys = nil
 }
 
