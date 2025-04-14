@@ -26,7 +26,6 @@ import (
 
 const crbNameFormat string = "paas-%s"
 
-// getClusterRoleBinding returns a ClusterRoleBinding to enable extra permissions for certain capabilities.
 func getClusterRoleBinding(
 	ctx context.Context,
 	r client.Client,
@@ -39,9 +38,8 @@ func getClusterRoleBinding(
 		return backendClusterRoleBinding(role), nil
 	} else if err != nil {
 		return nil, err
-	} else {
-		return found, nil
 	}
+	return found, nil
 }
 
 func updateClusterRoleBinding(
@@ -63,7 +61,6 @@ func updateClusterRoleBinding(
 	return nil
 }
 
-// backendClusterRoleBinding is a code for Creating RoleBinding
 func backendClusterRoleBinding(
 	role string,
 ) *rbac.ClusterRoleBinding {
@@ -157,7 +154,7 @@ func addOrUpdateCrb(
 	return changed
 }
 
-func (r *PaasNSReconciler) ReconcileExtraClusterRoleBinding(
+func (r *PaasNSReconciler) reconcileExtraClusterRoleBinding(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
@@ -194,7 +191,7 @@ func subjectsFromCrb(crb rbac.ClusterRoleBinding) []string {
 	return subjects
 }
 
-func (r *PaasReconciler) FinalizeExtraClusterRoleBindings(
+func (r *PaasReconciler) finalizeExtraClusterRoleBindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (err error) {

@@ -30,7 +30,6 @@ linters:
             - ''
         - name: comment-spacings
         - name: indent-error-flow
-          disabled: true
         - name: use-errors-new
         - name: bare-return
         - name: cognitive-complexity
@@ -48,7 +47,6 @@ linters:
         - name: empty-block
         - name: empty-lines
         - name: exported
-          disabled: true
         - name: function-length
         - name: if-return
         - name: import-alias-naming

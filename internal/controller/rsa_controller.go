@@ -61,16 +61,16 @@ func (r *PaasNSReconciler) getRsaPrivateKeys(
 
 // getRsa returns a crypt.Crypt for a specified paasName
 func (r *PaasNSReconciler) getRsa(ctx context.Context, paasName string) (*crypt.Crypt, error) {
+	var c *crypt.Crypt
 	if keys, err := r.getRsaPrivateKeys(ctx); err != nil {
 		return nil, err
 	} else if rsa, exists := crypts[paasName]; exists {
 		return rsa, nil
-	} else if c, err := crypt.NewCryptFromKeys(*keys, "", paasName); err != nil {
+	} else if c, err = crypt.NewCryptFromKeys(*keys, "", paasName); err != nil {
 		return nil, err
-	} else {
-		logger := log.Ctx(ctx)
-		logger.Debug().Msgf("creating new crypt for %s", paasName)
-		crypts[paasName] = c
-		return c, nil
 	}
+	logger := log.Ctx(ctx)
+	logger.Debug().Msgf("creating new crypt for %s", paasName)
+	crypts[paasName] = c
+	return c, nil
 }

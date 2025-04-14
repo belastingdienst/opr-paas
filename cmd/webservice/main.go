@@ -25,13 +25,13 @@ import (
 var (
 	_crypt     map[string]*crypt.Crypt
 	_cryptLock sync.RWMutex
-	_config    *WSConfig
+	_config    *wsConfig
 	_fw        *utils.FileWatcher
 )
 
-func getConfig() *WSConfig {
+func getConfig() *wsConfig {
 	if _config == nil {
-		config := NewWSConfig()
+		config := newWSConfig()
 		_config = &config
 	}
 
@@ -92,24 +92,23 @@ func v1Encrypt(c *gin.Context) {
 	}
 	secret := []byte(input.Secret)
 	if _, err := ssh.ParsePrivateKey(secret); err == nil {
-		if encrypted, err := getRsa(input.PaasName).Encrypt(secret); err != nil {
+		encrypted, err := getRsa(input.PaasName).Encrypt(secret)
+		if err != nil {
 			return
-		} else {
-			output := RestEncryptResult{
-				PaasName:  input.PaasName,
-				Encrypted: encrypted,
-				Valid:     true,
-			}
-			c.IndentedJSON(http.StatusOK, output)
 		}
-	} else {
 		output := RestEncryptResult{
 			PaasName:  input.PaasName,
-			Encrypted: "",
-			Valid:     false,
+			Encrypted: encrypted,
+			Valid:     true,
 		}
 		c.IndentedJSON(http.StatusOK, output)
 	}
+	output := RestEncryptResult{
+		PaasName:  input.PaasName,
+		Encrypted: "",
+		Valid:     false,
+	}
+	c.IndentedJSON(http.StatusOK, output)
 }
 
 // v1CheckPaas checks whether a Paas can be decrypted using provided private/public keys
@@ -131,18 +130,16 @@ func v1CheckPaas(c *gin.Context) {
 			}
 			c.IndentedJSON(http.StatusUnprocessableEntity, output)
 			return
-		} else {
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
 		}
-	} else {
-		output := RestCheckPaasResult{
-			PaasName:  input.Paas.Name,
-			Decrypted: true,
-			Error:     "",
-		}
-		c.IndentedJSON(http.StatusOK, output)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
 	}
+	output := RestCheckPaasResult{
+		PaasName:  input.Paas.Name,
+		Decrypted: true,
+		Error:     "",
+	}
+	c.IndentedJSON(http.StatusOK, output)
 }
 
 // operatorVersion returns the operator operatorVersion this webservice is built for
@@ -166,7 +163,7 @@ func readyz(c *gin.Context) {
 	})
 }
 
-func SetupRouter() *gin.Engine {
+func setupRouter() *gin.Engine {
 	router := gin.New()
 
 	// CORS
@@ -225,7 +222,7 @@ func main() {
 	log.Printf("Version: %s", version.PaasVersion)
 	gin.SetMode(gin.ReleaseMode)
 
-	router := SetupRouter()
+	router := setupRouter()
 
 	ep := getConfig().Endpoint
 	log.Printf("Listening on: %s", ep)

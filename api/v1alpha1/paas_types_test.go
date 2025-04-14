@@ -62,7 +62,16 @@ var testGroups = PaasGroups{
 
 // Paas
 
-func TestPaas_PrefixedBoolMap(t *testing.T) {
+// key2Name can find a group in in the paas.spec.groups block and do a smart retrieval of it;s name (from query, or key)
+func (pgs PaasGroups) key2Name(key string) string {
+	group, exists := pgs[key]
+	if !exists {
+		return ""
+	}
+	return group.name(key)
+}
+
+func TestPaas_prefixedBoolMap(t *testing.T) {
 	paas := Paas{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: paasName,
@@ -74,7 +83,7 @@ func TestPaas_PrefixedBoolMap(t *testing.T) {
 		"smt":  false,
 	}
 
-	output := paas.PrefixedBoolMap(input)
+	output := paas.prefixedBoolMap(input)
 
 	assert.NotNil(t, output)
 	assert.IsType(t, map[string]bool{}, output)
@@ -200,10 +209,10 @@ func TestPaasGroups_Roles(t *testing.T) {
 
 func TestPaasGroups_Key2Name(t *testing.T) {
 	const cntest123 = "cn=test123"
-	assert.NotNil(t, testGroups.Key2Name(cntest123))
-	assert.Equal(t, test2, testGroups.Key2Name(cntest1))
-	assert.Equal(t, "", testGroups.Key2Name(cntest123))
-	assert.Equal(t, test4, testGroups.Key2Name(cntest3))
+	assert.NotNil(t, testGroups.key2Name(cntest123))
+	assert.Equal(t, test2, testGroups.key2Name(cntest1))
+	assert.Equal(t, "", testGroups.key2Name(cntest123))
+	assert.Equal(t, test4, testGroups.key2Name(cntest3))
 }
 
 func TestPaasGroups_Keys(t *testing.T) {
@@ -252,7 +261,7 @@ func TestPaas_GroupNames(t *testing.T) {
 }
 
 func TestPaasGroups_Names(t *testing.T) {
-	output := testGroups.Names()
+	output := testGroups.names()
 	assert.NotNil(t, output)
 	assert.Len(t, output, 3)
 	assert.Contains(t, output, tstGroup)

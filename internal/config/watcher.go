@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// Watch will open a new connection to Kubernetes and watch for PaasConfig changes
 func Watch(restConfig *rest.Config, httpClient *http.Client, scheme *runtime.Scheme) error {
 	ctx := context.Background()
 	ctx, logger := logging.SetWatcherLogger(ctx, &v1alpha1.PaasConfig{})

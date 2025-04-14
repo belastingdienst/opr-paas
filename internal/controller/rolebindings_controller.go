@@ -164,9 +164,8 @@ func finalizeRoleBinding(
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
 		return err
-	} else {
-		return r.Delete(ctx, rb)
 	}
+	return r.Delete(ctx, rb)
 }
 
 // reconcileRolebindings is used by the Paas reconciler to reconcile RB's
@@ -223,8 +222,7 @@ func (r *PaasReconciler) reconcileRolebindings(
 	return nil
 }
 
-// ReconcileRolebindings is used by the PaasNS reconciler to reconcile RB's
-func (r *PaasNSReconciler) ReconcileRolebindings(
+func (r *PaasNSReconciler) reconcileRolebindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,

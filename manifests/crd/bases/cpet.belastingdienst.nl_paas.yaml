@@ -41,6 +41,7 @@ spec:
             properties:
               capabilities:
                 additionalProperties:
+                  description: PaasCapability holds all information for a capability
                   properties:
                     custom_fields:
                       additionalProperties:
@@ -89,6 +90,8 @@ spec:
                 type: object
               groups:
                 additionalProperties:
+                  description: PaasGroup can hold information about a group in the
+                    paas.spec.groups block
                   properties:
                     query:
                       description: |-
@@ -228,6 +231,9 @@ spec:
                     - type: string
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
+                  description: |-
+                    Quota holds a map of resource quantities
+                    The main reason for having this as a separate type is to add methods
                   type: object
                 description: 'Deprecated: will not be set and removed in a future
                   release'

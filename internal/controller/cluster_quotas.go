@@ -25,8 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-// ensureQuota ensures Quota presence
-func (r *PaasReconciler) EnsureQuota(
+func (r *PaasReconciler) ensureQuota(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	quota *quotav1.ClusterResourceQuota,
@@ -41,23 +40,21 @@ func (r *PaasReconciler) EnsureQuota(
 		if err = r.Create(ctx, quota); err != nil {
 			// creating the quota failed
 			return err
-		} else {
-			// creating the quota was successful
-			return nil
 		}
+		// creating the quota was successful
+		return nil
 	} else if err != nil {
 		// Error that isn't due to the quota not existing
 		return err
-	} else {
-		// Update the quota
-		found.OwnerReferences = quota.OwnerReferences
-		found.Spec = quota.Spec
-		if err = r.Update(ctx, found); err != nil {
-			// updating the quota failed
-			return err
-		}
-		return nil
 	}
+	// Update the quota
+	found.OwnerReferences = quota.OwnerReferences
+	found.Spec = quota.Spec
+	if err = r.Update(ctx, found); err != nil {
+		// updating the quota failed
+		return err
+	}
+	return nil
 }
 
 // backendQuota is a code for Creating Quota
@@ -107,7 +104,7 @@ func (r *PaasReconciler) backendQuota(
 	return quota
 }
 
-func (r *PaasReconciler) BackendEnabledQuotas(
+func (r *PaasReconciler) backendEnabledQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (quotas []*quotav1.ClusterResourceQuota, err error) {
@@ -129,9 +126,10 @@ func (r *PaasReconciler) BackendEnabledQuotas(
 	return quotas, nil
 }
 
+// PaasQuotas can hold a set of Quota's for a Paas (or PaasCapability)
 type PaasQuotas map[string]paasquota.Quota
 
-func (r *PaasReconciler) BackendUnneededQuotas(
+func (r *PaasReconciler) backendUnneededQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (quotas []string) {
@@ -146,7 +144,7 @@ func (r *PaasReconciler) BackendUnneededQuotas(
 	return quotas
 }
 
-func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha1.Paas, quotaName string) error {
+func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, paas *v1alpha1.Paas, quotaName string) error {
 	ctx, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
@@ -158,13 +156,12 @@ func (r *PaasReconciler) FinalizeClusterQuota(ctx context.Context, paas *v1alpha
 	} else if err != nil {
 		logger.Err(err).Msg("error retrieving info")
 		return err
-	} else {
-		logger.Info().Msg("deleting")
-		return r.Delete(ctx, obj)
 	}
+	logger.Info().Msg("deleting")
+	return r.Delete(ctx, obj)
 }
 
-func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1alpha1.PaasNS) error {
+func (r *PaasNSReconciler) finalizeClusterQuota(ctx context.Context, paasns *v1alpha1.PaasNS) error {
 	ctx, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("finalizing")
 	obj := &quotav1.ClusterResourceQuota{}
@@ -176,13 +173,12 @@ func (r *PaasNSReconciler) FinalizeClusterQuota(ctx context.Context, paasns *v1a
 	} else if err != nil {
 		logger.Err(err).Msg("error retrieving info")
 		return err
-	} else {
-		logger.Info().Msg("deleting")
-		return r.Delete(ctx, obj)
 	}
+	logger.Info().Msg("deleting")
+	return r.Delete(ctx, obj)
 }
 
-func (r *PaasReconciler) FinalizeClusterQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
+func (r *PaasReconciler) finalizeClusterQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
 	suffixes := []string{
 		"",
 	}
@@ -193,36 +189,36 @@ func (r *PaasReconciler) FinalizeClusterQuotas(ctx context.Context, paas *v1alph
 	var err error
 	for _, suffix := range suffixes {
 		quotaName := fmt.Sprintf("%s%s", paas.Name, suffix)
-		if cleanErr := r.FinalizeClusterQuota(ctx, paas, quotaName); cleanErr != nil {
+		if cleanErr := r.finalizeClusterQuota(ctx, paas, quotaName); cleanErr != nil {
 			err = cleanErr
 		}
 	}
 	return err
 }
 
-func (r *PaasReconciler) ReconcileQuotas(
+func (r *PaasReconciler) reconcileQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (err error) {
 	ctx, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("creating quotas for Paas")
 	// Create quotas if needed
-	if quotas, err := r.BackendEnabledQuotas(ctx, paas); err != nil {
+	quotas, err := r.backendEnabledQuotas(ctx, paas)
+	if err != nil {
 		return err
-	} else {
-		for _, q := range quotas {
-			logger.Info().Msg("creating quota " + q.Name + " for PAAS object ")
-			if err := r.EnsureQuota(ctx, paas, q); err != nil {
-				logger.Err(err).Msgf("failure while creating quota %s", q.Name)
-				return err
-			}
+	}
+	for _, q := range quotas {
+		logger.Info().Msg("creating quota " + q.Name + " for PAAS object ")
+		if err := r.ensureQuota(ctx, paas, q); err != nil {
+			logger.Err(err).Msgf("failure while creating quota %s", q.Name)
+			return err
 		}
 	}
 	// TODO(portly-halicore-76) remove once quota is removed from Status in a future release
 	paas.Status.Quota = map[string]paasquota.Quota{}
-	for _, name := range r.BackendUnneededQuotas(ctx, paas) {
+	for _, name := range r.backendUnneededQuotas(ctx, paas) {
 		logger.Info().Msg("cleaning quota " + name + " for PAAS object ")
-		if err := r.FinalizeClusterQuota(ctx, paas, name); err != nil {
+		if err := r.finalizeClusterQuota(ctx, paas, name); err != nil {
 			logger.Err(err).Msgf("failure while finalizing quota %s", name)
 			return err
 		}

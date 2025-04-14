@@ -4,6 +4,8 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
+//revive:disable:exported
+
 package v1alpha1
 
 import (
@@ -66,6 +68,8 @@ type PaasSpec struct {
 	ManagedByPaas string `json:"managedByPaas"`
 }
 
+// ManagedByPaas can be used to retrieve the Paas that manages all namespaces from this Paas,
+// which is either stated in p.spec.managedByPaas, or this paas itself.
 func (p Paas) ManagedByPaas() string {
 	if p.Spec.ManagedByPaas != "" {
 		return p.Spec.ManagedByPaas
@@ -74,7 +78,7 @@ func (p Paas) ManagedByPaas() string {
 	return p.Name
 }
 
-func (p Paas) PrefixedBoolMap(m map[string]bool) map[string]bool {
+func (p Paas) prefixedBoolMap(m map[string]bool) map[string]bool {
 	newMap := make(map[string]bool)
 	for name, value := range m {
 		newMap[fmt.Sprintf("%s-%s", p.Name, name)] = value
@@ -82,6 +86,7 @@ func (p Paas) PrefixedBoolMap(m map[string]bool) map[string]bool {
 	return newMap
 }
 
+// GetNsSSHSecrets can be used to return a list of all ssh secrets from the paas, including the ones from capabilities
 func (p Paas) GetNsSSHSecrets(ns string) (secrets map[string]string) {
 	secrets = make(map[string]string)
 	for key, value := range p.Spec.SSHSecrets {
@@ -105,7 +110,7 @@ func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 	return ns
 }
 
-func (p Paas) AllCapNamespaces() (ns map[string]bool) {
+func (p Paas) allCapNamespaces() (ns map[string]bool) {
 	ns = make(map[string]bool)
 	for name := range p.Spec.Capabilities {
 		ns[name] = true
@@ -113,10 +118,8 @@ func (p Paas) AllCapNamespaces() (ns map[string]bool) {
 	return ns
 }
 
-func (p Paas) PrefixedAllCapNamespaces() (ns map[string]bool) {
-	return p.PrefixedBoolMap(p.AllCapNamespaces())
-}
-
+// AllEnabledNamespaces can be used to retrieve all enabled namespaces (from namespace block and.or from enabled
+// capabilities)
 func (p Paas) AllEnabledNamespaces() (ns map[string]bool) {
 	ns = p.enabledCapNamespaces()
 	for name := range p.extraNamespaces() {
@@ -125,12 +128,8 @@ func (p Paas) AllEnabledNamespaces() (ns map[string]bool) {
 	return ns
 }
 
-func (p Paas) PrefixedAllEnabledNamespaces() (ns map[string]bool) {
-	return p.PrefixedBoolMap(p.AllEnabledNamespaces())
-}
-
 func (p Paas) extraNamespaces() (ns map[string]bool) {
-	capNs := p.AllCapNamespaces()
+	capNs := p.allCapNamespaces()
 	ns = make(map[string]bool)
 	for _, name := range p.Spec.Namespaces {
 		if _, isCap := capNs[name]; !isCap {
@@ -140,6 +139,7 @@ func (p Paas) extraNamespaces() (ns map[string]bool) {
 	return ns
 }
 
+// PaasGroup can hold information about a group in the paas.spec.groups block
 type PaasGroup struct {
 	// A fully qualified LDAP query which will be used by the Group Sync Operator to sync users to the defined group.
 	//
@@ -158,16 +158,17 @@ type PaasGroup struct {
 	Roles []string `json:"roles"`
 }
 
-func (pg PaasGroup) Name(defName string) string {
-	if name := strings.Split(pg.Query, ",")[0]; len(name) == 0 {
+func (pg PaasGroup) name(defName string) string {
+	name := strings.Split(pg.Query, ",")[0]
+	if len(name) == 0 {
 		return defName
 	} else if strings.Contains(name, "=") {
 		return strings.Split(name, "=")[1]
-	} else {
-		return name
 	}
+	return name
 }
 
+// PaasGroups hold all groups in a paas.spec.groups
 type PaasGroups map[string]PaasGroup
 
 // Filtered returns a list of PaasGroups which have a key that is in the list of groups, specified as string.
@@ -193,31 +194,25 @@ func (pgs PaasGroups) Roles() map[string][]string {
 	return roles
 }
 
-func (pgs PaasGroups) Key2Name(key string) string {
-	if group, exists := pgs[key]; !exists {
-		return ""
-	} else {
-		return group.Name(key)
-	}
-}
-
-func (pgs PaasGroups) Names() (paasGroupNames []string) {
+func (pgs PaasGroups) names() (paasGroupNames []string) {
 	for name, paasGroup := range pgs {
-		paasGroupNames = append(paasGroupNames, paasGroup.Name(name))
+		paasGroupNames = append(paasGroupNames, paasGroup.name(name))
 	}
 	return paasGroupNames
 }
 
+// GroupKey2GroupName can be used to get the real name of a group from it;s key in paas.spec.groups
+// This could be either derived from the query, or the key, or empty string (if it is not a valid key)
 func (p Paas) GroupKey2GroupName(groupKey string) string {
 	if group, exists := p.Spec.Groups[groupKey]; !exists {
 		return ""
 	} else if len(group.Query) > 0 {
-		return group.Name(groupKey)
-	} else {
-		return fmt.Sprintf("%s-%s", p.Name, p.Spec.Groups.Key2Name(groupKey))
+		return group.name(groupKey)
 	}
+	return fmt.Sprintf("%s-%s", p.Name, groupKey)
 }
 
+// GroupNames
 func (p Paas) GroupNames() (groupNames []string) {
 	for groupKey := range p.Spec.Groups {
 		groupNames = append(groupNames, p.GroupKey2GroupName(groupKey))
@@ -225,6 +220,7 @@ func (p Paas) GroupNames() (groupNames []string) {
 	return groupNames
 }
 
+// LdapQueries can return a list of all ldap queries (which could technically have duplicates)
 func (pgs PaasGroups) LdapQueries() []string {
 	var queries []string
 	for _, group := range pgs {
@@ -235,7 +231,7 @@ func (pgs PaasGroups) LdapQueries() []string {
 	return queries
 }
 
-// Keys() returns the keys of the PaasGroups
+// Keys can return a list of all keys in paas.spec.groups
 func (pgs PaasGroups) Keys() (keys []string) {
 	for key := range pgs {
 		keys = append(keys, key)
@@ -243,14 +239,17 @@ func (pgs PaasGroups) Keys() (keys []string) {
 	return keys
 }
 
+// AsGroups can be used to convert PaasGroups to groups.Groups
 func (pgs PaasGroups) AsGroups() groups.Groups {
 	newGroups := groups.NewGroups()
 	newGroups.AddFromStrings(pgs.LdapQueries())
 	return *newGroups
 }
 
+// PaasCapabilities holds all capabilities enabled in a Paas
 type PaasCapabilities map[string]PaasCapability
 
+// AsPrefixedMap can prefix all capabilities
 func (pcs PaasCapabilities) AsPrefixedMap(prefix string) PaasCapabilities {
 	if prefix == "" {
 		return pcs
@@ -262,6 +261,7 @@ func (pcs PaasCapabilities) AsPrefixedMap(prefix string) PaasCapabilities {
 	return caps
 }
 
+// IsCap will return true if `name` is a capability which exists and is enabled
 func (pcs PaasCapabilities) IsCap(name string) bool {
 	if capability, exists := pcs[name]; !exists || !capability.IsEnabled() {
 		return false
@@ -270,40 +270,42 @@ func (pcs PaasCapabilities) IsCap(name string) bool {
 	return true
 }
 
-func (pcs PaasCapabilities) GetCapability(capabilityName string) (capability PaasCapability, err error) {
-	if capability, exists := pcs[capabilityName]; !exists {
+func (pcs PaasCapabilities) getCapability(capabilityName string) (PaasCapability, error) {
+	capability, exists := pcs[capabilityName]
+	if !exists {
 		return capability, fmt.Errorf("capability %s does not exist", capabilityName)
-	} else {
-		return capability, nil
 	}
+	return capability, nil
 }
 
+// AddSSHSecret
 func (pcs PaasCapabilities) AddCapSSHSecret(capabilityName string, key string, value string) (err error) {
-	if capability, err := pcs.GetCapability(capabilityName); err != nil {
+	capability, err := pcs.getCapability(capabilityName)
+	if err != nil {
 		return err
-	} else {
-		if capability.SSHSecrets == nil {
-			capability.SSHSecrets = map[string]string{key: value}
-		} else {
-			capability.SSHSecrets[key] = value
-		}
-		pcs[capabilityName] = capability
 	}
+	if capability.SSHSecrets == nil {
+		capability.SSHSecrets = map[string]string{key: value}
+	} else {
+		capability.SSHSecrets[key] = value
+	}
+	pcs[capabilityName] = capability
 	return nil
 }
 
 func (pcs PaasCapabilities) ResetCapSSHSecret(capabilityName string) (err error) {
-	if capability, err := pcs.GetCapability(capabilityName); err != nil {
+	capability, err := pcs.getCapability(capabilityName)
+	if err != nil {
 		return err
-	} else {
-		capability.SSHSecrets = nil
-		pcs[capabilityName] = capability
 	}
+	capability.SSHSecrets = nil
+	pcs[capabilityName] = capability
 	return nil
 }
 
 // TODO: Enabled is a leftover from old capability implementation. Remove with new API.
 
+// PaasCapability holds all information for a capability
 type PaasCapability struct {
 	// Do we want to use this capability, default false
 	// +kubebuilder:validation:Optional
@@ -333,6 +335,7 @@ type PaasCapability struct {
 	ExtraPermissions bool `json:"extra_permissions"`
 }
 
+// CapExtraFields returns all extra fields that are configured for a capability
 func (pc *PaasCapability) CapExtraFields(
 	fieldConfig map[string]ConfigCustomField,
 ) (elements fields.Elements, err error) {
@@ -370,6 +373,7 @@ func (pc *PaasCapability) CapExtraFields(
 	return elements, nil
 }
 
+// WithExtraPermissions
 func (pc *PaasCapability) WithExtraPermissions() bool {
 	return pc.Enabled && pc.ExtraPermissions
 }

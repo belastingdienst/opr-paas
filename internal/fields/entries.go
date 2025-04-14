@@ -42,6 +42,7 @@ func (en Entries) String() string {
 	return fmt.Sprintf("{ %s }", strings.Join(l, ", "))
 }
 
+// AsJSON can be used to convert Entries into JSON data
 func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
 	list := []apiextensionsv1.JSON{}
 	keys := make([]string, 0, len(en))
@@ -51,28 +52,29 @@ func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
 	sort.Strings(keys)
 	for _, key := range keys {
 		entry := en[key]
-		if data, err := entry.AsJSON(); err != nil {
+		data, err := entry.AsJSON()
+		if err != nil {
 			return nil, err
-		} else {
-			list = append(list, apiextensionsv1.JSON{Raw: data})
 		}
+		list = append(list, apiextensionsv1.JSON{Raw: data})
 	}
 	return list, nil
 }
 
+// EntriesFromJSON can be used to pass a list of json data and parse it to Entries
 func EntriesFromJSON(data []apiextensionsv1.JSON) (Entries, error) {
 	e := Entries{}
 	for _, raw := range data {
-		if entry, err := ElementsFromJSON(raw.Raw); err != nil {
+		entry, err := ElementsFromJSON(raw.Raw)
+		if err != nil {
 			return nil, err
-		} else {
-			key := entry.Key()
-			if key == "" {
-				return nil, fmt.Errorf(`json data "%s" does not contain a "paas" field`, raw)
-			}
-
-			e[key] = entry
 		}
+		key := entry.Key()
+		if key == "" {
+			return nil, fmt.Errorf(`json data "%s" does not contain a "paas" field`, raw)
+		}
+
+		e[key] = entry
 	}
 	return e, nil
 }

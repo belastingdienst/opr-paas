@@ -63,6 +63,8 @@ func SetWebhookLogger(ctx context.Context, obj client.Object) (context.Context, 
 	return logger.WithContext(ctx), &logger
 }
 
+// SetWatcherLogger can be used to retrieve the logger for this context for this object.
+// If it already exists it is just returned. If not it is created and Set before returning
 func SetWatcherLogger(ctx context.Context, obj client.Object) (context.Context, *zerolog.Logger) {
 	logger := log.With().
 		Any("watcher", obj.GetObjectKind().GroupVersionKind()).
@@ -72,6 +74,7 @@ func SetWatcherLogger(ctx context.Context, obj client.Object) (context.Context, 
 	return logger.WithContext(ctx), &logger
 }
 
+// ResetComponentDebug can be used to reset the map of Components that have debugging enabled
 func ResetComponentDebug() {
 	debugComponents = make(map[string]bool)
 }
@@ -86,7 +89,7 @@ func SetComponentDebug(components []string) {
 	}
 }
 
-// setLogComponent sets the component name for the logging context.
+// GetLogComponent gets the logger for a component fro a context.
 func GetLogComponent(ctx context.Context, name string) (context.Context, *zerolog.Logger) {
 	logger := log.Ctx(ctx)
 	level := zerolog.InfoLevel

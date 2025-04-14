@@ -26,7 +26,7 @@ const (
 	maxPort             = 65363
 )
 
-type WSConfig struct {
+type wsConfig struct {
 	PublicKeyPath string
 	// comma separated list of privateKeyPaths
 	PrivateKeyPath string
@@ -72,7 +72,7 @@ func formatEndpoint(endpoint string) string {
 	return fmt.Sprintf("%s:%d", endpoint, defaultEndpointPort)
 }
 
-func NewWSConfig() (config WSConfig) {
+func newWSConfig() (config wsConfig) {
 	config.PublicKeyPath = os.Getenv(publicEnv)
 	if config.PublicKeyPath == "" {
 		config.PublicKeyPath = defaultPublicPath

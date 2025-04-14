@@ -43,7 +43,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 }
 
 // ensureLdapGroup ensures Group presence
-func (r *PaasReconciler) EnsureLdapGroups(
+func (r *PaasReconciler) ensureLdapGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
@@ -90,10 +90,12 @@ func (r *PaasReconciler) EnsureLdapGroups(
 }
 
 // ensureLdapGroup ensures Group presence
-func (r *PaasReconciler) FinalizeLdapGroups(
+func (r *PaasReconciler) finalizeLdapGroups(
 	ctx context.Context,
 	cleanedLdapQueries []string,
 ) error {
+	var groupSyncList string
+	var exists bool
 	ctx, logger := logging.GetLogComponent(ctx, "ldapgroup")
 	cm := &corev1.ConfigMap{}
 	wlConfigMap := config.GetConfig().Spec.GroupSyncList
@@ -106,27 +108,26 @@ func (r *PaasReconciler) FinalizeLdapGroups(
 		logger.Err(err).Msg("error retrieving groupsynclist configmap")
 		// Error that isn't due to the group not existing
 		return err
-	} else if groupsynclist, exists := cm.Data[config.GetConfig().Spec.GroupSyncListKey]; !exists {
+	} else if groupSyncList, exists = cm.Data[config.GetConfig().Spec.GroupSyncListKey]; !exists {
 		// No groupsynclist.txt exists in the configmap, so nothing to clean
 		logger.Info().Msgf("%s does not exists in groupsynclist configmap", config.GetConfig().Spec.GroupSyncListKey)
 		return nil
-	} else {
-		var isChanged bool
-		gs := groups.NewGroups()
-		gs.AddFromString(groupsynclist)
-		for _, query := range cleanedLdapQueries {
-			g := groups.NewGroup(query)
-			if g.Key == "" {
-				logger.Info().Str("query", query).Msg("could not get key")
-			} else if gs.DeleteByKey(g.Key) {
-				logger.Info().Msgf("ldapGroup %s removed", g.Key)
-				isChanged = true
-			}
-		}
-		if !isChanged {
-			return nil
-		}
-		cm.Data[config.GetConfig().Spec.GroupSyncListKey] = gs.AsString()
 	}
+	var isChanged bool
+	gs := groups.NewGroups()
+	gs.AddFromString(groupSyncList)
+	for _, query := range cleanedLdapQueries {
+		g := groups.NewGroup(query)
+		if g.Key == "" {
+			logger.Info().Str("query", query).Msg("could not get key")
+		} else if gs.DeleteByKey(g.Key) {
+			logger.Info().Msgf("ldapGroup %s removed", g.Key)
+			isChanged = true
+		}
+	}
+	if !isChanged {
+		return nil
+	}
+	cm.Data[config.GetConfig().Spec.GroupSyncListKey] = gs.AsString()
 	return r.Update(ctx, cm)
 }

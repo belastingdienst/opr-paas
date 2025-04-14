@@ -134,11 +134,11 @@ func (r *PaasReconciler) ensureAppSetCap(
 		entry := elements
 		entries[entry.Key()] = entry
 	}
-	if jsonentries, err := entries.AsJSON(); err != nil {
+	jsonentries, err := entries.AsJSON()
+	if err != nil {
 		return err
-	} else {
-		listGen.List.Elements = jsonentries
 	}
+	listGen.List.Elements = jsonentries
 
 	appSet.Spec.Generators = clearGenerators(appSet.Spec.Generators)
 	return r.Patch(ctx, appSet, patch)
@@ -167,13 +167,12 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 		return nil
 	} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
 		return err
-	} else {
-		delete(entries, paasns.Spec.Paas)
 	}
-	if jsonentries, err := entries.AsJSON(); err != nil {
+	delete(entries, paasns.Spec.Paas)
+	jsonentries, err := entries.AsJSON()
+	if err != nil {
 		return err
-	} else {
-		listGen.List.Elements = jsonentries
 	}
+	listGen.List.Elements = jsonentries
 	return r.Patch(ctx, as, patch)
 }

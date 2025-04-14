@@ -41,6 +41,7 @@ type PaasNSReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// GetScheme is a simple getter for the Scheme of the PaasNS Controller logic
 func (pnsr PaasNSReconciler) GetScheme() *runtime.Scheme {
 	return pnsr.Scheme
 }
@@ -56,7 +57,7 @@ func (pnsr PaasNSReconciler) GetScheme() *runtime.Scheme {
 // the user.
 //
 
-func (pnsr *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (paasns *v1alpha1.PaasNS, err error) {
+func (pnsr *PaasNSReconciler) getPaasNs(ctx context.Context, req ctrl.Request) (paasns *v1alpha1.PaasNS, err error) {
 	paasns = &v1alpha1.PaasNS{}
 	ctx, logger := logging.GetLogComponent(ctx, paasNsComponentName)
 	logger.Info().Msg("reconciling PaasNs")
@@ -180,7 +181,7 @@ func (pnsr *PaasNSReconciler) updateFinalizer(ctx context.Context, paasns *v1alp
 	return nil
 }
 
-func (pnsr *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, err error) {
+func (pnsr *PaasNSReconciler) getPaas(ctx context.Context, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, err error) {
 	paas, _, err = pnsr.paasFromPaasNs(ctx, paasns)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -197,13 +198,14 @@ func (pnsr *PaasNSReconciler) GetPaas(ctx context.Context, paasns *v1alpha1.Paas
 	return paas, err
 }
 
+// Reconcile is the main entrypoint for Reconcilliation of a PaasNS resource
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
 func (pnsr *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	paasns := &v1alpha1.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
 	ctx, logger := logging.SetControllerLogger(ctx, paasns, pnsr.Scheme, req)
 
-	if paasns, err = pnsr.GetPaasNs(ctx, req); err != nil {
+	if paasns, err = pnsr.getPaasNs(ctx, req); err != nil {
 		// TODO(portly-halicore-76) move to admission webhook once available
 		// Don't requeue that often when no config is found
 		if strings.Contains(err.Error(), noConfigFoundMsg) {
@@ -222,28 +224,28 @@ func (pnsr *PaasNSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	paasns.Status.Truncate()
 
 	var paas *v1alpha1.Paas
-	if paas, err = pnsr.GetPaas(ctx, paasns); err != nil {
+	if paas, err = pnsr.getPaas(ctx, paasns); err != nil {
 		// This cannot be resolved by itself, so we should not have this keep on reconciling,
 		// only try again when setErrorCondition fails
 		return ctrl.Result{}, pnsr.setErrorCondition(ctx, paasns, err)
 	}
 
-	err = pnsr.ReconcileNamespaces(ctx, paas, paasns)
+	err = pnsr.reconcileNamespaces(ctx, paas, paasns)
 	if err != nil {
 		return ctrl.Result{}, errors.Join(err, pnsr.setErrorCondition(ctx, paasns, err))
 	}
 
-	err = pnsr.ReconcileRolebindings(ctx, paas, paasns)
+	err = pnsr.reconcileRolebindings(ctx, paas, paasns)
 	if err != nil {
 		return ctrl.Result{}, errors.Join(err, pnsr.setErrorCondition(ctx, paasns, err))
 	}
 
-	err = pnsr.ReconcileSecrets(ctx, paas, paasns)
+	err = pnsr.reconcileSecrets(ctx, paas, paasns)
 	if err != nil {
 		return ctrl.Result{}, errors.Join(err, pnsr.setErrorCondition(ctx, paasns, err))
 	}
 
-	err = pnsr.ReconcileExtraClusterRoleBinding(ctx, paasns, paas)
+	err = pnsr.reconcileExtraClusterRoleBinding(ctx, paasns, paas)
 	if err != nil {
 		logger.Err(err).Msg("reconciling Extra ClusterRoleBindings failed")
 		return ctrl.Result{}, errors.Join(err, pnsr.setErrorCondition(ctx, paasns, err))
@@ -386,25 +388,23 @@ func (pnsr *PaasNSReconciler) paasFromPaasNs(
 	}
 	if paasns.Namespace == paas.Name {
 		return paas, pnsr.nssFromPaas(ctx, paas), nil
-	} else {
-		namespaces = pnsr.nssFromPaas(ctx, paas)
-		if _, exists := namespaces[paasns.Namespace]; exists {
-			return paas, namespaces, nil
-		} else {
-			var nss []string
-			for key := range namespaces {
-				nss = append(nss, key)
-			}
-			err = fmt.Errorf(
-				"PaasNs %s claims to come from paas %s, but %s is not in the list of namespaces coming from %s (%s)",
-				types.NamespacedName{Name: paasns.Name, Namespace: paasns.Namespace},
-				paas.Name,
-				paasns.Namespace,
-				paas.Name,
-				strings.Join(nss, ", "))
-			return nil, map[string]int{}, err
-		}
 	}
+	namespaces = pnsr.nssFromPaas(ctx, paas)
+	if _, exists := namespaces[paasns.Namespace]; exists {
+		return paas, namespaces, nil
+	}
+	var nss []string
+	for key := range namespaces {
+		nss = append(nss, key)
+	}
+	err = fmt.Errorf(
+		"PaasNs %s claims to come from paas %s, but %s is not in the list of namespaces coming from %s (%s)",
+		types.NamespacedName{Name: paasns.Name, Namespace: paasns.Namespace},
+		paas.Name,
+		paasns.Namespace,
+		paas.Name,
+		strings.Join(nss, ", "))
+	return nil, map[string]int{}, err
 }
 
 func (pnsr *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alpha1.PaasNS) error {
@@ -435,13 +435,13 @@ func (pnsr *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alph
 	}
 
 	logger.Info().Msg("inside PaasNs finalizer")
-	if err := pnsr.FinalizeNamespace(ctx, paasns, paas); err != nil {
+	if err := pnsr.finalizeNamespace(ctx, paasns, paas); err != nil {
 		err = fmt.Errorf("cannot remove namespace belonging to Paas %s: %s", paasns.Spec.Paas, err.Error())
 		return err
 	}
 	if _, isCapability := paas.Spec.Capabilities[paasns.Name]; isCapability {
 		logger.Info().Msg("paasNs is a capability, also finalizing Cluster Resource Quota")
-		if err := pnsr.FinalizeClusterQuota(ctx, paasns); err != nil {
+		if err := pnsr.finalizeClusterQuota(ctx, paasns); err != nil {
 			logger.Err(err).Msg(fmt.Sprintf("failure while finalizing quota %s", paasns.Name))
 			return err
 		}

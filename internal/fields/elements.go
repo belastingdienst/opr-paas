@@ -8,21 +8,22 @@ import (
 	"strings"
 )
 
-// Elements represents all key, value pars for one entry in the list of the listgenerator
+// Element represents a value for one entry in the list of the listgenerator
 type Element any
 
+// Elements represents all key, value pairs for one entry in the list of the listgenerator
 type Elements map[string]Element
 
+// ElementsFromJSON can be used to import key, value pairs from JSON
 func ElementsFromJSON(raw []byte) (Elements, error) {
 	newElements := make(Elements)
 	if err := json.Unmarshal(raw, &newElements); err != nil {
 		return nil, err
-	} else {
-		return newElements, nil
 	}
+	return newElements, nil
 }
 
-// GetElementsAsString gets a value and returns as string
+// GetElementsAsStringMap gets a value and returns as string
 // This should be a method on Element, but a method cannot exist on interface datatypes
 func (es Elements) GetElementsAsStringMap() (values map[string]string) {
 	values = make(map[string]string)
@@ -80,10 +81,13 @@ func (es Elements) String() string {
 	return fmt.Sprintf("{ %s }", strings.Join(l, ", "))
 }
 
+// AsJSON can be used to export all elements as JSON
 func (es Elements) AsJSON() ([]byte, error) {
 	return json.Marshal(es)
 }
 
+// Key returns the name of the Paas (as derived from the element with name "paas").
+// Elements have key, value pairs, and the "paas" value usually exists and has the name of the Paas.
 func (es Elements) Key() string {
 	if key, exists := es["paas"]; exists {
 		paasKey, valid := key.(string)

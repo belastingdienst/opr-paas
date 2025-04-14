@@ -27,13 +27,19 @@ import (
 const (
 	ldapUIDAnnotationKey = "openshift.io/ldap.uid"
 	ldapURLAnnotationKey = "openshift.io/ldap.url"
-	LdapHostLabelKey     = "openshift.io/ldap.host"
-	ManagedByLabelKey    = "app.kubernetes.io/managed-by"
-	ManagedByLabelValue  = "paas"
+	// LdapHostLabelKey is the key of the label that openShift groups require for proper functioning
+	// `oc adm groups sync`
+	LdapHostLabelKey = "openshift.io/ldap.host"
+	// ManagedByLabelKey is the key of the label that specifies the tool being used to manage the operation of this
+	// application. For more info, see
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
+	ManagedByLabelKey = "app.kubernetes.io/managed-by"
+	// ManagedByLabelValue defaults to paas, so that all OpenShift groups that the Paas operator has created are
+	// identifiable
+	ManagedByLabelValue = "paas"
 )
 
-// EnsureGroup ensures Group presence
-func (r *PaasReconciler) EnsureGroup(
+func (r *PaasReconciler) ensureGroup(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	group *userv1.Group,
@@ -69,7 +75,6 @@ func (r *PaasReconciler) EnsureGroup(
 		}
 		changed = true
 	}
-
 	if _, exists := group.Labels[LdapHostLabelKey]; exists {
 		logger.Debug().Msg("group " + groupName + " is ldap group, not changing users")
 	} else if reflect.DeepEqual(group.Users, found.Users) {
@@ -140,7 +145,7 @@ func (r *PaasReconciler) backendGroups(
 	return groups, nil
 }
 
-func (r *PaasReconciler) FinalizeGroups(
+func (r *PaasReconciler) finalizeGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
@@ -154,7 +159,7 @@ func (r *PaasReconciler) FinalizeGroups(
 		return err
 	}
 	if len(removedLdapGroups) != 0 {
-		err = r.FinalizeLdapGroups(ctx, removedLdapGroups)
+		err = r.finalizeLdapGroups(ctx, removedLdapGroups)
 		if err != nil {
 			return err
 		}
@@ -162,7 +167,7 @@ func (r *PaasReconciler) FinalizeGroups(
 	return nil
 }
 
-func (r *PaasReconciler) ReconcileGroups(
+func (r *PaasReconciler) reconcileGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
@@ -181,13 +186,13 @@ func (r *PaasReconciler) ReconcileGroups(
 		return err
 	}
 	if len(removedLdapGroups) != 0 {
-		err = r.FinalizeLdapGroups(ctx, removedLdapGroups)
+		err = r.finalizeLdapGroups(ctx, removedLdapGroups)
 		if err != nil {
 			return err
 		}
 	}
 	for _, group := range desiredGroups {
-		if err := r.EnsureGroup(ctx, paas, group); err != nil {
+		if err := r.ensureGroup(ctx, paas, group); err != nil {
 			logger.Err(err).Msgf("failure while reconciling group %s", group.Name)
 			return err
 		}
