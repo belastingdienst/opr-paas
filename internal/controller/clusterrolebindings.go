@@ -154,7 +154,7 @@ func addOrUpdateCrb(
 	return changed
 }
 
-func (r *PaasNSReconciler) reconcileExtraClusterRoleBinding(
+func (r *PaasReconciler) reconcileExtraClusterRoleBinding(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,

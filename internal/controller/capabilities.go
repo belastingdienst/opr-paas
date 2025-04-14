@@ -4,6 +4,7 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
+// Package controller has all logic for reconciling Paas resources
 package controller
 
 import (
@@ -145,7 +146,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 }
 
 // finalizeAppSetCap ensures the list entries in the AppSet is removed for the capability of this PaasNs
-func (r *PaasNSReconciler) finalizeAppSetCap(
+func (r *PaasReconciler) finalizeAppSetCap(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 ) error {
