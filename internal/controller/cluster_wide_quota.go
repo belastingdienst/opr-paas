@@ -67,6 +67,7 @@ func (r *PaasReconciler) UpdateClusterWideQuotaResources(
 	ctx context.Context,
 	quota *quotav1.ClusterResourceQuota,
 ) (err error) {
+	var configCapability v1alpha1.ConfigCapability
 	var allPaasResources paasquota.QuotaLists
 	if capabilityName, err := ClusterWideCapabilityName(quota.Name); err != nil {
 		return err
@@ -79,14 +80,13 @@ func (r *PaasReconciler) UpdateClusterWideQuotaResources(
 		configCapability.QuotaSettings.DefQuota,
 	); err != nil {
 		return err
-	} else {
-		quota.Spec.Quota.Hard = corev1.ResourceList(allPaasResources.OptimalValues(
-			configCapability.QuotaSettings.Ratio,
-			configCapability.QuotaSettings.MinQuotas,
-			configCapability.QuotaSettings.MaxQuotas,
-		))
-		return nil
 	}
+	quota.Spec.Quota.Hard = corev1.ResourceList(allPaasResources.OptimalValues(
+		configCapability.QuotaSettings.Ratio,
+		configCapability.QuotaSettings.MinQuotas,
+		configCapability.QuotaSettings.MaxQuotas,
+	))
+	return nil
 }
 
 // backendQuota is a code for Creating Quota
@@ -171,14 +171,14 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 	var quota *quotav1.ClusterResourceQuota
 	var exists bool
 	quotaName := ClusterWideQuotaName(capabilityName)
-	if paasConfigSpec, exists := config.GetConfig().Spec.Capabilities[capabilityName]; !exists {
+	paasConfigSpec, exists := config.GetConfig().Spec.Capabilities[capabilityName]
+	if !exists {
 		return fmt.Errorf("capability %s does not seem to exist in configuration", capabilityName)
 	} else if !paasConfigSpec.QuotaSettings.Clusterwide {
 		return nil
-	} else {
-		quota = backendClusterWideQuota(quotaName,
-			paasConfigSpec.QuotaSettings.MinQuotas)
 	}
+	quota = backendClusterWideQuota(quotaName,
+		paasConfigSpec.QuotaSettings.MinQuotas)
 
 	err := r.Get(ctx, types.NamespacedName{Name: quotaName}, quota)
 	if err != nil && !k8serrors.IsNotFound(err) {
@@ -214,10 +214,9 @@ func (r *PaasReconciler) removeFromClusterWideQuota(
 		// If a Paas was created with a capability that was nog yet configured, we should be able to delete it.
 		// Returning an error would block deletion.
 		return nil
-	} else {
-		quota = backendClusterWideQuota(quotaName,
-			capConfig.QuotaSettings.MinQuotas)
 	}
+	quota = backendClusterWideQuota(quotaName,
+		capConfig.QuotaSettings.MinQuotas)
 	err := r.Get(ctx, types.NamespacedName{
 		Name: quotaName,
 	}, quota)

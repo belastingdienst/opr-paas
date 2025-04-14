@@ -17,9 +17,8 @@ func ElementsFromJSON(raw []byte) (Elements, error) {
 	newElements := make(Elements)
 	if err := json.Unmarshal(raw, &newElements); err != nil {
 		return nil, err
-	} else {
-		return newElements, nil
 	}
+	return newElements, nil
 }
 
 // GetElementsAsString gets a value and returns as string

@@ -13,21 +13,21 @@ type PaasConfigValidations map[string]PaasConfigTypeValidations
 // getValidationRE is an internal function which checks if a validation RE is configured
 // and returns a Regexp object if it is, or nil if it isn't
 func (pctv PaasConfigTypeValidations) getValidationRE(fieldName string) *regexp.Regexp {
-	if validation, exists := pctv[fieldName]; !exists {
+	validation, exists := pctv[fieldName]
+	if !exists {
 		return nil
-	} else {
-		return regexp.MustCompile(validation)
 	}
+	return regexp.MustCompile(validation)
 }
 
 // GetValidationRE can be used to get a validation for a crd by name
 // and returns a Regexp object if it is, or nil if it isn't
 func (pcv PaasConfigValidations) GetValidationRE(crd string, fieldName string) *regexp.Regexp {
-	if validations, exists := pcv[crd]; !exists {
+	validations, exists := pcv[crd]
+	if !exists {
 		return nil
-	} else {
-		return validations.getValidationRE(fieldName)
 	}
+	return validations.getValidationRE(fieldName)
 }
 
 // GetValidationRE can be used to get a validation for a crd by name
@@ -37,7 +37,6 @@ func (pcv PaasConfigValidations) GetValidationRE(crd string, fieldName string) *
 func (pc PaasConfig) GetValidationRE(crd string, fieldName string) *regexp.Regexp {
 	if pc.Spec.Validations == nil {
 		return nil
-	} else {
-		return pc.Spec.Validations.GetValidationRE(crd, fieldName)
 	}
+	return pc.Spec.Validations.GetValidationRE(crd, fieldName)
 }

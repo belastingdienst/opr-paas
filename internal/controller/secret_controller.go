@@ -136,12 +136,12 @@ func (r *PaasNSReconciler) getSecrets(
 		if err != nil {
 			return nil, err
 		}
-		if decrypted, err := rsa.Decrypt(encryptedSecretData); err != nil {
+		decrypted, err := rsa.Decrypt(encryptedSecretData)
+		if err != nil {
 			return nil, fmt.Errorf("failed to decrypt secret %s: %s", secret, err.Error())
-		} else {
-			secret.Data["sshPrivateKey"] = decrypted
-			secrets = append(secrets, secret)
 		}
+		secret.Data["sshPrivateKey"] = decrypted
+		secrets = append(secrets, secret)
 	}
 	return secrets, nil
 }

@@ -69,7 +69,6 @@ func (r *PaasReconciler) EnsureGroup(
 		}
 		changed = true
 	}
-
 	if _, exists := group.Labels[LdapHostLabelKey]; exists {
 		logger.Debug().Msg("group " + groupName + " is ldap group, not changing users")
 	} else if reflect.DeepEqual(group.Users, found.Users) {

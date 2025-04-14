@@ -30,7 +30,6 @@ linters:
             - ''
         - name: comment-spacings
         - name: indent-error-flow
-          disabled: true
         - name: use-errors-new
         - name: bare-return
         - name: cognitive-complexity

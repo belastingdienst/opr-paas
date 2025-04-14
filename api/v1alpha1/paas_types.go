@@ -159,13 +159,13 @@ type PaasGroup struct {
 }
 
 func (pg PaasGroup) Name(defName string) string {
-	if name := strings.Split(pg.Query, ",")[0]; len(name) == 0 {
+	name := strings.Split(pg.Query, ",")[0]
+	if len(name) == 0 {
 		return defName
 	} else if strings.Contains(name, "=") {
 		return strings.Split(name, "=")[1]
-	} else {
-		return name
 	}
+	return name
 }
 
 type PaasGroups map[string]PaasGroup
@@ -194,11 +194,11 @@ func (pgs PaasGroups) Roles() map[string][]string {
 }
 
 func (pgs PaasGroups) Key2Name(key string) string {
-	if group, exists := pgs[key]; !exists {
+	group, exists := pgs[key]
+	if !exists {
 		return ""
-	} else {
-		return group.Name(key)
 	}
+	return group.Name(key)
 }
 
 func (pgs PaasGroups) Names() (paasGroupNames []string) {
@@ -213,9 +213,8 @@ func (p Paas) GroupKey2GroupName(groupKey string) string {
 		return ""
 	} else if len(group.Query) > 0 {
 		return group.Name(groupKey)
-	} else {
-		return fmt.Sprintf("%s-%s", p.Name, p.Spec.Groups.Key2Name(groupKey))
 	}
+	return fmt.Sprintf("%s-%s", p.Name, p.Spec.Groups.Key2Name(groupKey))
 }
 
 func (p Paas) GroupNames() (groupNames []string) {
@@ -270,35 +269,35 @@ func (pcs PaasCapabilities) IsCap(name string) bool {
 	return true
 }
 
-func (pcs PaasCapabilities) GetCapability(capabilityName string) (capability PaasCapability, err error) {
-	if capability, exists := pcs[capabilityName]; !exists {
+func (pcs PaasCapabilities) GetCapability(capabilityName string) (PaasCapability, error) {
+	capability, exists := pcs[capabilityName]
+	if !exists {
 		return capability, fmt.Errorf("capability %s does not exist", capabilityName)
-	} else {
-		return capability, nil
 	}
+	return capability, nil
 }
 
 func (pcs PaasCapabilities) AddCapSSHSecret(capabilityName string, key string, value string) (err error) {
-	if capability, err := pcs.GetCapability(capabilityName); err != nil {
+	capability, err := pcs.GetCapability(capabilityName)
+	if err != nil {
 		return err
-	} else {
-		if capability.SSHSecrets == nil {
-			capability.SSHSecrets = map[string]string{key: value}
-		} else {
-			capability.SSHSecrets[key] = value
-		}
-		pcs[capabilityName] = capability
 	}
+	if capability.SSHSecrets == nil {
+		capability.SSHSecrets = map[string]string{key: value}
+	} else {
+		capability.SSHSecrets[key] = value
+	}
+	pcs[capabilityName] = capability
 	return nil
 }
 
 func (pcs PaasCapabilities) ResetCapSSHSecret(capabilityName string) (err error) {
-	if capability, err := pcs.GetCapability(capabilityName); err != nil {
+	capability, err := pcs.GetCapability(capabilityName)
+	if err != nil {
 		return err
-	} else {
-		capability.SSHSecrets = nil
-		pcs[capabilityName] = capability
 	}
+	capability.SSHSecrets = nil
+	pcs[capabilityName] = capability
 	return nil
 }
 
