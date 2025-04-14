@@ -27,7 +27,7 @@ import (
 )
 
 // ensureSecret ensures Secret presence in given secret.
-func (r *PaasNSReconciler) ensureSecret(
+func (r *PaasReconciler) ensureSecret(
 	ctx context.Context,
 	secret *corev1.Secret,
 ) error {
@@ -70,7 +70,7 @@ type: Opaque
 */
 
 // backendSecret is a code for Creating Secret
-func (r *PaasNSReconciler) backendSecret(
+func (r *PaasReconciler) backendSecret(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
@@ -111,7 +111,7 @@ func (r *PaasNSReconciler) backendSecret(
 }
 
 // getSecrets returns a list of Secrets which are desired based on the Paas(Ns) spec
-func (r *PaasNSReconciler) getSecrets(
+func (r *PaasReconciler) getSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
@@ -148,7 +148,7 @@ func (r *PaasNSReconciler) getSecrets(
 
 // BackendSecrets returns a list of kubernetes Secrets which are desired based on the Paas(Ns) spec.
 // It returns an error when the secrets cannot be determined.
-func (r *PaasNSReconciler) backendSecrets(
+func (r *PaasReconciler) backendSecrets(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
@@ -170,7 +170,7 @@ func (r *PaasNSReconciler) backendSecrets(
 }
 
 // deleteObsoleteSecrets deletes any secrets from the existingSecrets which is not listed in the desired secrets.
-func (r *PaasNSReconciler) deleteObsoleteSecrets(
+func (r *PaasReconciler) deleteObsoleteSecrets(
 	ctx context.Context,
 	existingSecrets []*corev1.Secret,
 	desiredSecrets []*corev1.Secret,
@@ -205,7 +205,7 @@ func isSecretInDesiredSecrets(secret *corev1.Secret, desiredSecrets []*corev1.Se
 }
 
 // getExistingSecrets retrieves all secrets owned by this Paas in it's enabled namespaces
-func (r *PaasNSReconciler) getExistingSecrets(
+func (r *PaasReconciler) getExistingSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
@@ -240,7 +240,7 @@ func (r *PaasNSReconciler) getExistingSecrets(
 	return existingSecrets, nil
 }
 
-func (r *PaasNSReconciler) reconcileSecrets(
+func (r *PaasReconciler) reconcileSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
