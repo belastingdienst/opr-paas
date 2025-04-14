@@ -21,6 +21,7 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
+	"github.com/belastingdienst/opr-paas/internal/paasresource"
 
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -153,7 +154,7 @@ func (r *PaasReconciler) getPaasFromRequest(
 
 func (r *PaasReconciler) updateFinalizer(
 	ctx context.Context,
-	resource v1alpha1.Resource,
+	resource paasresource.Resource,
 ) error {
 	logger := log.Ctx(ctx)
 
@@ -264,7 +265,7 @@ func (r *PaasReconciler) setSuccesfullCondition(ctx context.Context, paas *v1alp
 	return r.Status().Update(ctx, paas)
 }
 
-func (r *PaasReconciler) setErrorCondition(ctx context.Context, resource v1alpha1.Resource, err error) error {
+func (r *PaasReconciler) setErrorCondition(ctx context.Context, resource paasresource.Resource, err error) error {
 	meta.SetStatusCondition(resource.GetConditions(), metav1.Condition{
 		Type:   v1alpha1.TypeReadyPaas,
 		Status: metav1.ConditionFalse, Reason: "ReconcilingError", ObservedGeneration: resource.GetGeneration(),
@@ -316,7 +317,7 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *PaasReconciler) finalize(ctx context.Context, resource v1alpha1.Resource) error {
+func (r *PaasReconciler) finalize(ctx context.Context, resource paasresource.Resource) error {
 	paas, err := r.getPaas(ctx, resource)
 	if err != nil {
 		return err
