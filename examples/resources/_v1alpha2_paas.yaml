@@ -48,7 +48,7 @@ spec:
         requests.memory: 4Gi
         requests.storage: 20Gi
       custom_fields:
-        gitUrl: https://scm.org/repo.git
+        git_url: ssh://git@scm.org/repo.git
     sso: {}
     tekton:
       quota:
