@@ -173,8 +173,13 @@ type Paas struct {
 }
 
 // GetConditions is required to allow a Paas to be used as a withStatus interface in our e2e test framework
-func (p *Paas) GetConditions() []metav1.Condition {
-	return p.Status.Conditions
+func (p *Paas) GetConditions() *[]metav1.Condition {
+	return &p.Status.Conditions
+}
+
+// GetGeneration is required for Paas to be used as v1alpha1.Resource
+func (p Paas) GetGeneration() int64 {
+	return p.Generation
 }
 
 // +kubebuilder:object:root=true

@@ -24,7 +24,7 @@ func resetCrypts() {
 }
 
 // getRsaPrivateKeys fetches secret, compares to cached private keys, resets crypts if needed, and returns keys
-func (r *PaasNSReconciler) getRsaPrivateKeys(
+func (r *PaasReconciler) getRsaPrivateKeys(
 	ctx context.Context,
 ) (*crypt.PrivateKeys, error) {
 	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
@@ -60,7 +60,7 @@ func (r *PaasNSReconciler) getRsaPrivateKeys(
 }
 
 // getRsa returns a crypt.Crypt for a specified paasName
-func (r *PaasNSReconciler) getRsa(ctx context.Context, paasName string) (*crypt.Crypt, error) {
+func (r *PaasReconciler) getRsa(ctx context.Context, paasName string) (*crypt.Crypt, error) {
 	var c *crypt.Crypt
 	if keys, err := r.getRsaPrivateKeys(ctx); err != nil {
 		return nil, err

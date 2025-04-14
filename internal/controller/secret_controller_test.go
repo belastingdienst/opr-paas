@@ -53,9 +53,9 @@ var _ = Describe("Secret controller", Ordered, func() {
 		config.SetConfig(genericConfig)
 	})
 
-	var reconciler *PaasNSReconciler
+	var reconciler *PaasReconciler
 	BeforeEach(func() {
-		reconciler = &PaasNSReconciler{
+		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),
 		}

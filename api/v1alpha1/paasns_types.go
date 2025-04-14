@@ -97,8 +97,14 @@ func (pns PaasNS) AmIOwner(references []metav1.OwnerReference) bool {
 	return false
 }
 
-func (pns PaasNS) GetConditions() []metav1.Condition {
-	return pns.Status.Conditions
+// GetConditions is required for Paas to be used as v1alpha1.Resource
+func (pns PaasNS) GetConditions() *[]metav1.Condition {
+	return &pns.Status.Conditions
+}
+
+// GetGeneration is required for Paas to be used as v1alpha1.Resource
+func (pns PaasNS) GetGeneration() int64 {
+	return pns.Generation
 }
 
 // +kubebuilder:object:root=true

@@ -491,8 +491,14 @@ func (p Paas) WithoutMe(references []metav1.OwnerReference) (withoutMe []metav1.
 	return withoutMe
 }
 
-func (p Paas) GetConditions() []metav1.Condition {
-	return p.Status.Conditions
+// GetConditions is required for Paas to be used as v1alpha1.Resource
+func (p Paas) GetConditions() *[]metav1.Condition {
+	return &p.Status.Conditions
+}
+
+// GetGeneration is required for Paas to be used as v1alpha1.Resource
+func (p Paas) GetGeneration() int64 {
+	return p.Generation
 }
 
 // +kubebuilder:object:root=true

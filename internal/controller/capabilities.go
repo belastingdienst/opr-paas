@@ -145,7 +145,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 }
 
 // finalizeAppSetCap ensures the list entries in the AppSet is removed for the capability of this PaasNs
-func (r *PaasNSReconciler) finalizeAppSetCap(
+func (r *PaasReconciler) finalizeAppSetCap(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 ) error {

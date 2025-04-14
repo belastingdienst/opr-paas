@@ -161,23 +161,6 @@ func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, paas *v1alpha
 	return r.Delete(ctx, obj)
 }
 
-func (r *PaasNSReconciler) finalizeClusterQuota(ctx context.Context, paasns *v1alpha1.PaasNS) error {
-	ctx, logger := logging.GetLogComponent(ctx, "quota")
-	logger.Info().Msg("finalizing")
-	obj := &quotav1.ClusterResourceQuota{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Name: paasns.NamespaceName(),
-	}, obj); err != nil && k8serrors.IsNotFound(err) {
-		logger.Info().Msg("does not exist")
-		return nil
-	} else if err != nil {
-		logger.Err(err).Msg("error retrieving info")
-		return err
-	}
-	logger.Info().Msg("deleting")
-	return r.Delete(ctx, obj)
-}
-
 func (r *PaasReconciler) finalizeClusterQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
 	suffixes := []string{
 		"",

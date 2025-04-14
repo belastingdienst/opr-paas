@@ -103,7 +103,7 @@ func backendNamespace(
 	return ns, nil
 }
 
-func (r *PaasNSReconciler) finalizeNamespace(
+func (r *PaasReconciler) finalizeNamespace(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
@@ -130,7 +130,7 @@ func (r *PaasNSReconciler) finalizeNamespace(
 	return nil
 }
 
-func (r *PaasNSReconciler) reconcileNamespaces(
+func (r *PaasReconciler) reconcileNamespaces(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,

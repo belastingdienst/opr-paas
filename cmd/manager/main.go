@@ -196,12 +196,6 @@ func configureManager(f *flags) ctrl.Manager {
 	}).SetupWithManager(mgr); err != nil {
 		log.Fatal().Err(err).Str("controller", "Paas").Msg("unable to create controller")
 	}
-	if err = (&controller.PaasNSReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		log.Fatal().Err(err).Str("controller", "PaasNS").Msg("unable to create controller")
-	}
 	// +kubebuilder:scaffold:builder
 
 	configureWebhooks(mgr)
