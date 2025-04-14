@@ -8,7 +8,7 @@ package controller
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -58,7 +58,7 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	paasConfigSpec := config.GetConfig().Spec
 	for capName := range paas.Spec.Capabilities {
 		if _, exists := paasConfigSpec.Capabilities[capName]; !exists {
-			return fmt.Errorf("capability not configured")
+			return errors.New("capability not configured")
 		}
 		// Only do this when enabled
 		capability := paas.Spec.Capabilities[capName]

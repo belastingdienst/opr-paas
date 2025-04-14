@@ -92,7 +92,7 @@ func (pnsr *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (
 		logger.Info().Msg("paasNs object has no finalizer yet")
 		if ok := controllerutil.AddFinalizer(paasns, paasNsFinalizer); !ok {
 			logger.Error().Msg("failed to add finalizer")
-			return nil, fmt.Errorf("failed to add finalizer")
+			return nil, errors.New("failed to add finalizer")
 		}
 		if err := pnsr.Update(ctx, paasns); err != nil {
 			logger.Err(err).Msg("error updating PaasNs")
@@ -110,7 +110,7 @@ func (pnsr *PaasNSReconciler) GetPaasNs(ctx context.Context, req ctrl.Request) (
 		err = pnsr.setErrorCondition(
 			ctx,
 			paasns,
-			fmt.Errorf(
+			errors.New(
 				// revive:disable-next-line
 				"please reach out to your system administrator as there is no Paasconfig available to reconcile against",
 			),
@@ -427,7 +427,7 @@ func (pnsr *PaasNSReconciler) finalizePaasNs(ctx context.Context, paasns *v1alph
 		logger.Info().Msg(err.Error())
 		return nil
 	} else if nss[paasns.NamespaceName()] > 1 {
-		err = fmt.Errorf("this is not the only paasns managing this namespace, silently removing this paasns")
+		err = errors.New("this is not the only paasns managing this namespace, silently removing this paasns")
 		logger.Info().Msg(err.Error())
 		return nil
 	}
