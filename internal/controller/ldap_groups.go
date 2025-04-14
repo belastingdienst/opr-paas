@@ -43,7 +43,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 }
 
 // ensureLdapGroup ensures Group presence
-func (r *PaasReconciler) EnsureLdapGroups(
+func (r *PaasReconciler) ensureLdapGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
@@ -90,7 +90,7 @@ func (r *PaasReconciler) EnsureLdapGroups(
 }
 
 // ensureLdapGroup ensures Group presence
-func (r *PaasReconciler) FinalizeLdapGroups(
+func (r *PaasReconciler) finalizeLdapGroups(
 	ctx context.Context,
 	cleanedLdapQueries []string,
 ) error {

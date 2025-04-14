@@ -27,7 +27,7 @@ import (
 )
 
 // ensureSecret ensures Secret presence in given secret.
-func (r *PaasNSReconciler) EnsureSecret(
+func (r *PaasNSReconciler) ensureSecret(
 	ctx context.Context,
 	secret *corev1.Secret,
 ) error {
@@ -148,7 +148,7 @@ func (r *PaasNSReconciler) getSecrets(
 
 // BackendSecrets returns a list of kubernetes Secrets which are desired based on the Paas(Ns) spec.
 // It returns an error when the secrets cannot be determined.
-func (r *PaasNSReconciler) BackendSecrets(
+func (r *PaasNSReconciler) backendSecrets(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
@@ -240,14 +240,14 @@ func (r *PaasNSReconciler) getExistingSecrets(
 	return existingSecrets, nil
 }
 
-func (r *PaasNSReconciler) ReconcileSecrets(
+func (r *PaasNSReconciler) reconcileSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "secret")
 	logger.Debug().Msg("reconciling Ssh Secrets")
-	desiredSecrets, err := r.BackendSecrets(ctx, paasns, paas)
+	desiredSecrets, err := r.backendSecrets(ctx, paasns, paas)
 	if err != nil {
 		return err
 	}
@@ -262,7 +262,7 @@ func (r *PaasNSReconciler) ReconcileSecrets(
 		return err
 	}
 	for _, secret := range desiredSecrets {
-		if err := r.EnsureSecret(ctx, secret); err != nil {
+		if err := r.ensureSecret(ctx, secret); err != nil {
 			logger.Err(err).Str("secret", secret.Name).Msg("failure while reconciling secret")
 			return err
 		}

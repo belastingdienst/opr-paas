@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -64,5 +65,7 @@ func TestPathHappyFlow(t *testing.T) {
 	}
 
 	assert.Nil(t, err)
+	slices.Sort(expectedFiles)
+	slices.Sort(files)
 	assert.Equal(t, expectedFiles, files)
 }

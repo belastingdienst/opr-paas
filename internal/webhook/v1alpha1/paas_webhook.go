@@ -51,6 +51,7 @@ func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
 
 // revive:enable:line-length-limit
 
+// PaasCustomValidator struct is responsible for validating the Paas resource when it is created, updated, or deleted.
 type PaasCustomValidator struct {
 	client client.Client
 }

@@ -222,8 +222,7 @@ func (r *PaasReconciler) reconcileRolebindings(
 	return nil
 }
 
-// ReconcileRolebindings is used by the PaasNS reconciler to reconcile RB's
-func (r *PaasNSReconciler) ReconcileRolebindings(
+func (r *PaasNSReconciler) reconcileRolebindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
