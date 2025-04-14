@@ -10,6 +10,7 @@ package v1alpha1
 //revive:disable:dot-imports
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -65,7 +66,7 @@ func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte,
 	}
 	privateKey, err = os.ReadFile(privateKeyFile.Name())
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to read private key from file")
+		return nil, nil, errors.New("failed to read private key from file")
 	}
 
 	return myCrypt, privateKey, nil

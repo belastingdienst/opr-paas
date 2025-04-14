@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
@@ -110,7 +111,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	conf := config.GetConfig().Spec
 	// Check for uninitialized config
 	if conf.DecryptKeysSecret.Name == "" {
-		return nil, apierrors.NewInternalError(fmt.Errorf("uninitialized PaasConfig"))
+		return nil, apierrors.NewInternalError(errors.New("uninitialized PaasConfig"))
 	}
 
 	for _, val := range []paasSpecValidator{
