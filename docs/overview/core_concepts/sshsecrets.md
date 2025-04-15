@@ -28,8 +28,15 @@ For ease of use, and to enable extra management capabilities, the Paas operator
 comes with additional tooling:
 
 - an API, which can be used to encrypt without needing to share the public key;
-- a crypt tool which can be leveraged to encrypt, re-encrypt, generate key pairs,
-  and inspect encrypted keys;
+- A crypt tool, available from a separate repository, that can be used to
+  encrypt, re-encrypt, generate key pairs, and inspect encrypted keys;
+
+  You can find the crypt tool at https://github.com/belastingdienst/opr-paas-crypttool
+
+!!! Note
+    Note that the crypt tool is not part of the operator anymore, but can be used
+    separately. It was moved into a separate repository after the release of version
+    v1.12.0 of the operator.
 
 Both of these tools require access to the private key to be usable...
 
