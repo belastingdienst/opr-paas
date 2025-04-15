@@ -31,7 +31,7 @@ comes with additional tooling:
 - A crypt tool, available from a separate repository, that can be used to
   encrypt, re-encrypt, generate key pairs, and inspect encrypted keys;
 
-  You can find the crypt tool at https://github.com/belastingdienst/opr-paas-crypttool
+  You can find the crypt tool at [https://github.com/belastingdienst/opr-paas-crypttool](https://github.com/belastingdienst/opr-paas-crypttool)
 
 !!! Note
     Note that the crypt tool is not part of the operator anymore, but can be used
