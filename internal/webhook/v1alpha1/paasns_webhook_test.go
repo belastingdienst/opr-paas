@@ -237,6 +237,13 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			_, err := validator.ValidateUpdate(ctx, oldObj, obj)
 			Expect(err.Error()).To(ContainSubstring("field is immutable"))
 		})
+		It("Should validate paasns name not containing dots", func() {
+			obj.Name = "invalid.name.foo"
+			warn, err := validator.ValidateCreate(ctx, obj)
+			Expect(warn).To(BeNil())
+			Expect(warn, err).Error().To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("paasns name should not contain dots"))
+		})
 		It("Should validate paasns name", func() {
 			for _, test := range []struct {
 				name       string

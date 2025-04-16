@@ -39,11 +39,9 @@ key & write back the Paas configuration to the file in either yaml or json forma
 
 This will allow for key rotation.
 
-You can also run the `check-paas` sub-command to "check" the Paas, which means
-it will parse the yaml/json file for a Paas, decrypt the SSH secrets and display
-their length and checksums.
+It can also be used to `generate` a new public/private key pair.
 
-Lastly it can be used to `generate` a new public/private key pair.
+The crypttool is managed from its own repository on GitHub at [https://github.com/belastingdienst/opr-paas-crypttool](https://github.com/belastingdienst/opr-paas-crypttool).
 
 ## Groups [openshift]
 

@@ -26,7 +26,8 @@ the [Admin guide on configuring ssh secret encryption](../administrators-guide/s
 
 ## Encrypting secrets
 
-You can download the crypttool from the [Downloads section of the latest release](https://github.com/belastingdienst/opr-paas/releases).
+You can download the crypttool from the
+[Downloads section of its repository](https://github.com/belastingdienst/opr-paas-crypttool/releases).
 Once downloaded, the crypttool has two options for encrypting content:
 
 ### Encrypting a file with crypttool

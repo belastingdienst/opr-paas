@@ -19,9 +19,9 @@ import (
 var _ = Describe("Namespace Validation", func() {
 	const resourceName = "test-paas"
 
-	Context("Valid Hostname", func() {
-		It("should accept a valid hostname", func() {
-			validNamespace := []string{"valid-hostname.example.com"}
+	Context("Valid namespacesnames", func() {
+		It("should accept a valid namespace", func() {
+			validNamespace := []string{"valid-namespace-example"}
 			paas := &Paas{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: resourceName,
@@ -39,8 +39,8 @@ var _ = Describe("Namespace Validation", func() {
 		})
 	})
 
-	Context("Invalid Hostnames", func() {
-		DescribeTable("should reject invalid hostnames",
+	Context("Invalid namespacenames", func() {
+		DescribeTable("should reject invalid names",
 			func(namespaces []string) {
 				paas := &Paas{
 					ObjectMeta: metav1.ObjectMeta{
@@ -57,11 +57,11 @@ var _ = Describe("Namespace Validation", func() {
 				Expect(err).To(HaveOccurred()) // Expect validation to fail
 			},
 			Entry("starts with a hyphen", []string{"-invalid.com"}),
-			Entry("starts with a dot", []string{"valid", ".invalid.com"}),
-			Entry("ends with a hyphen", []string{"invalid-.com-"}),
-			Entry("contains uppercase letters", []string{"Invalid.com"}),
+			Entry("contains a dot", []string{"valid", "invalid.com"}),
+			Entry("ends with a hyphen", []string{"invalid-"}),
+			Entry("contains uppercase letters", []string{"Invalid-com"}),
 			Entry("contains special characters", []string{"invalid!name.com"}),
-			Entry("exceeds max length", []string{fmt.Sprintf("%s.com", string(make([]byte, 254)))}),
+			Entry("exceeds max length", []string{fmt.Sprintf("%s-com", string(make([]byte, 254)))}),
 		)
 	})
 })

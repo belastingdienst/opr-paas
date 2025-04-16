@@ -22,7 +22,7 @@ or through the web service).
 ## Generating new secrets
 
 New keys can be easily generated using the crypttool. You can download the crypttool
-from the [Downloads section of the latest release](https://github.com/belastingdienst/opr-paas/releases).
+from the [Downloads section of its repository](https://github.com/belastingdienst/opr-paas-crypttool/releases).
 
 Once downloaded, the crypttool can be used to generate a keypair as follows:
 
@@ -86,7 +86,8 @@ k8s changes the mount and the webservice automatically picks up the file changes
 ### Reencryption
 
 A proper encryption product also has options to cycle the encrypted data.
-With the sshSecrets implementation in the operator, this is implemented with the crypttool.
+With the sshSecrets implementation in the operator, this is implemented with the
+crypttool.
 
 Steps are:
 

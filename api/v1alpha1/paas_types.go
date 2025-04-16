@@ -56,7 +56,7 @@ type PaasSpec struct {
 	// As the names are used as the names of PaasNs resources, they must comply to the DNS subdomainname regex
 	// See https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names for more info
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:items:Pattern=`^[a-z0-9]([a-z0-9-.]{0,251}[a-z0-9])?$`
+	// +kubebuilder:validation:items:Pattern=`^[a-z0-9]([a-z0-9-]{0,251}[a-z0-9])?$`
 	Namespaces []string `json:"namespaces"`
 	// You can add ssh keys (which is a type of secret) for ArgoCD to use for access to bitBucket.
 	// They must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
