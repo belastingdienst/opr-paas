@@ -18,6 +18,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/controller"
 	"github.com/belastingdienst/opr-paas/internal/logging"
@@ -57,6 +58,7 @@ func init() {
 	utilruntime.Must(userv1.AddToScheme(scheme))
 	utilruntime.Must(argoresources.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 

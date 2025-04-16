@@ -1,0 +1,59 @@
+---
+apiVersion: cpet.belastingdienst.nl/v1alpha2
+kind: Paas
+metadata:
+  labels:
+    app.kubernetes.io/name: paas
+    app.kubernetes.io/instance: paas-sample
+    app.kubernetes.io/part-of: opr-paas
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: opr-paas
+  name: aap-aap
+spec:
+  namespaces:
+    test: {}
+    prod:
+      groups:
+        - appa
+        - appart
+      secrets:
+        foo: c29tZXRoaW5nIHNlY3JldAo=
+  requestor: acme
+  groups:
+    appa:
+      users:
+        - aap
+        - paa
+    appart:
+      query: CN=appatest,OU=paas,OU=clusters,OU=corp,DC=prod,DC=acme,DC=org
+      roles:
+        - viewer
+    appart2:
+      query: CN=appatest,OU=paas,OU=clusters,OU=corp,DC=prod,DC=acme,DC=org
+      roles:
+        - viewer
+  quota:
+    limits.cpu: '13'
+    limits.memory: 42Gi
+    requests.cpu: '10'
+    requests.memory: 32Gi
+    requests.storage: 1024Gi
+    thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
+  capabilities:
+    argocd:
+      quota:
+        limits.cpu: '2'
+        limits.memory: 5Gi
+        requests.cpu: '1'
+        requests.memory: 4Gi
+        requests.storage: 20Gi
+      custom_fields:
+        gitUrl: https://scm.org/repo.git
+    sso: {}
+    tekton:
+      quota:
+        limits.cpu: '2'
+        limits.memory: 5Gi
+        requests.cpu: '1'
+        requests.memory: 4Gi
+        requests.storage: 20Gi
