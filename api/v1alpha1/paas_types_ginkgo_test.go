@@ -58,10 +58,10 @@ var _ = Describe("Namespace Validation", func() {
 			},
 			Entry("starts with a hyphen", []string{"-invalid.com"}),
 			Entry("contains a dot", []string{"valid", "invalid.com"}),
-			Entry("ends with a hyphen", []string{"invalid-.com-"}),
-			Entry("contains uppercase letters", []string{"Invalid.com"}),
+			Entry("ends with a hyphen", []string{"invalid-"}),
+			Entry("contains uppercase letters", []string{"Invalid-com"}),
 			Entry("contains special characters", []string{"invalid!name.com"}),
-			Entry("exceeds max length", []string{fmt.Sprintf("%s.com", string(make([]byte, 254)))}),
+			Entry("exceeds max length", []string{fmt.Sprintf("%s-com", string(make([]byte, 254)))}),
 		)
 	})
 })
