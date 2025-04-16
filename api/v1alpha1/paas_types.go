@@ -101,7 +101,7 @@ func (p Paas) GetNsSSHSecrets(ns string) (secrets map[string]string) {
 }
 
 func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
-	ns = make(map[string]bool)
+	ns = map[string]bool{}
 	for name, cap := range p.Spec.Capabilities {
 		if cap.IsEnabled() {
 			ns[name] = true
@@ -111,7 +111,7 @@ func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 }
 
 func (p Paas) allCapNamespaces() (ns map[string]bool) {
-	ns = make(map[string]bool)
+	ns = map[string]bool{}
 	for name := range p.Spec.Capabilities {
 		ns[name] = true
 	}
@@ -130,7 +130,7 @@ func (p Paas) AllEnabledNamespaces() (ns map[string]bool) {
 
 func (p Paas) extraNamespaces() (ns map[string]bool) {
 	capNs := p.allCapNamespaces()
-	ns = make(map[string]bool)
+	ns = map[string]bool{}
 	for _, name := range p.Spec.Namespaces {
 		if _, isCap := capNs[name]; !isCap {
 			ns[name] = true

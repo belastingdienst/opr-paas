@@ -133,23 +133,17 @@ func (r *PaasReconciler) finalizeNamespace(
 func (r *PaasReconciler) reconcileNamespaces(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	paasns *v1alpha1.PaasNS,
+	nsDefs namespaceDefs,
 ) (err error) {
-	nsName := paasns.NamespaceName()
-	var nsQuota string
-	if configCapability, exists := config.GetConfig().Spec.Capabilities[paasns.Name]; !exists {
-		nsQuota = paas.Name
-	} else if !configCapability.QuotaSettings.Clusterwide {
-		nsQuota = nsName
-	} else {
-		nsQuota = clusterWideQuotaName(paasns.Name)
-	}
+	for _, nsDef := range nsDefs {
 
-	var ns *corev1.Namespace
-	if ns, err = backendNamespace(ctx, paas, nsName, nsQuota, r.Scheme); err != nil {
-		return fmt.Errorf("failure while defining namespace %s: %s", nsName, err.Error())
-	} else if err = ensureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
-		return fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
+		var ns *corev1.Namespace
+		if ns, err = backendNamespace(ctx, paas, nsDef.nsName, nsDef.quota, r.Scheme); err != nil {
+			return fmt.Errorf("failure while defining namespace %s: %s", nsDef.nsName, err.Error())
+		} else if err = ensureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
+			return fmt.Errorf("failure while creating namespace %s: %s", nsDef.nsName, err.Error())
+		}
+		return err
 	}
-	return err
+	return nil
 }

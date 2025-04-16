@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package controller
 
 import (
+	"strings"
 	"time"
 )
 
@@ -32,4 +33,8 @@ func intersect(l1 []string, l2 []string) (li []string) {
 		}
 	}
 	return li
+}
+
+func join(argv ...string) string {
+	return strings.Join(argv, "-")
 }

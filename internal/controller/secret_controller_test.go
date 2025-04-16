@@ -70,7 +70,7 @@ var _ = Describe("Secret controller", Ordered, func() {
 		}
 
 		It("should not return an error", func() {
-			err := reconciler.reconcileSecrets(ctx, &api.Paas{}, pns)
+			err := reconciler.reconcileSecret(ctx, &api.Paas{}, pns)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -120,7 +120,7 @@ var _ = Describe("Secret controller", Ordered, func() {
 		})
 
 		It("should not return an error", func() {
-			err := reconciler.reconcileSecrets(ctx, paas, pns)
+			err := reconciler.reconcileSecret(ctx, paas, pns)
 
 			Expect(err).NotTo(HaveOccurred())
 		})

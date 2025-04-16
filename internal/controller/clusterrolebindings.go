@@ -156,8 +156,8 @@ func addOrUpdateCrb(
 
 func (r *PaasReconciler) reconcileExtraClusterRoleBinding(
 	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
+	paasns *v1alpha1.PaasNS,
 ) (err error) {
 	var crb *rbac.ClusterRoleBinding
 	capability, capExists := paas.Spec.Capabilities[paasns.Name]
@@ -178,6 +178,20 @@ func (r *PaasReconciler) reconcileExtraClusterRoleBinding(
 			if err := updateClusterRoleBinding(ctx, r.Client, crb); err != nil {
 				return err
 			}
+		}
+	}
+	return nil
+}
+
+func (r *PaasReconciler) reconcileExtraClusterRoleBindings(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	nsDefs namespaceDefs,
+) (err error) {
+	for _, nsDef := range nsDefs {
+		err = r.reconcileExtraClusterRoleBinding(ctx, paas, nsDef.paasns)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
