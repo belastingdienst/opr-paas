@@ -109,6 +109,9 @@ type paasSpecValidator func(
 func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	var warnings []string
+	if paas.DeletionTimestamp != nil {
+		return nil, nil
+	}
 	conf := config.GetConfig().Spec
 	// Check for uninitialized config
 	if conf.DecryptKeysSecret.Name == "" {
