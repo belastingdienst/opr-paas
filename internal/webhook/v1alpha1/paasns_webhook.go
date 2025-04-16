@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -268,12 +269,19 @@ func compareGroups(subGroups []string, superGroups []string) (errs field.ErrorLi
 
 // validatePaasNsName returns an error when the naam of the PaasNs does not meet validations RE
 func validatePaasNsName(name string) (errs field.ErrorList) {
+	if strings.Contains(name, ".") {
+		errs = append(errs, field.Invalid(
+			field.NewPath("metadata").Key("name"),
+			name,
+			fmt.Sprint("paasns name should not contain dots"),
+		))
+	}
 	nameValidationRE := config.GetConfig().GetValidationRE("paasNs", "name")
 	if nameValidationRE == nil {
 		nameValidationRE = config.GetConfig().GetValidationRE("paas", "namespaceName")
 	}
 	if nameValidationRE == nil {
-		return nil
+		return errs
 	}
 	if !nameValidationRE.Match([]byte(name)) {
 		errs = append(errs, field.Invalid(
