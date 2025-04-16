@@ -6,12 +6,9 @@ See LICENSE.md for details.
 
 //revive:disable:exported
 
-package v1alpha1
+package v1alpha2
 
 import (
-	"errors"
-	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -38,16 +35,14 @@ type PaasNSSpec struct {
 	// `paas` get access to the namespace created by this PaasNS.
 	// +kubebuilder:validation:Optional
 	Groups []string `json:"groups"`
-	// SSHSecrets which should exist in the namespace created through this PaasNS,
+	// Secrets which should exist in the namespace created through this PaasNS,
 	// the values are the encrypted secrets through Crypt
 	// +kubebuilder:validation:Optional
-	SSHSecrets map[string]string `json:"sshSecrets"`
+	Secrets map[string]string `json:"secrets"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:storageversion
-// +kubebuilder:conversion:hub
 // +kubebuilder:resource:path=paasns,scope=Namespaced
 
 // PaasNS is the Schema for the PaasNS API
@@ -59,16 +54,8 @@ type PaasNS struct {
 	Status PaasNsStatus `json:"status,omitempty"`
 }
 
-func (pns PaasNS) NamespaceName() string {
-	if pns.Spec.Paas == "" || pns.Name == "" {
-		panic(errors.New("invalid paas or paasns name (empty)"))
-	}
-
-	return fmt.Sprintf("%s-%s", pns.Spec.Paas, pns.Name)
-}
-
 func (pns PaasNS) ClonedLabels() map[string]string {
-	labels := make(map[string]string)
+	labels := map[string]string{}
 	for key, value := range pns.Labels {
 		if key != "app.kubernetes.io/instance" {
 			labels[key] = value
@@ -118,21 +105,6 @@ func init() {
 
 // PaasNsStatus defines the observed state of Paas
 type PaasNsStatus struct {
-	// Deprecated: use paasns.status.conditions instead
-	// +kubebuilder:validation:Optional
-	Messages []string `json:"messages"`
 	// +kubebuilder:validation:Optional
 	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-}
-
-// revive:enable:line-length-limit
-
-// Deprecated: use paasns.status.conditions instead
-func (ps *PaasNsStatus) Truncate() {
-	ps.Messages = []string{}
-}
-
-// Deprecated: use paasns.status.conditions instead
-func (ps *PaasNsStatus) GetMessages() []string {
-	return ps.Messages
 }
