@@ -10,6 +10,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -116,6 +119,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		validateCustomFields,
 		validateGroupNames,
 		validatePaasNamespaceNames,
+		validatePaasNamespaceGroups,
 	} {
 		if errs, err := val(ctx, v.client, conf, paas); err != nil {
 			return nil, apierrors.NewInternalError(err)
@@ -216,6 +220,32 @@ func validatePaasNamespaceNames(
 	}
 
 	return errs, nil
+}
+
+// validatePaasNamespaceGroups ensures each group referenced in a namespace definition matches a group defined in the
+// Paas.
+func validatePaasNamespaceGroups(
+	_ context.Context,
+	_ client.Client,
+	conf v1alpha1.PaasConfig,
+	paas *v1alpha2.Paas,
+) (ferrs []*field.Error, _ error) {
+	for nsname, ns := range paas.Spec.Namespaces {
+		for _, g := range ns.Groups {
+			if _, ok := paas.Spec.Groups[g]; !ok {
+				groups := slices.Collect(maps.Keys(paas.Spec.Groups))
+				slices.Sort(groups)
+				ferrs = append(ferrs, &field.Error{
+					Type:     field.ErrorTypeInvalid,
+					Field:    field.NewPath("spec").Child("namespaces").Key(nsname).Child("groups").String(),
+					BadValue: g,
+					Detail:   fmt.Errorf("does not exist in paas groups (%v)", strings.Join(groups, ", ")).Error(),
+				})
+			}
+		}
+	}
+
+	return ferrs, nil
 }
 
 // validatePaasRequestor returns an error if The requestor field in a Paas does not meet with validation RE

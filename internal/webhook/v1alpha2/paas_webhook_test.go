@@ -328,6 +328,35 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			))
 		})
 
+		It("Should deny creation when a namespace group does not match any Paas group", func() {
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Groups: v1alpha2.PaasGroups{
+						"group1": {},
+						"group2": {},
+					},
+					Namespaces: v1alpha2.PaasNamespaces{
+						"foo": {
+							Groups: []string{"group2", "group3"},
+						},
+					},
+				},
+			}
+			_, err := validator.ValidateCreate(ctx, obj)
+
+			var serr *apierrors.StatusError
+			Expect(errors.As(err, &serr)).To(BeTrue())
+			causes := serr.Status().Details.Causes
+			Expect(causes).To(HaveLen(1))
+			Expect(causes).To(ContainElements(
+				metav1.StatusCause{
+					Type:    metav1.CauseTypeFieldValueInvalid,
+					Message: "Invalid value: \"group3\": does not exist in paas groups (group1, group2)",
+					Field:   "spec.namespaces[foo].groups",
+				},
+			))
+		})
+
 		It("Should validate group names", func() {
 			conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"groupName": "^[a-z0-9-]{1,63}$"}}
 			config.SetConfig(conf)
