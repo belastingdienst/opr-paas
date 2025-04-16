@@ -19,9 +19,9 @@ import (
 var _ = Describe("Namespace Validation", func() {
 	const resourceName = "test-paas"
 
-	Context("Valid Hostname", func() {
-		It("should accept a valid hostname", func() {
-			validNamespace := []string{"valid-hostname.example.com"}
+	Context("Valid namespacesnames", func() {
+		It("should accept a valid namespace", func() {
+			validNamespace := []string{"valid-namespace-example"}
 			paas := &Paas{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: resourceName,
@@ -39,8 +39,8 @@ var _ = Describe("Namespace Validation", func() {
 		})
 	})
 
-	Context("Invalid Hostnames", func() {
-		DescribeTable("should reject invalid hostnames",
+	Context("Invalid namespacenames", func() {
+		DescribeTable("should reject invalid names",
 			func(namespaces []string) {
 				paas := &Paas{
 					ObjectMeta: metav1.ObjectMeta{

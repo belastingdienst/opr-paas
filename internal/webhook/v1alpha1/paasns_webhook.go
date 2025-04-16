@@ -273,7 +273,7 @@ func validatePaasNsName(name string) (errs field.ErrorList) {
 		errs = append(errs, field.Invalid(
 			field.NewPath("metadata").Key("name"),
 			name,
-			fmt.Sprint("paasns name should not contain dots"),
+			"paasns name should not contain dots",
 		))
 	}
 	nameValidationRE := config.GetConfig().GetValidationRE("paasNs", "name")
