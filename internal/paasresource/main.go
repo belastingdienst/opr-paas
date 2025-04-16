@@ -1,3 +1,5 @@
+// Package paasresource has a Resource interface which can be used for functions that should work with multiple Paas
+// resources.
 package paasresource
 
 import (

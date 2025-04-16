@@ -150,8 +150,8 @@ func (r *PaasReconciler) getSecrets(
 // It returns an error when the secrets cannot be determined.
 func (r *PaasReconciler) backendSecrets(
 	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
+	paasns *v1alpha1.PaasNS,
 ) ([]*corev1.Secret, error) {
 	secrets := map[string]string{}
 
@@ -240,14 +240,14 @@ func (r *PaasReconciler) getExistingSecrets(
 	return existingSecrets, nil
 }
 
-func (r *PaasReconciler) reconcileSecrets(
+func (r *PaasReconciler) reconcileSecret(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "secret")
 	logger.Debug().Msg("reconciling Ssh Secrets")
-	desiredSecrets, err := r.backendSecrets(ctx, paasns, paas)
+	desiredSecrets, err := r.backendSecrets(ctx, paas, paasns)
 	if err != nil {
 		return err
 	}
@@ -267,6 +267,19 @@ func (r *PaasReconciler) reconcileSecrets(
 			return err
 		}
 		logger.Info().Str("secret", secret.Name).Msg("ssh secret successfully reconciled")
+	}
+	return nil
+}
+func (r *PaasReconciler) reconcileSecrets(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	nsDefs namespaceDefs,
+) error {
+	for _, nsDef := range nsDefs {
+		err := r.reconcileSecret(ctx, paas, nsDef.paasns)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
