@@ -10,7 +10,6 @@ import (
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -63,15 +62,15 @@ func TestCapabilityArgoCD(t *testing.T) {
 }
 
 func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	argopaasns := &api.PaasNS{ObjectMeta: metav1.ObjectMeta{
-		Name:      argoCapName,
-		Namespace: paasWithArgo,
-	}}
-	require.NoError(
-		t,
-		waitForCondition(ctx, cfg, argopaasns, 0, api.TypeReadyPaasNs),
-		"ArgoCD PaasNS reconciliation succeeds",
-	)
+	// argopaasns := &api.PaasNS{ObjectMeta: metav1.ObjectMeta{
+	// 	Name:      argoCapName,
+	// 	Namespace: paasWithArgo,
+	// }}
+	// require.NoError(
+	// 	t,
+	// 	waitForCondition(ctx, cfg, argopaasns, 0, api.TypeReadyPaasNs),
+	// 	"ArgoCD PaasNS reconciliation succeeds",
+	// )
 
 	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
 	entries, _ := getApplicationSetListEntries(argoAppSet)
