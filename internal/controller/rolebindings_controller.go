@@ -169,10 +169,41 @@ func finalizeRoleBinding(
 }
 
 // reconcileRolebindings is used by the Paas reconciler to reconcile RB's
-func (r *PaasReconciler) reconcileRolebinding(
+func (r *PaasReconciler) reconcileNamespaceRolebinding(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	nsName string,
+	roleName string,
+	groupNames []string,
+) error {
+	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
+	rbName := types.NamespacedName{Namespace: nsName, Name: fmt.Sprintf("paas-%s", roleName)}
+	logger.Debug().
+		Str("role", roleName).
+		Strs("groups", groupNames).
+		Msg("creating Rolebinding")
+	rb, err := backendRoleBinding(ctx, r, paas, rbName, roleName, groupNames)
+	if err != nil {
+		return err
+	}
+	if err := ensureRoleBinding(ctx, r, paas, rb); err != nil {
+		err = fmt.Errorf(
+			"failure while creating/updating rolebinding %s/%s: %s",
+			rb.Namespace,
+			rb.Name,
+			err.Error(),
+		)
+		return err
+	}
+	return nil
+}
+
+// reconcileRolebindings is used by the Paas reconciler to reconcile RB's
+func (r *PaasReconciler) reconcileNamespaceRolebindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
+	nsName string,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
 	roles := map[string][]string{}
@@ -183,7 +214,11 @@ func (r *PaasReconciler) reconcileRolebinding(
 		}
 	}
 	logger.Info().Any("Rolebindings map", roles).Msg("all roles")
-	for groupKey, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
+	paasGroups := paas.Spec.Groups
+	if paasns != nil {
+		paasGroups = paasGroups.Filtered(paasns.Spec.Groups)
+	}
+	for groupKey, groupRoles := range paasGroups.Roles() {
 		logger.Info().Msgf("defining Rolebindings for Group %s", groupKey)
 		// Convert the groupKey to a groupName to map the rolebinding subjects to a group
 		groupName := paas.GroupKey2GroupName(groupKey)
@@ -197,22 +232,8 @@ func (r *PaasReconciler) reconcileRolebinding(
 	}
 	logger.Info().Any("Rolebindings map", roles).Msg("creating paas RoleBindings for PAASNS object")
 	for roleName, groupNames := range roles {
-		rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
-		logger.Debug().
-			Str("role", roleName).
-			Strs("groups", groupNames).
-			Msg("creating Rolebinding")
-		rb, err := backendRoleBinding(ctx, r, paas, rbName, roleName, groupNames)
+		err := r.reconcileNamespaceRolebinding(ctx, paas, nsName, roleName, groupNames)
 		if err != nil {
-			return err
-		}
-		if err := ensureRoleBinding(ctx, r, paas, rb); err != nil {
-			err = fmt.Errorf(
-				"failure while creating/updating rolebinding %s/%s: %s",
-				rb.Namespace,
-				rb.Name,
-				err.Error(),
-			)
 			return err
 		}
 	}
@@ -220,13 +241,16 @@ func (r *PaasReconciler) reconcileRolebinding(
 }
 
 // reconcileRolebindings is used by the Paas reconciler to reconcile RB's
-func (r *PaasReconciler) reconcileRolebindings(
+func (r *PaasReconciler) reconcilePaasRolebindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	nsDefs namespaceDefs,
 ) error {
 	for _, nsDef := range nsDefs {
-		err := r.reconcileRolebinding(ctx, paas, nsDef.paasns)
+		if nsDef.nsName == paas.Name {
+			continue
+		}
+		err := r.reconcileNamespaceRolebindings(ctx, paas, nsDef.paasns, nsDef.nsName)
 		if err != nil {
 			return err
 		}

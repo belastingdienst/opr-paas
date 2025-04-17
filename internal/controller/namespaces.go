@@ -108,9 +108,6 @@ func (r *PaasReconciler) finalizeNamespace(
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) error {
-	// Hoe voorkomen wij dat iemand een paasns maakt voor een verkeerde paas en als hij wordt weggegooid,
-	// dat hij dan de verkeerde namespace weggooit???
-
 	found := &corev1.Namespace{}
 	err := r.Get(ctx, types.NamespacedName{
 		Name: paasns.NamespaceName(),
@@ -135,15 +132,15 @@ func (r *PaasReconciler) reconcileNamespaces(
 	paas *v1alpha1.Paas,
 	nsDefs namespaceDefs,
 ) (err error) {
+	ctx, logger := logging.GetLogComponent(ctx, "namespace")
 	for _, nsDef := range nsDefs {
-
 		var ns *corev1.Namespace
 		if ns, err = backendNamespace(ctx, paas, nsDef.nsName, nsDef.quota, r.Scheme); err != nil {
 			return fmt.Errorf("failure while defining namespace %s: %s", nsDef.nsName, err.Error())
 		} else if err = ensureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
 			return fmt.Errorf("failure while creating namespace %s: %s", nsDef.nsName, err.Error())
 		}
-		return err
+		logger.Debug().Msgf("namespace %s succesfully created with quota %s", nsDef.nsName, nsDef.quota)
 	}
 	return nil
 }

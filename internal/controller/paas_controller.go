@@ -10,7 +10,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -19,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"github.com/belastingdienst/opr-paas/internal/paasresource"
 
@@ -66,6 +64,11 @@ type Reconciler interface {
 // +kubebuilder:rbac:groups=argoproj.io,resources=applicationsets,verbs=get;list;watch;patch
 // +kubebuilder:rbac:groups=core,resources=secrets;configmaps;namespaces,verbs=create;delete;get;list;patch;update;watch
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings;clusterrolebindings,verbs=create;delete;get;list;patch;update;watch
+
+// +kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paasns,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paasns/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paasns/finalizers,verbs=update
+
 // It is advised to reduce the scope of this permission by stating the resourceNames of the roles you would like Paas to bind to, in your deployment role.yaml
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=bind
 //revive:enable:line-length-limit
@@ -85,6 +88,11 @@ func (r *PaasReconciler) getPaasFromRequest(
 	ctx, logger := logging.GetLogComponent(ctx, "paas")
 	if err = r.Get(ctx, req.NamespacedName, paas); err != nil {
 		return nil, client.IgnoreNotFound(err)
+	}
+
+	if paas.GetDeletionTimestamp() != nil {
+		logger.Info().Msg("paas marked for deletion")
+		return nil, r.updateFinalizer(ctx, paas)
 	}
 
 	// Started reconciling, reset status
@@ -109,27 +117,6 @@ func (r *PaasReconciler) getPaasFromRequest(
 		return nil, err
 	}
 
-	// TODO(portly-halicore-76) Move to admission webhook once available
-	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
-	// this is only an issue when object is being removed, finalizers will not be removed
-	// causing the object to be in limbo.
-	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig().Spec) {
-		logger.Error().Msg(noConfigFoundMsg)
-		err = r.setErrorCondition(
-			ctx,
-			paas,
-			errors.New(
-				//revive:disable-next-line
-				"please reach out to your system administrator as there is no Paasconfig available to reconcile against",
-			),
-		)
-		if err != nil {
-			logger.Err(err).Msg("failed to update Paas status")
-			return nil, err
-		}
-		return nil, errors.New(noConfigFoundMsg)
-	}
-
 	// Add finalizer for this CR
 	if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
 		logger.Info().Msg("paas has no finalizer yet")
@@ -142,85 +129,6 @@ func (r *PaasReconciler) getPaasFromRequest(
 			return nil, err
 		}
 		logger.Info().Msg("added finalizer to Paas")
-	}
-
-	if paas.GetDeletionTimestamp() != nil {
-		logger.Info().Msg("paas marked for deletion")
-		return nil, r.updateFinalizer(ctx, paas)
-	}
-
-	return paas, nil
-}
-func (p *PaasReconciler) getPaas(
-	ctx context.Context,
-	req ctrl.Request,
-) (paas *v1alpha1.Paas, err error) {
-	paas = &v1alpha1.Paas{}
-	ctx, logger := logging.GetLogComponent(ctx, "paas")
-	if err = p.Get(ctx, req.NamespacedName, paas); err != nil {
-		return nil, client.IgnoreNotFound(err)
-	}
-
-	// Started reconciling, reset status
-	meta.SetStatusCondition(
-		&paas.Status.Conditions,
-		metav1.Condition{
-			Type:               v1alpha1.TypeReadyPaas,
-			Status:             metav1.ConditionUnknown,
-			ObservedGeneration: paas.Generation,
-			Reason:             "Reconciling",
-			Message:            "Starting reconciliation",
-		},
-	)
-	meta.RemoveStatusCondition(&paas.Status.Conditions, v1alpha1.TypeHasErrorsPaas)
-	if err = p.Status().Update(ctx, paas); err != nil {
-		logger.Err(err).Msg("failed to update Paas status")
-		return nil, err
-	}
-
-	if err := p.Get(ctx, req.NamespacedName, paas); err != nil {
-		logger.Err(err).Msg("failed to re-fetch Paas")
-		return nil, err
-	}
-
-	// TODO(portly-halicore-76) Move to admission webhook once available
-	// check if Config is set, as reconciling and finalizing without config, leaves object in limbo.
-	// this is only an issue when object is being removed, finalizers will not be removed
-	// causing the object to be in limbo.
-	if reflect.DeepEqual(v1alpha1.PaasConfigSpec{}, config.GetConfig().Spec) {
-		logger.Error().Msg(noConfigFoundMsg)
-		err = p.setErrorCondition(
-			ctx,
-			paas,
-			errors.New(
-				//revive:disable-next-line
-				"please reach out to your system administrator as there is no Paasconfig available to reconcile against",
-			),
-		)
-		if err != nil {
-			logger.Err(err).Msg("failed to update Paas status")
-			return nil, err
-		}
-		return nil, errors.New(noConfigFoundMsg)
-	}
-
-	// Add finalizer for this CR
-	if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
-		logger.Info().Msg("paas has no finalizer yet")
-		if ok := controllerutil.AddFinalizer(paas, paasFinalizer); !ok {
-			logger.Err(err).Msg("failed to add finalizer")
-			return nil, errors.New("failed to add finalizer")
-		}
-		if err := p.Update(ctx, paas); err != nil {
-			logger.Err(err).Msg("error updating Paas")
-			return nil, err
-		}
-		logger.Info().Msg("added finalizer to Paas")
-	}
-
-	if paas.GetDeletionTimestamp() != nil {
-		logger.Info().Msg("paas marked for deletion")
-		return nil, p.updateFinalizer(ctx, paas)
 	}
 
 	return paas, nil
@@ -317,10 +225,11 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+	logger.Debug().Msgf("Need to create resourced for %d namespaces", len(nsDefs))
 	paasNsReconcilers := []func(context.Context, *v1alpha1.Paas, namespaceDefs) error{
 		r.reconcileNamespaces,
-		r.reconcileRolebindings,
-		r.reconcileSecrets,
+		r.reconcilePaasRolebindings,
+		r.reconcilePaasSecrets,
 		r.reconcileExtraClusterRoleBindings,
 	}
 	for _, reconciler := range paasNsReconcilers {
@@ -407,18 +316,21 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) error {
 	logger := log.Ctx(ctx)
 	logger.Debug().Msg("inside Paas finalizer")
-	if err := r.finalizeClusterQuotas(ctx, paas); err != nil {
-		logger.Err(err).Msg("quota finalizer error")
-		return err
-	} else if err = r.finalizeGroups(ctx, paas); err != nil {
-		logger.Err(err).Msg("group finalizer error")
-		return err
-	} else if err = r.finalizeExtraClusterRoleBindings(ctx, paas); err != nil {
-		logger.Err(err).Msg("extra ClusterRoleBindings finalizer error")
-		return err
-	} else if err = r.finalizeClusterWideQuotas(ctx, paas); err != nil {
-		return err
+
+	paasReconcilers := []func(context.Context, *v1alpha1.Paas) error{
+		//r.finalizeClusterQuotas,
+		r.finalizeGroups,
+		r.finalizeExtraClusterRoleBindings,
+		r.finalizeClusterWideQuotas,
+		r.finalizeAppSetCaps,
 	}
+
+	for _, reconciler := range paasReconcilers {
+		if err := reconciler(ctx, paas); err != nil {
+			return errors.Join(err, r.setErrorCondition(ctx, paas, err))
+		}
+	}
+
 	logger.Info().Msg("paaS successfully finalized")
 	return nil
 }

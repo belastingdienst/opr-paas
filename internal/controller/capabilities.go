@@ -148,13 +148,12 @@ func (r *PaasReconciler) ensureAppSetCap(
 // finalizeAppSetCap ensures the list entries in the AppSet is removed for the capability of this PaasNs
 func (r *PaasReconciler) finalizeAppSetCap(
 	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
+	paasName string,
+	capName string,
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := config.GetConfig().Spec.CapabilityK8sName(paasns.Name)
-	ctx, logger := logging.GetLogComponent(ctx, "appset")
-	logger.Info().Msgf("reconciling %s Applicationset", paasns.Name)
+	asNamespacedName := config.GetConfig().Spec.CapabilityK8sName(capName)
 	err := r.Get(ctx, asNamespacedName, as)
 	var entries fields.Entries
 	var listGen *appv1.ApplicationSetGenerator
@@ -169,11 +168,27 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
 		return err
 	}
-	delete(entries, paasns.Spec.Paas)
+	delete(entries, paasName)
 	jsonentries, err := entries.AsJSON()
 	if err != nil {
 		return err
 	}
 	listGen.List.Elements = jsonentries
 	return r.Patch(ctx, as, patch)
+}
+
+// finalizeAppSetCaps ensures all capabilities that exist are removed from the Capability Applicationsets
+func (r *PaasReconciler) finalizeAppSetCaps(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+) error {
+	ctx, logger := logging.GetLogComponent(ctx, "Applicationsets")
+	for capName := range config.GetConfig().Spec.Capabilities {
+		logger.Info().Msgf("reconciling %s Applicationset", capName)
+		err := r.finalizeAppSetCap(ctx, paas.Name, capName)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -11,7 +11,6 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
-	"maps"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -91,12 +90,15 @@ func (r *PaasReconciler) backendSecret(
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      namespacedName.Name,
 			Namespace: namespacedName.Namespace,
-			Labels:    paasns.ClonedLabels(),
+			Labels:    map[string]string{},
 		},
 		Data: map[string][]byte{
 			"type": []byte("git"),
 			"url":  []byte(url),
 		},
+	}
+	if paasns != nil {
+		s.ObjectMeta.Labels = paasns.ClonedLabels()
 	}
 
 	s.Labels["argocd.argoproj.io/secret-type"] = "repo-creds"
@@ -111,10 +113,11 @@ func (r *PaasReconciler) backendSecret(
 }
 
 // getSecrets returns a list of Secrets which are desired based on the Paas(Ns) spec
-func (r *PaasReconciler) getSecrets(
+func (r *PaasReconciler) backendSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
+	namespace string,
 	encryptedSecrets map[string]string,
 ) (secrets []*corev1.Secret, err error) {
 	// Only do something when secrets are required
@@ -129,7 +132,7 @@ func (r *PaasReconciler) getSecrets(
 
 	for url, encryptedSecretData := range encryptedSecrets {
 		namespacedName := types.NamespacedName{
-			Namespace: paasns.NamespaceName(),
+			Namespace: namespace,
 			Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(url)[:8])),
 		}
 		secret, err := r.backendSecret(ctx, paas, paasns, namespacedName, url)
@@ -144,29 +147,6 @@ func (r *PaasReconciler) getSecrets(
 		secrets = append(secrets, secret)
 	}
 	return secrets, nil
-}
-
-// BackendSecrets returns a list of kubernetes Secrets which are desired based on the Paas(Ns) spec.
-// It returns an error when the secrets cannot be determined.
-func (r *PaasReconciler) backendSecrets(
-	ctx context.Context,
-	paas *v1alpha1.Paas,
-	paasns *v1alpha1.PaasNS,
-) ([]*corev1.Secret, error) {
-	secrets := map[string]string{}
-
-	// From the PaasNS resource
-	maps.Copy(secrets, paasns.Spec.SSHSecrets)
-
-	// From the Paas Resource capability chapter (if applicable)
-	if capability, exists := paas.Spec.Capabilities[paasns.Name]; exists && capability.IsEnabled() {
-		maps.Copy(secrets, capability.GetSSHSecrets())
-	}
-
-	// From the Paas resource
-	maps.Copy(secrets, paas.Spec.SSHSecrets)
-
-	return r.getSecrets(ctx, paas, paasns, secrets)
 }
 
 // deleteObsoleteSecrets deletes any secrets from the existingSecrets which is not listed in the desired secrets.
@@ -208,12 +188,11 @@ func isSecretInDesiredSecrets(secret *corev1.Secret, desiredSecrets []*corev1.Se
 func (r *PaasReconciler) getExistingSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	paasns *v1alpha1.PaasNS,
+	ns string,
 ) ([]*corev1.Secret, error) {
 	var existingSecrets []*corev1.Secret
 	logger := log.Ctx(ctx)
 	// Check in NamespaceName
-	ns := paasns.NamespaceName()
 	logger.Debug().Msgf("listing obsolete secret in namespace: %s", ns)
 	var secrets corev1.SecretList
 	opts := []client.ListOption{
@@ -240,19 +219,21 @@ func (r *PaasReconciler) getExistingSecrets(
 	return existingSecrets, nil
 }
 
-func (r *PaasReconciler) reconcileSecret(
+func (r *PaasReconciler) reconcileNamespaceSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
+	namespace string,
+	paasSecrets map[string]string,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "secret")
 	logger.Debug().Msg("reconciling Ssh Secrets")
-	desiredSecrets, err := r.backendSecrets(ctx, paas, paasns)
+	desiredSecrets, err := r.backendSecrets(ctx, paas, paasns, namespace, paasSecrets)
 	if err != nil {
 		return err
 	}
 	logger.Debug().Int("count", len(desiredSecrets)).Msg("desired secrets count")
-	existingSecrets, err := r.getExistingSecrets(ctx, paas, paasns)
+	existingSecrets, err := r.getExistingSecrets(ctx, paas, namespace)
 	if err != nil {
 		return err
 	}
@@ -270,13 +251,13 @@ func (r *PaasReconciler) reconcileSecret(
 	}
 	return nil
 }
-func (r *PaasReconciler) reconcileSecrets(
+func (r *PaasReconciler) reconcilePaasSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	nsDefs namespaceDefs,
 ) error {
 	for _, nsDef := range nsDefs {
-		err := r.reconcileSecret(ctx, paas, nsDef.paasns)
+		err := r.reconcileNamespaceSecrets(ctx, paas, nsDef.paasns, nsDef.nsName, nsDef.secrets)
 		if err != nil {
 			return err
 		}
