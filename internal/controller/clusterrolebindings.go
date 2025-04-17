@@ -129,26 +129,26 @@ func updateClusterRoleBindingForRemovedSA(
 
 func addOrUpdateCrb(
 	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
 	crb *rbac.ClusterRoleBinding,
+	nsName string,
 	sas map[string]bool,
 ) (changed bool) {
 	logger := log.Ctx(ctx)
 	crbName := crb.Name
 	for sa, add := range sas {
 		if add {
-			if isAdded := addSAToClusterRoleBinding(crb, paasns.NamespaceName(), sa); isAdded {
-				logger.Info().Msgf("adding sa %s for ns %s to crb %v", sa, paasns.NamespaceName(), crbName)
+			if isAdded := addSAToClusterRoleBinding(crb, nsName, sa); isAdded {
+				logger.Info().Msgf("adding sa %s for ns %s to crb %v", sa, nsName, crbName)
 				changed = true
 			}
-			logger.Info().Msgf("sa %s in ns %s already added to crb %v", sa, paasns.NamespaceName(), crbName)
+			logger.Info().Msgf("sa %s in ns %s already added to crb %v", sa, nsName, crbName)
 		} else {
-			nsRe := *regexp.MustCompile(fmt.Sprintf("^%s$", paasns.NamespaceName()))
+			nsRe := *regexp.MustCompile(fmt.Sprintf("^%s$", nsName))
 			if isRemoved := updateClusterRoleBindingForRemovedSA(crb, nsRe, sa); isRemoved {
-				logger.Info().Msgf("deleting sa %s for ns %s from crb %s", sa, paasns.NamespaceName(), crbName)
+				logger.Info().Msgf("deleting sa %s for ns %s from crb %s", sa, nsName, crbName)
 				changed = true
 			}
-			logger.Info().Msgf("sa %s in ns %s no longer in crb %s", sa, paasns.NamespaceName(), crbName)
+			logger.Info().Msgf("sa %s in ns %s no longer in crb %s", sa, nsName, crbName)
 		}
 	}
 	return changed
@@ -157,11 +157,12 @@ func addOrUpdateCrb(
 func (r *PaasReconciler) reconcileExtraClusterRoleBinding(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	paasns *v1alpha1.PaasNS,
+	nsName string,
+	capName string,
 ) (err error) {
 	var crb *rbac.ClusterRoleBinding
-	capability, capExists := paas.Spec.Capabilities[paasns.Name]
-	capConfig, capConfigExists := config.GetConfig().Spec.Capabilities[paasns.Name]
+	capability, capExists := paas.Spec.Capabilities[capName]
+	capConfig, capConfigExists := config.GetConfig().Spec.Capabilities[capName]
 	if !capConfigExists && !capExists {
 		return err
 	}
@@ -174,7 +175,7 @@ func (r *PaasReconciler) reconcileExtraClusterRoleBinding(
 		if crb, err = getClusterRoleBinding(ctx, r.Client, role); err != nil {
 			return err
 		}
-		if addOrUpdateCrb(ctx, paasns, crb, sas) {
+		if addOrUpdateCrb(ctx, crb, nsName, sas) {
 			if err := updateClusterRoleBinding(ctx, r.Client, crb); err != nil {
 				return err
 			}
@@ -189,7 +190,7 @@ func (r *PaasReconciler) reconcileExtraClusterRoleBindings(
 	nsDefs namespaceDefs,
 ) (err error) {
 	for _, nsDef := range nsDefs {
-		err = r.reconcileExtraClusterRoleBinding(ctx, paas, nsDef.paasns)
+		err = r.reconcileExtraClusterRoleBinding(ctx, paas, nsDef.nsName, nsDef.capName)
 		if err != nil {
 			return err
 		}
