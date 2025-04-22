@@ -63,37 +63,9 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	Capabilities ConfigCapabilities `json:"capabilities"`
 
-	// Deprecated: GroupSyncList code will be removed from the operator to make it more generic
-	// A reference to a configmap containing a groupsynclist of LDAP groups to be synced using LDAP sync
-	// +kubebuilder:validation:Required
-	GroupSyncList NamespacedName `json:"groupsynclist"`
-
-	// Deprecated: GroupSyncListKey code will be removed from the operator to make it more generic
-	// A key in the configures GroupSyncList which will contain the LDAP groups to be synced using LDAP sync
-	// +kubebuilder:default:=groupsynclist.txt
-	// +kubebuilder:validation:Optional
-	GroupSyncListKey string `json:"groupsynclist_key"`
-
 	// LDAP configuration for the operator to add to Groups
 	// +kubebuilder:validation:Optional
 	LDAP ConfigLdap `json:"ldap"`
-
-	// Deprecated: ArgoCD specific code will be removed from the operator
-	// Permissions to set for ArgoCD instance
-	// +kubebuilder:validation:Optional
-	ArgoPermissions ConfigArgoPermissions `json:"argopermissions"`
-
-	// Deprecated: ArgoCD specific code will be removed from the operator
-	// Option to enable or disable ArgoCD specific Code
-	// +kubebuilder:default:=true
-	// +kubebuilder:validation:Optional
-	ArgoEnabled bool `json:"argoenabled"`
-
-	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
-	// Deprecated: ArgoCD specific code will be removed from the operator
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
-	ClusterWideArgoCDNamespace string `json:"clusterwide_argocd_namespace"`
 
 	// Label which is added to clusterquotas
 	// +kubebuilder:default:=clusterquotagroup
@@ -109,18 +81,6 @@ type PaasConfigSpec struct {
 	// +kubebuilder:default:=argocd.argoproj.io/managed-by
 	// +kubebuilder:validation:Optional
 	ManagedByLabel string `json:"managed_by_label"`
-
-	// Deprecated: ManagedBySuffix is a temporary implementation, to be replaced by go template functionality
-	// once available
-	// Suffix to be appended to the managed-by-label
-	// +kubebuilder:default:=argocd
-	// +kubebuilder:validation:Optional
-	ManagedBySuffix string `json:"managed_by_suffix"`
-
-	// Deprecated: ArgoCD specific code will be removed from the operator
-	// Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
-	// +kubebuilder:validation:Optional
-	ExcludeAppSetName string `json:"exclude_appset_name"`
 
 	// Grant permissions to all groups according to config in configmap and role selected per group in paas.
 	// +kubebuilder:validation:Optional
@@ -153,32 +113,6 @@ func (crm ConfigRoleMappings) Roles(roleMaps []string) []string {
 		}
 	}
 	return mappedRoles
-}
-
-// Deprecated: ArgoCD specific code will be removed from the operator
-type ConfigArgoPermissions struct {
-	// Deprecated: ArgoCD specific code will be removed from the operator
-	// The optional default policy which is set in the ArgoCD instance
-	// +kubebuilder:validation:Optional
-	DefaultPolicy string `json:"default_policy"`
-
-	// Deprecated: ArgoCD specific code will be removed from the operator
-	// The name of the ArgoCD instance to apply ArgoPermissions to
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
-	ResourceName string `json:"resource_name"`
-
-	// Deprecated: ArgoCD specific code will be removed from the operator
-	// The name of the role to add to Groups set in ArgoPermissions
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
-	Role string `json:"role"`
-
-	// Deprecated: ArgoCD specific code will be removed from the operator
-	// The header value to set in ArgoPermissions
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
-	Header string `json:"header"`
 }
 
 type ConfigLdap struct {
@@ -216,8 +150,6 @@ type ConfigCapability struct {
 	// Settings to allow specific configuration specific to a capability
 	CustomFields map[string]ConfigCustomField `json:"custom_fields,omitempty"`
 }
-
-// TODO: When we move to PaasConfig, we can probably combine Required and Default fields
 
 type ConfigCustomField struct {
 	// Regular expression for validating input, defaults to '', which means no validation.
@@ -316,14 +248,13 @@ func (ccp ConfigCapPerm) ServiceAccounts() []string {
 	return sas
 }
 
+// TODO(hikarukin): we probably need to properly determine the namespace name,
+// depends on argocd code removal
 func (config PaasConfigSpec) CapabilityK8sName(capName string) (as types.NamespacedName) {
-	as.Namespace = config.ClusterWideArgoCDNamespace
 	if capability, exists := config.Capabilities[capName]; exists {
 		as.Name = capability.AppSet
-		as.Namespace = config.ClusterWideArgoCDNamespace
 	} else {
 		as.Name = fmt.Sprintf("paas-%s", capName)
-		as.Namespace = config.ClusterWideArgoCDNamespace
 	}
 	return as
 }
