@@ -6,7 +6,7 @@ See LICENSE.md for details.
 
 //revive:disable:exported
 
-package v1alpha1
+package v1alpha2
 
 import (
 	"fmt"
@@ -36,8 +36,6 @@ const (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// +kubebuilder:storageversion
-// +kubebuilder:conversion:hub
 // +kubebuilder:resource:path=paasconfig,scope=Cluster
 type PaasConfig struct {
 	metav1.TypeMeta   `json:""`
@@ -47,14 +45,8 @@ type PaasConfig struct {
 	Status PaasConfigStatus `json:"status,omitempty"`
 }
 
-// GetConditions is required for Paas to be used as v1alpha1.Resource
 func (p PaasConfig) GetConditions() []metav1.Condition {
 	return p.Status.Conditions
-}
-
-// GetGeneration is required for Paas to be used as v1alpha1.Resource
-func (p PaasConfig) GetGeneration() int64 {
-	return p.Generation
 }
 
 type PaasConfigSpec struct {
