@@ -11,6 +11,7 @@ import (
 	"sort"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/rs/zerolog/log"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
@@ -26,6 +27,12 @@ func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 	if !ok {
 		return fmt.Errorf("cannot convert to %s/%s: must be v1alpha1", dst.Namespace, dst.Name)
 	}
+
+	logger := log.With().
+		Any("conversion", p.GetObjectKind().GroupVersionKind()).
+		Str("name", p.GetName()).
+		Logger()
+	logger.Debug().Msg("Starting conversion from spoke (v1alpha2) to hub (v1alpha1)")
 
 	dst.ObjectMeta = p.ObjectMeta
 	dst.Status.Conditions = p.Status.Conditions
@@ -80,6 +87,12 @@ func (p *Paas) ConvertFrom(srcRaw conversion.Hub) error {
 	if !ok {
 		return fmt.Errorf("cannot convert %s/%s: must be v1alpha1", src.Namespace, src.Name)
 	}
+
+	logger := log.With().
+		Any("conversion", src.GetObjectKind().GroupVersionKind()).
+		Str("name", src.GetName()).
+		Logger()
+	logger.Debug().Msg("Starting conversion from hub (v1alpha1) to spoke (v1alpha2)")
 
 	p.ObjectMeta = src.ObjectMeta
 	p.Status.Conditions = src.Status.Conditions
