@@ -68,6 +68,7 @@ var exV1Alpha1 = &v1alpha1.Paas{
 		},
 	},
 }
+
 var exV1Alpha2 = &Paas{
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "foo",

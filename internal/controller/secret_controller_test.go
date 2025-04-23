@@ -19,18 +19,19 @@ var _ = Describe("testing hashdata", func() {
 				expected string
 			}{
 				{
-					input:    "My Wonderful Test String",
+					input: "My Wonderful Test String",
+					// revive:disable-next-line
 					expected: "703fe1668c39ec0fdf3c9916d526ba4461fe10fd36bac1e2a1b708eb8a593e418eb3f92dbbd2a6e3776516b0e03743a45cfd69de6a3280afaa90f43fa1918f74",
 				},
 				{
-					input:    "Another Wonderful Test String",
+					input: "Another Wonderful Test String",
+					// revive:disable-next-line
 					expected: "d3bfd910013886fe68ffd5c5d854e7cb2a8ce2a15a48ade41505b52ce7898f63d8e6b9c84eacdec33c45f7a2812d93732b524be91286de328bbd6b72d5aee9de",
 				},
 			} {
 				Expect(hashData(test.input)).To(Equal(test.expected))
 			}
 		})
-
 	})
 })
 

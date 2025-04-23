@@ -276,6 +276,80 @@ func (r *PaasReconciler) setErrorCondition(ctx context.Context, resource paasres
 	return r.Status().Update(ctx, resource)
 }
 
+func paasFromPaasNs(mgr ctrl.Manager, obj client.Object) []reconcile.Request {
+	// Enqueue all Paas objects
+	var reqs []reconcile.Request
+	var ns corev1.Namespace
+	logger := mgr.GetLogger()
+	if err := mgr.GetClient().Get(
+		context.Background(),
+		types.NamespacedName{Name: obj.GetNamespace()},
+		&ns,
+	); err != nil {
+		logger.Error(err, "unable to get namespace where paasns resides")
+		return nil
+	}
+	var paasNames []string
+	for _, ref := range ns.OwnerReferences {
+		if ref.Kind == "Paas" && *ref.Controller {
+			paasNames = append(paasNames, ref.Name)
+		}
+	}
+	if len(paasNames) == 0 {
+		logger.Error(
+			errors.New("failed to get owner reference with kind paas and controller=true from namespace resource"),
+			"finding paas for paasns without owner reference",
+			"ns",
+			ns,
+		)
+	} else if len(paasNames) > 1 {
+		logger.Error(
+			errors.New("found multiple owner references with kind paas and controller=true"),
+			"finding paas for paasns without owner reference",
+			"ns",
+			ns,
+		)
+	}
+	paasName := paasNames[0]
+	if !strings.HasPrefix(ns.Name, paasName+"-") {
+		logger.Error(
+			errors.New("namespace is not prefixed with paasName in owner reference"),
+			"finding paas for paasns without owner reference",
+			"ns",
+			ns,
+		)
+	}
+
+	reqs = append(reqs, reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name: paasName,
+		},
+	})
+
+	return reqs
+}
+
+func allPaases(mgr ctrl.Manager) []reconcile.Request {
+	// Enqueue all Paas objects
+	var reqs []reconcile.Request
+	var paasList v1alpha1.PaasList
+	if err := mgr.GetClient().List(context.Background(), &paasList); err != nil {
+		mgr.GetLogger().Error(err, "unable to list paases")
+		return nil
+	}
+
+	for _, p := range paasList.Items {
+		reqs = append(reqs, reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Namespace: p.Namespace,
+				Name:      p.Name,
+			},
+		})
+	}
+
+	return reqs
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
@@ -289,82 +363,17 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&v1alpha1.PaasNS{}).
 		Watches(
 			&v1alpha1.PaasNS{},
-			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, obj client.Object) []reconcile.Request {
-				// Enqueue all Paas objects
-				var reqs []reconcile.Request
-				var ns corev1.Namespace
-				logger := mgr.GetLogger()
-				if err := mgr.GetClient().Get(
-					context.Background(),
-					types.NamespacedName{Name: obj.GetNamespace()},
-					&ns,
-				); err != nil {
-					logger.Error(err, "unable to get namespace where paasns resides")
-					return nil
-				}
-				var paasNames []string
-				for _, ref := range ns.OwnerReferences {
-					if ref.Kind == "Paas" && *ref.Controller {
-						paasNames = append(paasNames, ref.Name)
-					}
-				}
-				if len(paasNames) == 0 {
-					logger.Error(
-						errors.New("failed to get owner reference with kind paas and controller=true from namespace resource"),
-						"finding paas for paasns without owner reference",
-						"ns",
-						ns,
-					)
-				} else if len(paasNames) > 1 {
-					logger.Error(
-						errors.New("found multiple owner references with kind paas and controller=true"),
-						"finding paas for paasns without owner reference",
-						"ns",
-						ns,
-					)
-				}
-				paasName := paasNames[0]
-				if !strings.HasPrefix(ns.Name, paasName+"-") {
-					logger.Error(
-						errors.New("namespace is not prefixed with paasName in owner reference"),
-						"finding paas for paasns without owner reference",
-						"ns",
-						ns,
-					)
-
-				}
-
-				reqs = append(reqs, reconcile.Request{
-					NamespacedName: types.NamespacedName{
-						Name: paasName,
-					},
-				})
-
-				return reqs
-			}),
+			handler.EnqueueRequestsFromMapFunc(
+				func(_ context.Context, obj client.Object) []reconcile.Request {
+					return paasFromPaasNs(mgr, obj)
+				},
+			),
 			builder.WithPredicates(v1alpha1.ActivePaasConfigUpdated()),
 		).
 		Watches(
 			&v1alpha1.PaasConfig{},
 			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, _ client.Object) []reconcile.Request {
-				// Enqueue all Paas objects
-				var reqs []reconcile.Request
-				var paasList v1alpha1.PaasList
-				if err := mgr.GetClient().List(context.Background(), &paasList); err != nil {
-					mgr.GetLogger().Error(err, "unable to list paases")
-					return nil
-				}
-
-				for _, p := range paasList.Items {
-					reqs = append(reqs, reconcile.Request{
-						NamespacedName: types.NamespacedName{
-							Namespace: p.Namespace,
-							Name:      p.Name,
-						},
-					})
-				}
-
-				return reqs
+				return allPaases(mgr)
 			}),
 			builder.WithPredicates(v1alpha1.ActivePaasConfigUpdated()),
 		).
@@ -376,7 +385,7 @@ func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) 
 	logger.Debug().Msg("inside Paas finalizer")
 
 	paasReconcilers := []func(context.Context, *v1alpha1.Paas) error{
-		//r.finalizeClusterQuotas,
+		// r.finalizeClusterQuotas,
 		r.finalizeGroups,
 		r.finalizeExtraClusterRoleBindings,
 		r.finalizeClusterWideQuotas,

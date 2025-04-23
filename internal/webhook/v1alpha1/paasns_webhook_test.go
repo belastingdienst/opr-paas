@@ -173,7 +173,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 	Context("When creating or updating a PaasNS with incorrect Paas reference", func() {
 		It("Should deny creation", func() {
 			By("created in namespace with wrong prefix")
-			obj.ObjectMeta.Namespace = otherPaasName
+			obj.Namespace = otherPaasName
 			_, err := validator.ValidateCreate(ctx, obj)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(

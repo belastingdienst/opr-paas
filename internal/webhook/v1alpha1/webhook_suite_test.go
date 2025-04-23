@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	apiv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	apiv1alpha2 "github.com/belastingdienst/opr-paas/api/v1alpha2"
 	webhookv1alpha2 "github.com/belastingdienst/opr-paas/internal/webhook/v1alpha2"
@@ -68,15 +67,15 @@ func createNamespace(ns string) {
 	}
 }
 
-func createPaasNamespace(paas v1alpha1.Paas, nsName string) {
+func createPaasNamespace(paas apiv1alpha1.Paas, nsName string) {
 	controller := true
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: nsName,
 			OwnerReferences: []metav1.OwnerReference{
-				metav1.OwnerReference{
+				{
 					Name:       paas.Name,
-					APIVersion: v1alpha1.GroupVersion.Version,
+					APIVersion: apiv1alpha1.GroupVersion.Version,
 					Kind:       "Paas",
 					UID:        paas.UID,
 					Controller: &controller,
@@ -102,7 +101,7 @@ func createPaasPrivateKeySecret(ns string, name string, privateKey []byte) {
 	}
 }
 
-func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte, err error) {
+func newGeneratedCrypt(ctx string) (myCrypt *crypt.Crypt, privateKey []byte, err error) {
 	tmpFileError := "failed to get new tmp private key file: %w"
 	privateKeyFile, err := os.CreateTemp("", "private")
 	if err != nil {
@@ -112,7 +111,7 @@ func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte,
 	if err != nil {
 		return nil, nil, fmt.Errorf(tmpFileError, err)
 	}
-	myCrypt, err = crypt.NewGeneratedCrypt(privateKeyFile.Name(), publicKeyFile.Name(), context)
+	myCrypt, err = crypt.NewGeneratedCrypt(privateKeyFile.Name(), publicKeyFile.Name(), ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf(tmpFileError, err)
 	}

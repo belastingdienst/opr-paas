@@ -386,7 +386,8 @@ var _ = Describe("Updating a PaasConfig", Ordered, func() {
 						},
 					}
 					obj.Spec.Validations = v1alpha1.PaasConfigValidations{
-						"paasConfig": {"capabilityName": test.validation}}
+						"paasConfig": {"capabilityName": test.validation},
+					}
 					warn, err := validator.ValidateCreate(ctx, obj)
 					if test.valid {
 						Expect(warn).To(BeEmpty())

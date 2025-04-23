@@ -45,26 +45,11 @@ func (r *PaasReconciler) paasNSsFromNs(ctx context.Context, ns string) map[strin
 	return nss
 }
 
-// nsFromPaas accepts a Paas and returns a list of all namespaceDefs managed by this Paas
-// this is a combination of
-// - all namespaces as defined in paas.spec.namespaces
-// - all namespaces as required by paas.spec.capabilities
-// - all namespaces as required by paasNS's belonging to this paas
-func (r *PaasReconciler) nsDefsFromPaas(ctx context.Context, paas *v1alpha1.Paas) (namespaceDefs, error) {
-	var paasGroups []string
-	for key, paasGroup := range paas.Spec.Groups {
-		if paasGroup.Query == "" {
-			key = join(paas.Name, key)
-		}
-		paasGroups = append(paasGroups, key)
-	}
-	finalNss := namespaceDefs{
-		namespaceDef{
-			nsName: paas.Name,
-			quota:  paas.Name,
-			groups: paasGroups,
-		},
-	}
+func (r *PaasReconciler) nsDefsFromPaasNamespaces(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	paasGroups []string,
+) (paasNsBlockNss namespaceDefs) {
 	for _, nsName := range paas.Spec.Namespaces {
 		ns := namespaceDef{
 			nsName:  join(paas.Name, nsName),
@@ -73,7 +58,7 @@ func (r *PaasReconciler) nsDefsFromPaas(ctx context.Context, paas *v1alpha1.Paas
 			secrets: paas.Spec.SSHSecrets,
 		}
 
-		finalNss = append(finalNss, ns)
+		paasNsBlockNss = append(paasNsBlockNss, ns)
 		for nsName, paasns := range r.paasNSsFromNs(ctx, ns.nsName) {
 			ns = namespaceDef{
 				nsName:  nsName,
@@ -85,12 +70,20 @@ func (r *PaasReconciler) nsDefsFromPaas(ctx context.Context, paas *v1alpha1.Paas
 			if len(paasns.Spec.Groups) == 0 {
 				ns.groups = paasGroups
 			}
-			finalNss = append(finalNss, ns)
+			paasNsBlockNss = append(paasNsBlockNss, ns)
 		}
 	}
+	return paasNsBlockNss
+}
+
+func (r *PaasReconciler) paasCapabilityNss(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	paasGroups []string,
+) (capNsDefs namespaceDefs, err error) {
 	capsConfig := config.GetConfig().Spec.Capabilities
 	for capName, capDefinition := range paas.Spec.Capabilities {
-		if capDefinition.Enabled != true {
+		if !capDefinition.Enabled {
 			continue
 		}
 		capConfig, ok := capsConfig[capName]
@@ -117,7 +110,7 @@ func (r *PaasReconciler) nsDefsFromPaas(ctx context.Context, paas *v1alpha1.Paas
 			groups:    paasGroups,
 			secrets:   secrets,
 		}
-		finalNss = append(finalNss, ns)
+		capNsDefs = append(capNsDefs, ns)
 		for nsName, paasns := range r.paasNSsFromNs(ctx, capNS) {
 			ns = namespaceDef{
 				nsName:  nsName,
@@ -129,8 +122,38 @@ func (r *PaasReconciler) nsDefsFromPaas(ctx context.Context, paas *v1alpha1.Paas
 			if len(paasns.Spec.Groups) == 0 {
 				ns.groups = paasGroups
 			}
-			finalNss = append(finalNss, ns)
+			capNsDefs = append(capNsDefs, ns)
 		}
 	}
+	return capNsDefs, nil
+}
+
+// nsFromPaas accepts a Paas and returns a list of all namespaceDefs managed by this Paas
+// this is a combination of
+// - all namespaces as defined in paas.spec.namespaces
+// - all namespaces as required by paas.spec.capabilities
+// - all namespaces as required by paasNS's belonging to this paas
+func (r *PaasReconciler) nsDefsFromPaas(ctx context.Context, paas *v1alpha1.Paas) (namespaceDefs, error) {
+	var paasGroups []string
+	for key, paasGroup := range paas.Spec.Groups {
+		if paasGroup.Query == "" {
+			key = join(paas.Name, key)
+		}
+		paasGroups = append(paasGroups, key)
+	}
+	finalNss := namespaceDefs{
+		namespaceDef{
+			nsName: paas.Name,
+			quota:  paas.Name,
+			groups: paasGroups,
+		},
+	}
+	finalNss = append(finalNss, r.nsDefsFromPaasNamespaces(ctx, paas, paasGroups)...)
+	capNss, err := r.paasCapabilityNss(ctx, paas, paasGroups)
+	if err != nil {
+		return nil, err
+	}
+	finalNss = append(finalNss, capNss...)
+
 	return finalNss, nil
 }

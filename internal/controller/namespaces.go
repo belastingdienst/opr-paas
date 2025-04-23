@@ -140,7 +140,7 @@ func (r *PaasReconciler) reconcileNamespaces(
 		} else if err = ensureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
 			return fmt.Errorf("failure while creating namespace %s: %s", nsDef.nsName, err.Error())
 		}
-		logger.Debug().Msgf("namespace %s succesfully created with quota %s", nsDef.nsName, nsDef.quota)
+		logger.Debug().Msgf("namespace %s successfully created with quota %s", nsDef.nsName, nsDef.quota)
 	}
 	return nil
 }

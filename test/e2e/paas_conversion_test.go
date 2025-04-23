@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	paasv1Name         = "paas-v1alpha1"
-	paasv2Name         = "paas-v1alpha2"
+	paasv1Name = "paas-v1alpha1"
+	paasv2Name = "paas-v1alpha2"
+	// revive:disable-next-line
 	paasV1alpha2Secret = "M9rkiqfVqvE5kjMkaZLt8jokIIAuVLfTS8dXFQa3drmOyIFWSzHJym1PKyzkwnK07vcJkxbfEkO22IbpkziXxrF1OflpNMzIcFFALMw472sczeeJDPvl1u6/F14agq4avc/Osk0zreRLRPS2jkhXE8VnbNsi+//PuRssCbp/ink8mpMg7mVKL9BfQXBu37KppvXEfOA+M6C4ZkNIVqrl7HcRW/e296GpCFkbQ7qa6JWwmgR22j64hcFJDorWhALAuGj7lZ/Wsm0ZzuFFD9tRKuFnxMFRlfDPMm26+NyXTUPNEZuqfeswaa8TLv/ldjr4Y78e+F3q5G0IGFj2sdTp08SMkLDfa8eYfxqa83EWQjiJcxggrPUs2eZZ0hN/IjxDjRh/nwSrKfugk/SQL61jC7slB8Beh8xurfpw/YEOwwooItkjp+1kliDLepUgixm9iY6Mrk4oNfOl2Ul2xggnijd4q2mQ8sPXf++R7ntV5zdcvKW411b93d9CTLgf+I2+2dqYK2TqPZmzVOPqigx1bIGCpbsD6xQH/QcuOPSOnvluDTJKFx3jENwzQ41wXr06Uv45WIUcdgUKwQkRFJ/dBeaQyBiB+oBXu3PcTsXi6MziHbPdxH0Xnv1SPkVnd0oFbxqwzhtabvKnc/opuaTosaDCWMjdRoJFh01rs4MdELQ="
 )
 

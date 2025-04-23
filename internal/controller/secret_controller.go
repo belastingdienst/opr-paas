@@ -98,7 +98,7 @@ func (r *PaasReconciler) backendSecret(
 		},
 	}
 	if paasns != nil {
-		s.ObjectMeta.Labels = paasns.ClonedLabels()
+		s.Labels = paasns.ClonedLabels()
 	}
 
 	s.Labels["argocd.argoproj.io/secret-type"] = "repo-creds"
@@ -251,6 +251,7 @@ func (r *PaasReconciler) reconcileNamespaceSecrets(
 	}
 	return nil
 }
+
 func (r *PaasReconciler) reconcilePaasSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,

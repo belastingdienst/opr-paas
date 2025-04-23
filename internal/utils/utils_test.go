@@ -36,13 +36,13 @@ func TestPathHappyFlow(t *testing.T) {
 
 	// Create some directories and files in the temporary directory
 	for i := 0; i < 3; i++ {
-		err = os.Mkdir(filepath.Join(tempDir, fmt.Sprintf("path%d", i)), 0755) // revive:disable-line:add-constant
+		err = os.Mkdir(filepath.Join(tempDir, fmt.Sprintf("path%d", i)), 0o755) // revive:disable-line:add-constant
 		if err != nil {
 			t.Fatalf("Error creating directory: %v", err)
 		}
 		err = os.WriteFile(filepath.Join(tempDir,
 			fmt.Sprintf("path%d/file%d", i, i)),
-			[]byte(fmt.Sprintf("content%d", i)), 0644) // revive:disable-line:add-constant
+			[]byte(fmt.Sprintf("content%d", i)), 0o644) // revive:disable-line:add-constant
 		if err != nil {
 			t.Fatalf("Error creating file: %v", err)
 		}
