@@ -14,6 +14,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -286,6 +287,63 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				predicate.LabelChangedPredicate{},
 			))).
 		Owns(&v1alpha1.PaasNS{}).
+		Watches(
+			&v1alpha1.PaasNS{},
+			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, obj client.Object) []reconcile.Request {
+				// Enqueue all Paas objects
+				var reqs []reconcile.Request
+				var ns corev1.Namespace
+				logger := mgr.GetLogger()
+				if err := mgr.GetClient().Get(
+					context.Background(),
+					types.NamespacedName{Name: obj.GetNamespace()},
+					&ns,
+				); err != nil {
+					logger.Error(err, "unable to get namespace where paasns resides")
+					return nil
+				}
+				var paasNames []string
+				for _, ref := range ns.OwnerReferences {
+					if ref.Kind == "Paas" && *ref.Controller {
+						paasNames = append(paasNames, ref.Name)
+					}
+				}
+				if len(paasNames) == 0 {
+					logger.Error(
+						errors.New("failed to get owner reference with kind paas and controller=true from namespace resource"),
+						"finding paas for paasns without owner reference",
+						"ns",
+						ns,
+					)
+				} else if len(paasNames) > 1 {
+					logger.Error(
+						errors.New("found multiple owner references with kind paas and controller=true"),
+						"finding paas for paasns without owner reference",
+						"ns",
+						ns,
+					)
+				}
+				paasName := paasNames[0]
+				if !strings.HasPrefix(ns.Name, paasName+"-") {
+					logger.Error(
+						errors.New("namespace is not prefixed with paasName in owner reference"),
+						"finding paas for paasns without owner reference",
+						"ns",
+						ns,
+					)
+
+				}
+
+				reqs = append(reqs, reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name: paasName,
+					},
+				})
+
+				return reqs
+			}),
+			builder.WithPredicates(v1alpha1.ActivePaasConfigUpdated()),
+		).
 		Watches(
 			&v1alpha1.PaasConfig{},
 			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, _ client.Object) []reconcile.Request {

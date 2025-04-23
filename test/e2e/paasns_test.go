@@ -96,31 +96,27 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 
 	pnsCreatePaasNS(ctx, t, cfg, paasNs)
 
-	// check that the paasns has been created and is linked to the correct paas
-	fetchedPaasNS, _ := pnsGetPaasNS(ctx, cfg, paasNsName, generatedName)
-
-	linkedPaas := fetchedPaasNS.Spec.Paas
-	assert.Equal(t, linkedPaas, thisPaas)
+	fetchedPaas := getPaas(ctx, thisPaas, t, cfg)
 
 	// check that there are no errors
 	assert.True(
 		t,
 		meta.IsStatusConditionPresentAndEqual(
-			fetchedPaasNS.Status.Conditions,
-			api.TypeReadyPaasNs,
+			fetchedPaas.Status.Conditions,
+			api.TypeReadyPaas,
 			metav1.ConditionTrue,
 		),
 	)
 	assert.True(
 		t,
 		meta.IsStatusConditionPresentAndEqual(
-			fetchedPaasNS.Status.Conditions,
-			api.TypeHasErrorsPaasNs,
+			fetchedPaas.Status.Conditions,
+			api.TypeHasErrorsPaas,
 			metav1.ConditionFalse,
 		),
 	)
-	foundCondition := meta.FindStatusCondition(paasNs.Status.Conditions, api.TypeHasErrorsPaasNs)
-	assert.Equal(t, fmt.Sprintf("Reconciled (%s) successfully", paasNsName), foundCondition.Message)
+	foundCondition := meta.FindStatusCondition(paas.Status.Conditions, api.TypeHasErrorsPaas)
+	assert.Equal(t, fmt.Sprintf("Reconciled (%s) successfully", thisPaas), foundCondition.Message)
 
 	// cleanup
 	deletePaasSync(ctx, thisPaas, t, cfg)

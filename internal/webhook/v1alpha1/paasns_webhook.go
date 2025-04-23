@@ -12,11 +12,14 @@ import (
 	"reflect"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,7 +50,7 @@ type PaasNSCustomValidator struct {
 // nssFromNs gets all PaasNs objects from a namespace and returns a list of all the corresponding namespaces
 // It also returns PaasNS in those namespaces recursively.
 func nssFromNs(ctx context.Context, c client.Client, ns string) (map[string]int, error) {
-	nss := make(map[string]int)
+	nss := map[string]int{}
 	pnsList := &v1alpha1.PaasNSList{}
 	if err := c.List(ctx, pnsList, &client.ListOptions{Namespace: ns}); err != nil {
 		return nil, err
@@ -74,7 +77,7 @@ func nssFromNs(ctx context.Context, c client.Client, ns string) (map[string]int,
 // nssFromPaas accepts a Paas and returns a list of all namespaces managed by this Paas
 // nssFromPaas uses nssFromNs which is recursive.
 func nssFromPaas(ctx context.Context, c client.Client, paas *v1alpha1.Paas) (map[string]int, error) {
-	finalNss := make(map[string]int)
+	finalNss := map[string]int{}
 	finalNss[paas.Name] = 1
 	nss, err := nssFromNs(ctx, c, paas.Name)
 	if err != nil {
@@ -106,7 +109,7 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 
 	errs = append(errs, validatePaasNsName(paasns.Name)...)
 
-	paas, err := getPaas(ctx, v.client, paasns.Spec.Paas)
+	paas, err := paasNStoPaas(ctx, v.client, paasns)
 	if err != nil {
 		// code to Err when the referenced Paas does not exist
 		errs = append(errs, &field.Error{
@@ -116,22 +119,6 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 			Detail:   fmt.Errorf("paas %s does not exist: %w", paasns.Spec.Paas, err).Error(),
 		})
 		return w, errs.ToAggregate()
-	}
-
-	if nss, err := nssFromPaas(ctx, v.client, paas); err != nil {
-		errs = append(errs, &field.Error{
-			Type:     field.ErrorTypeInvalid,
-			Field:    field.NewPath("spec").Child("paas").String(),
-			BadValue: paasns.Spec.Paas,
-			Detail:   fmt.Errorf("cannot get nss for this paas: %w", err).Error(),
-		})
-	} else if _, exists := nss[paasns.Namespace]; !exists {
-		errs = append(errs, &field.Error{
-			Type:     field.ErrorTypeInvalid,
-			Field:    field.NewPath("spec").Child("paas").String(),
-			BadValue: paasns.Spec.Paas,
-			Detail:   fmt.Errorf("paasns not in namespace belonging to paas %s", paas.Name).Error(),
-		})
 	}
 
 	// Err when a sshSecret can't be decrypted
@@ -193,7 +180,7 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 		}
 	}
 
-	paas, _ := getPaas(ctx, v.client, newPaasns.Spec.Paas)
+	paas, _ := paasNStoPaas(ctx, v.client, newPaasns)
 	// This will not occur.
 	// if err != nil {
 	// 	return w, &field.Error{
@@ -233,10 +220,38 @@ func (*PaasNSCustomValidator) ValidateDelete(_ context.Context, _ runtime.Object
 	return nil, nil
 }
 
-func getPaas(ctx context.Context, c client.Client, name string) (paas *v1alpha1.Paas, err error) {
+func paasNStoPaas(ctx context.Context, c client.Client, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, err error) {
+	var ns corev1.Namespace
+	ctx, logger := logging.GetLogComponent(ctx, "paasns_to_paas")
+	if err := c.Get(
+		context.Background(),
+		types.NamespacedName{Name: paasns.GetNamespace()},
+		&ns,
+	); err != nil {
+		logger.Error().Msgf("unable to get namespace where paasns resides: %s", err.Error())
+		return nil, err
+	}
+	var paasNames []string
+	for _, ref := range ns.OwnerReferences {
+		if ref.Kind == "Paas" && *ref.Controller {
+			paasNames = append(paasNames, ref.Name)
+		}
+	}
+	if len(paasNames) == 0 {
+		logger.Error().Fields(map[string]any{"ns": ns}).
+			Msgf("failed to get owner reference with kind paas and controller=true from namespace resource")
+	} else if len(paasNames) > 1 {
+		logger.Error().Fields(map[string]any{"ns": ns}).
+			Msgf("found multiple owner references with kind paas and controller=true")
+	}
+	paasName := paasNames[0]
+	if !strings.HasPrefix(ns.Name, paasName+"-") {
+		logger.Error().Fields(map[string]any{"ns": ns}).
+			Msgf("namespace is not prefixed with paasName in owner reference")
+	}
 	paas = &v1alpha1.Paas{}
 	err = c.Get(ctx, client.ObjectKey{
-		Name: name,
+		Name: paasName,
 	}, paas)
 	if err != nil {
 		err = fmt.Errorf("failed to get paas: %w", err)
@@ -249,7 +264,7 @@ func getPaas(ctx context.Context, c client.Client, name string) (paas *v1alpha1.
 
 // compareGroups is a helper function to compare the list of groups in a PaasNS against the list in the Paas
 func compareGroups(subGroups []string, superGroups []string) (errs field.ErrorList) {
-	uqSuperGroups := make(map[string]bool)
+	uqSuperGroups := map[string]bool{}
 	for _, group := range superGroups {
 		uqSuperGroups[group] = true
 	}
