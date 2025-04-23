@@ -1,10 +1,10 @@
 /*
-Copyright 2024, Tax Administration of The Netherlands.
+Copyright 2025, Tax Administration of The Netherlands.
 Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-package v1alpha1
+package v1alpha2
 
 // Excuse Ginkgo use from revive errors
 //revive:disable:dot-imports
@@ -20,15 +20,15 @@ import (
 	"testing"
 	"time"
 
-	apiv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	apiv1alpha2 "github.com/belastingdienst/opr-paas/api/v1alpha2"
-	webhookv1alpha2 "github.com/belastingdienst/opr-paas/internal/webhook/v1alpha2"
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -95,10 +95,10 @@ var _ = BeforeSuite(func() {
 	err = corev1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = apiv1alpha1.AddToScheme(scheme.Scheme)
+	err = v1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = apiv1alpha2.AddToScheme(scheme.Scheme)
+	err = v1alpha2.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
@@ -122,9 +122,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = SetupPaasWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-	// The v1alpha2 webhook is registered in the manifest, so we must also install it
-	err = webhookv1alpha2.SetupPaasWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
 
 	// Ensure we have a namespace and privatekey for PaasConfig testing
@@ -158,3 +155,27 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
+
+func createNamespace(ns string) {
+	// Create system namespace
+	err := k8sClient.Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: ns},
+	})
+	if err != nil {
+		Fail(fmt.Errorf("failed to create %s namespace: %w", ns, err).Error())
+	}
+}
+
+func createPaasPrivateKeySecret(ns string, name string, privateKey []byte) {
+	// Set up private key
+	err := k8sClient.Create(ctx, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+		Data: map[string][]byte{"privatekey0": privateKey},
+	})
+	if err != nil {
+		Fail(fmt.Errorf("failed to create %s.%s secret: %w", ns, name, err).Error())
+	}
+}

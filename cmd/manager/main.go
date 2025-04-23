@@ -25,6 +25,7 @@ import (
 	argoresources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/version"
 	webhookv1alpha1 "github.com/belastingdienst/opr-paas/internal/webhook/v1alpha1"
+	webhookv1alpha2 "github.com/belastingdienst/opr-paas/internal/webhook/v1alpha2"
 	"github.com/go-logr/zerologr"
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
@@ -218,6 +219,9 @@ func configureWebhooks(mgr ctrl.Manager) {
 	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err := webhookv1alpha1.SetupPaasWebhookWithManager(mgr); err != nil {
+			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create webhook")
+		}
+		if err := webhookv1alpha2.SetupPaasWebhookWithManager(mgr); err != nil {
 			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create webhook")
 		}
 		if err := webhookv1alpha1.SetupPaasConfigWebhookWithManager(mgr); err != nil {
