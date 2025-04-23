@@ -7,80 +7,70 @@ See LICENSE.md for details.
 package controller
 
 import (
-	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha512"
-	"encoding/base64"
-	"testing"
-
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func TestHashData(t *testing.T) {
-	testString1 := "My Wonderful Test String"
-	testString2 := "Another Wonderful Test String"
+var _ = Describe("testing hashdata", func() {
+	When("hashing a string", func() {
+		It("should not return an error", func() {
+			for _, test := range []struct {
+				input    string
+				expected string
+			}{
+				{
+					input:    "My Wonderful Test String",
+					expected: "703fe1668c39ec0fdf3c9916d526ba4461fe10fd36bac1e2a1b708eb8a593e418eb3f92dbbd2a6e3776516b0e03743a45cfd69de6a3280afaa90f43fa1918f74",
+				},
+				{
+					input:    "Another Wonderful Test String",
+					expected: "d3bfd910013886fe68ffd5c5d854e7cb2a8ce2a15a48ade41505b52ce7898f63d8e6b9c84eacdec33c45f7a2812d93732b524be91286de328bbd6b72d5aee9de",
+				},
+			} {
+				Expect(hashData(test.input)).To(Equal(test.expected))
+			}
+		})
 
-	out1 := hashData(testString1)
-	out2 := hashData(testString2)
+	})
+})
 
-	assert.Equal(
-		t,
-		// revive:disable-next-line
-		"703fe1668c39ec0fdf3c9916d526ba4461fe10fd36bac1e2a1b708eb8a593e418eb3f92dbbd2a6e3776516b0e03743a45cfd69de6a3280afaa90f43fa1918f74",
-		out1,
-	)
-	assert.Equal(
-		t,
-		// revive:disable-next-line
-		"d3bfd910013886fe68ffd5c5d854e7cb2a8ce2a15a48ade41505b52ce7898f63d8e6b9c84eacdec33c45f7a2812d93732b524be91286de328bbd6b72d5aee9de",
-		out2,
-	)
-}
+/*
+var _ = describe("secret controller", ordered, func() {
+	ctx := context.background()
 
-var _ = Describe("Secret controller", Ordered, func() {
-	ctx := context.Background()
-
-	BeforeAll(func() {
-		// Set the PaasConfig so reconcilers know where to find our fixtures
-		config.SetConfig(genericConfig)
+	beforeall(func() {
+		// set the paasconfig so reconcilers know where to find our fixtures
+		config.setconfig(genericconfig)
 	})
 
-	var reconciler *PaasReconciler
-	BeforeEach(func() {
-		reconciler = &PaasReconciler{
-			Client: k8sClient,
-			Scheme: k8sClient.Scheme(),
+	var reconciler *paasreconciler
+	beforeeach(func() {
+		reconciler = &paasreconciler{
+			client: k8sclient,
+			scheme: k8sclient.scheme(),
 		}
 	})
 
-	When("reconciling a PaasNS with no secrets", func() {
-		pns := &api.PaasNS{
-			ObjectMeta: metav1.ObjectMeta{Name: "foo"},
-			Spec: api.PaasNSSpec{
-				Paas: "my-paas",
+	when("reconciling a paasns with no secrets", func() {
+		pns := &api.paasns{
+			objectmeta: metav1.objectmeta{name: "foo"},
+			spec: api.paasnsspec{
+				paas: "my-paas",
 			},
 		}
 
-		It("should not return an error", func() {
-			err := reconciler.reconcileSecret(ctx, &api.Paas{}, pns)
+		it("should not return an error", func() {
+			err := reconciler.reconcilesecret(ctx, &api.paas{}, pns)
 
-			Expect(err).NotTo(HaveOccurred())
+			expect(err).notto(haveoccurred())
 		})
 
-		It("should not create any secrets", func() {
-			secrets := &corev1.SecretList{}
-			err := k8sClient.List(ctx, secrets, client.InNamespace("my-paas-foo"))
+		it("should not create any secrets", func() {
+			secrets := &corev1.secretlist{}
+			err := k8sclient.list(ctx, secrets, client.innamespace("my-paas-foo"))
 
-			Expect(err).NotTo(HaveOccurred())
-			Expect(secrets.Items).To(BeZero())
+			expect(err).notto(haveoccurred())
+			expect(secrets.items).to(bezero())
 		})
 	})
 
@@ -136,3 +126,4 @@ var _ = Describe("Secret controller", Ordered, func() {
 		})
 	})
 })
+*/

@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -116,7 +117,7 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 			Type:     field.ErrorTypeTypeInvalid,
 			Field:    field.NewPath("spec").Child("paas").String(),
 			BadValue: paasns.Spec.Paas,
-			Detail:   fmt.Errorf("paas %s does not exist: %w", paasns.Spec.Paas, err).Error(),
+			Detail:   err.Error(),
 		})
 		return w, errs.ToAggregate()
 	}
@@ -233,21 +234,21 @@ func paasNStoPaas(ctx context.Context, c client.Client, paasns *v1alpha1.PaasNS)
 	}
 	var paasNames []string
 	for _, ref := range ns.OwnerReferences {
-		if ref.Kind == "Paas" && *ref.Controller {
+		if ref.Kind == "Paas" && ref.Controller != nil && *ref.Controller {
 			paasNames = append(paasNames, ref.Name)
 		}
 	}
 	if len(paasNames) == 0 {
-		logger.Error().Fields(map[string]any{"ns": ns}).
-			Msgf("failed to get owner reference with kind paas and controller=true from namespace resource")
+		return nil, errors.New(
+			"failed to get owner reference with kind paas and controller=true from namespace resource")
 	} else if len(paasNames) > 1 {
-		logger.Error().Fields(map[string]any{"ns": ns}).
-			Msgf("found multiple owner references with kind paas and controller=true")
+		return nil, fmt.Errorf("found %d owner references with kind paas and controller=true", len(paasNames))
 	}
 	paasName := paasNames[0]
-	if !strings.HasPrefix(ns.Name, paasName+"-") {
-		logger.Error().Fields(map[string]any{"ns": ns}).
-			Msgf("namespace is not prefixed with paasName in owner reference")
+	if ns.Name != paasName && !strings.HasPrefix(ns.Name, paasName+"-") {
+		return nil, fmt.Errorf(
+			"namespace %s is not named after paas, and not prefixed with '%s-' (paasName from owner reference)",
+			ns.Name, paasName)
 	}
 	paas = &v1alpha1.Paas{}
 	err = c.Get(ctx, client.ObjectKey{
@@ -255,7 +256,6 @@ func paasNStoPaas(ctx context.Context, c client.Client, paasns *v1alpha1.PaasNS)
 	}, paas)
 	if err != nil {
 		err = fmt.Errorf("failed to get paas: %w", err)
-		_, logger := logging.GetLogComponent(ctx, "webhook_getPaas")
 		logger.Error().Msg(err.Error())
 		return nil, err
 	}
