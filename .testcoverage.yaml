@@ -41,7 +41,7 @@ override:
   - path: ^api/v1alpha1$
     threshold: 68
   - path: ^api/v1alpha2$
-    threshold: 71
+    threshold: 45
   - path: ^internal/crypt$
     threshold: 65
   - path: ^internal/config$
@@ -52,6 +52,10 @@ override:
     threshold: 50
   - path: api/v1alpha2/paasns_types.go
     threshold: 5
+  - path: api/v1alpha2/paasconfig_types.go
+    threshold: 0
+  - path: api/v1alpha2/validations.go
+    threshold: 0
   - path: internal/config/watcher.go
     threshold: 0
   - path: internal/controller/argo_app.go

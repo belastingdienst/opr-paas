@@ -47,6 +47,13 @@ resources:
   version: v1alpha1
 - api:
     crdVersion: v1
+  controller: true
+  domain: cpet.belastingdienst.nl
+  kind: PaasConfig
+  path: github.com/belastingdienst/opr-paas/api/v1alpha2
+  version: v1alpha2
+- api:
+    crdVersion: v1
   domain: cpet.belastingdienst.nl
   kind: Paas
   path: github.com/belastingdienst/opr-paas/api/v1alpha2
