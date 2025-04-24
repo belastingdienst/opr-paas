@@ -375,45 +375,6 @@ spec:
             type: object
           spec:
             properties:
-              argoenabled:
-                default: true
-                description: |-
-                  Deprecated: ArgoCD specific code will be removed from the operator
-                  Option to enable or disable ArgoCD specific Code
-                type: boolean
-              argopermissions:
-                description: |-
-                  Deprecated: ArgoCD specific code will be removed from the operator
-                  Permissions to set for ArgoCD instance
-                properties:
-                  default_policy:
-                    description: |-
-                      Deprecated: ArgoCD specific code will be removed from the operator
-                      The optional default policy which is set in the ArgoCD instance
-                    type: string
-                  header:
-                    description: |-
-                      Deprecated: ArgoCD specific code will be removed from the operator
-                      The header value to set in ArgoPermissions
-                    minLength: 1
-                    type: string
-                  resource_name:
-                    description: |-
-                      Deprecated: ArgoCD specific code will be removed from the operator
-                      The name of the ArgoCD instance to apply ArgoPermissions to
-                    minLength: 1
-                    type: string
-                  role:
-                    description: |-
-                      Deprecated: ArgoCD specific code will be removed from the operator
-                      The name of the role to add to Groups set in ArgoPermissions
-                    minLength: 1
-                    type: string
-                required:
-                - header
-                - resource_name
-                - role
-                type: object
               capabilities:
                 additionalProperties:
                   properties:
@@ -514,12 +475,6 @@ spec:
                   type: object
                 description: A map with zero or more ConfigCapability
                 type: object
-              clusterwide_argocd_namespace:
-                description: |-
-                  Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
-                  Deprecated: ArgoCD specific code will be removed from the operator
-                minLength: 1
-                type: string
               debug:
                 default: false
                 description: Enable debug information generation or not
@@ -538,32 +493,6 @@ spec:
                 - name
                 - namespace
                 type: object
-              exclude_appset_name:
-                description: |-
-                  Deprecated: ArgoCD specific code will be removed from the operator
-                  Name of an ApplicationSet to be set as ignored in the ArgoCD bootstrap Application
-                type: string
-              groupsynclist:
-                description: |-
-                  Deprecated: GroupSyncList code will be removed from the operator to make it more generic
-                  A reference to a configmap containing a groupsynclist of LDAP groups to be synced using LDAP sync
-                properties:
-                  name:
-                    minLength: 1
-                    type: string
-                  namespace:
-                    minLength: 1
-                    type: string
-                required:
-                - name
-                - namespace
-                type: object
-              groupsynclist_key:
-                default: groupsynclist.txt
-                description: |-
-                  Deprecated: GroupSyncListKey code will be removed from the operator to make it more generic
-                  A key in the configures GroupSyncList which will contain the LDAP groups to be synced using LDAP sync
-                type: string
               ldap:
                 description: LDAP configuration for the operator to add to Groups
                 properties:
@@ -584,13 +513,6 @@ spec:
                 default: argocd.argoproj.io/managed-by
                 description: Name of the label used to define by whom the resource
                   is managed.
-                type: string
-              managed_by_suffix:
-                default: argocd
-                description: |-
-                  Deprecated: ManagedBySuffix is a temporary implementation, to be replaced by go template functionality
-                  once available
-                  Suffix to be appended to the managed-by-label
                 type: string
               quota_label:
                 default: clusterquotagroup
@@ -621,9 +543,7 @@ spec:
                   the fields
                 type: object
             required:
-            - clusterwide_argocd_namespace
             - decryptKeySecret
-            - groupsynclist
             type: object
           status:
             properties:
