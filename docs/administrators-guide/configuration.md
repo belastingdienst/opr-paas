@@ -35,7 +35,7 @@ Example PaasConfig
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha2
+    apiVersion: cpet.belastingdienst.nl/v1alpha1
     kind: PaasConfig
     metadata:
       name: opr-paas-config
