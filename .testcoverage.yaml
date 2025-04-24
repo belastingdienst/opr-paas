@@ -23,7 +23,7 @@ threshold:
 
   # (optional; default 0)
   # Minimum overall project coverage percentage required.
-  total: 57
+  total: 62
 
 # Holds regexp rules which will override thresholds for matched files or packages
 # using their paths.
@@ -37,7 +37,7 @@ override:
   #- path: ^pkg/lib/foo$
   #  threshold: 100
   - path: ^internal/controller$
-    threshold: 30
+    threshold: 40
   - path: ^api/v1alpha1$
     threshold: 68
   - path: ^api/v1alpha2$
@@ -70,8 +70,6 @@ override:
     threshold: 43
   - path: internal/controller/cluster_wide_quota.go
     threshold: 13
-  - path: internal/controller/clusterrolebindings.go
-    threshold: 0
   - path: internal/controller/groups.go
     threshold: 40
   - path: internal/controller/ldap_groups.go
