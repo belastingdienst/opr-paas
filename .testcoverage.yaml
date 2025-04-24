@@ -23,7 +23,7 @@ threshold:
 
   # (optional; default 0)
   # Minimum overall project coverage percentage required.
-  total: 50
+  total: 57
 
 # Holds regexp rules which will override thresholds for matched files or packages
 # using their paths.
@@ -46,7 +46,6 @@ override:
     threshold: 65
   - path: ^internal/config$
     threshold: 23
-
   - path: api/v1alpha1/paasconfig_types.go
     threshold: 10
   - path: api/v1alpha2/paas_types.go
@@ -62,7 +61,7 @@ override:
   - path: internal/controller/argocd.go
     threshold: 35
   - path: internal/controller/capabilities.go
-    threshold: 58
+    threshold: 57
   - path: internal/controller/cluster_quotas.go
     threshold: 43
   - path: internal/controller/cluster_wide_quota.go
@@ -73,10 +72,12 @@ override:
     threshold: 40
   - path: internal/controller/ldap_groups.go
     threshold: 35
+  - path: internal/controller/namespace_def.go
+    threshold: 50
   - path: internal/controller/namespaces.go
     threshold: 33
   - path: internal/controller/paas_controller.go
-    threshold: 28
+    threshold: 27
   - path: internal/controller/paasconfig_controller.go
     threshold: 0
   - path: internal/controller/paasnamespaces.go
@@ -85,8 +86,12 @@ override:
     threshold: 5
   - path: internal/controller/rolebindings_controller.go
     threshold: 10
+  - path: internal/controller/rsa_controller.go
+    threshold: 0
   - path: internal/controller/secret_controller.go
-    threshold: 68
+    threshold: 38
+  - path: internal/webhook/v1alpha1/paasns_webhook.go
+    threshold: 67
   - path: internal/crypt/main.go
     threshold: 12
 

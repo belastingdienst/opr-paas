@@ -103,14 +103,11 @@ func backendNamespace(
 	return ns, nil
 }
 
-func (r *PaasNSReconciler) finalizeNamespace(
+func (r *PaasReconciler) finalizeNamespace(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
 ) error {
-	// Hoe voorkomen wij dat iemand een paasns maakt voor een verkeerde paas en als hij wordt weggegooid,
-	// dat hij dan de verkeerde namespace weggooit???
-
 	found := &corev1.Namespace{}
 	err := r.Get(ctx, types.NamespacedName{
 		Name: paasns.NamespaceName(),
@@ -130,26 +127,20 @@ func (r *PaasNSReconciler) finalizeNamespace(
 	return nil
 }
 
-func (r *PaasNSReconciler) reconcileNamespaces(
+func (r *PaasReconciler) reconcileNamespaces(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	paasns *v1alpha1.PaasNS,
+	nsDefs namespaceDefs,
 ) (err error) {
-	nsName := paasns.NamespaceName()
-	var nsQuota string
-	if configCapability, exists := config.GetConfig().Spec.Capabilities[paasns.Name]; !exists {
-		nsQuota = paas.Name
-	} else if !configCapability.QuotaSettings.Clusterwide {
-		nsQuota = nsName
-	} else {
-		nsQuota = clusterWideQuotaName(paasns.Name)
+	ctx, logger := logging.GetLogComponent(ctx, "namespace")
+	for _, nsDef := range nsDefs {
+		var ns *corev1.Namespace
+		if ns, err = backendNamespace(ctx, paas, nsDef.nsName, nsDef.quota, r.Scheme); err != nil {
+			return fmt.Errorf("failure while defining namespace %s: %s", nsDef.nsName, err.Error())
+		} else if err = ensureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
+			return fmt.Errorf("failure while creating namespace %s: %s", nsDef.nsName, err.Error())
+		}
+		logger.Debug().Msgf("namespace %s successfully created with quota %s", nsDef.nsName, nsDef.quota)
 	}
-
-	var ns *corev1.Namespace
-	if ns, err = backendNamespace(ctx, paas, nsName, nsQuota, r.Scheme); err != nil {
-		return fmt.Errorf("failure while defining namespace %s: %s", nsName, err.Error())
-	} else if err = ensureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
-		return fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
-	}
-	return err
+	return nil
 }
