@@ -21,6 +21,8 @@ const (
 	// TypeDegradedPaasNs represents the status used when the PaasNs is deleted
 	// and the finalizer operations are yet to occur.
 	TypeDegradedPaasNs = "Degraded"
+
+	instanceLabel = "app.kubernetes.io/instance"
 )
 
 // PaasNSSpec defines the desired state of PaasNS
@@ -57,7 +59,7 @@ type PaasNS struct {
 func (pns PaasNS) ClonedLabels() map[string]string {
 	labels := map[string]string{}
 	for key, value := range pns.Labels {
-		if key != "app.kubernetes.io/instance" {
+		if key != instanceLabel {
 			labels[key] = value
 		}
 	}
