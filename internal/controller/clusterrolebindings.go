@@ -154,7 +154,7 @@ func addOrUpdateCrb(
 	return changed
 }
 
-func (r *PaasReconciler) reconcileExtraClusterRoleBinding(
+func (r *PaasReconciler) reconcileClusterRoleBinding(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	nsName string,
@@ -184,18 +184,18 @@ func (r *PaasReconciler) reconcileExtraClusterRoleBinding(
 	return nil
 }
 
-func (r *PaasReconciler) reconcileExtraClusterRoleBindings(
+func (r *PaasReconciler) reconcileClusterRoleBindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	nsDefs namespaceDefs,
 ) (err error) {
 	for _, nsDef := range nsDefs {
-		err = r.reconcileExtraClusterRoleBinding(ctx, paas, nsDef.nsName, nsDef.capName)
+		err = r.reconcileClusterRoleBinding(ctx, paas, nsDef.nsName, nsDef.capName)
 		if err != nil {
 			return err
 		}
 	}
-	return nil
+	return r.finalizeCapClusterRoleBindings(ctx, paas)
 }
 
 func subjectsFromCrb(crb rbac.ClusterRoleBinding) []string {
@@ -206,33 +206,61 @@ func subjectsFromCrb(crb rbac.ClusterRoleBinding) []string {
 	return subjects
 }
 
-func (r *PaasReconciler) finalizeExtraClusterRoleBindings(
+func (r *PaasReconciler) finalizeClusterRoleBinding(
+	ctx context.Context,
+	role string,
+	nsRegularExpression regexp.Regexp,
+) error {
+	logger := log.Ctx(ctx)
+	crb, err := getClusterRoleBinding(ctx, r.Client, role)
+	if err != nil {
+		return err
+	}
+	logger.Info().Msgf("subjects before update: %s", strings.Join(subjectsFromCrb(*crb), ", "))
+	changed := updateClusterRoleBindingForRemovedSA(crb,
+		nsRegularExpression, "")
+	logger.Info().Msgf("subjects after update: %s", strings.Join(subjectsFromCrb(*crb), ", "))
+	if !changed {
+		logger.Info().Msg("no changes")
+		return nil
+	}
+	logger.Info().Msgf("updating rolebinding %s after cleaning SA's for '%s'", role, nsRegularExpression.String())
+	return updateClusterRoleBinding(ctx, r.Client, crb)
+}
+
+func (r *PaasReconciler) finalizeCapClusterRoleBindings(ctx context.Context, paas *v1alpha1.Paas) error {
+	for capName, capConfig := range config.GetConfig().Spec.Capabilities {
+		nsRE := regexp.MustCompile(fmt.Sprintf("^%s-%s$", paas.Name, capName))
+		if paasCap, isDefined := paas.Spec.Capabilities[capName]; isDefined && paasCap.Enabled {
+			continue
+		}
+		var roles []string
+		for _, defRoles := range capConfig.DefaultPermissions {
+			roles = append(roles, defRoles...)
+		}
+		for _, extraRoles := range capConfig.ExtraPermissions {
+			roles = append(roles, extraRoles...)
+		}
+		for _, role := range roles {
+			r.finalizeClusterRoleBinding(ctx, role, *nsRE)
+		}
+	}
+	return nil
+}
+
+func (r *PaasReconciler) finalizePaasClusterRoleBindings(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) (err error) {
-	ctx, logger := logging.GetLogComponent(ctx, "clusterrolebinding")
 	var capRoles []string
 	for _, capConfig := range config.GetConfig().Spec.Capabilities {
 		capRoles = append(capRoles, capConfig.ExtraPermissions.Roles()...)
 		capRoles = append(capRoles, capConfig.DefaultPermissions.Roles()...)
 	}
 	for _, role := range capRoles {
-		roleName := fmt.Sprintf(crbNameFormat, role)
-		crb, err := getClusterRoleBinding(ctx, r.Client, role)
+		re := regexp.MustCompile(fmt.Sprintf("^%s-", paas.Name))
+		err := r.finalizeClusterRoleBinding(ctx, role, *re)
 		if err != nil {
-			return err
-		}
-		nsRe := fmt.Sprintf("^%s-", paas.Name)
-		logger.Info().Msgf("subjects before update: %s", strings.Join(subjectsFromCrb(*crb), ", "))
-		changed := updateClusterRoleBindingForRemovedSA(crb,
-			*regexp.MustCompile(nsRe), "")
-		logger.Info().Msgf("subjects after update: %s", strings.Join(subjectsFromCrb(*crb), ", "))
-		if !changed {
-			logger.Info().Msg("no changes")
-			continue
-		}
-		logger.Info().Msgf("updating rolebinding %s after cleaning SA's for '%s'", roleName, nsRe)
-		if err := updateClusterRoleBinding(ctx, r.Client, crb); err != nil {
 			return err
 		}
 	}

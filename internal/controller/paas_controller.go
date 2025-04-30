@@ -231,7 +231,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		r.reconcileNamespaces,
 		r.reconcilePaasRolebindings,
 		r.reconcilePaasSecrets,
-		r.reconcileExtraClusterRoleBindings,
+		r.reconcileClusterRoleBindings,
 	}
 	for _, reconciler := range paasNsReconcilers {
 		if err = reconciler(ctx, paas, nsDefs); err != nil {
@@ -387,7 +387,7 @@ func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) 
 	paasReconcilers := []func(context.Context, *v1alpha1.Paas) error{
 		// r.finalizeClusterQuotas,
 		r.finalizeGroups,
-		r.finalizeExtraClusterRoleBindings,
+		r.finalizePaasClusterRoleBindings,
 		r.finalizeClusterWideQuotas,
 		r.finalizeAppSetCaps,
 	}
