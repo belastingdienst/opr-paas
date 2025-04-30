@@ -56,36 +56,6 @@ type PaasNS struct {
 	Status PaasNsStatus `json:"status,omitempty"`
 }
 
-func (pns PaasNS) ClonedLabels() map[string]string {
-	labels := map[string]string{}
-	for key, value := range pns.Labels {
-		if key != instanceLabel {
-			labels[key] = value
-		}
-	}
-	return labels
-}
-
-func (pns PaasNS) IsItMe(reference metav1.OwnerReference) bool {
-	if pns.APIVersion != reference.APIVersion {
-		return false
-	} else if pns.Kind != reference.Kind {
-		return false
-	} else if pns.Name != reference.Name {
-		return false
-	}
-	return true
-}
-
-func (pns PaasNS) AmIOwner(references []metav1.OwnerReference) bool {
-	for _, reference := range references {
-		if pns.IsItMe(reference) {
-			return true
-		}
-	}
-	return false
-}
-
 func (pns PaasNS) GetConditions() []metav1.Condition {
 	return pns.Status.Conditions
 }
