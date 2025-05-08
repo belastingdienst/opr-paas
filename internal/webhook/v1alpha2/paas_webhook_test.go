@@ -1,22 +1,24 @@
 /*
-Copyright 2024, Tax Administration of The Netherlands.
+Copyright 2025, Tax Administration of The Netherlands.
 Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-package v1alpha1
+package v1alpha2
 
 // Excuse Ginkgo use from revive errors
-//revive:disable:dot-imports
+// revive:disable:dot-imports
 
 import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/quota"
 	. "github.com/onsi/ginkgo/v2"
@@ -30,8 +32,8 @@ import (
 var _ = Describe("Paas Webhook", Ordered, func() {
 	const paasName = "my-paas"
 	var (
-		obj       *v1alpha1.Paas
-		oldObj    *v1alpha1.Paas
+		obj       *v1alpha2.Paas
+		oldObj    *v1alpha2.Paas
 		validator PaasCustomValidator
 		mycrypt   *crypt.Crypt
 		conf      v1alpha1.PaasConfig
@@ -47,8 +49,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 	})
 
 	BeforeEach(func() {
-		obj = &v1alpha1.Paas{}
-		oldObj = &v1alpha1.Paas{}
+		obj = &v1alpha2.Paas{}
+		oldObj = &v1alpha2.Paas{}
 		validator = PaasCustomValidator{k8sClient}
 		conf = v1alpha1.PaasConfig{
 			Spec: v1alpha1.PaasConfigSpec{
@@ -80,9 +82,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 
 	Context("When creating a Paas under Validating Webhook", func() {
 		It("Should allow creation of a valid Paas", func() {
-			obj = &v1alpha1.Paas{
-				Spec: v1alpha1.PaasSpec{
-					Capabilities: v1alpha1.PaasCapabilities{"cap5": v1alpha1.PaasCapability{}},
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{"cap5": v1alpha2.PaasCapability{}},
 				},
 			}
 
@@ -95,12 +97,12 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"name": paasNameValidation}}
 
 			config.SetConfig(conf)
-			obj = &v1alpha1.Paas{
+			obj = &v1alpha2.Paas{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "this-is-invalid",
 				},
-				Spec: v1alpha1.PaasSpec{
-					Capabilities: v1alpha1.PaasCapabilities{"foo": v1alpha1.PaasCapability{}},
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{"foo": v1alpha2.PaasCapability{}},
 				},
 			}
 
@@ -143,7 +145,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
 				conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"namespaceName": test.validation}}
 				config.SetConfig(conf)
-				obj.Spec.Namespaces = []string{test.name}
+				obj.Spec.Namespaces = v1alpha2.PaasNamespaces{
+					test.name: v1alpha2.PaasNamespace{},
+				}
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn).To(BeNil())
 				if test.valid {
@@ -154,9 +158,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 		})
 		It("Should deny creation when a capability is set that is not configured", func() {
-			obj = &v1alpha1.Paas{
-				Spec: v1alpha1.PaasSpec{
-					Capabilities: v1alpha1.PaasCapabilities{"foo": v1alpha1.PaasCapability{}},
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{"foo": v1alpha2.PaasCapability{}},
 				},
 			}
 
@@ -167,11 +171,11 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		It(
 			"Should deny creation and return multiple field errors when multiple unconfigured capabilities are set",
 			func() {
-				obj = &v1alpha1.Paas{
-					Spec: v1alpha1.PaasSpec{
-						Capabilities: v1alpha1.PaasCapabilities{
-							"foo": v1alpha1.PaasCapability{},
-							"bar": v1alpha1.PaasCapability{},
+				obj = &v1alpha2.Paas{
+					Spec: v1alpha2.PaasSpec{
+						Capabilities: v1alpha2.PaasCapabilities{
+							"foo": v1alpha2.PaasCapability{},
+							"bar": v1alpha2.PaasCapability{},
 						},
 					},
 				}
@@ -186,10 +190,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			encrypted, err := mycrypt.Encrypt([]byte("some encrypted string"))
 			Expect(err).NotTo(HaveOccurred())
 
-			obj = &v1alpha1.Paas{
+			obj = &v1alpha2.Paas{
 				ObjectMeta: metav1.ObjectMeta{Name: paasName},
-				Spec: v1alpha1.PaasSpec{
-					SSHSecrets: map[string]string{
+				Spec: v1alpha2.PaasSpec{
+					Secrets: map[string]string{
 						"valid secret":   encrypted,
 						"invalid secret": base64.StdEncoding.EncodeToString([]byte("foo bar baz")),
 						"invalid base64": "foo bar baz",
@@ -205,15 +209,15 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(causes).To(ContainElements(
 				metav1.StatusCause{
 					Type: metav1.CauseTypeFieldValueInvalid,
-					// revive:disable-next-line
-					Message: "Invalid value: \"invalid base64\": cannot be decrypted: illegal base64 data at input byte 8",
-					Field:   "spec.sshSecrets",
+					Message: "Invalid value: \"invalid base64\": cannot be decrypted: " +
+						"illegal base64 data at input byte 8",
+					Field: "spec.secrets",
 				},
 				metav1.StatusCause{
 					Type: metav1.CauseTypeFieldValueInvalid,
-					// revive:disable-next-line
-					Message: "Invalid value: \"invalid secret\": cannot be decrypted: unable to decrypt data with any of the private keys",
-					Field:   "spec.sshSecrets",
+					Message: "Invalid value: \"invalid secret\": cannot be decrypted: " +
+						"unable to decrypt data with any of the private keys",
+					Field: "spec.secrets",
 				},
 			))
 			Expect(causes).To(HaveLen(2))
@@ -228,10 +232,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
 
-			obj = &v1alpha1.Paas{
-				Spec: v1alpha1.PaasSpec{
-					Capabilities: v1alpha1.PaasCapabilities{
-						"foo": v1alpha1.PaasCapability{
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{
+						"foo": v1alpha2.PaasCapability{
 							CustomFields: map[string]string{
 								"bar": "baz",
 								"baz": "qux",
@@ -249,9 +253,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(causes).To(ContainElements(
 				metav1.StatusCause{
 					Type: metav1.CauseTypeFieldValueInvalid,
-					//revive:disable-next-line
-					Message: "Invalid value: \"custom_fields\": custom field baz is not configured in capability config",
-					Field:   "spec.capabilities[foo]",
+					Message: "Invalid value: \"custom_fields\": " +
+						"custom field baz is not configured in capability config",
+					Field: "spec.capabilities[foo]",
 				},
 			))
 		})
@@ -265,10 +269,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
 
-			obj = &v1alpha1.Paas{
-				Spec: v1alpha1.PaasSpec{
-					Capabilities: v1alpha1.PaasCapabilities{
-						"foo": v1alpha1.PaasCapability{},
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{
+						"foo": v1alpha2.PaasCapability{},
 					},
 				},
 			}
@@ -297,10 +301,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
 
-			obj = &v1alpha1.Paas{
-				Spec: v1alpha1.PaasSpec{
-					Capabilities: v1alpha1.PaasCapabilities{
-						"foo": v1alpha1.PaasCapability{
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{
+						"foo": v1alpha2.PaasCapability{
 							CustomFields: map[string]string{
 								"bar": "notinteger123",
 								"baz": "word",
@@ -324,6 +328,35 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			))
 		})
 
+		It("Should deny creation when a namespace group does not match any Paas group", func() {
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Groups: v1alpha2.PaasGroups{
+						"group1": {},
+						"group2": {},
+					},
+					Namespaces: v1alpha2.PaasNamespaces{
+						"foo": {
+							Groups: []string{"group2", "group3"},
+						},
+					},
+				},
+			}
+			_, err := validator.ValidateCreate(ctx, obj)
+
+			var serr *apierrors.StatusError
+			Expect(errors.As(err, &serr)).To(BeTrue())
+			causes := serr.Status().Details.Causes
+			Expect(causes).To(HaveLen(1))
+			Expect(causes).To(ContainElements(
+				metav1.StatusCause{
+					Type:    metav1.CauseTypeFieldValueInvalid,
+					Message: "Invalid value: \"group3\": does not exist in paas groups (group1, group2)",
+					Field:   "spec.namespaces[foo].groups",
+				},
+			))
+		})
+
 		It("Should validate group names", func() {
 			conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"groupName": "^[a-z0-9-]{1,63}$"}}
 			config.SetConfig(conf)
@@ -338,9 +371,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				{name: "A" + validChars, valid: false},
 				{name: strings.Repeat(validChars, 3)[0:64], valid: false},
 			} {
-				validGroupNamePaas := &v1alpha1.Paas{
-					Spec: v1alpha1.PaasSpec{
-						Groups: map[string]v1alpha1.PaasGroup{
+				validGroupNamePaas := &v1alpha2.Paas{
+					Spec: v1alpha2.PaasSpec{
+						Groups: map[string]v1alpha2.PaasGroup{
 							test.name: {
 								Users: []string{"bar"},
 							},
@@ -360,9 +393,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should warn when a group contains both users and a query", func() {
-			obj = &v1alpha1.Paas{
-				Spec: v1alpha1.PaasSpec{
-					Groups: map[string]v1alpha1.PaasGroup{
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Groups: map[string]v1alpha2.PaasGroup{
 						"foo": {
 							Users: []string{"bar"},
 							Query: "baz",
@@ -378,9 +411,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should not warn when a group contains just users", func() {
-			obj = &v1alpha1.Paas{
-				Spec: v1alpha1.PaasSpec{
-					Groups: map[string]v1alpha1.PaasGroup{
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Groups: map[string]v1alpha2.PaasGroup{
 						"foo": {
 							Users: []string{"bar"},
 						},
@@ -397,10 +430,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{}
 			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
 
-			obj = &v1alpha1.Paas{
-				Spec: v1alpha1.PaasSpec{
-					Capabilities: v1alpha1.PaasCapabilities{
-						"foo": v1alpha1.PaasCapability{
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{
+						"foo": v1alpha2.PaasCapability{
 							Quota: quota.Quota{
 								corev1.ResourceLimitsCPU:      resource.MustParse("2"),
 								corev1.ResourceRequestsCPU:    resource.MustParse("2"),
@@ -437,11 +470,11 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
 
-			obj = &v1alpha1.Paas{
-				Spec: v1alpha1.PaasSpec{
-					Capabilities: v1alpha1.PaasCapabilities{
-						"foo": v1alpha1.PaasCapability{ExtraPermissions: true},
-						"bar": v1alpha1.PaasCapability{ExtraPermissions: true},
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{
+						"foo": v1alpha2.PaasCapability{ExtraPermissions: true},
+						"bar": v1alpha2.PaasCapability{ExtraPermissions: true},
 					},
 				},
 			}
@@ -449,15 +482,17 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			warnings, err := validator.ValidateCreate(ctx, obj)
 			Expect(err).To(Not(HaveOccurred()))
 			Expect(warnings).To(HaveLen(1))
-			//revive:disable-next-line
-			Expect(warnings[0]).To(Equal("spec.capabilities[bar].extra_permissions capability does not have extra permissions configured"))
+			Expect(warnings[0]).To(
+				Equal("spec.capabilities[bar].extra_permissions capability " +
+					"does not have extra permissions configured"),
+			)
 		})
 	})
 
 	Context("When updating a Paas under Validating Webhook", func() {
 		It("Should deny creation when a capability is set that is not configured", func() {
-			obj = &v1alpha1.Paas{Spec: v1alpha1.PaasSpec{
-				Capabilities: v1alpha1.PaasCapabilities{"foo": v1alpha1.PaasCapability{}},
+			obj = &v1alpha2.Paas{Spec: v1alpha2.PaasSpec{
+				Capabilities: v1alpha2.PaasCapabilities{"foo": v1alpha2.PaasCapability{}},
 			}}
 
 			Expect(validator.ValidateUpdate(ctx, nil, obj)).Error().
@@ -467,9 +502,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		It(
 			"Should generate a warning when updating a Paas with a group that contains both users and a queries",
 			func() {
-				obj = &v1alpha1.Paas{
-					Spec: v1alpha1.PaasSpec{
-						Groups: map[string]v1alpha1.PaasGroup{
+				obj = &v1alpha2.Paas{
+					Spec: v1alpha2.PaasSpec{
+						Groups: map[string]v1alpha2.PaasGroup{
 							"foo": {
 								Users: []string{"bar"},
 								Query: "baz",
@@ -486,9 +521,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		)
 
 		It("Should not warn when updating a Paas with a group that contains just users", func() {
-			obj = &v1alpha1.Paas{
-				Spec: v1alpha1.PaasSpec{
-					Groups: map[string]v1alpha1.PaasGroup{
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Groups: map[string]v1alpha2.PaasGroup{
 						"foo": {
 							Users: []string{"bar"},
 						},
@@ -501,3 +536,25 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 	})
 })
+
+func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte, err error) {
+	tmpFileError := "failed to get new tmp private key file: %w"
+	privateKeyFile, err := os.CreateTemp("", "private")
+	if err != nil {
+		return nil, nil, fmt.Errorf(tmpFileError, err)
+	}
+	publicKeyFile, err := os.CreateTemp("", "public")
+	if err != nil {
+		return nil, nil, fmt.Errorf(tmpFileError, err)
+	}
+	myCrypt, err = crypt.NewGeneratedCrypt(privateKeyFile.Name(), publicKeyFile.Name(), context)
+	if err != nil {
+		return nil, nil, fmt.Errorf(tmpFileError, err)
+	}
+	privateKey, err = os.ReadFile(privateKeyFile.Name())
+	if err != nil {
+		return nil, nil, errors.New("failed to read private key from file")
+	}
+
+	return myCrypt, privateKey, nil
+}

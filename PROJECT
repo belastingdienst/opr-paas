@@ -20,6 +20,9 @@ resources:
   version: v1alpha1
   webhooks:
     validation: true
+    conversion: true
+    spoke:
+      - v1alpha2
     webhookVersion: v1
 - api:
     crdVersion: v1
@@ -29,6 +32,12 @@ resources:
   kind: PaasNS
   path: github.com/belastingdienst/opr-paas/api/v1alpha1
   version: v1alpha1
+  webhooks:
+    validation: true
+    #conversion: true
+    spoke:
+      - v1alpha2
+    webhookVersion: v1
 - api:
     crdVersion: v1
   controller: true
@@ -36,4 +45,25 @@ resources:
   kind: PaasConfig
   path: github.com/belastingdienst/opr-paas/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+  controller: true
+  domain: cpet.belastingdienst.nl
+  kind: PaasConfig
+  path: github.com/belastingdienst/opr-paas/api/v1alpha2
+  version: v1alpha2
+- api:
+    crdVersion: v1
+  domain: cpet.belastingdienst.nl
+  kind: Paas
+  path: github.com/belastingdienst/opr-paas/api/v1alpha2
+  version: v1alpha2
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: cpet.belastingdienst.nl
+  kind: PaasNS
+  path: github.com/belastingdienst/opr-paas/api/v1alpha2
+  version: v1alpha2
 version: "3"
