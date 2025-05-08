@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 func patchAppSet(ctx context.Context, newAppSet *argocd.ApplicationSet) {
@@ -156,6 +157,65 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			Scheme: k8sClient.Scheme(),
 		}
 	})
+
+	When("requesting schema from Reconciler", func() {
+		It("should return a schema", func() {
+			Expect(reconciler.getScheme()).NotTo(BeNil())
+			Expect(reconciler.getScheme()).To(Equal(k8sClient.Scheme()))
+		})
+	})
+
+	// getPaasFromRequest
+	When("getting a Paas from a request", func() {
+		It("should return nil when paas does not exist", func() {
+			paasName = paasRequestor + "-request-does-not-exist"
+			paas.Name = paasName
+			request.Name = paasName
+			request.NamespacedName = types.NamespacedName{Name: paasName}
+			paas, err := reconciler.getPaasFromRequest(ctx, request)
+			// Expect(err).To(HaveOccurred())
+			// Expect(err.Error()).To(MatchRegexp(`paas.cpet.belastingdienst.nl .* not found`))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(paas).To(BeNil())
+		})
+
+		It("should return nil when paas is being deleted", func() {
+			var gracePeriodSeconds = int64(2)
+			paasName = paasRequestor + "-request-being-deleted"
+			paas.Name = paasName
+			assurePaas(ctx, paas)
+			err := reconciler.Delete(ctx, paas, &client.DeleteOptions{GracePeriodSeconds: &gracePeriodSeconds})
+			Expect(err).NotTo(HaveOccurred())
+			request.Name = paasName
+			request.NamespacedName = types.NamespacedName{Name: paasName}
+			paas, err := reconciler.getPaasFromRequest(ctx, request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(paas).To(BeNil())
+		})
+
+		It("should properly get a Paas from the request", func() {
+			paasName = paasRequestor + "-request"
+			paas.Name = paasName
+			assurePaas(ctx, paas)
+			request.Name = paasName
+			request.NamespacedName = types.NamespacedName{Name: paasName}
+			paas, err := reconciler.getPaasFromRequest(ctx, request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(paas).NotTo(BeNil())
+			Expect(paas.Name).To(Equal(paasName))
+			Expect(controllerutil.ContainsFinalizer(paas, paasFinalizer)).To(BeTrue())
+		})
+	})
+
+	// setFinalizing
+	// finalizePaas
+	// removeFinalizer
+	// Reconcile (getPaasFromRequest, paas==nil cannot occur, paasReconcilers return err, nsDefsFromPaas returns error, paasNsReconcilers returns error, ensureAppSetCaps returns error)
+	// setErrorCondition
+	// paasFromPaasNs
+	// allPaases
+	// SetupWithManager
+	// finalizePaas
 
 	When("reconciling a Paas with argocd capability", func() {
 		It("should not return an error", func() {
