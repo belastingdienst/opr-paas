@@ -234,8 +234,8 @@ func (r *PaasNSReconciler) reconcileRolebindings(
 		// Convert the groupKey to a groupName to map the rolebinding subjects to a group
 		groupName := paas.GroupKey2GroupName(groupKey)
 		for _, mappedRole := range config.GetConfig().Spec.RoleMappings.Roles(groupRoles) {
-			if role, exists := roles[mappedRole]; exists {
-				roles[mappedRole] = append(role, groupName)
+			if groups, exists := roles[mappedRole]; exists {
+				roles[mappedRole] = append(groups, groupName)
 			} else {
 				roles[mappedRole] = []string{groupName}
 			}

@@ -94,8 +94,8 @@ func (pns PaasNS) AmIOwner(references []metav1.OwnerReference) bool {
 	return false
 }
 
-func (pns PaasNS) GetConditions() []metav1.Condition {
-	return pns.Status.Conditions
+func (pns *PaasNS) GetConditions() *[]metav1.Condition {
+	return &pns.Status.Conditions
 }
 
 // +kubebuilder:object:root=true
