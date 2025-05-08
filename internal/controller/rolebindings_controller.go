@@ -50,7 +50,7 @@ func ensureRoleBinding(
 	}
 	var changed bool
 	if !paas.AmIOwner(found.OwnerReferences) {
-		if err = controllerutil.SetControllerReference(paas, found, r.GetScheme()); err != nil {
+		if err = controllerutil.SetControllerReference(paas, found, r.getScheme()); err != nil {
 			logger.Err(err).Msg("error setting rolebinding owner")
 			return err
 		}
@@ -139,7 +139,7 @@ func backendRoleBinding(
 		},
 	}
 	logger.Info().Msg("setting Owner")
-	if err := controllerutil.SetControllerReference(paas, rb, r.GetScheme()); err != nil {
+	if err := controllerutil.SetControllerReference(paas, rb, r.getScheme()); err != nil {
 		return rb, err
 	}
 
