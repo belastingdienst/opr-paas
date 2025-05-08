@@ -92,7 +92,19 @@ func (r *PaasReconciler) getPaasFromRequest(
 
 	if paas.GetDeletionTimestamp() != nil {
 		logger.Info().Msg("paas marked for deletion")
-		return nil, r.updateFinalizer(ctx, paas)
+		if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
+			return nil, nil
+		}
+		for _, finalizationFunc := range []func(context.Context, *v1alpha1.Paas) error{
+			r.setFinalizing,
+			r.finalizePaas,
+			r.removeFinalizer,
+		} {
+			if err := finalizationFunc(ctx, paas); err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
 	}
 
 	// Started reconciling, reset status
@@ -134,53 +146,52 @@ func (r *PaasReconciler) getPaasFromRequest(
 	return paas, nil
 }
 
-func (r *PaasReconciler) updateFinalizer(
+func (r *PaasReconciler) setFinalizing(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
 	logger := log.Ctx(ctx)
 
-	if controllerutil.ContainsFinalizer(paas, paasFinalizer) {
-		logger.Info().Msg("finalizing Paas")
-		// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
-		meta.SetStatusCondition(paas.GetConditions(), metav1.Condition{
-			Type:   v1alpha1.TypeDegradedPaas,
-			Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: paas.GetGeneration(),
-			Message: fmt.Sprintf("Performing finalizer operations for Paas: %s ", paas.GetName()),
-		})
+	logger.Info().Msg("finalizing Paas")
+	// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
+	meta.SetStatusCondition(paas.GetConditions(), metav1.Condition{
+		Type:   v1alpha1.TypeDegradedPaas,
+		Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: paas.GetGeneration(),
+		Message: fmt.Sprintf("Performing finalizer operations for Paas: %s ", paas.GetName()),
+	})
 
-		if err := r.Status().Update(ctx, paas); err != nil {
-			logger.Err(err).Msg("Failed to update Paas status")
-			return err
-		}
-		// Run finalization logic for paasFinalizer. If the
-		// finalization logic fails, don't remove the finalizer so
-		// that we can retry during the next reconciliation.
-		if err := r.finalizePaas(ctx, paas); err != nil {
-			return err
-		}
-
-		meta.SetStatusCondition(paas.GetConditions(), metav1.Condition{
-			Type:   v1alpha1.TypeDegradedPaas,
-			Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: paas.GetGeneration(),
-			Message: fmt.Sprintf("Finalizer operations for Paas %s name were successfully accomplished",
-				paas.GetName()),
-		})
-
-		if err := r.Status().Update(ctx, paas); err != nil {
-			logger.Err(err).Msg("Failed to update Paas status")
-			return err
-		}
-
-		logger.Info().Msg("removing finalizer")
-		// Remove paasFinalizer. Once all finalizers have been
-		// removed, the object will be deleted.
-		controllerutil.RemoveFinalizer(paas, paasFinalizer)
-		if err := r.Update(ctx, paas); err != nil {
-			return err
-		}
-		logger.Info().Msg("finalization finished")
+	if err := r.Status().Update(ctx, paas); err != nil {
+		logger.Err(err).Msg("Failed to update Paas status")
+		return err
 	}
+	return nil
+}
+
+func (r *PaasReconciler) removeFinalizer(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+) error {
+	logger := log.Ctx(ctx)
+	meta.SetStatusCondition(paas.GetConditions(), metav1.Condition{
+		Type:   v1alpha1.TypeDegradedPaas,
+		Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: paas.GetGeneration(),
+		Message: fmt.Sprintf("Finalizer operations for Paas %s name were successfully accomplished",
+			paas.GetName()),
+	})
+
+	if err := r.Status().Update(ctx, paas); err != nil {
+		logger.Err(err).Msg("Failed to update Paas status")
+		return err
+	}
+
+	logger.Info().Msg("removing finalizer")
+	// Remove paasFinalizer. Once all finalizers have been
+	// removed, the object will be deleted.
+	controllerutil.RemoveFinalizer(paas, paasFinalizer)
+	if err := r.Update(ctx, paas); err != nil {
+		return err
+	}
+	logger.Info().Msg("finalization finished")
 
 	return nil
 }
