@@ -164,6 +164,16 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		})
 	})
 
+	// getPaasFromRequest
+	// updateFinalizer
+	// Reconcile (getPaasFromRequest, paas==nil cannot occur, paasReconcilers return err, nsDefsFromPaas returns error, paasNsReconcilers returns error, ensureAppSetCaps returns error)
+	// setErrorCondition
+	// paasFromPaasNs
+	// allPaases
+	// SetupWithManager
+	// finalizePaas
+	//
+
 	When("reconciling a Paas with argocd capability", func() {
 		It("should not return an error", func() {
 			paasName = paasRequestor + "-normal"
