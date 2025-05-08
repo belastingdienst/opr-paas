@@ -37,7 +37,7 @@ override:
   #- path: ^pkg/lib/foo$
   #  threshold: 100
   - path: ^internal/controller$
-    threshold: 42
+    threshold: 73
   - path: ^api/v1alpha1$
     threshold: 68
   - path: ^api/v1alpha2$
@@ -81,7 +81,7 @@ override:
   - path: internal/controller/namespaces.go
     threshold: 33
   - path: internal/controller/paas_controller.go
-    threshold: 27
+    threshold: 61
   - path: internal/controller/paasconfig_controller.go
     threshold: 0
   - path: internal/controller/paasnamespaces.go
