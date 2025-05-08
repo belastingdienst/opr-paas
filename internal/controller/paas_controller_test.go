@@ -207,7 +207,9 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		})
 	})
 
-	// updateFinalizer
+	// setFinalizing
+	// finalizePaas
+	// removeFinalizer
 	// Reconcile (getPaasFromRequest, paas==nil cannot occur, paasReconcilers return err, nsDefsFromPaas returns error, paasNsReconcilers returns error, ensureAppSetCaps returns error)
 	// setErrorCondition
 	// paasFromPaasNs
