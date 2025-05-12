@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -73,6 +74,25 @@ func assurePaas(ctx context.Context, newPaas *api.Paas) {
 	Expect(err.Error()).To(MatchRegexp(`paas.cpet.belastingdienst.nl .* not found`))
 	err = k8sClient.Create(ctx, newPaas)
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func getPaas(ctx context.Context, paasName string) *api.Paas {
+	paas := &api.Paas{}
+	namespacedName := types.NamespacedName{
+		Name: paasName,
+	}
+	err := k8sClient.Get(ctx, namespacedName, paas)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(paas).NotTo(BeNil())
+	return paas
+}
+
+func getConditionsFromPaas(paas *api.Paas) map[string]metav1.Condition {
+	conditions := map[string]metav1.Condition{}
+	for _, condition := range paas.Status.Conditions {
+		conditions[condition.Type] = condition
+	}
+	return conditions
 }
 
 var _ = Describe("Paas Controller", Ordered, func() {
@@ -207,9 +227,53 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		})
 	})
 
-	// setFinalizing
-	// finalizePaas
-	// removeFinalizer
+	When("finalizing a Paas", func() {
+		// setFinalizing
+		It("should succesfully set state to finalizing", func() {
+			var err error
+			paasName = paasRequestor + "-set-finalizer"
+			paas.Name = paasName
+			assurePaas(ctx, paas)
+			request.Name = paasName
+			request.NamespacedName = types.NamespacedName{Name: paasName}
+			paas, err := reconciler.getPaasFromRequest(ctx, request)
+			Expect(err).NotTo(HaveOccurred())
+			preConditions := getConditionsFromPaas(paas)
+			Expect(preConditions).To(HaveKey(api.TypeReadyPaas))
+			Expect(preConditions).NotTo(HaveKey(api.TypeDegradedPaas))
+
+			err = reconciler.setFinalizing(ctx, paas)
+			Expect(err).NotTo(HaveOccurred())
+			paas = getPaas(ctx, paasName)
+
+			postConditions := getConditionsFromPaas(paas)
+			Expect(postConditions).To(HaveKey(api.TypeDegradedPaas))
+			finalizingCondition := postConditions[api.TypeDegradedPaas]
+			Expect(finalizingCondition.Status).To(Equal(metav1.ConditionUnknown))
+			Expect(finalizingCondition.Reason).To(Equal("Finalizing"))
+			Expect(finalizingCondition.Message).To(Equal(fmt.Sprintf("Performing finalizer operations for Paas: %s ", paasName)))
+		})
+
+		// finalizePaas skipped (only calling sub methods which are tested elsewhere)
+
+		// removeFinalizer
+		It("should successfully remove the finalizer", func() {
+			var err error
+			paasName = paasRequestor + "-set-finalizer"
+			paas.Name = paasName
+			assurePaas(ctx, paas)
+			request.Name = paasName
+			request.NamespacedName = types.NamespacedName{Name: paasName}
+			paas, err := reconciler.getPaasFromRequest(ctx, request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(paas.Finalizers).To(ContainElement(paasFinalizer))
+
+			err = reconciler.removeFinalizer(ctx, paas)
+			Expect(err).NotTo(HaveOccurred())
+			paas = getPaas(ctx, paasName)
+			Expect(paas.Finalizers).NotTo(ContainElement(paasFinalizer))
+		})
+	})
 	// Reconcile (getPaasFromRequest, paas==nil cannot occur, paasReconcilers return err, nsDefsFromPaas returns error, paasNsReconcilers returns error, ensureAppSetCaps returns error)
 	// setErrorCondition
 	// paasFromPaasNs
