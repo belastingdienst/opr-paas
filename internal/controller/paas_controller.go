@@ -254,10 +254,10 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	}
 
 	// Reconciling succeeded, set appropriate Condition
-	return ctrl.Result{}, r.setSuccesfullCondition(ctx, paas)
+	return ctrl.Result{}, r.setSuccessfullCondition(ctx, paas)
 }
 
-func (r *PaasReconciler) setSuccesfullCondition(ctx context.Context, paas *v1alpha1.Paas) error {
+func (r *PaasReconciler) setSuccessfullCondition(ctx context.Context, paas *v1alpha1.Paas) error {
 	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{
 		Type:   v1alpha1.TypeReadyPaas,
 		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: paas.Generation,

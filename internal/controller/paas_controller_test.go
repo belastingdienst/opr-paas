@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -227,11 +228,11 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		})
 	})
 
-	When("finalizing a Paas", func() {
+	When("setting state on a Paas", func() {
 		// setFinalizing
-		It("should succesfully set state to finalizing", func() {
+		It("can set state to finalizing", func() {
 			var err error
-			paasName = paasRequestor + "-set-finalizer"
+			paasName = paasRequestor + "-set-finalizing"
 			paas.Name = paasName
 			assurePaas(ctx, paas)
 			request.Name = paasName
@@ -253,13 +254,82 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			Expect(finalizingCondition.Reason).To(Equal("Finalizing"))
 			Expect(finalizingCondition.Message).To(Equal(fmt.Sprintf("Performing finalizer operations for Paas: %s ", paasName)))
 		})
+		// setErrorCondition
+		It("can set and reset an error and set finalizing state", func() {
+			var err error
+			paasName = paasRequestor + "-set-error"
+			paas.Name = paasName
+			assurePaas(ctx, paas)
+			request.Name = paasName
+			request.NamespacedName = types.NamespacedName{Name: paasName}
+			paas, err := reconciler.getPaasFromRequest(ctx, request)
+			Expect(err).NotTo(HaveOccurred())
+			preConditions := getConditionsFromPaas(paas)
+			Expect(preConditions).To(HaveKey(api.TypeReadyPaas))
+			Expect(preConditions).NotTo(HaveKey(api.TypeHasErrorsPaas))
+			Expect(preConditions).NotTo(HaveKey(api.TypeDegradedPaas))
+			preReadyCondition := preConditions[api.TypeReadyPaas]
+			Expect(preReadyCondition.Status).To(Equal(metav1.ConditionUnknown))
+			Expect(preReadyCondition.Reason).To(Equal("Reconciling"))
+			Expect(preReadyCondition.Message).To(Equal("Starting reconciliation"))
+
+			myError := errors.New("my custom error")
+			err = reconciler.setErrorCondition(ctx, paas, myError)
+			Expect(err).NotTo(HaveOccurred())
+			paas = getPaas(ctx, paasName)
+
+			errorConditions := getConditionsFromPaas(paas)
+			Expect(errorConditions).To(HaveKey(api.TypeReadyPaas))
+			errorReadyCondition := errorConditions[api.TypeReadyPaas]
+			Expect(errorReadyCondition.Status).To(Equal(metav1.ConditionFalse))
+			Expect(errorReadyCondition.Reason).To(Equal("ReconcilingError"))
+			Expect(errorReadyCondition.Message).To(Equal(fmt.Sprintf("Reconciling (%s) failed", paasName)))
+			Expect(errorConditions).To(HaveKey(api.TypeHasErrorsPaas))
+			errorErrorsCondition := errorConditions[api.TypeHasErrorsPaas]
+			Expect(errorErrorsCondition.Status).To(Equal(metav1.ConditionTrue))
+			Expect(errorErrorsCondition.Reason).To(Equal("ReconcilingError"))
+			Expect(errorErrorsCondition.Message).To(Equal(myError.Error()))
+			Expect(errorConditions).NotTo(HaveKey(api.TypeDegradedPaas))
+
+			err = reconciler.setSuccessfullCondition(ctx, paas)
+			Expect(err).NotTo(HaveOccurred())
+			paas = getPaas(ctx, paasName)
+
+			resetConditions := getConditionsFromPaas(paas)
+			Expect(resetConditions).To(HaveKey(api.TypeReadyPaas))
+			resetReadyCondition := resetConditions[api.TypeReadyPaas]
+			Expect(resetReadyCondition.Status).To(Equal(metav1.ConditionTrue))
+			Expect(resetReadyCondition.Reason).To(Equal("Reconciling"))
+			Expect(resetReadyCondition.Message).To(Equal(fmt.Sprintf("Reconciled (%s) successfully", paasName)))
+			Expect(resetConditions).To(HaveKey(api.TypeHasErrorsPaas))
+			resetErrorsCondition := resetConditions[api.TypeHasErrorsPaas]
+			Expect(resetErrorsCondition.Status).To(Equal(metav1.ConditionFalse))
+			Expect(resetErrorsCondition.Reason).To(Equal("Reconciling"))
+			Expect(resetErrorsCondition.Message).To(Equal(fmt.Sprintf("Reconciled (%s) successfully", paasName)))
+			Expect(resetConditions).NotTo(HaveKey(api.TypeDegradedPaas))
+
+			err = reconciler.setFinalizing(ctx, paas)
+			Expect(err).NotTo(HaveOccurred())
+			paas = getPaas(ctx, paasName)
+
+			finalizingConditions := getConditionsFromPaas(paas)
+			Expect(finalizingConditions).To(HaveKey(api.TypeDegradedPaas))
+			finalizingCondition := finalizingConditions[api.TypeDegradedPaas]
+			Expect(finalizingCondition.Status).To(Equal(metav1.ConditionUnknown))
+			Expect(finalizingCondition.Reason).To(Equal("Finalizing"))
+			Expect(finalizingCondition.Message).To(Equal(fmt.Sprintf("Performing finalizer operations for Paas: %s ", paasName)))
+		})
+	})
+
+	When("finalizing a Paas", func() {
+		// setFinalizing > see 'setting state' above
 
 		// finalizePaas skipped (only calling sub methods which are tested elsewhere)
 
 		// removeFinalizer
 		It("should successfully remove the finalizer", func() {
 			var err error
-			paasName = paasRequestor + "-set-finalizer"
+			paasName = paasRequestor + "-remove-finalizer"
 			paas.Name = paasName
 			assurePaas(ctx, paas)
 			request.Name = paasName
@@ -274,12 +344,43 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			Expect(paas.Finalizers).NotTo(ContainElement(paasFinalizer))
 		})
 	})
-	// Reconcile (getPaasFromRequest, paas==nil cannot occur, paasReconcilers return err, nsDefsFromPaas returns error, paasNsReconcilers returns error, ensureAppSetCaps returns error)
-	// setErrorCondition
-	// paasFromPaasNs
-	// allPaases
-	// SetupWithManager
-	// finalizePaas
+
+	// Reconcile
+	When("reconciling a Paas", func() {
+		// getPaasFromRequest
+		It("should return nil when paas does not exist", func() {
+		})
+		// paas==nil
+		It("should set requeue timeout when PaasConfig is not set", func() {
+		})
+		// paasReconcilers return err
+		It("should return error when a paasReconciler method returns an error", func() {
+		})
+		// nsDefsFromPaas returns error
+		It("should return error when nsDefsFromPaas method returns an error", func() {
+		})
+		// paasNsReconcilers returns error
+		It("should return error when a paasNsReconciler method returns an error", func() {
+		})
+		// ensureAppSetCaps returns error
+		It("should return error when ensureAppSetCaps method returns an error", func() {
+		})
+	})
+	When("reconciling a paasns", func() {
+		// paasFromPaasNs
+		It("should successfully retrieve paas from paasns", func() {
+		})
+	})
+	When("initializing", func() {
+		// SetupWithManager
+		It("should properly setup the reconciler with a manager", func() {
+		})
+	})
+	When("reconfiguring", func() {
+		// allPaases
+		It("should successfully reschedule all Paas'es", func() {
+		})
+	})
 
 	When("reconciling a Paas with argocd capability", func() {
 		It("should not return an error", func() {
