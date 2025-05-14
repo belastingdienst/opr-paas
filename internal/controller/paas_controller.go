@@ -204,11 +204,6 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	ctx, logger := logging.SetControllerLogger(ctx, paas, r.Scheme, req)
 
 	if paas, err = r.getPaasFromRequest(ctx, req); err != nil {
-		// TODO(portly-halicore-76) move to admission webhook once available
-		// Don't requeue that often when no config is found
-		if strings.Contains(err.Error(), noConfigFoundMsg) {
-			return ctrl.Result{RequeueAfter: requeueTimeout}, nil
-		}
 		logger.Err(err).Msg("could not get Paas from k8s")
 		return ctrl.Result{}, err
 	}

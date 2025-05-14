@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/fields"
@@ -47,47 +48,6 @@ func patchAppSet(ctx context.Context, newAppSet *argocd.ApplicationSet) {
 	}
 }
 
-func assureNamespace(ctx context.Context, namespaceName string) {
-	oldNs := &corev1.Namespace{}
-	namespacedName := types.NamespacedName{
-		Name: namespaceName,
-	}
-	err := k8sClient.Get(ctx, namespacedName, oldNs)
-	if err == nil {
-		return
-	}
-	Expect(err.Error()).To(MatchRegexp(`namespaces .* not found`))
-	err = k8sClient.Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: namespaceName},
-	})
-	Expect(err).NotTo(HaveOccurred())
-}
-
-func assurePaas(ctx context.Context, newPaas *api.Paas) {
-	oldPaas := &api.Paas{}
-	namespacedName := types.NamespacedName{
-		Name: newPaas.Name,
-	}
-	err := k8sClient.Get(ctx, namespacedName, oldPaas)
-	if err == nil {
-		return
-	}
-	Expect(err.Error()).To(MatchRegexp(`paas.cpet.belastingdienst.nl .* not found`))
-	err = k8sClient.Create(ctx, newPaas)
-	Expect(err).NotTo(HaveOccurred())
-}
-
-func getPaas(ctx context.Context, paasName string) *api.Paas {
-	paas := &api.Paas{}
-	namespacedName := types.NamespacedName{
-		Name: paasName,
-	}
-	err := k8sClient.Get(ctx, namespacedName, paas)
-	Expect(err).NotTo(HaveOccurred())
-	Expect(paas).NotTo(BeNil())
-	return paas
-}
-
 func getConditionsFromPaas(paas *api.Paas) map[string]metav1.Condition {
 	conditions := map[string]metav1.Condition{}
 	for _, condition := range paas.Status.Conditions {
@@ -102,6 +62,9 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		capAppSetNamespace = "asns"
 		capAppSetName      = "argoas"
 		capName            = "argocd"
+		paasSystem         = "paasnssystem"
+		paasPkSecret       = "paasns-pk-secret"
+		paasWithArgoCDName = paasRequestor + "-with-argocd"
 	)
 	var (
 		paas         *api.Paas
@@ -111,10 +74,22 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		myConfig     api.PaasConfig
 		paasName     = paasRequestor
 		capNamespace = paasName + "-" + capName
+		privateKey   []byte
+		mycrypt      *crypt.Crypt
+		paasSecret   string
 	)
 	ctx := context.Background()
 
 	BeforeAll(func() {
+		var err error
+		assureNamespace(ctx, paasSystem)
+		mycrypt, privateKey, err = newGeneratedCrypt(paasName)
+		if err != nil {
+			Fail(err.Error())
+		}
+		createPaasPrivateKeySecret(ctx, paasSystem, paasPkSecret, privateKey)
+		paasSecret, err = mycrypt.Encrypt([]byte("paaSecret"))
+		Expect(err).NotTo(HaveOccurred())
 		assureNamespace(ctx, "gsns")
 		appSet = &argocd.ApplicationSet{
 			ObjectMeta: metav1.ObjectMeta{
@@ -128,6 +103,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 	})
 
 	BeforeEach(func() {
+		paasName = paasRequestor
 		paas = &api.Paas{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: paasName,
@@ -160,7 +136,11 @@ var _ = Describe("Paas Controller", Ordered, func() {
 						},
 					},
 				},
-				Debug:           false,
+				Debug: false,
+				DecryptKeysSecret: api.NamespacedName{
+					Name:      paasPkSecret,
+					Namespace: paasSystem,
+				},
 				ManagedByLabel:  "argocd.argoproj.io/manby",
 				ManagedBySuffix: "argocd",
 				RequestorLabel:  "o.lbl",
@@ -252,7 +232,8 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			finalizingCondition := postConditions[api.TypeDegradedPaas]
 			Expect(finalizingCondition.Status).To(Equal(metav1.ConditionUnknown))
 			Expect(finalizingCondition.Reason).To(Equal("Finalizing"))
-			Expect(finalizingCondition.Message).To(Equal(fmt.Sprintf("Performing finalizer operations for Paas: %s ", paasName)))
+			Expect(finalizingCondition.Message).To(Equal(
+				fmt.Sprintf("Performing finalizer operations for Paas: %s ", paasName)))
 		})
 		// setErrorCondition
 		It("can set and reset an error and set finalizing state", func() {
@@ -317,15 +298,14 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			finalizingCondition := finalizingConditions[api.TypeDegradedPaas]
 			Expect(finalizingCondition.Status).To(Equal(metav1.ConditionUnknown))
 			Expect(finalizingCondition.Reason).To(Equal("Finalizing"))
-			Expect(finalizingCondition.Message).To(Equal(fmt.Sprintf("Performing finalizer operations for Paas: %s ", paasName)))
+			Expect(finalizingCondition.Message).To(Equal(
+				fmt.Sprintf("Performing finalizer operations for Paas: %s ", paasName)))
 		})
 	})
 
 	When("finalizing a Paas", func() {
 		// setFinalizing > see 'setting state' above
-
 		// finalizePaas skipped (only calling sub methods which are tested elsewhere)
-
 		// removeFinalizer
 		It("should successfully remove the finalizer", func() {
 			var err error
@@ -344,28 +324,78 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			Expect(paas.Finalizers).NotTo(ContainElement(paasFinalizer))
 		})
 	})
-
 	// Reconcile
 	When("reconciling a Paas", func() {
-		// getPaasFromRequest
+		It("should succeed for normal paas", func() {
+			var err error
+			var result controllerruntime.Result
+			request.Name = paasName
+			request.NamespacedName = types.NamespacedName{Name: paasName}
+			paas.Spec.SSHSecrets = map[string]string{"validSecret": paasSecret}
+			result, err = reconciler.Reconcile(ctx, request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(controllerruntime.Result{}))
+		})
+
+		// getPaasFromRequest (paas==nil)
 		It("should return nil when paas does not exist", func() {
+			var err error
+			var result controllerruntime.Result
+			paasName = paasRequestor + "-non-existent"
+			paas.Name = paasName
+			// assurePaas(ctx, paas)
+			request.Name = paasName
+			request.NamespacedName = types.NamespacedName{Name: paasName}
+			result, err = reconciler.Reconcile(ctx, request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(controllerruntime.Result{}))
 		})
-		// paas==nil
-		It("should set requeue timeout when PaasConfig is not set", func() {
-		})
-		// paasReconcilers return err
+
+		// paasReconcilers return err (checking failure when cap does not exist)
 		It("should return error when a paasReconciler method returns an error", func() {
+			var err error
+			var result controllerruntime.Result
+			paasName = paasRequestor + "-non-existent-cap"
+			brokenPaas := paas.DeepCopy()
+			brokenPaas.Name = paasName
+			brokenPaas.Spec.Capabilities["non-existent"] = api.PaasCapability{
+				Enabled: true,
+			}
+			assurePaas(ctx, brokenPaas)
+			request.Name = paasName
+			request.NamespacedName = types.NamespacedName{Name: paasName}
+			result, err = reconciler.Reconcile(ctx, request)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("a capability is requested, but not configured")))
+			Expect(result).To(Equal(controllerruntime.Result{}))
 		})
-		// nsDefsFromPaas returns error
-		It("should return error when nsDefsFromPaas method returns an error", func() {
-		})
+
+		// error from nsDefsFromPaas not unittested.
+		// Only occurs if cap does not exist, which is prevented by webhook, and a paasReconciler error raises first
+		// It("should return error when nsDefsFromPaas method returns an error", func() {
+		// })
+
 		// paasNsReconcilers returns error
 		It("should return error when a paasNsReconciler method returns an error", func() {
+			var err error
+			var result controllerruntime.Result
+			paasName = paasRequestor + "-secret-failure"
+			brokenPaas := paas.DeepCopy()
+			brokenPaas.Name = paasName
+			brokenPaas.Spec.SSHSecrets = map[string]string{"broken": paasSecret}
+			assurePaas(ctx, brokenPaas)
+			request.Name = paasName
+			request.NamespacedName = types.NamespacedName{Name: paasName}
+			assureAppSet(ctx, capAppSetName, capAppSetNamespace)
+			result, err = reconciler.Reconcile(ctx, request)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring("failed to decrypt secret")))
+			Expect(result).To(Equal(controllerruntime.Result{}))
 		})
-		// ensureAppSetCaps returns error
-		It("should return error when ensureAppSetCaps method returns an error", func() {
-		})
+
+		// ensureAppSetCaps returns error is very difficult to test on it's own. Skipping.
 	})
+
 	When("reconciling a paasns", func() {
 		// paasFromPaasNs
 		It("should successfully retrieve paas from paasns", func() {
@@ -384,10 +414,9 @@ var _ = Describe("Paas Controller", Ordered, func() {
 
 	When("reconciling a Paas with argocd capability", func() {
 		It("should not return an error", func() {
-			paasName = paasRequestor + "-normal"
-			paas.Name = paasName
-			request.Name = paasName
-			capNamespace = paasName + "-" + capName
+			paas.Name = paasWithArgoCDName
+			request.Name = paasWithArgoCDName
+			capNamespace = paasWithArgoCDName + "-" + capName
 			assurePaas(ctx, paas)
 			assureNamespace(ctx, capNamespace)
 			patchAppSet(ctx, appSet)
@@ -409,7 +438,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 				Expect(err).NotTo(HaveOccurred())
 				entries = entries.Merge(generatorEntries)
 			}
-			Expect(entries).To(HaveKey(paasName))
+			Expect(entries).To(HaveKey(paasWithArgoCDName))
 		})
 	})
 
