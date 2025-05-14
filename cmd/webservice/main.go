@@ -102,6 +102,7 @@ func v1Encrypt(c *gin.Context) {
 			Valid:     true,
 		}
 		c.IndentedJSON(http.StatusOK, output)
+		return
 	}
 	output := RestEncryptResult{
 		PaasName:  input.PaasName,
