@@ -402,3 +402,11 @@ func ActivePaasConfigUpdated() predicate.Predicate {
 		},
 	}
 }
+
+func (p PaasConfig) IsActive() bool {
+	return meta.IsStatusConditionPresentAndEqual(
+		p.Status.Conditions,
+		TypeActivePaasConfig,
+		metav1.ConditionTrue,
+	)
+}

@@ -13,12 +13,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/belastingdienst/opr-paas/internal/config"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/controller"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	argoresources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
@@ -177,9 +178,15 @@ func configureManager(f *flags) ctrl.Manager {
 		log.Fatal().Err(err).Msg("unable to start manager")
 	}
 
-	go func() {
-		config.Watch(mgr.GetConfig(), mgr.GetHTTPClient(), mgr.GetScheme())
-	}()
+	// In a HA situation, multiple operators are deployed. Using leader election,
+	// only one is responsible for reconciling the Paas resources. However, all
+	// replicas are used for webhook calls. As we use the PaasConfig for webhooks,
+	// we need a way to watch the config, reload the config on changes even though
+	// the replica is not the elected leader. This method call adds an informer to
+	// the manager to pick-up on the relevant config changes.
+	if err := config.SetupPaasConfigInformer(mgr); err != nil {
+		log.Fatal().Err(err).Msg("unable to set up PaasConfig informer")
+	}
 
 	if err = (&controller.PaasConfigReconciler{
 		Client: mgr.GetClient(),
