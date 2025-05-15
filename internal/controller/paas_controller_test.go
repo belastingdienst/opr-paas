@@ -545,3 +545,117 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		})
 	})
 })
+
+var _ = Describe("Paas Reconclie", Ordered, func() {
+	const (
+		paasName           = "paas-reconcile"
+		capAppSetNamespace = "asns"
+		capAppSetName      = "argoas"
+		capName            = "recon"
+		paasSystem         = "recon-nssystem"
+		paasPkSecret       = "recon-secret"
+		nsName             = "myns"
+		paasNSName         = "mypaasns"
+		groupName          = "mygroup"
+		roleName           = "myrole"
+		defaultPermSA      = "def-perm-service-account"
+		defaultPermCR      = "def-parm-cluster-role"
+		extraPermSA        = "extra-perm-service-account"
+		extraPermCR        = "extra-parm-cluster-role"
+	)
+	var (
+		paas         *api.Paas
+		appSet       *argocd.ApplicationSet
+		reconciler   *PaasReconciler
+		request      controllerruntime.Request
+		myConfig     api.PaasConfig
+		capNamespace = paasName + "-" + capName
+		privateKey   []byte
+		mycrypt      *crypt.Crypt
+		paasSecret   string
+	)
+	ctx := context.Background()
+	BeforeAll(func() {
+		var err error
+		assureNamespace(ctx, paasSystem)
+		mycrypt, privateKey, err = newGeneratedCrypt(paasName)
+		if err != nil {
+			Fail(err.Error())
+		}
+		createPaasPrivateKeySecret(ctx, paasSystem, paasPkSecret, privateKey)
+		paasSecret, err = mycrypt.Encrypt([]byte("paaSecret"))
+		Expect(err).NotTo(HaveOccurred())
+		assureNamespace(ctx, "gsns")
+		assureAppSet(ctx, capAppSetName, capNamespace)
+		paas = &api.Paas{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: paasName,
+			},
+			Spec: api.PaasSpec{
+				Requestor: paasName,
+				Capabilities: api.PaasCapabilities{
+					capName: api.PaasCapability{
+						Enabled: true,
+					},
+				},
+				Quota: paasquota.Quota{
+					"cpu": resourcev1.MustParse("1"),
+				},
+				Namespaces: []string{nsName},
+				Groups: api.PaasGroups{
+					groupName: api.PaasGroup{Roles: []string{roleName}},
+				},
+			},
+		}
+		myConfig = api.PaasConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "paas-config",
+			},
+			Spec: api.PaasConfigSpec{
+				ClusterWideArgoCDNamespace: capAppSetNamespace,
+				Capabilities: map[string]api.ConfigCapability{
+					capName: {
+						AppSet: capAppSetName,
+						QuotaSettings: api.ConfigQuotaSettings{
+							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+								corev1.ResourceLimitsCPU: resourcev1.MustParse("5"),
+							},
+						},
+						DefaultPermissions: api.ConfigCapPerm{defaultPermSA: []string{defaultPermCR}},
+						ExtraPermissions:   api.ConfigCapPerm{extraPermSA: []string{extraPermCR}},
+					},
+				},
+				DecryptKeysSecret: api.NamespacedName{Name: paasPkSecret, Namespace: paasSystem},
+				ManagedByLabel:    "argocd.argoproj.io/manby",
+				ManagedBySuffix:   "argocd",
+				RequestorLabel:    "o.lbl",
+				QuotaLabel:        "q.lbl",
+				GroupSyncList:     api.NamespacedName{Namespace: "gsns", Name: "wlname"},
+				GroupSyncListKey:  "groupsynclist.txt",
+			},
+		}
+		config.SetConfig(myConfig)
+		reconciler = &PaasReconciler{Client: k8sClient, Scheme: k8sClient.Scheme()}
+	})
+	// create Paas
+	When("creating a Paas", func() {
+		It("should have resources when Paas exists", func() {
+		})
+	})
+	When("finalizing a Paas", func() {
+	})
+
+	It("should not leave leftovers", func() {
+		/*
+			r.reconcileQuotas,
+			r.reconcileClusterWideQuota,
+			r.reconcileGroups,
+			r.ensureLdapGroups,
+			r.reconcileNamespaces,
+			r.reconcilePaasRolebindings,
+			r.reconcilePaasSecrets,
+			r.reconcileClusterRoleBindings,
+			r.ensureAppSetCaps
+		*/
+	})
+})
