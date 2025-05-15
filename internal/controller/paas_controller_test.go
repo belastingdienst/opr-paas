@@ -481,17 +481,6 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		// ensureAppSetCaps returns error is very difficult to test on it's own. Skipping.
 	})
 
-	When("initializing", func() {
-		// SetupWithManager
-		It("should properly setup the reconciler with a manager", func() {
-		})
-	})
-	When("reconfiguring", func() {
-		// allPaases
-		It("should successfully reschedule all Paas'es", func() {
-		})
-	})
-
 	When("reconciling a Paas with argocd capability", func() {
 		It("should not return an error", func() {
 			paas.Name = paasWithArgoCDName

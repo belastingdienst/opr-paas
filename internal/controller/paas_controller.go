@@ -300,26 +300,8 @@ func paasFromNs(ns corev1.Namespace) (string, error) {
 	return paasName, nil
 }
 
-func requestFromPaasNs(mgr ctrl.Manager, obj client.Object) *reconcile.Request {
-	var ns corev1.Namespace
-	logger := mgr.GetLogger()
-	if err := mgr.GetClient().Get(
-		context.Background(),
-		types.NamespacedName{Name: obj.GetNamespace()},
-		&ns,
-	); err != nil {
-		logger.Error(err, "unable to get namespace where paasns resides")
-		return nil
-	}
-	paasName, err := paasFromNs(ns)
-	if err != nil {
-		logger.Error(err, "finding paas for paasns without owner reference", "ns", ns)
-	}
-
-	return &reconcile.Request{
-		NamespacedName: types.NamespacedName{Name: paasName}}
-}
-
+// allPaases is a simple wrapper to collect all Paas'es and created requests for them on PaasConfig changes
+// allPaases is not unittests ATM. We might add a e2e test for this instead.
 func allPaases(mgr ctrl.Manager) []reconcile.Request {
 	// Enqueue all Paas objects
 	var reqs []reconcile.Request
@@ -342,6 +324,7 @@ func allPaases(mgr ctrl.Manager) []reconcile.Request {
 }
 
 // SetupWithManager sets up the controller with the Manager.
+// SetupWithManager is not unittesterd ATM. Mostly already covered by e2e tests.
 func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Paas{}, builder.WithPredicates(
