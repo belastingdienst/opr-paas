@@ -69,20 +69,25 @@ func (r *PaasReconciler) updateClusterWideQuotaResources(
 ) (err error) {
 	var configCapability v1alpha1.ConfigCapability
 	var allPaasResources paasquota.Quotas
-	if capabilityName, err := clusterWideCapabilityName(quota.Name); err != nil {
+	capabilityName, err := clusterWideCapabilityName(quota.Name)
+	if err != nil {
 		return err
-	} else if c, exists := config.GetConfig().Spec.Capabilities[capabilityName]; !exists {
+	}
+	c, exists := config.GetConfig().Spec.Capabilities[capabilityName]
+	if !exists {
 		return fmt.Errorf("missing capability config for %s", capabilityName)
-	} else if !c.QuotaSettings.Clusterwide {
+	}
+	if !c.QuotaSettings.Clusterwide {
 		return fmt.Errorf("running UpdateClusterWideQuota for non-clusterwide quota %s", quota.Name)
-	} else if allPaasResources, err = r.fetchAllPaasCapabilityResources(ctx,
+	}
+	allPaasResources, err = r.fetchAllPaasCapabilityResources(ctx,
 		quota,
 		c.QuotaSettings.DefQuota,
-	); err != nil {
+	)
+	if err != nil {
 		return err
-	} else {
-		configCapability = c
 	}
+	configCapability = c
 	quota.Spec.Quota.Hard = corev1.ResourceList(allPaasResources.OptimalValues(
 		configCapability.QuotaSettings.Ratio,
 		configCapability.QuotaSettings.MinQuotas,
