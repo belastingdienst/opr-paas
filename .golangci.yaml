@@ -14,6 +14,9 @@ linters:
     - staticcheck
     - unused
   settings:
+    govet:
+      enable:
+        - shadow
     revive:
       rules:
         - name: add-constant
