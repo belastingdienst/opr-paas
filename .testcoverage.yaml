@@ -57,8 +57,6 @@ override:
     threshold: 58
   - path: internal/controller/cluster_quotas.go
     threshold: 43
-  - path: internal/controller/cluster_wide_quota.go
-    threshold: 13
   - path: internal/controller/clusterrolebindings.go
     threshold: 0
   - path: internal/controller/groups.go
