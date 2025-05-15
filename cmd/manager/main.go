@@ -13,18 +13,19 @@ import (
 	"os"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/internal/config"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/controller"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	argoresources "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/version"
 	webhookv1alpha1 "github.com/belastingdienst/opr-paas/internal/webhook/v1alpha1"
+	webhookv1alpha2 "github.com/belastingdienst/opr-paas/internal/webhook/v1alpha2"
 	"github.com/go-logr/zerologr"
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
@@ -58,6 +59,7 @@ func init() {
 	utilruntime.Must(userv1.AddToScheme(scheme))
 	utilruntime.Must(argoresources.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -200,12 +202,6 @@ func configureManager(f *flags) ctrl.Manager {
 	}).SetupWithManager(mgr); err != nil {
 		log.Fatal().Err(err).Str("controller", "Paas").Msg("unable to create controller")
 	}
-	if err = (&controller.PaasNSReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		log.Fatal().Err(err).Str("controller", "PaasNS").Msg("unable to create controller")
-	}
 	// +kubebuilder:scaffold:builder
 
 	configureWebhooks(mgr)
@@ -223,6 +219,9 @@ func configureWebhooks(mgr ctrl.Manager) {
 	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err := webhookv1alpha1.SetupPaasWebhookWithManager(mgr); err != nil {
+			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create webhook")
+		}
+		if err := webhookv1alpha2.SetupPaasWebhookWithManager(mgr); err != nil {
 			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create webhook")
 		}
 		if err := webhookv1alpha1.SetupPaasConfigWebhookWithManager(mgr); err != nil {

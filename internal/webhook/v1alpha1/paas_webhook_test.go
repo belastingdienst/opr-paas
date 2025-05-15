@@ -327,9 +327,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		It("Should validate group names", func() {
 			conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"groupName": "^[a-z0-9-]{1,63}$"}}
 			config.SetConfig(conf)
-			var (
-				validChars = "abcdefghijklmknopqrstuvwzyz-0123456789"
-			)
+			validChars := "abcdefghijklmknopqrstuvwzyz-0123456789"
 			for _, test := range []struct {
 				name  string
 				valid bool
