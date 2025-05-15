@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 const paasconfigFinalizer = "paasconfig.cpet.belastingdienst.nl/finalizer"
@@ -60,59 +59,74 @@ func (pcr *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(pcr)
 }
 
-// Reconcile is the main entrypoint for Reconcilliation of a PaasConfig resource
+// Reconcile is the main entrypoint for Reconciliation of a PaasConfig resource
 func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	cfg := &v1alpha1.PaasConfig{}
 	ctx, _ = logging.SetControllerLogger(ctx, cfg, pcr.Scheme, req)
 	ctx, logger := logging.GetLogComponent(ctx, "paasconfig")
 
-	errResult := reconcile.Result{
-		Requeue:      true,
-		RequeueAfter: requeueTimeout,
-	}
-
 	if err := pcr.Get(ctx, req.NamespacedName, cfg); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	meta.SetStatusCondition(
+		&cfg.Status.Conditions,
+		metav1.Condition{
+			Type:               v1alpha1.TypeHasErrorsPaasConfig,
+			Status:             metav1.ConditionUnknown,
+			ObservedGeneration: cfg.Generation,
+			Reason:             "Reconciling",
+			Message:            "Starting reconciliation",
+		},
+	)
+
 	logger.Info().Msg("reconciling PaasConfig")
 
+	if err := pcr.Status().Update(ctx, cfg); err != nil {
+		logger.Err(err).Msg("failed to update PaasConfig status")
+		return ctrl.Result{}, err
+	}
+
 	if requeue, err := pcr.addFinalizer(ctx, cfg); requeue {
-		return errResult, err
+		return ctrl.Result{}, err
 	}
 
 	if cfg.GetDeletionTimestamp() != nil {
-		if requeue, err := pcr.updateFinalizer(ctx, cfg); requeue {
-			return errResult, err
+		if requeue, err := pcr.finalize(ctx, cfg); requeue {
+			return ctrl.Result{}, err
 		}
-
 		return ctrl.Result{}, nil
 	}
 
 	// As there can be reasons why we reconcile again, we check if there is a diff in the desired state vs GetConfig()
+	// when there is no change, we exit this function.
 	if reflect.DeepEqual(cfg.Spec, config.GetConfig().Spec) {
-		logger.Debug().Msg("Config already equals desired state")
+		logger.Info().Msg("Cached config equals desired state")
 		// Reconciling succeeded, set appropriate Condition
 		err := pcr.setSuccessfulCondition(ctx, cfg)
 		if err != nil {
 			logger.Err(err).Msg("failed to update PaasConfig status")
-			return errResult, nil
+			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, nil
 	}
 
 	logger.Info().Msg("configuration has changed")
+	// If the decryptSecrets have been configured differently, we must reset
+	// the cached crypts as those are no longer valid.
 	if !reflect.DeepEqual(cfg.Spec.DecryptKeysSecret, config.GetConfig().Spec.DecryptKeysSecret) {
+		logger.Info().Msg("Decryption keys changed")
 		resetCrypts()
 	}
 	// Update the shared configuration store
-	logger.Debug().Msg("set active PaasConfig successfully")
+	config.SetConfig(*cfg)
+	logger.Info().Msg("Set the cached config successfully")
 
 	// Reconciling succeeded, set appropriate Condition
 	err := pcr.setSuccessfulCondition(ctx, cfg)
 	if err != nil {
 		logger.Err(err).Msg("failed to update PaasConfig status")
-		return errResult, nil
+		return ctrl.Result{}, nil
 	}
 	return ctrl.Result{}, nil
 }
@@ -134,7 +148,7 @@ func (pcr *PaasConfigReconciler) addFinalizer(ctx context.Context, cfg *v1alpha1
 	return false, nil
 }
 
-func (pcr *PaasConfigReconciler) updateFinalizer(
+func (pcr *PaasConfigReconciler) finalize(
 	ctx context.Context,
 	cfg *v1alpha1.PaasConfig,
 ) (requeue bool, err error) {

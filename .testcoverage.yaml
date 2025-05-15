@@ -68,8 +68,10 @@ override:
     threshold: 57
   - path: internal/controller/cluster_quotas.go
     threshold: 43
-  - path: internal/controller/cluster_wide_quota.go
-    threshold: 13
+  - path: internal/controller/clusterrolebindings.go
+    threshold: 0
+  - path: internal/controller/groups.go
+    threshold: 40
   - path: internal/controller/ldap_groups.go
     threshold: 35
   - path: internal/controller/groups.go
@@ -98,6 +100,8 @@ override:
     threshold: 67
   - path: internal/crypt/main.go
     threshold: 12
+  - path: internal/config/informer.go
+    threshold: 23
 
 # Holds regexp rules which will exclude matched files or packages
 # from coverage statistics.
