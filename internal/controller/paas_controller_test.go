@@ -590,9 +590,10 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 		secretHashedName     = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(secretName)[:8]))
 		quotas               = []string{paasName, capNamespace}
 		groups               = []string{ldapGroupName, join(paasName, groupName)}
-		namespaces           = []string{paasName, join(paasName, nsName), join(paasName, capName)}
-		rolebindings         = []string{techRoleName1, techRoleName2}
-		clusterRolebindings  = map[string][]string{
+		namespaces           = []string{paasName, join(paasName, nsName), join(paasName, capName), join(paasName,
+			paasNSName)}
+		rolebindings        = []string{techRoleName1, techRoleName2}
+		clusterRolebindings = map[string][]string{
 			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR}}
 	)
 	ctx := context.Background()
@@ -606,7 +607,7 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 		createPaasPrivateKeySecret(ctx, paasSystem, paasPkSecret, privateKey)
 		secretEncryptedValue, err = mycrypt.Encrypt([]byte(secretValue))
 		Expect(err).NotTo(HaveOccurred())
-		assureNamespace(ctx, "gsns")
+		assureNamespace(ctx, gsNamespace)
 		assureNamespace(ctx, capAppSetNamespace)
 		assureAppSet(ctx, capAppSetName, capAppSetNamespace)
 		paas = &api.Paas{
@@ -674,9 +675,13 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 		reconciler = &PaasReconciler{Client: k8sClient, Scheme: k8sClient.Scheme()}
 	})
 	// create Paas
-	When("creating a Paas", func() {
+	When("creating a Paas and PaasNS", func() {
 		It("should reconcile succesfully", func() {
 			result, err := reconciler.Reconcile(ctx, request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(controllerruntime.Result{}))
+			assurePaasNS(ctx, api.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: paasName}})
+			result, err = reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
 		})
@@ -768,6 +773,10 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 		It("should finalize succesfully", func() {
 			Expect(paas.Kind).To(Equal("Paas"))
 			result, err := reconciler.Reconcile(ctx, request)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(controllerruntime.Result{}))
+			assurePaasNS(ctx, api.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: paasName}})
+			result, err = reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
 			// If we don't read it back from k8s, Kind and APIVersion are not set, and deleting groups does not work

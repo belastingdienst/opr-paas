@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
@@ -209,6 +210,23 @@ func assureNamespace(ctx context.Context, namespaceName string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+func assureNamespaceWithPaasReference(ctx context.Context, namespaceName string, paasName string) {
+	assureNamespace(ctx, namespaceName)
+	paas := &api.Paas{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasName}, paas)
+	Expect(err).NotTo(HaveOccurred())
+	ns := &corev1.Namespace{}
+	err = k8sClient.Get(ctx, types.NamespacedName{Name: namespaceName}, ns)
+	Expect(err).NotTo(HaveOccurred())
+
+	if !paas.AmIOwner(ns.GetOwnerReferences()) {
+		patchedNs := client.MergeFrom(ns.DeepCopy())
+		controllerutil.SetControllerReference(paas, ns, scheme.Scheme)
+		err = k8sClient.Patch(ctx, ns, patchedNs)
+		Expect(err).NotTo(HaveOccurred())
+	}
+}
+
 func assurePaas(ctx context.Context, newPaas api.Paas) {
 	oldPaas := &api.Paas{}
 	namespacedName := types.NamespacedName{
@@ -220,6 +238,22 @@ func assurePaas(ctx context.Context, newPaas api.Paas) {
 	}
 	Expect(err.Error()).To(MatchRegexp(`paas.cpet.belastingdienst.nl .* not found`))
 	err = k8sClient.Create(ctx, &newPaas)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func assurePaasNS(ctx context.Context, paasNs api.PaasNS) {
+	assureNamespace(ctx, paasNs.GetNamespace())
+	oldPaasNS := &api.PaasNS{}
+	namespacedName := types.NamespacedName{Name: paasNs.GetName(), Namespace: paasNs.GetNamespace()}
+	err := k8sClient.Get(ctx, namespacedName, oldPaasNS)
+	if err == nil {
+		return
+	}
+	Expect(err.Error()).To(MatchRegexp(`paasns.cpet.belastingdienst.nl .* not found`))
+	if paasNs.Spec.Paas == "" {
+		paasNs.Spec.Paas = paasNs.GetNamespace()
+	}
+	err = k8sClient.Create(ctx, &paasNs)
 	Expect(err).NotTo(HaveOccurred())
 }
 
