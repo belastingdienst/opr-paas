@@ -64,8 +64,6 @@ override:
     threshold: 68
   - path: internal/controller/argocd.go
     threshold: 35
-  - path: internal/controller/capabilities.go
-    threshold: 57
   - path: internal/controller/cluster_quotas.go
     threshold: 43
   - path: internal/controller/clusterrolebindings.go
