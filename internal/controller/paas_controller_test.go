@@ -17,7 +17,6 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/fields"
 	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
-	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -101,7 +100,7 @@ var _ = Describe("Get paas from ns", func() {
 			name, err := paasFromNs(ns)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring(
-				"failed to get owner reference with kind paas and controller=true from namespace resource")))
+				"failed to get owner reference with kind paas and controller=true from namespace")))
 			Expect(name).To(BeEmpty())
 		})
 	})
@@ -676,7 +675,7 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 	})
 	// create Paas
 	When("creating a Paas and PaasNS", func() {
-		It("should reconcile succesfully", func() {
+		It("should reconcile successfully", func() {
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
@@ -732,7 +731,7 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 			}
 		})
 		It("should have created paas appset list generator entries", func() {
-			var capAppSet appv1.ApplicationSet
+			var capAppSet argocd.ApplicationSet
 			err := reconciler.Get(ctx,
 				types.NamespacedName{Namespace: capAppSetNamespace, Name: capAppSetName}, &capAppSet)
 			Expect(err).ToNot(HaveOccurred())
@@ -770,7 +769,7 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 		})
 	})
 	When("finalizing a Paas", Ordered, func() {
-		It("should finalize succesfully", func() {
+		It("should finalize successfully", func() {
 			Expect(paas.Kind).To(Equal("Paas"))
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
@@ -788,7 +787,8 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 				var quota quotav1.ClusterResourceQuota
 				err := reconciler.Get(ctx, types.NamespacedName{Name: quotaName}, &quota)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("clusterresourcequotas.quota.openshift.io \"" + quotaName + "\" not found"))
+				Expect(err.Error()).To(Equal(
+					"clusterresourcequotas.quota.openshift.io \"" + quotaName + "\" not found"))
 			}
 		})
 		It("should have deleted paas groups", func() {
@@ -825,7 +825,7 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 			}
 		})
 		It("should have deleted paas appset list generator entries", func() {
-			var capAppSet appv1.ApplicationSet
+			var capAppSet argocd.ApplicationSet
 			err := reconciler.Get(ctx,
 				types.NamespacedName{Namespace: capAppSetNamespace, Name: capAppSetName}, &capAppSet)
 			Expect(err).ToNot(HaveOccurred())

@@ -289,7 +289,7 @@ func paasFromNs(ns corev1.Namespace) (string, error) {
 		}
 	}
 	if len(paasNames) == 0 {
-		return "", errors.New("failed to get owner reference with kind paas and controller=true from namespace resource")
+		return "", errors.New("failed to get owner reference with kind paas and controller=true from namespace")
 	} else if len(paasNames) > 1 {
 		return "", errors.New("found multiple owner references with kind paas and controller=true")
 	}
