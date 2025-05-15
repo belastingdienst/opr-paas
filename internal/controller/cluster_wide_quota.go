@@ -67,7 +67,6 @@ func (r *PaasReconciler) updateClusterWideQuotaResources(
 	ctx context.Context,
 	quota *quotav1.ClusterResourceQuota,
 ) (err error) {
-	var configCapability v1alpha1.ConfigCapability
 	var allPaasResources paasquota.Quotas
 	capabilityName, err := clusterWideCapabilityName(quota.Name)
 	if err != nil {
@@ -87,11 +86,10 @@ func (r *PaasReconciler) updateClusterWideQuotaResources(
 	if err != nil {
 		return err
 	}
-	configCapability = c
 	quota.Spec.Quota.Hard = corev1.ResourceList(allPaasResources.OptimalValues(
-		configCapability.QuotaSettings.Ratio,
-		configCapability.QuotaSettings.MinQuotas,
-		configCapability.QuotaSettings.MaxQuotas,
+		c.QuotaSettings.Ratio,
+		c.QuotaSettings.MinQuotas,
+		c.QuotaSettings.MaxQuotas,
 	))
 	return nil
 }
