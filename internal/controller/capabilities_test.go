@@ -19,20 +19,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func assureAppSet(ctx context.Context, name string, namespace string) {
-	appSet := &appv1.ApplicationSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: appv1.ApplicationSetSpec{
-			Generators: []appv1.ApplicationSetGenerator{},
-		},
-	}
-	err := k8sClient.Create(ctx, appSet)
-	Expect(err).NotTo(HaveOccurred())
-}
-
 var _ = Describe("Capabilities controller", Ordered, func() {
 	const (
 		serviceName        = "my"

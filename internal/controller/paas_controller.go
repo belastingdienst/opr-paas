@@ -375,11 +375,12 @@ func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) 
 	logger.Debug().Msg("inside Paas finalizer")
 
 	paasReconcilers := []func(context.Context, *v1alpha1.Paas) error{
-		// r.finalizeClusterQuotas,
+		r.finalizeClusterQuotas,
 		r.finalizeGroups,
 		r.finalizePaasClusterRoleBindings,
 		r.finalizeClusterWideQuotas,
 		r.finalizeAppSetCaps,
+		r.finalizeNamespaces,
 	}
 
 	for _, reconciler := range paasReconcilers {
