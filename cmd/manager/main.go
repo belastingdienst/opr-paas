@@ -184,7 +184,7 @@ func configureManager(f *flags) ctrl.Manager {
 	// we need a way to watch the config, reload the config on changes even though
 	// the replica is not the elected leader. This method call adds an informer to
 	// the manager to pick-up on the relevant config changes.
-	if err := config.SetupPaasConfigInformer(mgr); err != nil {
+	if err = config.SetupPaasConfigInformer(mgr); err != nil {
 		log.Fatal().Err(err).Msg("unable to set up PaasConfig informer")
 	}
 

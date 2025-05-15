@@ -171,15 +171,15 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			Expect(result.RequeueAfter.Microseconds()).To(BeZero())
 		})
 		It("should create an appset entry", func() {
-			appSet := &argocd.ApplicationSet{}
+			a := &argocd.ApplicationSet{}
 			appSetName := types.NamespacedName{
 				Name:      capAppSetName,
 				Namespace: capAppSetNamespace,
 			}
-			err := k8sClient.Get(ctx, appSetName, appSet)
+			err := k8sClient.Get(ctx, appSetName, a)
 			Expect(err).NotTo(HaveOccurred())
 			entries := make(fields.Entries)
-			for _, generator := range appSet.Spec.Generators {
+			for _, generator := range a.Spec.Generators {
 				generatorEntries, err := fields.EntriesFromJSON(generator.List.Elements)
 				Expect(err).NotTo(HaveOccurred())
 				entries = entries.Merge(generatorEntries)

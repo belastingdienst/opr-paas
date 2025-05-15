@@ -83,7 +83,7 @@ func (pnsr *PaasNSReconciler) getPaasNs(ctx context.Context, req ctrl.Request) (
 		return nil, err
 	}
 
-	if err := pnsr.Get(ctx, req.NamespacedName, paasns); err != nil {
+	if err = pnsr.Get(ctx, req.NamespacedName, paasns); err != nil {
 		logger.Err(err).Msg("failed to re-fetch PaasNs")
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (pnsr *PaasNSReconciler) getPaasNs(ctx context.Context, req ctrl.Request) (
 			logger.Error().Msg("failed to add finalizer")
 			return nil, errors.New("failed to add finalizer")
 		}
-		if err := pnsr.Update(ctx, paasns); err != nil {
+		if err = pnsr.Update(ctx, paasns); err != nil {
 			logger.Err(err).Msg("error updating PaasNs")
 			return nil, err
 		}
@@ -191,7 +191,7 @@ func (pnsr *PaasNSReconciler) getPaas(ctx context.Context, paasns *v1alpha1.Paas
 		return nil, err
 	}
 	if !paas.AmIOwner(paasns.OwnerReferences) {
-		if err := controllerutil.SetControllerReference(paas, paasns, pnsr.Scheme); err != nil {
+		if err = controllerutil.SetControllerReference(paas, paasns, pnsr.Scheme); err != nil {
 			return nil, err
 		}
 	}
@@ -382,7 +382,7 @@ func (pnsr *PaasNSReconciler) paasFromPaasNs(
 ) (paas *v1alpha1.Paas, namespaces map[string]int, err error) {
 	ctx, logger := logging.GetLogComponent(ctx, paasNsComponentName)
 	paas = &v1alpha1.Paas{}
-	if err := pnsr.Get(ctx, types.NamespacedName{Name: paasns.Spec.Paas}, paas); err != nil {
+	if err = pnsr.Get(ctx, types.NamespacedName{Name: paasns.Spec.Paas}, paas); err != nil {
 		logger.Err(err).Msg("cannot get Paas")
 		return nil, namespaces, err
 	}
