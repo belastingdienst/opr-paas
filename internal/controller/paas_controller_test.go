@@ -56,6 +56,91 @@ func getConditionsFromPaas(paas *api.Paas) map[string]metav1.Condition {
 	return conditions
 }
 
+var _ = Describe("Get paas from ns", func() {
+	const (
+		paasName = "my-paas"
+		nsName   = paasName + "-myns"
+	)
+	var (
+		controller    = true
+		notController = false
+	)
+	When("using proper reference", func() {
+		It("should return the name, and nil", func() {
+			ns := corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nsName,
+					OwnerReferences: []metav1.OwnerReference{
+						{Kind: "Paas", Name: paasName, Controller: &controller},
+						{Kind: "SomethingElse", Name: paasName + "2", Controller: &controller},
+						{Kind: "Paas", Name: paasName + "3", Controller: &notController},
+					},
+				},
+			}
+			name, err := paasFromNs(ns)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(name).To(Equal(paasName))
+		})
+	})
+	When("having no Paas references", func() {
+		It("should return empty string and error", func() {
+			ns := corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nsName,
+					OwnerReferences: []metav1.OwnerReference{
+						{Kind: "SomethingElse", Name: paasName + "2", Controller: &controller},
+						{Kind: "Paas", Name: paasName + "3", Controller: &notController},
+					},
+				},
+			}
+			name, err := paasFromNs(ns)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring(
+				"failed to get owner reference with kind paas and controller=true from namespace resource")))
+			Expect(name).To(BeEmpty())
+		})
+	})
+	When("having multiple Paas references", func() {
+		It("should return empty string and error", func() {
+			ns := corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: nsName,
+					OwnerReferences: []metav1.OwnerReference{
+						{Kind: "Paas", Name: paasName, Controller: &controller},
+						{Kind: "SomethingElse", Name: paasName + "2", Controller: &controller},
+						{Kind: "Paas", Name: paasName + "3", Controller: &notController},
+						{Kind: "Paas", Name: paasName + "4", Controller: &controller},
+					},
+				},
+			}
+			name, err := paasFromNs(ns)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring(
+				"found multiple owner references with kind paas and controller=true")))
+			Expect(name).To(BeEmpty())
+		})
+	})
+	When("having improper prefix", func() {
+		It("should return empty string and error", func() {
+			ns := corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "other-" + nsName,
+					OwnerReferences: []metav1.OwnerReference{
+						{Kind: "Paas", Name: paasName, Controller: &controller},
+						{Kind: "SomethingElse", Name: paasName + "2", Controller: &controller},
+						{Kind: "Paas", Name: paasName + "3", Controller: &notController},
+					},
+				},
+			}
+			name, err := paasFromNs(ns)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(ContainSubstring(
+				"namespace is not prefixed with paasName in owner reference")))
+			Expect(name).To(BeEmpty())
+		})
+	})
+})
+
 var _ = Describe("Paas Controller", Ordered, func() {
 	const (
 		paasRequestor      = "paas-controller"
@@ -396,11 +481,6 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		// ensureAppSetCaps returns error is very difficult to test on it's own. Skipping.
 	})
 
-	When("reconciling a paasns", func() {
-		// paasFromPaasNs
-		It("should successfully retrieve paas from paasns", func() {
-		})
-	})
 	When("initializing", func() {
 		// SetupWithManager
 		It("should properly setup the reconciler with a manager", func() {
