@@ -45,7 +45,6 @@ func (r *PaasNSReconciler) ensureSecret(
 		// Error that isn't due to the secret not existing
 		return err
 	}
-
 	return r.Update(ctx, secret)
 }
 
@@ -100,6 +99,7 @@ func (r *PaasNSReconciler) backendSecret(
 	}
 
 	s.Labels["argocd.argoproj.io/secret-type"] = "repo-creds"
+	s.Labels[ManagedByLabelKey] = paas.Name
 
 	logger.Info().Msg("setting Owner")
 
@@ -218,6 +218,7 @@ func (r *PaasNSReconciler) getExistingSecrets(
 	var secrets corev1.SecretList
 	opts := []client.ListOption{
 		client.InNamespace(ns),
+		client.MatchingLabels{ManagedByLabelKey: paas.Name},
 	}
 	err := r.List(ctx, &secrets, opts...)
 	if err != nil {
@@ -228,14 +229,15 @@ func (r *PaasNSReconciler) getExistingSecrets(
 		Str("ns", ns).
 		Int("qty", len(secrets.Items)).
 		Msgf("qty of existing secrets in ns")
-	for _, secret := range secrets.Items {
-		if paas.AmIOwner(secret.OwnerReferences) && strings.HasPrefix(secret.Name, "paas-ssh") {
-			logger.Debug().Msg("existing paas-ssh secret")
-			existingSecrets = append(existingSecrets, &secret)
-			continue
-		}
-		logger.Debug().Msg("no existing paas-ssh secret")
-	}
+	// TODO fix adding secrets
+	//for _, secret := range secrets.Items {
+	//	if paas.AmIOwner(secret.OwnerReferences) && strings.HasPrefix(secret.Name, "paas-ssh") {
+	//		logger.Debug().Msg("existing paas-ssh secret")
+	//		existingSecrets = append(existingSecrets, &secret)
+	//		continue
+	//	}
+	//	logger.Debug().Msg("no existing paas-ssh secret")
+	//}
 	logger.Info().Int("secrets", len(existingSecrets)).Msg("qty of existing secrets")
 	return existingSecrets, nil
 }
