@@ -83,6 +83,11 @@ func (r *PaasReconciler) ensureGroup(
 		found.Users = group.Users
 		changed = true
 	}
+	if !reflect.DeepEqual(found.Labels, group.Labels) {
+		logger.Debug().Msg("group " + groupName + " labels changed")
+		found.Labels = group.Labels
+		changed = true
+	}
 	if changed {
 		return r.Update(ctx, found)
 	}
@@ -123,7 +128,7 @@ func (r *PaasReconciler) backendGroup(
 		}
 		g.Users = group.Users
 	}
-	g.Labels[ManagedByLabelKey] = ManagedByLabelValue
+	g.Labels[ManagedByLabelKey] = paas.Name
 
 	if err := controllerutil.SetOwnerReference(paas, g, r.Scheme); err != nil {
 		return nil, err
@@ -255,18 +260,11 @@ func (r *PaasReconciler) getExistingGroups(
 	logger := log.Ctx(ctx)
 	var groups userv1.GroupList
 	listOpts := []client.ListOption{
-		client.MatchingLabels(map[string]string{"app.kubernetes.io/managed-by": "paas"}),
+		client.MatchingLabels(map[string]string{ManagedByLabelKey: paas.Name}),
 	}
 	err = r.List(ctx, &groups, listOpts...)
 	if err != nil {
 		return existingGroups, err
-	}
-	for _, group := range groups.Items {
-		if paas.AmIOwner(group.OwnerReferences) {
-			logger.Debug().Msgf("existing group %s owned by Paas %s", group.Name, paas.Name)
-			existingGroups = append(existingGroups, &group)
-		}
-		logger.Debug().Msgf("existing group %s not owned by Paas %s", group.Name, paas.Name)
 	}
 	logger.Debug().Msgf("found %d existing groups owned by Paas %s", len(existingGroups), paas.Name)
 	return existingGroups, nil
