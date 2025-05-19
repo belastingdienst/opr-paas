@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
@@ -202,4 +203,27 @@ func assurePaas(ctx context.Context, newPaas *api.Paas) {
 	Expect(err.Error()).To(MatchRegexp(`paas.cpet.belastingdienst.nl .* not found`))
 	err = k8sClient.Create(ctx, newPaas)
 	Expect(err).NotTo(HaveOccurred())
+}
+
+func validatePaasNSExists(ctx context.Context, namespaceName string, paasNSName string) {
+	pns := api.PaasNS{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasNSName, Namespace: namespaceName}, &pns)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func assureNamespaceWithPaasReference(ctx context.Context, namespaceName string, paasName string) {
+	assureNamespace(ctx, namespaceName)
+	paas := &api.Paas{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasName}, paas)
+	Expect(err).NotTo(HaveOccurred())
+	ns := &corev1.Namespace{}
+	err = k8sClient.Get(ctx, types.NamespacedName{Name: namespaceName}, ns)
+	Expect(err).NotTo(HaveOccurred())
+
+	if !paas.AmIOwner(ns.GetOwnerReferences()) {
+		patchedNs := client.MergeFrom(ns.DeepCopy())
+		controllerutil.SetControllerReference(paas, ns, scheme.Scheme)
+		err = k8sClient.Patch(ctx, ns, patchedNs)
+		Expect(err).NotTo(HaveOccurred())
+	}
 }
