@@ -1,9 +1,3 @@
-/*
-Copyright 2023, Tax Administration of The Netherlands.
-Licensed under the EUPL 1.2.
-See LICENSE.md for details.
-*/
-
 package controller
 
 import (
@@ -31,7 +25,6 @@ func (r *PaasNSReconciler) ensureSecret(
 	ctx context.Context,
 	secret *corev1.Secret,
 ) error {
-	// See if secret exists and create if it doesn't
 	namespacedName := types.NamespacedName{
 		Name:      secret.Name,
 		Namespace: secret.Namespace,
@@ -39,10 +32,8 @@ func (r *PaasNSReconciler) ensureSecret(
 	found := &corev1.Secret{}
 	err := r.Get(ctx, namespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
-		// Create the secret
 		return r.Create(ctx, secret)
 	} else if err != nil {
-		// Error that isn't due to the secret not existing
 		return err
 	}
 	return r.Update(ctx, secret)
@@ -75,10 +66,7 @@ func (r *PaasNSReconciler) backendSecret(
 	paasns *v1alpha1.PaasNS,
 	namespacedName types.NamespacedName,
 	url string,
-) (
-	*corev1.Secret,
-	error,
-) {
+) (*corev1.Secret, error) {
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("defining Secret")
 
@@ -102,7 +90,6 @@ func (r *PaasNSReconciler) backendSecret(
 	s.Labels[ManagedByLabelKey] = paas.Name
 
 	logger.Info().Msg("setting Owner")
-
 	err := controllerutil.SetControllerReference(paas, s, r.Scheme)
 	if err != nil {
 		return s, err
@@ -110,16 +97,15 @@ func (r *PaasNSReconciler) backendSecret(
 	return s, nil
 }
 
-// getSecrets returns a list of Secrets which are desired based on the Paas(Ns) spec
+// getSecrets returns a list of Secrets based on the Paas(Ns) spec.
 func (r *PaasNSReconciler) getSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 	encryptedSecrets map[string]string,
-) (secrets *corev1.SecretList, err error) {
-	// Only do something when secrets are required
+) (*corev1.SecretList, error) {
 	if len(encryptedSecrets) == 0 {
-		return nil, nil
+		return &corev1.SecretList{}, nil
 	}
 
 	rsa, err := r.getRsa(ctx, paas.Name)
@@ -127,7 +113,7 @@ func (r *PaasNSReconciler) getSecrets(
 		return nil, err
 	}
 
-	secrets = &corev1.SecretList{}
+	secrets := &corev1.SecretList{}
 	for url, encryptedSecretData := range encryptedSecrets {
 		namespacedName := types.NamespacedName{
 			Namespace: paasns.NamespaceName(),
@@ -139,7 +125,7 @@ func (r *PaasNSReconciler) getSecrets(
 		}
 		decrypted, err := rsa.Decrypt(encryptedSecretData)
 		if err != nil {
-			return nil, fmt.Errorf("failed to decrypt secret %s: %s", secret, err.Error())
+			return nil, fmt.Errorf("failed to decrypt secret %s: %s", secret.Name, err.Error())
 		}
 		secret.Data["sshPrivateKey"] = decrypted
 		secrets.Items = append(secrets.Items, *secret)
@@ -147,8 +133,7 @@ func (r *PaasNSReconciler) getSecrets(
 	return secrets, nil
 }
 
-// backendSecrets returns a list of kubernetes Secrets which are desired based on the Paas(Ns) spec.
-// It returns an error when the secrets cannot be determined.
+// backendSecrets aggregates SSH secrets from PaasNS and Paas resources.
 func (r *PaasNSReconciler) backendSecrets(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
@@ -159,7 +144,7 @@ func (r *PaasNSReconciler) backendSecrets(
 	// From the PaasNS resource
 	maps.Copy(secrets, paasns.Spec.SSHSecrets)
 
-	// From the Paas Resource capability chapter (if applicable)
+	// From the Paas Resource capability spec (if applicable)
 	if capability, exists := paas.Spec.Capabilities[paasns.Name]; exists && capability.IsEnabled() {
 		maps.Copy(secrets, capability.GetSSHSecrets())
 	}
@@ -170,7 +155,7 @@ func (r *PaasNSReconciler) backendSecrets(
 	return r.getSecrets(ctx, paas, paasns, secrets)
 }
 
-// deleteObsoleteSecrets deletes any secrets from the existingSecrets which is not listed in the desired secrets.
+// deleteObsoleteSecrets removes secrets that are no longer desired.
 func (r *PaasNSReconciler) deleteObsoleteSecrets(
 	ctx context.Context,
 	existingSecrets *corev1.SecretList,
@@ -179,10 +164,8 @@ func (r *PaasNSReconciler) deleteObsoleteSecrets(
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("deleting obsolete secrets")
 
-	// Delete secrets that are no longer needed
 	for _, existingSecret := range existingSecrets.Items {
 		if !isSecretInDesiredSecrets(existingSecret, desiredSecrets) {
-			// Secret is not in the desired state, delete it
 			if err := r.Delete(ctx, &existingSecret); err != nil {
 				logger.Err(err).Str("Secret", existingSecret.Name).Msg("failed to delete Secret")
 				return err
@@ -190,12 +173,10 @@ func (r *PaasNSReconciler) deleteObsoleteSecrets(
 			logger.Info().Str("Secret", existingSecret.Name).Msg("deleted obsolete Secret")
 		}
 	}
-
 	return nil
 }
 
-// isSecretInDesiredSecrets checks if a given secret exists in the desiredSecrets slice
-// by comparing names and namespaces.
+// isSecretInDesiredSecrets checks if a secret exists in the desired list.
 func isSecretInDesiredSecrets(secret corev1.Secret, desiredSecrets *corev1.SecretList) bool {
 	for _, desiredSecret := range desiredSecrets.Items {
 		if secret.Name == desiredSecret.Name && secret.Namespace == desiredSecret.Namespace {
@@ -205,21 +186,22 @@ func isSecretInDesiredSecrets(secret corev1.Secret, desiredSecrets *corev1.Secre
 	return false
 }
 
-// getExistingSecrets retrieves all secrets managed by this Paas in it's enabled namespaces
+// getExistingSecrets lists all secrets managed by this Paas in the namespace.
 func (r *PaasNSReconciler) getExistingSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
-) (secrets *corev1.SecretList, err error) {
+) (*corev1.SecretList, error) {
 	logger := log.Ctx(ctx)
-	// Check in NamespaceName
 	ns := paasns.NamespaceName()
-	logger.Debug().Msgf("listing obsolete secret in namespace: %s", ns)
+	logger.Debug().Msgf("listing existing secrets in namespace: %s", ns)
+
+	secrets := &corev1.SecretList{}
 	opts := []client.ListOption{
 		client.InNamespace(ns),
 		client.MatchingLabels{ManagedByLabelKey: paas.Name},
 	}
-	err = r.List(ctx, secrets, opts...)
+	err := r.List(ctx, secrets, opts...)
 	if err != nil {
 		logger.Err(err).Msg("error listing existing secrets")
 		return nil, err
@@ -227,27 +209,37 @@ func (r *PaasNSReconciler) getExistingSecrets(
 	return secrets, nil
 }
 
+// reconcileSecrets ensures that all desired secrets exist and obsolete ones are removed.
 func (r *PaasNSReconciler) reconcileSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "secret")
-	logger.Debug().Msg("reconciling Ssh Secrets")
+	logger.Debug().Msg("reconciling SSH secrets")
+
 	desiredSecrets, err := r.backendSecrets(ctx, paasns, paas)
 	if err != nil {
 		return err
 	}
+	if desiredSecrets == nil {
+		desiredSecrets = &corev1.SecretList{}
+	}
 	logger.Debug().Int("count", len(desiredSecrets.Items)).Msg("desired secrets count")
+
 	existingSecrets, err := r.getExistingSecrets(ctx, paas, paasns)
 	if err != nil {
 		return err
 	}
+	if existingSecrets == nil {
+		existingSecrets = &corev1.SecretList{}
+	}
 	logger.Debug().Int("count", len(existingSecrets.Items)).Msg("existing secrets count")
-	err = r.deleteObsoleteSecrets(ctx, existingSecrets, desiredSecrets)
-	if err != nil {
+
+	if err := r.deleteObsoleteSecrets(ctx, existingSecrets, desiredSecrets); err != nil {
 		return err
 	}
+
 	for _, secret := range desiredSecrets.Items {
 		if err := r.ensureSecret(ctx, &secret); err != nil {
 			logger.Err(err).Str("secret", secret.Name).Msg("failure while reconciling secret")
