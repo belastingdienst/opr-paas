@@ -169,7 +169,8 @@ var _ = Describe("secret controller", Ordered, func() {
 
 	When("reconciling a PaasNS with a SshSecrets value", func() {
 		It("should not return an error", func() {
-			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, pns.GetObjectMeta().GetNamespace(), pns.Spec.SSHSecrets)
+			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, pns.GetObjectMeta().GetNamespace(),
+				pns.Spec.SSHSecrets)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -186,7 +187,7 @@ var _ = Describe("secret controller", Ordered, func() {
 	})
 })
 
-func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte, err error) {
+func newGeneratedCrypt(cryptContext string) (myCrypt *crypt.Crypt, privateKey []byte, err error) {
 	tmpFileError := "failed to get new tmp private key file: %w"
 	privateKeyFile, err := os.CreateTemp("", "private")
 	if err != nil {
@@ -196,7 +197,7 @@ func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte,
 	if err != nil {
 		return nil, nil, fmt.Errorf(tmpFileError, err)
 	}
-	myCrypt, err = crypt.NewGeneratedCrypt(privateKeyFile.Name(), publicKeyFile.Name(), context)
+	myCrypt, err = crypt.NewGeneratedCrypt(privateKeyFile.Name(), publicKeyFile.Name(), cryptContext)
 	if err != nil {
 		return nil, nil, fmt.Errorf(tmpFileError, err)
 	}
