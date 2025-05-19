@@ -106,6 +106,13 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		}
 	})
 
+	When("requesting schema from Reconciler", func() {
+		It("should return a schema", func() {
+			Expect(reconciler.getScheme()).NotTo(BeNil())
+			Expect(reconciler.getScheme()).To(Equal(k8sClient.Scheme()))
+		})
+	})
+
 	When("reconciling a Paas with argocd capability", func() {
 		It("should not return an error", func() {
 			paasName = paasRequestor + "-normal"
