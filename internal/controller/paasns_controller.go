@@ -42,7 +42,7 @@ type PaasNSReconciler struct {
 }
 
 // GetScheme is a simple getter for the Scheme of the PaasNS Controller logic
-func (pnsr PaasNSReconciler) GetScheme() *runtime.Scheme {
+func (pnsr PaasNSReconciler) getScheme() *runtime.Scheme {
 	return pnsr.Scheme
 }
 
