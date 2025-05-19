@@ -18,7 +18,7 @@ import (
 	"slices"
 	"testing"
 
-	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
@@ -136,7 +136,7 @@ var _ = BeforeSuite(func() {
 	err = quotav1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = argocd.AddToScheme(scheme.Scheme)
+	err = appv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
@@ -154,8 +154,8 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 })
 
-func patchAppSet(ctx context.Context, newAppSet *argocd.ApplicationSet) {
-	oldAppSet := &argocd.ApplicationSet{}
+func patchAppSet(ctx context.Context, newAppSet *appv1.ApplicationSet) {
+	oldAppSet := &appv1.ApplicationSet{}
 	namespacedName := types.NamespacedName{
 		Name:      newAppSet.Name,
 		Namespace: newAppSet.Namespace,
@@ -201,5 +201,19 @@ func assurePaas(ctx context.Context, newPaas *api.Paas) {
 	}
 	Expect(err.Error()).To(MatchRegexp(`paas.cpet.belastingdienst.nl .* not found`))
 	err = k8sClient.Create(ctx, newPaas)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func assureAppSet(ctx context.Context, name string, namespace string) {
+	appSet := &appv1.ApplicationSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: appv1.ApplicationSetSpec{
+			Generators: []appv1.ApplicationSetGenerator{},
+		},
+	}
+	err := k8sClient.Create(ctx, appSet)
 	Expect(err).NotTo(HaveOccurred())
 }
