@@ -51,19 +51,17 @@ var _ = Describe("testing hashdata", func() {
 var _ = Describe("secret controller", Ordered, func() {
 	const (
 		paasRequestor      = "paas-controller"
-		paasNs             = "my-paas"
+		paasName           = "my-paas"
 		capAppSetNamespace = "asns"
 		capAppSetName      = "argoas"
 		capName            = "argocd"
 		paasSystem         = "paasnssystem"
-		paasPkSecret       = "paasns-pk-secret"
-		paasWithArgoCDName = paasRequestor + "-with-argocd"
+		paasPkSecret       = "secret-pk-secret"
 	)
 	var (
 		paas       *api.Paas
 		reconciler *PaasReconciler
 		myConfig   api.PaasConfig
-		paasName   = paasRequestor
 		privateKey []byte
 		mycrypt    *crypt.Crypt
 		pns        *api.PaasNS
@@ -73,8 +71,9 @@ var _ = Describe("secret controller", Ordered, func() {
 	BeforeAll(func() {
 		var err error
 
+		assureNamespace(ctx, paasName)
 		assureNamespace(ctx, paasSystem)
-		mycrypt, privateKey, err = newGeneratedCrypt(paasName)
+		mycrypt, privateKey, err = newGeneratedCrypt(paasRequestor)
 		Expect(err).NotTo(HaveOccurred())
 
 		createPaasPrivateKeySecret(paasSystem, paasPkSecret, privateKey)
@@ -83,38 +82,41 @@ var _ = Describe("secret controller", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		pns = &api.PaasNS{
-			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: paasNs},
+			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: paasName},
 			Spec: api.PaasNSSpec{
-				Paas: paasNs,
+				Paas: paasName,
 				SSHSecrets: map[string]string{
 					"probably a git repo.git": encrypted, // already base64 encoded by crypt.Encrypt
 				},
 			},
 		}
-
-		assureNamespace(ctx, paasNs)
 	})
 
 	BeforeEach(func() {
-		paasName = paasRequestor
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),
 		}
+
 		paas = &api.Paas{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: paasName,
+				Name: paasRequestor,
 			},
 			Spec: api.PaasSpec{
 				Requestor: paasRequestor,
 				Capabilities: api.PaasCapabilities{
 					capName: api.PaasCapability{
 						Enabled: true,
+						// TODO: For next tests
+						// SSHSecrets: map[string]string{},
 					},
 				},
 				Quota: paasquota.Quota{
 					"cpu": resourcev1.MustParse("1"),
 				},
+				// TODO: For next tests
+				// Namespaces: []string{"my-namespace"},
+				// SSHSecrets: map[string]string{},
 			},
 		}
 
@@ -122,7 +124,7 @@ var _ = Describe("secret controller", Ordered, func() {
 		// We ignore the error because it might not exist
 		_ = k8sClient.Delete(ctx, &api.Paas{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: paasName,
+				Name: paasRequestor,
 			},
 		})
 
@@ -174,7 +176,7 @@ var _ = Describe("secret controller", Ordered, func() {
 
 		It("should create a secret with the decrypted data", func() {
 			secrets := &corev1.SecretList{}
-			err := k8sClient.List(ctx, secrets, client.InNamespace(paasNs))
+			err := k8sClient.List(ctx, secrets, client.InNamespace(paasName))
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(secrets.Items).To(HaveLen(1))
