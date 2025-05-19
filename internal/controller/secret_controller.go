@@ -116,7 +116,7 @@ func (r *PaasNSReconciler) getSecrets(
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
 	encryptedSecrets map[string]string,
-) (secrets []*corev1.Secret, err error) {
+) (secrets *corev1.SecretList, err error) {
 	// Only do something when secrets are required
 	if len(encryptedSecrets) == 0 {
 		return nil, nil
@@ -127,6 +127,7 @@ func (r *PaasNSReconciler) getSecrets(
 		return nil, err
 	}
 
+	secrets = &corev1.SecretList{}
 	for url, encryptedSecretData := range encryptedSecrets {
 		namespacedName := types.NamespacedName{
 			Namespace: paasns.NamespaceName(),
@@ -141,18 +142,18 @@ func (r *PaasNSReconciler) getSecrets(
 			return nil, fmt.Errorf("failed to decrypt secret %s: %s", secret, err.Error())
 		}
 		secret.Data["sshPrivateKey"] = decrypted
-		secrets = append(secrets, secret)
+		secrets.Items = append(secrets.Items, *secret)
 	}
 	return secrets, nil
 }
 
-// BackendSecrets returns a list of kubernetes Secrets which are desired based on the Paas(Ns) spec.
+// backendSecrets returns a list of kubernetes Secrets which are desired based on the Paas(Ns) spec.
 // It returns an error when the secrets cannot be determined.
 func (r *PaasNSReconciler) backendSecrets(
 	ctx context.Context,
 	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
-) ([]*corev1.Secret, error) {
+) (*corev1.SecretList, error) {
 	secrets := make(map[string]string)
 
 	// From the PaasNS resource
@@ -172,17 +173,17 @@ func (r *PaasNSReconciler) backendSecrets(
 // deleteObsoleteSecrets deletes any secrets from the existingSecrets which is not listed in the desired secrets.
 func (r *PaasNSReconciler) deleteObsoleteSecrets(
 	ctx context.Context,
-	existingSecrets []*corev1.Secret,
-	desiredSecrets []*corev1.Secret,
+	existingSecrets *corev1.SecretList,
+	desiredSecrets *corev1.SecretList,
 ) error {
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("deleting obsolete secrets")
 
 	// Delete secrets that are no longer needed
-	for _, existingSecret := range existingSecrets {
+	for _, existingSecret := range existingSecrets.Items {
 		if !isSecretInDesiredSecrets(existingSecret, desiredSecrets) {
 			// Secret is not in the desired state, delete it
-			if err := r.Delete(ctx, existingSecret); err != nil {
+			if err := r.Delete(ctx, &existingSecret); err != nil {
 				logger.Err(err).Str("Secret", existingSecret.Name).Msg("failed to delete Secret")
 				return err
 			}
@@ -195,8 +196,8 @@ func (r *PaasNSReconciler) deleteObsoleteSecrets(
 
 // isSecretInDesiredSecrets checks if a given secret exists in the desiredSecrets slice
 // by comparing names and namespaces.
-func isSecretInDesiredSecrets(secret *corev1.Secret, desiredSecrets []*corev1.Secret) bool {
-	for _, desiredSecret := range desiredSecrets {
+func isSecretInDesiredSecrets(secret corev1.Secret, desiredSecrets *corev1.SecretList) bool {
+	for _, desiredSecret := range desiredSecrets.Items {
 		if secret.Name == desiredSecret.Name && secret.Namespace == desiredSecret.Namespace {
 			return true
 		}
@@ -204,42 +205,26 @@ func isSecretInDesiredSecrets(secret *corev1.Secret, desiredSecrets []*corev1.Se
 	return false
 }
 
-// getExistingSecrets retrieves all secrets owned by this Paas in it's enabled namespaces
+// getExistingSecrets retrieves all secrets managed by this Paas in it's enabled namespaces
 func (r *PaasNSReconciler) getExistingSecrets(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 	paasns *v1alpha1.PaasNS,
-) ([]*corev1.Secret, error) {
-	var existingSecrets []*corev1.Secret
+) (secrets *corev1.SecretList, err error) {
 	logger := log.Ctx(ctx)
 	// Check in NamespaceName
 	ns := paasns.NamespaceName()
 	logger.Debug().Msgf("listing obsolete secret in namespace: %s", ns)
-	var secrets corev1.SecretList
 	opts := []client.ListOption{
 		client.InNamespace(ns),
 		client.MatchingLabels{ManagedByLabelKey: paas.Name},
 	}
-	err := r.List(ctx, &secrets, opts...)
+	err = r.List(ctx, secrets, opts...)
 	if err != nil {
 		logger.Err(err).Msg("error listing existing secrets")
-		return []*corev1.Secret{}, err
+		return nil, err
 	}
-	logger.Debug().
-		Str("ns", ns).
-		Int("qty", len(secrets.Items)).
-		Msgf("qty of existing secrets in ns")
-	// TODO fix adding secrets
-	//for _, secret := range secrets.Items {
-	//	if paas.AmIOwner(secret.OwnerReferences) && strings.HasPrefix(secret.Name, "paas-ssh") {
-	//		logger.Debug().Msg("existing paas-ssh secret")
-	//		existingSecrets = append(existingSecrets, &secret)
-	//		continue
-	//	}
-	//	logger.Debug().Msg("no existing paas-ssh secret")
-	//}
-	logger.Info().Int("secrets", len(existingSecrets)).Msg("qty of existing secrets")
-	return existingSecrets, nil
+	return secrets, nil
 }
 
 func (r *PaasNSReconciler) reconcileSecrets(
@@ -253,18 +238,18 @@ func (r *PaasNSReconciler) reconcileSecrets(
 	if err != nil {
 		return err
 	}
-	logger.Debug().Int("count", len(desiredSecrets)).Msg("desired secrets count")
+	logger.Debug().Int("count", len(desiredSecrets.Items)).Msg("desired secrets count")
 	existingSecrets, err := r.getExistingSecrets(ctx, paas, paasns)
 	if err != nil {
 		return err
 	}
-	logger.Debug().Int("count", len(existingSecrets)).Msg("existing secrets count")
+	logger.Debug().Int("count", len(existingSecrets.Items)).Msg("existing secrets count")
 	err = r.deleteObsoleteSecrets(ctx, existingSecrets, desiredSecrets)
 	if err != nil {
 		return err
 	}
-	for _, secret := range desiredSecrets {
-		if err := r.ensureSecret(ctx, secret); err != nil {
+	for _, secret := range desiredSecrets.Items {
+		if err := r.ensureSecret(ctx, &secret); err != nil {
 			logger.Err(err).Str("secret", secret.Name).Msg("failure while reconciling secret")
 			return err
 		}
