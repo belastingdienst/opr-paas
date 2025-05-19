@@ -29,6 +29,7 @@ import (
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -152,3 +153,53 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
+
+func patchAppSet(ctx context.Context, newAppSet *argocd.ApplicationSet) {
+	oldAppSet := &argocd.ApplicationSet{}
+	namespacedName := types.NamespacedName{
+		Name:      newAppSet.Name,
+		Namespace: newAppSet.Namespace,
+	}
+	err := k8sClient.Get(ctx, namespacedName, oldAppSet)
+	if err == nil {
+		// Patch
+		patch := client.MergeFrom(oldAppSet.DeepCopy())
+		oldAppSet.Spec = newAppSet.Spec
+		err = k8sClient.Patch(ctx, oldAppSet, patch)
+		Expect(err).NotTo(HaveOccurred())
+	} else {
+		Expect(err.Error()).To(MatchRegexp(`applicationsets.argoproj.io .* not found`))
+		err = k8sClient.Create(ctx, newAppSet)
+		Expect(err).NotTo(HaveOccurred())
+	}
+}
+
+func assureNamespace(ctx context.Context, namespaceName string) {
+	oldNs := &corev1.Namespace{}
+	namespacedName := types.NamespacedName{
+		Name: namespaceName,
+	}
+	err := k8sClient.Get(ctx, namespacedName, oldNs)
+	if err == nil {
+		return
+	}
+	Expect(err.Error()).To(MatchRegexp(`namespaces .* not found`))
+	err = k8sClient.Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: namespaceName},
+	})
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func assurePaas(ctx context.Context, newPaas *api.Paas) {
+	oldPaas := &api.Paas{}
+	namespacedName := types.NamespacedName{
+		Name: newPaas.Name,
+	}
+	err := k8sClient.Get(ctx, namespacedName, oldPaas)
+	if err == nil {
+		return
+	}
+	Expect(err.Error()).To(MatchRegexp(`paas.cpet.belastingdienst.nl .* not found`))
+	err = k8sClient.Create(ctx, newPaas)
+	Expect(err).NotTo(HaveOccurred())
+}
