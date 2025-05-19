@@ -124,7 +124,7 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 		t.Fatal(err)
 	}
 
-	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
+	if err = updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
 
@@ -184,7 +184,7 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 		t.Fatal(err)
 	}
 
-	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
+	if err = updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
 
