@@ -105,9 +105,9 @@ func assertGroupCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *envco
 	assert.Len(t, group2.Labels, 1)
 	assert.Equal(
 		t,
-		controller.ManagedByLabelValue,
+		paas.Name,
 		group2.Labels[controller.ManagedByLabelKey],
-		"Labeled as managed by Paas",
+		"Labeled as managed by Paas.name",
 	)
 	// The owner of the group is the Paas that created it
 	assert.Equal(t, paas.UID, group2.OwnerReferences[0].UID)
@@ -164,9 +164,9 @@ func assertOldGroupRemovedAfterUpdatingKey(ctx context.Context, t *testing.T, cf
 	assert.NotContains(t, controller.LdapHostLabelKey, updatedGroup2.Labels)
 	assert.Equal(
 		t,
-		controller.ManagedByLabelValue,
+		paas.Name,
 		updatedGroup2.Labels[controller.ManagedByLabelKey],
-		"Labeled as managed by Paas",
+		"Labeled as managed by Paas.name",
 	)
 	// The owner of the group is the Paas that created it
 	assert.Equal(t, paas.UID, updatedGroup2.OwnerReferences[0].UID)

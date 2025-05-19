@@ -34,9 +34,6 @@ const (
 	// application. For more info, see
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	ManagedByLabelKey = "app.kubernetes.io/managed-by"
-	// ManagedByLabelValue defaults to paas, so that all OpenShift groups that the Paas operator has created are
-	// identifiable
-	ManagedByLabelValue = "paas"
 )
 
 func (r *PaasReconciler) ensureGroup(
