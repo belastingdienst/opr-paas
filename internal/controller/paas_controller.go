@@ -113,7 +113,7 @@ func (r *PaasReconciler) getPaasFromRequest(
 		return nil, err
 	}
 
-	if err := r.Get(ctx, req.NamespacedName, paas); err != nil {
+	if err = r.Get(ctx, req.NamespacedName, paas); err != nil {
 		logger.Err(err).Msg("failed to re-fetch Paas")
 		return nil, err
 	}
