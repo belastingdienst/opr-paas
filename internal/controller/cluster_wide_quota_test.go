@@ -4,6 +4,7 @@ import (
 	"context"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/quota"
 	. "github.com/onsi/ginkgo/v2"
@@ -25,21 +26,21 @@ var _ = Describe("ClusterResourceQuota controller", Ordered, func() {
 	var (
 		ctx        context.Context
 		reconciler *PaasReconciler
-		paasConfig api.PaasConfig
+		paasConfig v1alpha2.PaasConfig
 		paas       *api.Paas
 	)
 	var quotaName = types.NamespacedName{Name: "paas-" + capName}
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		paasConfig = api.PaasConfig{
+		paasConfig = v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
-			Spec: api.PaasConfigSpec{
-				Capabilities: map[string]api.ConfigCapability{
+			Spec: v1alpha2.PaasConfigSpec{
+				Capabilities: map[string]v1alpha2.ConfigCapability{
 					capName: {
-						QuotaSettings: api.ConfigQuotaSettings{
+						QuotaSettings: v1alpha2.ConfigQuotaSettings{
 							Clusterwide: true,
 							Ratio:       1,
 							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{

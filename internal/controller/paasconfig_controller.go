@@ -13,6 +13,7 @@ import (
 	"reflect"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"github.com/rs/zerolog/log"
@@ -61,7 +62,7 @@ func (pcr *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // Reconcile is the main entrypoint for Reconciliation of a PaasConfig resource
 func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	cfg := &v1alpha1.PaasConfig{}
+	cfg := &v1alpha2.PaasConfig{}
 	ctx, _ = logging.SetControllerLogger(ctx, cfg, pcr.Scheme, req)
 	ctx, logger := logging.GetLogComponent(ctx, "paasconfig")
 
@@ -131,7 +132,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	return ctrl.Result{}, nil
 }
 
-func (pcr *PaasConfigReconciler) addFinalizer(ctx context.Context, cfg *v1alpha1.PaasConfig) (requeue bool, err error) {
+func (pcr *PaasConfigReconciler) addFinalizer(ctx context.Context, cfg *v1alpha2.PaasConfig) (requeue bool, err error) {
 	logger := log.Ctx(ctx)
 
 	if !controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
@@ -150,7 +151,7 @@ func (pcr *PaasConfigReconciler) addFinalizer(ctx context.Context, cfg *v1alpha1
 
 func (pcr *PaasConfigReconciler) finalize(
 	ctx context.Context,
-	cfg *v1alpha1.PaasConfig,
+	cfg *v1alpha2.PaasConfig,
 ) (requeue bool, err error) {
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("paasconfig marked for deletion")
@@ -195,7 +196,7 @@ func (pcr *PaasConfigReconciler) finalize(
 	return false, nil
 }
 
-func (pcr *PaasConfigReconciler) setSuccessfulCondition(ctx context.Context, paasConfig *v1alpha1.PaasConfig) error {
+func (pcr *PaasConfigReconciler) setSuccessfulCondition(ctx context.Context, paasConfig *v1alpha2.PaasConfig) error {
 	meta.SetStatusCondition(&paasConfig.Status.Conditions, metav1.Condition{
 		Type:   v1alpha1.TypeActivePaasConfig,
 		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: paasConfig.Generation,
