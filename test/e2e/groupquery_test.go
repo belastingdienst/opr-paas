@@ -2,8 +2,9 @@ package e2e
 
 import (
 	"context"
-	"github.com/belastingdienst/opr-paas/internal/controller"
 	"testing"
+
+	"github.com/belastingdienst/opr-paas/internal/controller"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/quota"
