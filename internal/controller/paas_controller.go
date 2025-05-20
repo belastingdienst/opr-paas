@@ -42,7 +42,7 @@ type PaasReconciler struct {
 }
 
 // GetScheme is a simple getter for the Scheme of the Paas Controller logic
-func (r PaasReconciler) GetScheme() *runtime.Scheme {
+func (r PaasReconciler) getScheme() *runtime.Scheme {
 	return r.Scheme
 }
 
@@ -51,7 +51,7 @@ type Reconciler interface {
 	Get(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error
 	Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
 	Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
-	GetScheme() *runtime.Scheme
+	getScheme() *runtime.Scheme
 	Delete(context.Context, client.Object, ...client.DeleteOption) error
 }
 
@@ -113,7 +113,7 @@ func (r *PaasReconciler) getPaasFromRequest(
 		return nil, err
 	}
 
-	if err := r.Get(ctx, req.NamespacedName, paas); err != nil {
+	if err = r.Get(ctx, req.NamespacedName, paas); err != nil {
 		logger.Err(err).Msg("failed to re-fetch Paas")
 		return nil, err
 	}

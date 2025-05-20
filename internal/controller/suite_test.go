@@ -18,7 +18,7 @@ import (
 	"slices"
 	"testing"
 
-	argocd "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
@@ -29,10 +29,12 @@ import (
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
@@ -136,7 +138,7 @@ var _ = BeforeSuite(func() {
 	err = quotav1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = argocd.AddToScheme(scheme.Scheme)
+	err = appv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
@@ -153,3 +155,89 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
+
+func patchAppSet(ctx context.Context, newAppSet *appv1.ApplicationSet) {
+	oldAppSet := &appv1.ApplicationSet{}
+	namespacedName := types.NamespacedName{
+		Name:      newAppSet.Name,
+		Namespace: newAppSet.Namespace,
+	}
+	err := k8sClient.Get(ctx, namespacedName, oldAppSet)
+	if err == nil {
+		// Patch
+		patch := client.MergeFrom(oldAppSet.DeepCopy())
+		oldAppSet.Spec = newAppSet.Spec
+		err = k8sClient.Patch(ctx, oldAppSet, patch)
+		Expect(err).NotTo(HaveOccurred())
+	} else {
+		Expect(err.Error()).To(MatchRegexp(`applicationsets.argoproj.io .* not found`))
+		err = k8sClient.Create(ctx, newAppSet)
+		Expect(err).NotTo(HaveOccurred())
+	}
+}
+
+func assureNamespace(ctx context.Context, namespaceName string) {
+	oldNs := &corev1.Namespace{}
+	namespacedName := types.NamespacedName{
+		Name: namespaceName,
+	}
+	err := k8sClient.Get(ctx, namespacedName, oldNs)
+	if err == nil {
+		return
+	}
+	Expect(err.Error()).To(MatchRegexp(`namespaces .* not found`))
+	err = k8sClient.Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: namespaceName},
+	})
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func assurePaas(ctx context.Context, newPaas *api.Paas) {
+	oldPaas := &api.Paas{}
+	namespacedName := types.NamespacedName{
+		Name: newPaas.Name,
+	}
+	err := k8sClient.Get(ctx, namespacedName, oldPaas)
+	if err == nil {
+		return
+	}
+	Expect(err.Error()).To(MatchRegexp(`paas.cpet.belastingdienst.nl .* not found`))
+	err = k8sClient.Create(ctx, newPaas)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func validatePaasNSExists(ctx context.Context, namespaceName string, paasNSName string) {
+	pns := api.PaasNS{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasNSName, Namespace: namespaceName}, &pns)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func assureNamespaceWithPaasReference(ctx context.Context, namespaceName string, paasName string) {
+	assureNamespace(ctx, namespaceName)
+	paas := &api.Paas{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasName}, paas)
+	Expect(err).NotTo(HaveOccurred())
+	ns := &corev1.Namespace{}
+	err = k8sClient.Get(ctx, types.NamespacedName{Name: namespaceName}, ns)
+	Expect(err).NotTo(HaveOccurred())
+
+	if !paas.AmIOwner(ns.GetOwnerReferences()) {
+		patchedNs := client.MergeFrom(ns.DeepCopy())
+		controllerutil.SetControllerReference(paas, ns, scheme.Scheme)
+		err = k8sClient.Patch(ctx, ns, patchedNs)
+		Expect(err).NotTo(HaveOccurred())
+	}
+}
+func assureAppSet(ctx context.Context, name string, namespace string) {
+	appSet := &appv1.ApplicationSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: appv1.ApplicationSetSpec{
+			Generators: []appv1.ApplicationSetGenerator{},
+		},
+	}
+	err := k8sClient.Create(ctx, appSet)
+	Expect(err).NotTo(HaveOccurred())
+}

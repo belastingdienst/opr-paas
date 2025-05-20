@@ -29,20 +29,20 @@ var (
 )
 
 func TestElementsFromProperJSON(t *testing.T) {
-	elements, err := fields.ElementsFromJSON(properJSON)
+	e, err := fields.ElementsFromJSON(properJSON)
 	assert.NoError(t, err)
-	assert.NotNil(t, elements)
-	assert.Contains(t, elements, key1)
-	assert.Equal(t, elements[key1], value1)
-	assert.Contains(t, elements, key2)
-	assert.Equal(t, elements[key2], value2)
+	assert.NotNil(t, e)
+	assert.Contains(t, e, key1)
+	assert.Equal(t, e[key1], value1)
+	assert.Contains(t, e, key2)
+	assert.Equal(t, e[key2], value2)
 }
 
 func TestElementsFromImproperJSON(t *testing.T) {
 	for _, JSON := range improperJSONs {
-		elements, err := fields.ElementsFromJSON(JSON)
+		e, err := fields.ElementsFromJSON(JSON)
 		assert.Error(t, err)
-		assert.Nil(t, elements)
+		assert.Nil(t, e)
 	}
 }
 

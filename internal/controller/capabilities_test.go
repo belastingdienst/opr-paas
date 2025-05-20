@@ -23,7 +23,6 @@ import (
 var _ = Describe("Capabilities controller", Ordered, func() {
 	const (
 		serviceName        = "my"
-		subServiceName     = "cap"
 		capName            = serviceName
 		capAppSetName      = capName + "-as"
 		capAppSetNamespace = "asns"
@@ -42,7 +41,6 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 		ctx         context.Context
 		paas        *api.Paas
 		reconciler  *PaasReconciler
-		appSet      *appv1.ApplicationSet
 		paasConfig  v1alpha2.PaasConfig
 		group1Roles = []string{"admin"}
 		group2Users = []string{"user1", "user2"}
@@ -106,34 +104,31 @@ g, {{ $groupName }}, role:admin{{end}}`
 				},
 			},
 		}
-		// FIXME(hikarukin): use native v1alpha2 paasconfig
-		// paasConfig := &v1alpha2.PaasConfig{}
-		// (&paasConfigV1).ConvertTo(&paasConfig)
 		config.SetConfig(paasConfig)
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),
 		}
-		appSet = &appv1.ApplicationSet{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      capAppSetName,
-				Namespace: capAppSetNamespace,
-			},
-			Spec: appv1.ApplicationSetSpec{
-				Generators: []appv1.ApplicationSetGenerator{},
-			},
-		}
-		err := k8sClient.Create(ctx, appSet)
-		Expect(err).NotTo(HaveOccurred())
+		assureAppSet(ctx, capAppSetName, capAppSetNamespace)
 	})
 
 	AfterEach(func() {
-		err := k8sClient.Delete(ctx, appSet)
+		appset := &appv1.ApplicationSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      capAppSetName,
+				Namespace: capAppSetNamespace,
+			}}
+		err := k8sClient.Delete(ctx, appset)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	When("ensuring capability in the AppSet", func() {
 		Context("with a valid capability configuration", Ordered, func() {
+			appSetName := types.NamespacedName{
+				Name:      capAppSetName,
+				Namespace: capAppSetNamespace,
+			}
+
 			It("should succeed", func() {
 				err := reconciler.ensureAppSetCap(ctx, paas, capName)
 				Expect(err).NotTo(HaveOccurred())
@@ -146,11 +141,7 @@ g, ` + group2 + `, role:admin`
 				)
 				err := reconciler.ensureAppSetCap(ctx, paas, capName)
 				Expect(err).NotTo(HaveOccurred())
-				appSet = &appv1.ApplicationSet{}
-				appSetName := types.NamespacedName{
-					Name:      capAppSetName,
-					Namespace: capAppSetNamespace,
-				}
+				appSet := &appv1.ApplicationSet{}
 				err = k8sClient.Get(ctx, appSetName, appSet)
 				Expect(err).NotTo(HaveOccurred())
 				entries := make(fields.Entries)
@@ -176,6 +167,18 @@ g, ` + group2 + `, role:admin`
 						"service":               serviceName,
 						"subservice":            "paas",
 					}))
+			})
+			It("should delete the appset entry during finalization", func() {
+				appSet := &appv1.ApplicationSet{}
+				Expect(reconciler.ensureAppSetCap(ctx, paas, capName)).NotTo(HaveOccurred())
+
+				Expect(k8sClient.Get(ctx, appSetName, appSet)).NotTo(HaveOccurred())
+				Expect(appSet.Spec.Generators[0].List.Elements).To(HaveLen(1))
+
+				Expect(reconciler.finalizeAppSetCaps(ctx, paas)).NotTo(HaveOccurred())
+
+				Expect(k8sClient.Get(ctx, appSetName, appSet)).NotTo(HaveOccurred())
+				Expect(appSet.Spec.Generators[0].List.Elements).To(BeEmpty())
 			})
 		})
 

@@ -224,7 +224,7 @@ func (*PaasNSCustomValidator) ValidateDelete(_ context.Context, _ runtime.Object
 func paasNStoPaas(ctx context.Context, c client.Client, paasns *v1alpha1.PaasNS) (paas *v1alpha1.Paas, err error) {
 	var ns corev1.Namespace
 	ctx, logger := logging.GetLogComponent(ctx, "paasns_to_paas")
-	if err := c.Get(
+	if err = c.Get(
 		context.Background(),
 		types.NamespacedName{Name: paasns.GetNamespace()},
 		&ns,

@@ -68,24 +68,29 @@ func (r *PaasReconciler) updateClusterWideQuotaResources(
 	ctx context.Context,
 	quota *quotav1.ClusterResourceQuota,
 ) (err error) {
-	var configCapability v1alpha1.ConfigCapability
 	var allPaasResources paasquota.Quotas
-	if capabilityName, err := clusterWideCapabilityName(quota.Name); err != nil {
+	capabilityName, err := clusterWideCapabilityName(quota.Name)
+	if err != nil {
 		return err
-	} else if configCapability, exists := config.GetConfig().Spec.Capabilities[capabilityName]; !exists {
+	}
+	c, exists := config.GetConfig().Spec.Capabilities[capabilityName]
+	if !exists {
 		return fmt.Errorf("missing capability config for %s", capabilityName)
-	} else if !configCapability.QuotaSettings.Clusterwide {
+	}
+	if !c.QuotaSettings.Clusterwide {
 		return fmt.Errorf("running UpdateClusterWideQuota for non-clusterwide quota %s", quota.Name)
-	} else if allPaasResources, err = r.fetchAllPaasCapabilityResources(ctx,
+	}
+	allPaasResources, err = r.fetchAllPaasCapabilityResources(ctx,
 		quota,
-		configCapability.QuotaSettings.DefQuota,
-	); err != nil {
+		c.QuotaSettings.DefQuota,
+	)
+	if err != nil {
 		return err
 	}
 	quota.Spec.Quota.Hard = corev1.ResourceList(allPaasResources.OptimalValues(
-		configCapability.QuotaSettings.Ratio,
-		configCapability.QuotaSettings.MinQuotas,
-		configCapability.QuotaSettings.MaxQuotas,
+		c.QuotaSettings.Ratio,
+		c.QuotaSettings.MinQuotas,
+		c.QuotaSettings.MaxQuotas,
 	))
 	return nil
 }

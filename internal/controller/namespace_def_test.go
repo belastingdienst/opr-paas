@@ -9,37 +9,9 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
-
-func validatePaasNSExists(ctx context.Context, namespaceName string, paasNSName string) {
-	pns := api.PaasNS{}
-	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasNSName, Namespace: namespaceName}, &pns)
-	Expect(err).NotTo(HaveOccurred())
-}
-
-func assureNamespaceWithPaasReference(ctx context.Context, namespaceName string, paasName string) {
-	assureNamespace(ctx, namespaceName)
-	paas := &api.Paas{}
-	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasName}, paas)
-	Expect(err).NotTo(HaveOccurred())
-	ns := &corev1.Namespace{}
-	err = k8sClient.Get(ctx, types.NamespacedName{Name: namespaceName}, ns)
-	Expect(err).NotTo(HaveOccurred())
-
-	if !paas.AmIOwner(ns.GetOwnerReferences()) {
-		patchedNs := client.MergeFrom(ns.DeepCopy())
-		controllerutil.SetControllerReference(paas, ns, scheme.Scheme)
-		err = k8sClient.Patch(ctx, ns, patchedNs)
-		Expect(err).NotTo(HaveOccurred())
-	}
-}
 
 var _ = Describe("NamespaceDef", func() {
 	const (

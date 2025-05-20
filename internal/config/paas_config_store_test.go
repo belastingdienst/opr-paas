@@ -16,7 +16,7 @@ import (
 func TestGetConfigWithEmptyConfigStore(t *testing.T) {
 	actual := GetConfig()
 
-	assert.Empty(t, actual)
+	assert.Equal(t, v1alpha1.PaasConfig{}, actual)
 }
 
 func TestGetConfig(t *testing.T) {
