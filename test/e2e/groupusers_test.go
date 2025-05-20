@@ -62,7 +62,7 @@ func assertGroupCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) 
 	assert.Equal(t, "[foo]", group.Users.String())
 	// Correct labels are defined
 	assert.Len(t, group.Labels, 1)
-	assert.Equal(t, paas.Name, group.Labels["app.kubernetes.io/managed-by"], "Labeled as managed by Paas")
+	assert.Equal(t, paas.Name, group.Labels[controller.ManagedByLabelKey], "Labeled as managed by Paas")
 	assert.Empty(t, group.Annotations, "Group should have no annotations")
 	// The owner of the group is the Paas that created it
 	assert.Equal(t, paas.UID, group.OwnerReferences[0].UID)

@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"github.com/belastingdienst/opr-paas/internal/controller"
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -77,7 +78,7 @@ func assertGroupQueryCreated(ctx context.Context, t *testing.T, cfg *envconf.Con
 	assert.Empty(t, group.Users, "No users should be defined in the group")
 	assert.Len(t, group.Labels, 2)
 	assert.Equal(t, "ldap.example.com", group.Labels["openshift.io/ldap.host"], "The correct label should be defined")
-	assert.Equal(t, paas.Name, group.Labels["app.kubernetes.io/managed-by"], "Labeled as managed by Paas.name")
+	assert.Equal(t, paas.Name, group.Labels[controller.ManagedByLabelKey], "Labeled as managed by Paas.name")
 	assert.Equal(t, paas.UID, group.OwnerReferences[0].UID, "The owner of the group should be the Paas defining it")
 	assert.Len(t, rolebinding.Subjects, 1)
 	assert.Equal(t, paas.GroupKey2GroupName(groupWithQueryName), rolebinding.Subjects[0].Name,
@@ -118,7 +119,7 @@ func assertGroupQueryCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *
 	assert.Len(t, group2.Labels, 2, "Group should contain two labels")
 	assert.Equal(t, "ldap.example.com", group2.Labels["openshift.io/ldap.host"],
 		"The ldap.host label should contain PaasConfig value")
-	assert.Equal(t, paas.Name, group2.Labels["app.kubernetes.io/managed-by"], "Labeled as managed by Paas.name")
+	assert.Equal(t, paas.Name, group2.Labels[controller.ManagedByLabelKey], "Labeled as managed by Paas.name")
 	assert.Len(t, group2.Annotations, 2, "Group should have 2 annotations")
 	assert.Equal(t, group2Query, group2.Annotations["openshift.io/ldap.uid"],
 		"The ldap.uid annotation should contain group.query value")
