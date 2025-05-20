@@ -263,6 +263,9 @@ func (r *PaasReconciler) getExistingGroups(
 	if err != nil {
 		return existingGroups, err
 	}
+	for _, group := range groups.Items {
+		existingGroups = append(existingGroups, &group)
+	}
 	logger.Debug().Msgf("found %d existing groups owned by Paas %s", len(existingGroups), paas.Name)
 	return existingGroups, nil
 }
