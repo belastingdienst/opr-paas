@@ -69,7 +69,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			},
 		}
 
-		config.SetConfigV1(conf)
+		err := config.SetConfigV1(conf)
+		Expect(err).NotTo(HaveOccurred())
+
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
 		Expect(obj).NotTo(BeNil(), "Expected obj to be initialized")
@@ -261,7 +263,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should deny creation when a capability is missing a required custom field", func() {
-			conf := config.GetConfigV1().Spec
+			nospecconf, err := config.GetConfigV1()
+			Expect(err).NotTo(HaveOccurred())
+
+			conf := nospecconf.Spec
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
 					"bar": {Required: true},
@@ -276,7 +281,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					},
 				},
 			}
-			_, err := validator.ValidateCreate(ctx, obj)
+			_, err = validator.ValidateCreate(ctx, obj)
 
 			var serr *apierrors.StatusError
 			Expect(errors.As(err, &serr)).To(BeTrue())
@@ -292,7 +297,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should deny creation when a custom field does not match validation regex", func() {
-			conf := config.GetConfigV1().Spec
+			nospecconf, err := config.GetConfigV1()
+			Expect(err).NotTo(HaveOccurred())
+
+			conf := nospecconf.Spec
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
 					"bar": {Validation: "^\\d+$"}, // Must be an integer
@@ -313,7 +321,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					},
 				},
 			}
-			_, err := validator.ValidateCreate(ctx, obj)
+			_, err = validator.ValidateCreate(ctx, obj)
 
 			var serr *apierrors.StatusError
 			Expect(errors.As(err, &serr)).To(BeTrue())
@@ -397,7 +405,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should warn when quota limits are set higher than requests", func() {
-			conf := config.GetConfigV1().Spec
+			nospecconf, err := config.GetConfigV1()
+			Expect(err).NotTo(HaveOccurred())
+
+			conf := nospecconf.Spec
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{}
 			config.SetConfigV1(v1alpha1.PaasConfig{Spec: conf})
 
@@ -430,7 +441,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should warn when extra permissions are requested for a capability that are not configured", func() {
-			conf := config.GetConfigV1().Spec
+			nospecconf, err := config.GetConfigV1()
+			Expect(err).NotTo(HaveOccurred())
+
+			conf := nospecconf.Spec
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
 				ExtraPermissions: v1alpha1.ConfigCapPerm{
 					"bar": []string{"baz"},

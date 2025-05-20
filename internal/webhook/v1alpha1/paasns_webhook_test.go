@@ -61,7 +61,10 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
-		config.SetConfigV1(conf)
+
+		err = config.SetConfigV1(conf)
+		Expect(err).NotTo(HaveOccurred())
+
 		createNamespace(paasSystem)
 
 		mycrypt, privateKey, err = newGeneratedCrypt(paasName)

@@ -35,10 +35,14 @@ func resetCrypts() {
 func getRsaPrivateKeys(ctx context.Context, _c client.Client) (*crypt.PrivateKeys, error) {
 	ctx, logger := logging.GetLogComponent(ctx, "webhook_getRsaPrivateKeys")
 	rsaSecret := &corev1.Secret{}
-	config := cnf.GetConfigV1().Spec
+	conf, err := cnf.GetConfigV1()
+	if err != nil {
+		return nil, err
+	}
+	config := conf.Spec
 	namespacedName := config.DecryptKeysSecret
 
-	err := _c.Get(ctx, types.NamespacedName{
+	err = _c.Get(ctx, types.NamespacedName{
 		Name:      namespacedName.Name,
 		Namespace: namespacedName.Namespace,
 	}, rsaSecret)

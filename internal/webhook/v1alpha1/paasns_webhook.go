@@ -284,6 +284,14 @@ func compareGroups(subGroups []string, superGroups []string) (errs field.ErrorLi
 
 // validatePaasNsName returns an error when the naam of the PaasNs does not meet validations RE
 func validatePaasNsName(name string) (errs field.ErrorList) {
+	conf, err := config.GetConfigV1()
+	if err != nil {
+		errs = append(errs, field.InternalError(
+			field.NewPath("paasconfig"),
+			fmt.Errorf("unable to retrieve paasconfig: %s", err),
+		))
+	}
+
 	if strings.Contains(name, ".") {
 		errs = append(errs, field.Invalid(
 			field.NewPath("metadata").Key("name"),
@@ -291,9 +299,9 @@ func validatePaasNsName(name string) (errs field.ErrorList) {
 			"paasns name should not contain dots",
 		))
 	}
-	nameValidationRE := config.GetConfigV1().GetValidationRE("paasNs", "name")
+	nameValidationRE := conf.GetValidationRE("paasNs", "name")
 	if nameValidationRE == nil {
-		nameValidationRE = config.GetConfigV1().GetValidationRE("paas", "namespaceName")
+		nameValidationRE = conf.GetValidationRE("paas", "namespaceName")
 	}
 	if nameValidationRE == nil {
 		return errs

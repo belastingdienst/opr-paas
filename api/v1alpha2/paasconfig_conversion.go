@@ -34,9 +34,9 @@ func (p *PaasConfig) ConvertTo(dstRaw conversion.Hub) error {
 	dst.ObjectMeta = p.ObjectMeta
 	dst.Status.Conditions = p.Status.Conditions
 	dst.Spec = v1alpha1.PaasConfigSpec{}
-	spec := dst.Spec
+	spec := &dst.Spec
 
-	spec.DecryptKeysSecret = v1alpha1.NamespacedName(p.Spec.DecryptKeysSecret)
+	spec.DecryptKeysSecret = p.Spec.DecryptKeysSecret.ConvertTo()
 	spec.Debug = p.Spec.Debug
 
 	// Convert configcapability
@@ -45,7 +45,7 @@ func (p *PaasConfig) ConvertTo(dstRaw conversion.Hub) error {
 		spec.Capabilities[key] = val.ConvertTo()
 	}
 
-	spec.GroupSyncList = v1alpha1.NamespacedName(p.Spec.GroupSyncList)
+	spec.GroupSyncList = p.Spec.GroupSyncList.ConvertTo()
 	spec.GroupSyncListKey = p.Spec.GroupSyncListKey
 	spec.LDAP = v1alpha1.ConfigLdap(p.Spec.LDAP)
 	spec.ArgoPermissions = v1alpha1.ConfigArgoPermissions{}
@@ -60,6 +60,13 @@ func (p *PaasConfig) ConvertTo(dstRaw conversion.Hub) error {
 	spec.Validations = p.Spec.Validations.convertTo()
 
 	return nil
+}
+
+func (nn *NamespacedName) ConvertTo() v1alpha1.NamespacedName {
+	return v1alpha1.NamespacedName{
+		Namespace: nn.Namespace,
+		Name:      nn.Name,
+	}
 }
 
 // convertTo converts a v1alpha2 ConfigCapability into a v1alpha1 ConfigCapability.
@@ -160,7 +167,7 @@ func (p *PaasConfig) ConvertFrom(srcRaw conversion.Hub) error {
 	p.Spec = PaasConfigSpec{}
 	spec := &p.Spec
 
-	spec.DecryptKeysSecret = NamespacedName(src.Spec.DecryptKeysSecret)
+	spec.DecryptKeysSecret = spec.DecryptKeysSecret.ConvertFrom(src.Spec.DecryptKeysSecret)
 	spec.Debug = src.Spec.Debug
 
 	spec.Capabilities = make(map[string]ConfigCapability, len(src.Spec.Capabilities))
@@ -168,7 +175,7 @@ func (p *PaasConfig) ConvertFrom(srcRaw conversion.Hub) error {
 		spec.Capabilities[key] = ConfigCapability{}.convertFrom(val)
 	}
 
-	spec.GroupSyncList = NamespacedName(src.Spec.GroupSyncList)
+	spec.GroupSyncList = spec.GroupSyncList.ConvertFrom(src.Spec.GroupSyncList)
 	spec.GroupSyncListKey = src.Spec.GroupSyncListKey
 	spec.LDAP = ConfigLdap(src.Spec.LDAP)
 	spec.ClusterWideArgoCDNamespace = src.Spec.ClusterWideArgoCDNamespace
@@ -180,6 +187,13 @@ func (p *PaasConfig) ConvertFrom(srcRaw conversion.Hub) error {
 	spec.Validations = PaasConfigValidations{}.convertFrom(src.Spec.Validations)
 
 	return nil
+}
+
+func (nn *NamespacedName) ConvertFrom(n v1alpha1.NamespacedName) NamespacedName {
+	return NamespacedName{
+		Namespace: n.Namespace,
+		Name:      n.Name,
+	}
 }
 
 func (cc ConfigCapability) convertFrom(src v1alpha1.ConfigCapability) ConfigCapability {

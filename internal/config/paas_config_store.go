@@ -31,11 +31,13 @@ func GetConfig() v1alpha2.PaasConfig {
 	return cnf.store
 }
 
-func GetConfigV1() v1alpha1.PaasConfig {
-	v1conf := v1alpha1.PaasConfig{}
-	(&cnf.store).ConvertTo(&v1conf)
+func GetConfigV1() (v1alpha1.PaasConfig, error) {
+	cnf.mutex.RLock()
+	defer cnf.mutex.RUnlock()
 
-	return v1conf
+	var v1conf v1alpha1.PaasConfig
+	err := (&cnf.store).ConvertTo(&v1conf)
+	return v1conf, err
 }
 
 // SetConfig updates the current configuration
@@ -46,8 +48,9 @@ func SetConfig(cfg v1alpha2.PaasConfig) {
 }
 
 // SetConfig updates the current configuration
-func SetConfigV1(cfg v1alpha1.PaasConfig) {
+func SetConfigV1(cfg v1alpha1.PaasConfig) error {
 	cnf.mutex.Lock()
 	defer cnf.mutex.Unlock()
-	(&cnf.store).ConvertFrom(&cfg)
+
+	return (&cnf.store).ConvertFrom(&cfg)
 }
