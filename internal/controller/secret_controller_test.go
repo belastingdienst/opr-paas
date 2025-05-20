@@ -119,10 +119,10 @@ var _ = Describe("secret controller", Ordered, func() {
 					"cpu": resourcev1.MustParse("1"),
 				},
 				// TODO: For next tests
-				// Namespaces: []string{"my-namespace"},
-				// SSHSecrets: map[string]string{
-				// 	"paas-namespace-git-repo": encryptedString,
-				// },
+				Namespaces: []string{paasName},
+				SSHSecrets: map[string]string{
+					"paas-namespace-git-repo": encryptedString,
+				},
 			},
 		}
 
@@ -189,6 +189,32 @@ var _ = Describe("secret controller", Ordered, func() {
 			var found *corev1.Secret
 			for _, s := range secrets.Items {
 				if strings.HasPrefix(string(s.Data["url"]), "paasns-git-repo") {
+					found = &s
+					break
+				}
+			}
+
+			Expect(found).NotTo(BeNil())
+			Expect(found.Data["sshPrivateKey"]).To(Equal([]byte("some encrypted string")))
+		})
+	})
+
+	When("reconciling a paas namespace with a SshSecrets value", func() {
+		It("should not return an error", func() {
+			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, pns.GetObjectMeta().GetNamespace(),
+				paas.Spec.SSHSecrets)
+
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should create a secret with the decrypted data", func() {
+			secrets := &corev1.SecretList{}
+			err := k8sClient.List(ctx, secrets, client.InNamespace(paasName))
+			Expect(err).NotTo(HaveOccurred())
+
+			var found *corev1.Secret
+			for _, s := range secrets.Items {
+				if strings.HasPrefix(string(s.Data["url"]), "paas-namespace-git-repo") {
 					found = &s
 					break
 				}
