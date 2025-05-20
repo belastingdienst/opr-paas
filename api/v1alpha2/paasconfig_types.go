@@ -290,6 +290,8 @@ func (config PaasConfigSpec) CapabilityK8sName(capName string) (as types.Namespa
 	} else {
 		as.Name = fmt.Sprintf("paas-%s", capName)
 	}
+	as.Namespace = config.ClusterWideArgoCDNamespace
+
 	return as
 }
 
