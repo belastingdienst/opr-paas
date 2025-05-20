@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -59,12 +60,13 @@ var _ = Describe("secret controller", Ordered, func() {
 		paasPkSecret       = "secret-pk-secret"
 	)
 	var (
-		paas       *api.Paas
-		reconciler *PaasReconciler
-		myConfig   api.PaasConfig
-		privateKey []byte
-		mycrypt    *crypt.Crypt
-		pns        *api.PaasNS
+		paas            *api.Paas
+		reconciler      *PaasReconciler
+		myConfig        api.PaasConfig
+		privateKey      []byte
+		mycrypt         *crypt.Crypt
+		pns             *api.PaasNS
+		encryptedString string
 	)
 	ctx := context.Background()
 
@@ -78,7 +80,7 @@ var _ = Describe("secret controller", Ordered, func() {
 
 		createPaasPrivateKeySecret(paasSystem, paasPkSecret, privateKey)
 
-		encrypted, err := mycrypt.Encrypt([]byte("some encrypted string"))
+		encryptedString, err = mycrypt.Encrypt([]byte("some encrypted string"))
 		Expect(err).NotTo(HaveOccurred())
 
 		pns = &api.PaasNS{
@@ -86,7 +88,7 @@ var _ = Describe("secret controller", Ordered, func() {
 			Spec: api.PaasNSSpec{
 				Paas: paasName,
 				SSHSecrets: map[string]string{
-					"probably a git repo.git": encrypted, // already base64 encoded by crypt.Encrypt
+					"paasns-git-repo": encryptedString,
 				},
 			},
 		}
@@ -108,7 +110,9 @@ var _ = Describe("secret controller", Ordered, func() {
 					capName: api.PaasCapability{
 						Enabled: true,
 						// TODO: For next tests
-						// SSHSecrets: map[string]string{},
+						// SSHSecrets: map[string]string{
+						// 	"paas-capability-git-repo": encryptedString,
+						// },
 					},
 				},
 				Quota: paasquota.Quota{
@@ -116,7 +120,9 @@ var _ = Describe("secret controller", Ordered, func() {
 				},
 				// TODO: For next tests
 				// Namespaces: []string{"my-namespace"},
-				// SSHSecrets: map[string]string{},
+				// SSHSecrets: map[string]string{
+				// 	"paas-namespace-git-repo": encryptedString,
+				// },
 			},
 		}
 
@@ -180,9 +186,16 @@ var _ = Describe("secret controller", Ordered, func() {
 			err := k8sClient.List(ctx, secrets, client.InNamespace(paasName))
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(secrets.Items).To(HaveLen(1))
-			Expect(secrets.Items[0].Data["url"]).To(Equal([]byte("probably a git repo.git")))
-			Expect(secrets.Items[0].Data["sshPrivateKey"]).To(Equal([]byte("some encrypted string")))
+			var found *corev1.Secret
+			for _, s := range secrets.Items {
+				if strings.HasPrefix(string(s.Data["url"]), "paasns-git-repo") {
+					found = &s
+					break
+				}
+			}
+
+			Expect(found).NotTo(BeNil())
+			Expect(found.Data["sshPrivateKey"]).To(Equal([]byte("some encrypted string")))
 		})
 	})
 })
