@@ -104,12 +104,29 @@ func (r *PaasReconciler) ensureAppSetCap(
 
 	myConfig := config.GetConfig()
 	templater := templating.NewTemplater(*paas, myConfig)
-	templatedElements, err := templater.CapCustomFieldsToMap(capName)
-	if err != nil {
-		return err
+	templatedElements := make(templating.TemplateResult)
+	spec := myConfig.GetSpec()
+	capConfig := spec.Capabilities[capName]
+	for name, fieldConfig := range capConfig.CustomFields {
+		if fieldConfig.Template != "" {
+			fieldResult, err := templater.TemplateToMap(name, fieldConfig.Template)
+			if err != nil {
+				templatedElements = nil
+				return err
+			}
+			templatedElements = templatedElements.Merge(fieldResult)
+		}
 	}
+
 	capability := paas.Spec.Capabilities[capName]
-	capElements, err := capability.CapExtraFields(myConfig.Spec.Capabilities[capName].CustomFields)
+
+	// FIXME(hikarukin): temporarily convert v2 to v1
+	cfs := make(map[string]v1alpha1.ConfigCustomField, len(myConfig.Spec.Capabilities[capName].CustomFields))
+	for key, val := range myConfig.Spec.Capabilities[capName].CustomFields {
+		cfs[key] = val.ConvertTo()
+	}
+
+	capElements, err := capability.CapExtraFields(cfs)
 	if err != nil {
 		return err
 	}

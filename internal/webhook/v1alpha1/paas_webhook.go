@@ -113,7 +113,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	if paas.DeletionTimestamp != nil {
 		return nil, nil
 	}
-	conf := config.GetConfig().Spec
+	conf := config.GetConfigV1().Spec
 	// Check for uninitialized config
 	if conf.DecryptKeysSecret.Name == "" {
 		return nil, apierrors.NewInternalError(errors.New("uninitialized PaasConfig"))
@@ -183,7 +183,7 @@ func validatePaasName(
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
-	nameValidationRE := config.GetConfig().GetValidationRE("paas", "name")
+	nameValidationRE := config.GetConfigV1().GetValidationRE("paas", "name")
 	if nameValidationRE == nil {
 		return nil, nil
 	}
@@ -209,9 +209,9 @@ func validatePaasNamespaceNames(
 
 	// We use same value for paas.spec.namespaces and paasns.metadata.name validation.
 	// Unless both are set.
-	nameValidationRE := config.GetConfig().GetValidationRE("paas", "namespaceName")
+	nameValidationRE := config.GetConfigV1().GetValidationRE("paas", "namespaceName")
 	if nameValidationRE == nil {
-		nameValidationRE = config.GetConfig().GetValidationRE("paasNs", "name")
+		nameValidationRE = config.GetConfigV1().GetValidationRE("paasNs", "name")
 	}
 	if nameValidationRE == nil {
 		return nil, nil
@@ -238,7 +238,7 @@ func validatePaasRequestor(
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
-	nameValidationRE := config.GetConfig().GetValidationRE("paas", "requestor")
+	nameValidationRE := config.GetConfigV1().GetValidationRE("paas", "requestor")
 	if nameValidationRE == nil {
 		return nil, nil
 	}
@@ -261,7 +261,7 @@ func validateGroupNames(
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
-	groupNameValidationRE := config.GetConfig().GetValidationRE("paas", "groupName")
+	groupNameValidationRE := config.GetConfigV1().GetValidationRE("paas", "groupName")
 	if groupNameValidationRE == nil {
 		return nil, nil
 	}
@@ -328,7 +328,7 @@ func validateCustomFields(
 
 	for cname, c := range paas.Spec.Capabilities {
 		// validateCaps() has already ensured the capability configuration exists
-		if _, err := c.CapExtraFields(config.GetConfig().Spec.Capabilities[cname].CustomFields); err != nil {
+		if _, err := c.CapExtraFields(config.GetConfigV1().Spec.Capabilities[cname].CustomFields); err != nil {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("capabilities").Key(cname),
 				"custom_fields",

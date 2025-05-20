@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/belastingdienst/opr-paas/api"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
@@ -47,6 +48,14 @@ type PaasConfig struct {
 
 func (p PaasConfig) GetConditions() []metav1.Condition {
 	return p.Status.Conditions
+}
+
+func (p PaasConfig) GetSpec() PaasConfigSpec {
+	return p.Spec
+}
+
+func (pcs PaasConfigSpec) GetCapabilities() api.ConfigCapabilities {
+	return pcs.Capabilities
 }
 
 type PaasConfigSpec struct {

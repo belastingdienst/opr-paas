@@ -37,6 +37,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -45,9 +46,9 @@ var (
 	k8sClient     client.Client
 	testEnv       *envtest.Environment
 	pubkey        *rsa.PublicKey
-	genericConfig = api.PaasConfig{
-		Spec: api.PaasConfigSpec{
-			DecryptKeysSecret: api.NamespacedName{
+	genericConfig = v1alpha2.PaasConfig{
+		Spec: v1alpha2.PaasConfigSpec{
+			DecryptKeysSecret: v1alpha2.NamespacedName{
 				Name:      "keys",
 				Namespace: "paas-system",
 			},

@@ -291,9 +291,9 @@ func validatePaasNsName(name string) (errs field.ErrorList) {
 			"paasns name should not contain dots",
 		))
 	}
-	nameValidationRE := config.GetConfig().GetValidationRE("paasNs", "name")
+	nameValidationRE := config.GetConfigV1().GetValidationRE("paasNs", "name")
 	if nameValidationRE == nil {
-		nameValidationRE = config.GetConfig().GetValidationRE("paas", "namespaceName")
+		nameValidationRE = config.GetConfigV1().GetValidationRE("paas", "namespaceName")
 	}
 	if nameValidationRE == nil {
 		return errs

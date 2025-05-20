@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -208,7 +209,7 @@ func (r *PaasReconciler) removeFromClusterWideQuota(
 ) error {
 	var quota *quotav1.ClusterResourceQuota
 	quotaName := fmt.Sprintf("%s%s", cwqPrefix, capabilityName)
-	var capConfig v1alpha1.ConfigCapability
+	var capConfig v1alpha2.ConfigCapability
 	var exists bool
 	if capConfig, exists = config.GetConfig().Spec.Capabilities[capabilityName]; !exists {
 		// If a Paas was created with a capability that was nog yet configured, we should be able to delete it.

@@ -69,7 +69,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			},
 		}
 
-		config.SetConfig(conf)
+		config.SetConfigV1(conf)
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
 		Expect(obj).NotTo(BeNil(), "Expected obj to be initialized")
@@ -94,7 +94,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			const paasNameValidation = "^([a-z0-9]{3})-([a-z0-9]{3})$"
 			conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"name": paasNameValidation}}
 
-			config.SetConfig(conf)
+			config.SetConfigV1(conf)
 			obj = &v1alpha1.Paas{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "this-is-invalid",
@@ -119,7 +119,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			} {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
 				conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"requestor": test.validation}}
-				config.SetConfig(conf)
+				config.SetConfigV1(conf)
 				obj.Spec.Requestor = test.requestor
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn).To(BeNil())
@@ -142,7 +142,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			} {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
 				conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"namespaceName": test.validation}}
-				config.SetConfig(conf)
+				config.SetConfigV1(conf)
 				obj.Spec.Namespaces = []string{test.name}
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn).To(BeNil())
@@ -220,13 +220,17 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should deny creation when a capability custom field is not configured", func() {
-			conf := config.GetConfig().Spec
+			v1conf := v1alpha1.PaasConfig{}
+			v2conf := config.GetConfig()
+			(&v2conf).ConvertTo(&v1conf)
+			conf := v1conf.Spec
+
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
 					"bar": {},
 				},
 			}
-			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
+			config.SetConfigV1(v1alpha1.PaasConfig{Spec: conf})
 
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
@@ -257,13 +261,13 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should deny creation when a capability is missing a required custom field", func() {
-			conf := config.GetConfig().Spec
+			conf := config.GetConfigV1().Spec
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
 					"bar": {Required: true},
 				},
 			}
-			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
+			config.SetConfigV1(v1alpha1.PaasConfig{Spec: conf})
 
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
@@ -288,14 +292,14 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should deny creation when a custom field does not match validation regex", func() {
-			conf := config.GetConfig().Spec
+			conf := config.GetConfigV1().Spec
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
 					"bar": {Validation: "^\\d+$"}, // Must be an integer
 					"baz": {Validation: "^\\w+$"}, // Must not be whitespace
 				},
 			}
-			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
+			config.SetConfigV1(v1alpha1.PaasConfig{Spec: conf})
 
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
@@ -326,7 +330,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 
 		It("Should validate group names", func() {
 			conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"groupName": "^[a-z0-9-]{1,63}$"}}
-			config.SetConfig(conf)
+			config.SetConfigV1(conf)
 			validChars := "abcdefghijklmknopqrstuvwzyz-0123456789"
 			for _, test := range []struct {
 				name  string
@@ -393,9 +397,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should warn when quota limits are set higher than requests", func() {
-			conf := config.GetConfig().Spec
+			conf := config.GetConfigV1().Spec
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{}
-			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
+			config.SetConfigV1(v1alpha1.PaasConfig{Spec: conf})
 
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
@@ -426,7 +430,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should warn when extra permissions are requested for a capability that are not configured", func() {
-			conf := config.GetConfig().Spec
+			conf := config.GetConfigV1().Spec
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
 				ExtraPermissions: v1alpha1.ConfigCapPerm{
 					"bar": []string{"baz"},
@@ -435,7 +439,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			conf.Capabilities["bar"] = v1alpha1.ConfigCapability{
 				// No extra permissions
 			}
-			config.SetConfig(v1alpha1.PaasConfig{Spec: conf})
+			config.SetConfigV1(v1alpha1.PaasConfig{Spec: conf})
 
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{

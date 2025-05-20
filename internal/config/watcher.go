@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -38,7 +39,7 @@ func Watch(restConfig *rest.Config, httpClient *http.Client, scheme *runtime.Sch
 
 	for {
 		event := <-watcher.ResultChan()
-		paasConfig, ok := event.Object.(*v1alpha1.PaasConfig)
+		paasConfig, ok := event.Object.(*v1alpha2.PaasConfig)
 		if !ok {
 			return errors.New("unexpected object type in PaasConfig watcher")
 		}
@@ -48,7 +49,7 @@ func Watch(restConfig *rest.Config, httpClient *http.Client, scheme *runtime.Sch
 			SetConfig(*paasConfig)
 		case watch.Deleted:
 			logger.Info().Msg("resetting PaasConfig")
-			SetConfig(v1alpha1.PaasConfig{})
+			SetConfig(v1alpha2.PaasConfig{})
 		}
 	}
 }
