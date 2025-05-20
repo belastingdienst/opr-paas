@@ -33,7 +33,7 @@ const (
 	// ManagedByLabelKey is the key of the label that specifies the tool being used to manage the operation of this
 	// application. For more info, see
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
-	ManagedByLabelKey = "app.kubernetes.io/managed-by"
+	ManagedByLabelKey = "cpet.belastingdienst.nl/managed-by-paas"
 )
 
 func (r *PaasReconciler) ensureGroup(
