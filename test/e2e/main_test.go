@@ -35,19 +35,12 @@ import (
 
 var testenv env.Environment
 
-var examplePaasConfig = v1alpha1.PaasConfig{
+var examplePaasConfig = v1alpha2.PaasConfig{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "paas-config",
 	},
-	Spec: v1alpha1.PaasConfigSpec{
-		ArgoEnabled: true,
-		ArgoPermissions: v1alpha1.ConfigArgoPermissions{
-			ResourceName:  "argocd",
-			DefaultPolicy: "role:tester",
-			Role:          "admin",
-			Header:        "g, system:cluster-admins, role:admin",
-		},
-		Capabilities: map[string]v1alpha1.ConfigCapability{
+	Spec: v1alpha2.PaasConfigSpec{
+		Capabilities: map[string]v1alpha2.ConfigCapability{
 			"argocd": {
 				AppSet: "argoas",
 				DefaultPermissions: map[string][]string{
@@ -57,7 +50,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 				ExtraPermissions: map[string][]string{
 					"argo-service-argocd-application-controller": {"admin"},
 				},
-				QuotaSettings: v1alpha1.ConfigQuotaSettings{
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 						corev1.ResourceLimitsCPU:       resourcev1.MustParse("5"),
 						corev1.ResourceLimitsMemory:    resourcev1.MustParse("4Gi"),
@@ -70,7 +63,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 						),
 					},
 				},
-				CustomFields: map[string]v1alpha1.ConfigCustomField{
+				CustomFields: map[string]v1alpha2.ConfigCustomField{
 					"git_url": {
 						Required: true,
 						// in yaml you need escaped slashes: '^ssh:\/\/git@scm\/[a-zA-Z0-9-.\/]*.git$'
@@ -88,7 +81,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 			},
 			"cap5": {
 				AppSet: "cap5as",
-				QuotaSettings: v1alpha1.ConfigQuotaSettings{
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 						corev1.ResourceLimitsCPU:       resourcev1.MustParse("6"),
 						corev1.ResourceLimitsMemory:    resourcev1.MustParse("7Gi"),
@@ -110,7 +103,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 				ExtraPermissions: map[string][]string{
 					"pipeline": {"admin"},
 				},
-				QuotaSettings: v1alpha1.ConfigQuotaSettings{
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
 					Clusterwide: true,
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 						corev1.ResourceLimitsCPU:       resourcev1.MustParse("5"),
@@ -136,7 +129,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 			},
 			"sso": {
 				AppSet: "ssoas",
-				QuotaSettings: v1alpha1.ConfigQuotaSettings{
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
 					Clusterwide: false,
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 						corev1.ResourceLimitsCPU:       resourcev1.MustParse("1"),
@@ -153,7 +146,7 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 			},
 			"grafana": {
 				AppSet: "grafanaas",
-				QuotaSettings: v1alpha1.ConfigQuotaSettings{
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
 					DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 						corev1.ResourceLimitsCPU:       resourcev1.MustParse("2"),
 						corev1.ResourceLimitsMemory:    resourcev1.MustParse("2Gi"),
@@ -170,17 +163,16 @@ var examplePaasConfig = v1alpha1.PaasConfig{
 		},
 		ClusterWideArgoCDNamespace: "asns",
 		Debug:                      false,
-		DecryptKeysSecret: v1alpha1.NamespacedName{
+		DecryptKeysSecret: v1alpha2.NamespacedName{
 			Name:      "example-keys",
 			Namespace: "paas-system",
 		},
-		ExcludeAppSetName: "whatever",
-		GroupSyncList: v1alpha1.NamespacedName{
+		GroupSyncList: v1alpha2.NamespacedName{
 			Namespace: "gsns",
 			Name:      "wlname",
 		},
 		GroupSyncListKey: "groupsynclist.txt",
-		LDAP: v1alpha1.ConfigLdap{
+		LDAP: v1alpha2.ConfigLdap{
 			Host: "ldap.example.com",
 			Port: 13,
 		},
@@ -222,7 +214,7 @@ func TestMain(m *testing.M) {
 	// Global setup
 	testenv.Setup(
 		func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-			paasconfig := &v1alpha1.PaasConfig{}
+			paasconfig := &v1alpha2.PaasConfig{}
 			*paasconfig = examplePaasConfig
 
 			// Create PaasConfig resource for testing
@@ -233,7 +225,7 @@ func TestMain(m *testing.M) {
 
 			waitUntilPaasConfigExists := conditions.New(cfg.Client().Resources()).
 				ResourceMatch(paasconfig, func(obj k8s.Object) bool {
-					return obj.(*v1alpha1.PaasConfig).Name == paasconfig.Name
+					return obj.(*v1alpha2.PaasConfig).Name == paasconfig.Name
 				})
 
 			if err := waitForDefaultOpts(ctx, waitUntilPaasConfigExists); err != nil {
@@ -247,7 +239,7 @@ func TestMain(m *testing.M) {
 	testenv.Finish(
 		func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
 			// Delete the PaasConfig resource
-			paasConfig := &v1alpha1.PaasConfig{
+			paasConfig := &v1alpha2.PaasConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "paas-config",
 				},
