@@ -42,7 +42,7 @@ type PaasReconciler struct {
 }
 
 // GetScheme is a simple getter for the Scheme of the Paas Controller logic
-func (r PaasReconciler) GetScheme() *runtime.Scheme {
+func (r PaasReconciler) getScheme() *runtime.Scheme {
 	return r.Scheme
 }
 
@@ -51,7 +51,7 @@ type Reconciler interface {
 	Get(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error
 	Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
 	Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
-	GetScheme() *runtime.Scheme
+	getScheme() *runtime.Scheme
 	Delete(context.Context, client.Object, ...client.DeleteOption) error
 }
 
@@ -93,7 +93,19 @@ func (r *PaasReconciler) getPaasFromRequest(
 
 	if paas.GetDeletionTimestamp() != nil {
 		logger.Info().Msg("paas marked for deletion")
-		return nil, r.updateFinalizer(ctx, paas)
+		if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
+			return nil, nil
+		}
+		for _, finalizationFunc := range []func(context.Context, *v1alpha1.Paas) error{
+			r.setFinalizing,
+			r.finalizePaas,
+			r.removeFinalizer,
+		} {
+			if err = finalizationFunc(ctx, paas); err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
 	}
 
 	// Started reconciling, reset status
@@ -113,7 +125,7 @@ func (r *PaasReconciler) getPaasFromRequest(
 		return nil, err
 	}
 
-	if err := r.Get(ctx, req.NamespacedName, paas); err != nil {
+	if err = r.Get(ctx, req.NamespacedName, paas); err != nil {
 		logger.Err(err).Msg("failed to re-fetch Paas")
 		return nil, err
 	}
@@ -135,58 +147,57 @@ func (r *PaasReconciler) getPaasFromRequest(
 	return paas, nil
 }
 
-func (r *PaasReconciler) updateFinalizer(
+func (r *PaasReconciler) setFinalizing(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
 	logger := log.Ctx(ctx)
 
-	if controllerutil.ContainsFinalizer(paas, paasFinalizer) {
-		logger.Info().Msg("finalizing Paas")
-		// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
-		meta.SetStatusCondition(paas.GetConditions(), metav1.Condition{
-			Type:   v1alpha1.TypeDegradedPaas,
-			Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: paas.GetGeneration(),
-			Message: fmt.Sprintf("Performing finalizer operations for Paas: %s ", paas.GetName()),
-		})
+	logger.Info().Msg("finalizing Paas")
+	// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
+	meta.SetStatusCondition(paas.GetConditions(), metav1.Condition{
+		Type:   v1alpha1.TypeDegradedPaas,
+		Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: paas.GetGeneration(),
+		Message: fmt.Sprintf("Performing finalizer operations for Paas: %s ", paas.GetName()),
+	})
 
-		if err := r.Status().Update(ctx, paas); err != nil {
-			logger.Err(err).Msg("Failed to update Paas status")
-			return err
-		}
-		// Run finalization logic for paasFinalizer. If the
-		// finalization logic fails, don't remove the finalizer so
-		// that we can retry during the next reconciliation.
-		if err := r.finalizePaas(ctx, paas); err != nil {
-			return err
-		}
-
-		meta.SetStatusCondition(paas.GetConditions(), metav1.Condition{
-			Type:   v1alpha1.TypeDegradedPaas,
-			Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: paas.GetGeneration(),
-			Message: fmt.Sprintf("Finalizer operations for Paas %s name were successfully accomplished",
-				paas.GetName()),
-		})
-
-		if err := r.Status().Update(ctx, paas); err != nil {
-			logger.Err(err).Msg("Failed to update Paas status")
-			return err
-		}
-
-		logger.Info().Msg("removing finalizer")
-		// Remove paasFinalizer. Once all finalizers have been
-		// removed, the object will be deleted.
-		controllerutil.RemoveFinalizer(paas, paasFinalizer)
-		if err := r.Update(ctx, paas); err != nil {
-			return err
-		}
-		logger.Info().Msg("finalization finished")
+	if err := r.Status().Update(ctx, paas); err != nil {
+		logger.Err(err).Msg("Failed to update Paas status")
+		return err
 	}
+	return nil
+}
+
+func (r *PaasReconciler) removeFinalizer(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+) error {
+	logger := log.Ctx(ctx)
+	meta.SetStatusCondition(paas.GetConditions(), metav1.Condition{
+		Type:   v1alpha1.TypeDegradedPaas,
+		Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: paas.GetGeneration(),
+		Message: fmt.Sprintf("Finalizer operations for Paas %s name were successfully accomplished",
+			paas.GetName()),
+	})
+
+	if err := r.Status().Update(ctx, paas); err != nil {
+		logger.Err(err).Msg("Failed to update Paas status")
+		return err
+	}
+
+	logger.Info().Msg("removing finalizer")
+	// Remove paasFinalizer. Once all finalizers have been
+	// removed, the object will be deleted.
+	controllerutil.RemoveFinalizer(paas, paasFinalizer)
+	if err := r.Update(ctx, paas); err != nil {
+		return err
+	}
+	logger.Info().Msg("finalization finished")
 
 	return nil
 }
 
-// Reconcile is the main entrypoint for Reconcilliation of a Paas resource
+// Reconcile is the main entrypoint for Reconciliation of a Paas resource
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
 func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
@@ -194,11 +205,6 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	ctx, logger := logging.SetControllerLogger(ctx, paas, r.Scheme, req)
 
 	if paas, err = r.getPaasFromRequest(ctx, req); err != nil {
-		// TODO(portly-halicore-76) move to admission webhook once available
-		// Don't requeue that often when no config is found
-		if strings.Contains(err.Error(), noConfigFoundMsg) {
-			return ctrl.Result{RequeueAfter: requeueTimeout}, nil
-		}
 		logger.Err(err).Msg("could not get Paas from k8s")
 		return ctrl.Result{}, err
 	}
@@ -244,10 +250,10 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	}
 
 	// Reconciling succeeded, set appropriate Condition
-	return ctrl.Result{}, r.setSuccesfullCondition(ctx, paas)
+	return ctrl.Result{}, r.setSuccessfulCondition(ctx, paas)
 }
 
-func (r *PaasReconciler) setSuccesfullCondition(ctx context.Context, paas *v1alpha1.Paas) error {
+func (r *PaasReconciler) setSuccessfulCondition(ctx context.Context, paas *v1alpha1.Paas) error {
 	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{
 		Type:   v1alpha1.TypeReadyPaas,
 		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: paas.Generation,
@@ -276,19 +282,7 @@ func (r *PaasReconciler) setErrorCondition(ctx context.Context, resource paasres
 	return r.Status().Update(ctx, resource)
 }
 
-func paasFromPaasNs(mgr ctrl.Manager, obj client.Object) []reconcile.Request {
-	// Enqueue all Paas objects
-	var reqs []reconcile.Request
-	var ns corev1.Namespace
-	logger := mgr.GetLogger()
-	if err := mgr.GetClient().Get(
-		context.Background(),
-		types.NamespacedName{Name: obj.GetNamespace()},
-		&ns,
-	); err != nil {
-		logger.Error(err, "unable to get namespace where paasns resides")
-		return nil
-	}
+func paasFromNs(ns corev1.Namespace) (string, error) {
 	var paasNames []string
 	for _, ref := range ns.OwnerReferences {
 		if ref.Kind == "Paas" && *ref.Controller {
@@ -296,39 +290,19 @@ func paasFromPaasNs(mgr ctrl.Manager, obj client.Object) []reconcile.Request {
 		}
 	}
 	if len(paasNames) == 0 {
-		logger.Error(
-			errors.New("failed to get owner reference with kind paas and controller=true from namespace resource"),
-			"finding paas for paasns without owner reference",
-			"ns",
-			ns,
-		)
+		return "", errors.New("failed to get owner reference with kind paas and controller=true from namespace")
 	} else if len(paasNames) > 1 {
-		logger.Error(
-			errors.New("found multiple owner references with kind paas and controller=true"),
-			"finding paas for paasns without owner reference",
-			"ns",
-			ns,
-		)
+		return "", errors.New("found multiple owner references with kind paas and controller=true")
 	}
 	paasName := paasNames[0]
 	if !strings.HasPrefix(ns.Name, paasName+"-") {
-		logger.Error(
-			errors.New("namespace is not prefixed with paasName in owner reference"),
-			"finding paas for paasns without owner reference",
-			"ns",
-			ns,
-		)
+		return "", errors.New("namespace is not prefixed with paasName in owner reference")
 	}
-
-	reqs = append(reqs, reconcile.Request{
-		NamespacedName: types.NamespacedName{
-			Name: paasName,
-		},
-	})
-
-	return reqs
+	return paasName, nil
 }
 
+// allPaases is a simple wrapper to collect all Paas'es and created requests for them on PaasConfig changes
+// allPaases is not unittests ATM. We might add a e2e test for this instead.
 func allPaases(mgr ctrl.Manager) []reconcile.Request {
 	// Enqueue all Paas objects
 	var reqs []reconcile.Request
@@ -351,6 +325,7 @@ func allPaases(mgr ctrl.Manager) []reconcile.Request {
 }
 
 // SetupWithManager sets up the controller with the Manager.
+// SetupWithManager is not unittesterd ATM. Mostly already covered by e2e tests.
 func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Paas{}, builder.WithPredicates(
@@ -364,8 +339,24 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(
 			&v1alpha1.PaasNS{},
 			handler.EnqueueRequestsFromMapFunc(
-				func(_ context.Context, obj client.Object) []reconcile.Request {
-					return paasFromPaasNs(mgr, obj)
+				func(_ context.Context, paasNsObj client.Object) []reconcile.Request {
+					var ns corev1.Namespace
+					logger := mgr.GetLogger()
+					if err := mgr.GetClient().Get(
+						context.Background(),
+						types.NamespacedName{Name: paasNsObj.GetNamespace()},
+						&ns,
+					); err != nil {
+						logger.Error(err, "unable to get namespace where paasns resides")
+						return nil
+					}
+					paasName, err := paasFromNs(ns)
+					if err != nil {
+						logger.Error(err, "finding paas for paasns without owner reference", "ns", ns)
+						return nil
+					}
+					return []reconcile.Request{{
+						NamespacedName: types.NamespacedName{Name: paasName}}}
 				},
 			),
 			builder.WithPredicates(v1alpha1.ActivePaasConfigUpdated()),
@@ -385,7 +376,6 @@ func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) 
 	logger.Debug().Msg("inside Paas finalizer")
 
 	paasReconcilers := []func(context.Context, *v1alpha1.Paas) error{
-		// r.finalizeClusterQuotas,
 		r.finalizeGroups,
 		r.finalizePaasClusterRoleBindings,
 		r.finalizeClusterWideQuotas,

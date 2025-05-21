@@ -50,7 +50,7 @@ func ensureRoleBinding(
 	}
 	var changed bool
 	if !paas.AmIOwner(found.OwnerReferences) {
-		if err = controllerutil.SetControllerReference(paas, found, r.GetScheme()); err != nil {
+		if err = controllerutil.SetControllerReference(paas, found, r.getScheme()); err != nil {
 			logger.Err(err).Msg("error setting rolebinding owner")
 			return err
 		}
@@ -139,7 +139,7 @@ func backendRoleBinding(
 		},
 	}
 	logger.Info().Msg("setting Owner")
-	if err := controllerutil.SetControllerReference(paas, rb, r.GetScheme()); err != nil {
+	if err := controllerutil.SetControllerReference(paas, rb, r.getScheme()); err != nil {
 		return rb, err
 	}
 
@@ -223,8 +223,8 @@ func (r *PaasReconciler) reconcileNamespaceRolebindings(
 		// Convert the groupKey to a groupName to map the rolebinding subjects to a group
 		groupName := paas.GroupKey2GroupName(groupKey)
 		for _, mappedRole := range config.GetConfig().Spec.RoleMappings.Roles(groupRoles) {
-			if role, exists := roles[mappedRole]; exists {
-				roles[mappedRole] = append(role, groupName)
+			if groups, exists := roles[mappedRole]; exists {
+				roles[mappedRole] = append(groups, groupName)
 			} else {
 				roles[mappedRole] = []string{groupName}
 			}

@@ -7,7 +7,11 @@ See LICENSE.md for details.
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -24,6 +28,8 @@ import (
 )
 
 const allowedOriginsVal = "*"
+const rsaKeySize = 2048
+const testPaasName = "testPaas"
 
 // Helper function for testing
 func performRequest(r http.Handler, method, path string) *httptest.ResponseRecorder {
@@ -208,9 +214,9 @@ func Test_v1CheckPaas(t *testing.T) {
 	defer toDefer()
 
 	// Encrypt secret for test
-	rsa := getRsa("testPaas")
+	retrievedRsa := getRsa(testPaasName)
 
-	encrypted, err := rsa.Encrypt([]byte("My test string"))
+	encrypted, err := retrievedRsa.Encrypt([]byte("My test string"))
 	require.NoError(t, err)
 
 	getConfig()
@@ -221,7 +227,7 @@ func Test_v1CheckPaas(t *testing.T) {
 	validRequest := RestCheckPaasInput{
 		Paas: v1alpha1.Paas{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "testPaas",
+				Name: testPaasName,
 			},
 			Spec: v1alpha1.PaasSpec{
 				SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
@@ -241,7 +247,7 @@ func Test_v1CheckPaas(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	response := RestCheckPaasResult{
-		PaasName:  "testPaas",
+		PaasName:  testPaasName,
 		Decrypted: true,
 		Error:     "",
 	}
@@ -283,6 +289,87 @@ func Test_v1CheckPaas(t *testing.T) {
 	assert.JSONEq(t, string(response2JSON), w.Body.String())
 }
 
+func generateRSAPrivateKeyPEM(bits int) (string, error) {
+	// Generate the RSA private key
+	privateKey, err := rsa.GenerateKey(rand.Reader, bits)
+	if err != nil {
+		return "", err
+	}
+
+	// Encode the private key to PKCS#1 ASN.1 PEM
+	privDER := x509.MarshalPKCS1PrivateKey(privateKey)
+	privPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: privDER,
+	})
+
+	return string(privPEM), nil
+}
+
+//revive:disable-next-line
+func Test_v1Encrypt(t *testing.T) {
+	// Allow all origins for test
+	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
+
+	// Reset config if any test before set config
+	_config = nil
+	_crypt = nil
+
+	_, _, toDefer := makeCrypt(t)
+	defer toDefer()
+
+	getConfig()
+	router := setupRouter()
+
+	w := httptest.NewRecorder()
+
+	privKey, err := generateRSAPrivateKeyPEM(rsaKeySize)
+	if err != nil {
+		panic(err)
+	}
+
+	validRequest := RestEncryptInput{
+		PaasName: testPaasName,
+		Secret:   privKey,
+	}
+	encryptJson, _ := json.Marshal(validRequest)
+
+	req, _ := http.NewRequest("POST", "/v1/encrypt", strings.NewReader(string(encryptJson)))
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	var responseObject RestEncryptResult
+	err = json.Unmarshal(w.Body.Bytes(), &responseObject)
+	if err != nil {
+		panic(err)
+	}
+	assert.Equal(t, testPaasName, responseObject.PaasName)
+	assert.True(t, responseObject.Valid)
+	assert.NotEmpty(t, responseObject.Encrypted)
+
+	// Reset recorder
+	w = httptest.NewRecorder()
+
+	invalidRequest := RestEncryptInput{
+		PaasName: "testPaas2",
+		Secret:   "invalidPrivateKey",
+	}
+
+	invalidEncryptjson, _ := json.Marshal(invalidRequest)
+
+	req2, _ := http.NewRequest("POST", "/v1/encrypt", strings.NewReader(string(invalidEncryptjson)))
+	router.ServeHTTP(w, req2)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	response2 := RestEncryptResult{
+		PaasName:  "testPaas2",
+		Valid:     false,
+		Encrypted: "",
+	}
+	response2JSON, _ := json.MarshalIndent(response2, "", "    ")
+	assert.JSONEq(t, string(response2JSON), w.Body.String())
+}
+
 func Test_v1CheckPaasInternalServerError(t *testing.T) {
 	// Allow all origins for test
 	t.Setenv(allowedOriginsEnv, allowedOriginsVal)
@@ -299,7 +386,7 @@ func Test_v1CheckPaasInternalServerError(t *testing.T) {
 	validRequest := RestCheckPaasInput{
 		Paas: v1alpha1.Paas{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "testPaas",
+				Name: testPaasName,
 			},
 			Spec: v1alpha1.PaasSpec{
 				SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": "ZW5jcnlwdGVkCg=="},
