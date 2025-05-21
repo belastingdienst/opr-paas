@@ -6,7 +6,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
@@ -262,20 +261,20 @@ func TestConfigCapPerm_AsConfigRolesSas(t *testing.T) {
 	})
 }
 
-func TestActivePaasConfigUpdated(t *testing.T) {
+func TestActivePaasConfigUpdated_UpdateEvents(t *testing.T) {
 	pred := ActivePaasConfigUpdated()
 
-	trueCondition := v1.Condition{
+	trueCondition := metav1.Condition{
 		Type:               TypeActivePaasConfig,
-		Status:             v1.ConditionTrue,
-		LastTransitionTime: v1.Time{Time: time.Now()},
+		Status:             metav1.ConditionTrue,
+		LastTransitionTime: metav1.Time{Time: time.Now()},
 	}
 
 	t.Run("returns true when Active condition transitions to true", func(t *testing.T) {
 		oldObj := &PaasConfig{}
 		newObj := &PaasConfig{
 			Status: PaasConfigStatus{
-				Conditions: []v1.Condition{trueCondition},
+				Conditions: []metav1.Condition{trueCondition},
 			},
 		}
 		result := pred.Update(event.UpdateEvent{
@@ -289,13 +288,13 @@ func TestActivePaasConfigUpdated(t *testing.T) {
 		oldObj := &PaasConfig{
 			Spec: PaasConfigSpec{RequestorLabel: "a"},
 			Status: PaasConfigStatus{
-				Conditions: []v1.Condition{trueCondition},
+				Conditions: []metav1.Condition{trueCondition},
 			},
 		}
 		newObj := &PaasConfig{
 			Spec: PaasConfigSpec{RequestorLabel: "b"},
 			Status: PaasConfigStatus{
-				Conditions: []v1.Condition{trueCondition},
+				Conditions: []metav1.Condition{trueCondition},
 			},
 		}
 		result := pred.Update(event.UpdateEvent{
@@ -309,13 +308,13 @@ func TestActivePaasConfigUpdated(t *testing.T) {
 		oldObj := &PaasConfig{
 			Spec: PaasConfigSpec{RequestorLabel: "same"},
 			Status: PaasConfigStatus{
-				Conditions: []v1.Condition{trueCondition},
+				Conditions: []metav1.Condition{trueCondition},
 			},
 		}
 		newObj := &PaasConfig{
 			Spec: PaasConfigSpec{RequestorLabel: "same"},
 			Status: PaasConfigStatus{
-				Conditions: []v1.Condition{trueCondition},
+				Conditions: []metav1.Condition{trueCondition},
 			},
 		}
 		result := pred.Update(event.UpdateEvent{
@@ -334,10 +333,20 @@ func TestActivePaasConfigUpdated(t *testing.T) {
 		})
 		assert.False(t, result)
 	})
+}
 
-	t.Run("Create/Delete/Generic return false", func(t *testing.T) {
+func TestActivePaasConfigUpdated_NonUpdateEvents(t *testing.T) {
+	pred := ActivePaasConfigUpdated()
+
+	t.Run("CreateFunc returns false", func(t *testing.T) {
 		assert.False(t, pred.Create(event.CreateEvent{}))
+	})
+
+	t.Run("DeleteFunc returns false", func(t *testing.T) {
 		assert.False(t, pred.Delete(event.DeleteEvent{}))
+	})
+
+	t.Run("GenericFunc returns false", func(t *testing.T) {
 		assert.False(t, pred.Generic(event.GenericEvent{}))
 	})
 }
