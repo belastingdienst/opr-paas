@@ -103,45 +103,6 @@ func backendNamespace(
 	return ns, nil
 }
 
-func (r *PaasReconciler) finalizeNamespace(
-	ctx context.Context,
-	paas *v1alpha1.Paas,
-	nsName string,
-) error {
-	found := &corev1.Namespace{}
-	err := r.Get(ctx, types.NamespacedName{
-		Name: nsName,
-	}, found)
-	if err != nil && errors.IsNotFound(err) {
-		return nil
-	}
-	if err != nil {
-		// Error that isn't due to the namespace not existing
-		return err
-	}
-	if !paas.AmIOwner(found.OwnerReferences) {
-		err = fmt.Errorf("cannot remove Namespace %s because Paas %s is not the owner", found.Name, paas.Name)
-		return err
-	}
-	return r.Delete(ctx, found)
-}
-
-func (r *PaasReconciler) finalizeNamespaces(
-	ctx context.Context,
-	paas *v1alpha1.Paas,
-) (err error) {
-	ctx, logger := logging.GetLogComponent(ctx, "namespace")
-	nsDefs, err := r.nsDefsFromPaas(ctx, paas)
-	if err != nil {
-		return err
-	}
-	for _, nsDef := range nsDefs {
-		r.finalizeNamespace(ctx, paas, nsDef.nsName)
-		logger.Debug().Msgf("namespace %s successfully created with quota %s", nsDef.nsName, nsDef.quota)
-	}
-	return nil
-}
-
 func (r *PaasReconciler) reconcileNamespaces(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
