@@ -492,7 +492,7 @@ func (p Paas) WithoutMe(references []metav1.OwnerReference) (withoutMe []metav1.
 }
 
 // GetConditions is required for Paas to be used as v1alpha1.Resource
-func (p Paas) GetConditions() *[]metav1.Condition {
+func (p *Paas) GetConditions() *[]metav1.Condition {
 	return &p.Status.Conditions
 }
 

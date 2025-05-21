@@ -12,7 +12,9 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -175,6 +177,42 @@ func patchAppSet(ctx context.Context, newAppSet *appv1.ApplicationSet) {
 	}
 }
 
+func createPaasPrivateKeySecret(ctx context.Context, ns string, name string, privateKey []byte) {
+	// Set up private key
+	err := k8sClient.Create(ctx, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+		Data: map[string][]byte{"privatekey0": privateKey},
+	})
+	if err != nil {
+		Fail(fmt.Errorf("failed to create %s.%s secret: %w", ns, name, err).Error())
+	}
+}
+
+func newGeneratedCrypt(ctx string) (myCrypt *crypt.Crypt, privateKey []byte, err error) {
+	tmpFileError := "failed to get new tmp private key file: %w"
+	privateKeyFile, err := os.CreateTemp("", "private")
+	if err != nil {
+		return nil, nil, fmt.Errorf(tmpFileError, err)
+	}
+	publicKeyFile, err := os.CreateTemp("", "public")
+	if err != nil {
+		return nil, nil, fmt.Errorf(tmpFileError, err)
+	}
+	myCrypt, err = crypt.NewGeneratedCrypt(privateKeyFile.Name(), publicKeyFile.Name(), ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf(tmpFileError, err)
+	}
+	privateKey, err = os.ReadFile(privateKeyFile.Name())
+	if err != nil {
+		return nil, nil, errors.New("failed to read private key from file")
+	}
+
+	return myCrypt, privateKey, nil
+}
+
 func assureNamespace(ctx context.Context, namespaceName string) {
 	oldNs := &corev1.Namespace{}
 	namespacedName := types.NamespacedName{
@@ -188,26 +226,6 @@ func assureNamespace(ctx context.Context, namespaceName string) {
 	err = k8sClient.Create(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: namespaceName},
 	})
-	Expect(err).NotTo(HaveOccurred())
-}
-
-func assurePaas(ctx context.Context, newPaas *api.Paas) {
-	oldPaas := &api.Paas{}
-	namespacedName := types.NamespacedName{
-		Name: newPaas.Name,
-	}
-	err := k8sClient.Get(ctx, namespacedName, oldPaas)
-	if err == nil {
-		return
-	}
-	Expect(err.Error()).To(MatchRegexp(`paas.cpet.belastingdienst.nl .* not found`))
-	err = k8sClient.Create(ctx, newPaas)
-	Expect(err).NotTo(HaveOccurred())
-}
-
-func validatePaasNSExists(ctx context.Context, namespaceName string, paasNSName string) {
-	pns := api.PaasNS{}
-	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasNSName, Namespace: namespaceName}, &pns)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -227,6 +245,54 @@ func assureNamespaceWithPaasReference(ctx context.Context, namespaceName string,
 		Expect(err).NotTo(HaveOccurred())
 	}
 }
+
+func assurePaas(ctx context.Context, newPaas api.Paas) {
+	oldPaas := &api.Paas{}
+	namespacedName := types.NamespacedName{
+		Name: newPaas.Name,
+	}
+	err := k8sClient.Get(ctx, namespacedName, oldPaas)
+	if err == nil {
+		return
+	}
+	Expect(err.Error()).To(MatchRegexp(`paas.cpet.belastingdienst.nl .* not found`))
+	err = k8sClient.Create(ctx, &newPaas)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func validatePaasNSExists(ctx context.Context, namespaceName string, paasNSName string) {
+	pns := api.PaasNS{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasNSName, Namespace: namespaceName}, &pns)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func assurePaasNS(ctx context.Context, paasNs api.PaasNS) {
+	assureNamespace(ctx, paasNs.GetNamespace())
+	oldPaasNS := &api.PaasNS{}
+	namespacedName := types.NamespacedName{Name: paasNs.GetName(), Namespace: paasNs.GetNamespace()}
+	err := k8sClient.Get(ctx, namespacedName, oldPaasNS)
+	if err == nil {
+		return
+	}
+	Expect(err.Error()).To(MatchRegexp(`paasns.cpet.belastingdienst.nl .* not found`))
+	if paasNs.Spec.Paas == "" {
+		paasNs.Spec.Paas = paasNs.GetNamespace()
+	}
+	err = k8sClient.Create(ctx, &paasNs)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func getPaas(ctx context.Context, paasName string) *api.Paas {
+	paas := &api.Paas{}
+	namespacedName := types.NamespacedName{
+		Name: paasName,
+	}
+	err := k8sClient.Get(ctx, namespacedName, paas)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(paas).NotTo(BeNil())
+	return paas
+}
+
 func assureAppSet(ctx context.Context, name string, namespace string) {
 	appSet := &appv1.ApplicationSet{
 		ObjectMeta: metav1.ObjectMeta{
