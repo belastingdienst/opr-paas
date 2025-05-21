@@ -197,7 +197,7 @@ func (r *PaasReconciler) removeFinalizer(
 	return nil
 }
 
-// Reconcile is the main entrypoint for Reconcilliation of a Paas resource
+// Reconcile is the main entrypoint for Reconciliation of a Paas resource
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
 func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
@@ -376,12 +376,10 @@ func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) 
 	logger.Debug().Msg("inside Paas finalizer")
 
 	paasReconcilers := []func(context.Context, *v1alpha1.Paas) error{
-		r.finalizeClusterQuotas,
 		r.finalizeGroups,
 		r.finalizePaasClusterRoleBindings,
 		r.finalizeClusterWideQuotas,
 		r.finalizeAppSetCaps,
-		r.finalizeNamespaces,
 	}
 
 	for _, reconciler := range paasReconcilers {
