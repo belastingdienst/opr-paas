@@ -31,6 +31,7 @@ func GetConfig() v1alpha2.PaasConfig {
 	return cnf.store
 }
 
+// GetConfigV1 retrieves the current configuration as a v1alpha1.PaasConfig
 func GetConfigV1() (v1alpha1.PaasConfig, error) {
 	cnf.mutex.RLock()
 	defer cnf.mutex.RUnlock()
@@ -47,7 +48,7 @@ func SetConfig(cfg v1alpha2.PaasConfig) {
 	cnf.store = cfg
 }
 
-// SetConfig updates the current configuration
+// SetConfigV1 updates the current configuration using a v1alpha1.PaasConfig as input
 func SetConfigV1(cfg v1alpha1.PaasConfig) error {
 	cnf.mutex.Lock()
 	defer cnf.mutex.Unlock()

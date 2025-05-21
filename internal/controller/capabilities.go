@@ -107,9 +107,10 @@ func (r *PaasReconciler) ensureAppSetCap(
 	templatedElements := make(templating.TemplateResult)
 	spec := myConfig.GetSpec()
 	capConfig := spec.Capabilities[capName]
+	var fieldResult templating.TemplateResult
 	for name, fieldConfig := range capConfig.CustomFields {
 		if fieldConfig.Template != "" {
-			fieldResult, err := templater.TemplateToMap(name, fieldConfig.Template)
+			fieldResult, err = templater.TemplateToMap(name, fieldConfig.Template)
 			if err != nil {
 				templatedElements = nil
 				return err

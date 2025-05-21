@@ -19,49 +19,50 @@ import (
 // ---------- ConvertTo
 
 // ConvertTo converts this PaasConfig (v1alpha2) to the Hub version (v1alpha1).
-func (p *PaasConfig) ConvertTo(dstRaw conversion.Hub) error {
+func (pc *PaasConfig) ConvertTo(dstRaw conversion.Hub) error {
 	dst, ok := dstRaw.(*v1alpha1.PaasConfig)
 	if !ok {
 		return fmt.Errorf("cannot convert to v1alpha1: got %T", dstRaw)
 	}
 
 	logger := log.With().
-		Any("conversion", p.GetObjectKind().GroupVersionKind()).
-		Str("name", p.GetName()).
+		Any("conversion", pc.GetObjectKind().GroupVersionKind()).
+		Str("name", pc.GetName()).
 		Logger()
 	logger.Debug().Msg("Starting conversion from spoke (v1alpha2) to hub (v1alpha1)")
 
-	dst.ObjectMeta = p.ObjectMeta
-	dst.Status.Conditions = p.Status.Conditions
+	dst.ObjectMeta = pc.ObjectMeta
+	dst.Status.Conditions = pc.Status.Conditions
 	dst.Spec = v1alpha1.PaasConfigSpec{}
 	spec := &dst.Spec
 
-	spec.DecryptKeysSecret = p.Spec.DecryptKeysSecret.ConvertTo()
-	spec.Debug = p.Spec.Debug
+	spec.DecryptKeysSecret = pc.Spec.DecryptKeysSecret.ConvertTo()
+	spec.Debug = pc.Spec.Debug
 
 	// Convert configcapability
-	spec.Capabilities = make(map[string]v1alpha1.ConfigCapability, len(p.Spec.Capabilities))
-	for key, val := range p.Spec.Capabilities {
+	spec.Capabilities = make(map[string]v1alpha1.ConfigCapability, len(pc.Spec.Capabilities))
+	for key, val := range pc.Spec.Capabilities {
 		spec.Capabilities[key] = val.ConvertTo()
 	}
 
-	spec.GroupSyncList = p.Spec.GroupSyncList.ConvertTo()
-	spec.GroupSyncListKey = p.Spec.GroupSyncListKey
-	spec.LDAP = v1alpha1.ConfigLdap(p.Spec.LDAP)
+	spec.GroupSyncList = pc.Spec.GroupSyncList.ConvertTo()
+	spec.GroupSyncListKey = pc.Spec.GroupSyncListKey
+	spec.LDAP = v1alpha1.ConfigLdap(pc.Spec.LDAP)
 	spec.ArgoPermissions = v1alpha1.ConfigArgoPermissions{}
 	spec.ArgoEnabled = false
-	spec.ClusterWideArgoCDNamespace = p.Spec.ClusterWideArgoCDNamespace
-	spec.QuotaLabel = p.Spec.QuotaLabel
-	spec.RequestorLabel = p.Spec.RequestorLabel
-	spec.ManagedByLabel = p.Spec.ManagedByLabel
-	spec.ManagedBySuffix = p.Spec.ManagedBySuffix
+	spec.ClusterWideArgoCDNamespace = pc.Spec.ClusterWideArgoCDNamespace
+	spec.QuotaLabel = pc.Spec.QuotaLabel
+	spec.RequestorLabel = pc.Spec.RequestorLabel
+	spec.ManagedByLabel = pc.Spec.ManagedByLabel
+	spec.ManagedBySuffix = pc.Spec.ManagedBySuffix
 	spec.ExcludeAppSetName = ""
-	spec.RoleMappings = p.Spec.RoleMappings.convertTo()
-	spec.Validations = p.Spec.Validations.convertTo()
+	spec.RoleMappings = pc.Spec.RoleMappings.convertTo()
+	spec.Validations = pc.Spec.Validations.convertTo()
 
 	return nil
 }
 
+// ConvertTo converts a v1alpha2 NamespacedName into a v1alpha1 NamespacedName.
 func (nn *NamespacedName) ConvertTo() v1alpha1.NamespacedName {
 	return v1alpha1.NamespacedName{
 		Namespace: nn.Namespace,
@@ -69,17 +70,17 @@ func (nn *NamespacedName) ConvertTo() v1alpha1.NamespacedName {
 	}
 }
 
-// convertTo converts a v1alpha2 ConfigCapability into a v1alpha1 ConfigCapability.
-func (c *ConfigCapability) ConvertTo() v1alpha1.ConfigCapability {
+// ConvertTo converts a v1alpha2 ConfigCapability into a v1alpha1 ConfigCapability.
+func (cc *ConfigCapability) ConvertTo() v1alpha1.ConfigCapability {
 	dst := v1alpha1.ConfigCapability{}
-	dst.AppSet = c.AppSet
-	dst.DefaultPermissions = v1alpha1.ConfigCapPerm(c.DefaultPermissions)
-	dst.ExtraPermissions = v1alpha1.ConfigCapPerm(c.ExtraPermissions)
-	dst.QuotaSettings = c.QuotaSettings.convertTo()
+	dst.AppSet = cc.AppSet
+	dst.DefaultPermissions = v1alpha1.ConfigCapPerm(cc.DefaultPermissions)
+	dst.ExtraPermissions = v1alpha1.ConfigCapPerm(cc.ExtraPermissions)
+	dst.QuotaSettings = cc.QuotaSettings.convertTo()
 
 	// Convert customfields
-	dst.CustomFields = make(map[string]v1alpha1.ConfigCustomField, len(c.CustomFields))
-	for key, val := range c.CustomFields {
+	dst.CustomFields = make(map[string]v1alpha1.ConfigCustomField, len(cc.CustomFields))
+	for key, val := range cc.CustomFields {
 		// Use the method defined on ConfigCustomField
 		dst.CustomFields[key] = val.ConvertTo()
 	}
@@ -88,23 +89,23 @@ func (c *ConfigCapability) ConvertTo() v1alpha1.ConfigCapability {
 }
 
 // convertTo converts a v1alpha2.ConfigQuotaSettings to v1alpha1.ConfigQuotaSettings.
-func (c *ConfigQuotaSettings) convertTo() v1alpha1.ConfigQuotaSettings {
+func (cqs *ConfigQuotaSettings) convertTo() v1alpha1.ConfigQuotaSettings {
 	return v1alpha1.ConfigQuotaSettings{
-		Clusterwide: c.Clusterwide,
-		Ratio:       c.Ratio,
-		DefQuota:    c.DefQuota,
-		MinQuotas:   c.MinQuotas,
-		MaxQuotas:   c.MaxQuotas,
+		Clusterwide: cqs.Clusterwide,
+		Ratio:       cqs.Ratio,
+		DefQuota:    cqs.DefQuota,
+		MinQuotas:   cqs.MinQuotas,
+		MaxQuotas:   cqs.MaxQuotas,
 	}
 }
 
-// convertTo converts a v1alpha2.ConfigCustomField to v1alpha1.ConfigCustomField.
-func (cf *ConfigCustomField) ConvertTo() v1alpha1.ConfigCustomField {
+// ConvertTo converts a v1alpha2.ConfigCustomField to v1alpha1.ConfigCustomField.
+func (ccf *ConfigCustomField) ConvertTo() v1alpha1.ConfigCustomField {
 	return v1alpha1.ConfigCustomField{
-		Validation: cf.Validation,
-		Default:    cf.Default,
-		Template:   cf.Template,
-		Required:   cf.Required,
+		Validation: ccf.Validation,
+		Default:    ccf.Default,
+		Template:   ccf.Template,
+		Required:   ccf.Required,
 	}
 }
 
@@ -150,7 +151,7 @@ func (pcv PaasConfigValidations) convertTo() v1alpha1.PaasConfigValidations {
 // ------ ConvertFrom
 
 // ConvertFrom converts from the Hub version (v1alpha1) to this version (v1alpha2).
-func (p *PaasConfig) ConvertFrom(srcRaw conversion.Hub) error {
+func (pc *PaasConfig) ConvertFrom(srcRaw conversion.Hub) error {
 	src, ok := srcRaw.(*v1alpha1.PaasConfig)
 	if !ok {
 		return fmt.Errorf("cannot convert from %T: expected v1alpha1.PaasConfig", srcRaw)
@@ -162,10 +163,10 @@ func (p *PaasConfig) ConvertFrom(srcRaw conversion.Hub) error {
 		Logger()
 	logger.Debug().Msg("Starting conversion from hub (v1alpha1) to spoke (v1alpha2)")
 
-	p.ObjectMeta = src.ObjectMeta
-	p.Status.Conditions = src.Status.Conditions
-	p.Spec = PaasConfigSpec{}
-	spec := &p.Spec
+	pc.ObjectMeta = src.ObjectMeta
+	pc.Status.Conditions = src.Status.Conditions
+	pc.Spec = PaasConfigSpec{}
+	spec := &pc.Spec
 
 	spec.DecryptKeysSecret = spec.DecryptKeysSecret.ConvertFrom(src.Spec.DecryptKeysSecret)
 	spec.Debug = src.Spec.Debug
@@ -189,6 +190,7 @@ func (p *PaasConfig) ConvertFrom(srcRaw conversion.Hub) error {
 	return nil
 }
 
+// ConvertFrom converts the given v1alpha1.NamespacedName to v1alpha2.NamespacedName
 func (nn *NamespacedName) ConvertFrom(n v1alpha1.NamespacedName) NamespacedName {
 	return NamespacedName{
 		Namespace: n.Namespace,

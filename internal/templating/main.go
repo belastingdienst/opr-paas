@@ -12,6 +12,7 @@ import (
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 )
 
+// PaasUnion is an interface representing either a v1alpha1.Paas or a v1alpha2.Paas
 type PaasUnion interface {
 	v1alpha1.Paas | v1alpha2.Paas
 }
