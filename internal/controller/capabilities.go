@@ -58,12 +58,11 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	paas *v1alpha1.Paas,
 ) error {
 	paasConfigSpec := config.GetConfig().Spec
-	for capName := range paas.Spec.Capabilities {
+	for capName, capability := range paas.Spec.Capabilities {
 		if _, exists := paasConfigSpec.Capabilities[capName]; !exists {
 			return errors.New("capability not configured")
 		}
 		// Only do this when enabled
-		capability := paas.Spec.Capabilities[capName]
 		if enabled := capability.IsEnabled(); enabled {
 			if err := r.ensureAppSetCap(ctx, paas, capName); err != nil {
 				return err
@@ -207,14 +206,27 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	return r.Patch(ctx, as, patch)
 }
 
-// finalizeAppSetCaps ensures all capabilities that exist are removed from the Capability Applicationsets
-func (r *PaasReconciler) finalizeAppSetCaps(
+// finalizeAllAppSetCaps removes this paas from all capability appsets
+func (r *PaasReconciler) finalizeAllAppSetCaps(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+) error {
+	paasWithoutCaps := paas.DeepCopy()
+	paasWithoutCaps.Spec.Capabilities = nil
+	return r.finalizeDisabledAppSetCaps(ctx, paasWithoutCaps)
+}
+
+// finalizeAppSetCaps removes this paas from all capability appsets that are not enabled in this paas
+func (r *PaasReconciler) finalizeDisabledAppSetCaps(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "Applicationsets")
 	for capName := range config.GetConfig().Spec.Capabilities {
 		logger.Info().Msgf("reconciling %s Applicationset", capName)
+		if capability, exists := paas.Spec.Capabilities[capName]; exists && capability.Enabled {
+			continue
+		}
 		err := r.finalizeAppSetCap(ctx, paas.Name, capName)
 		if err != nil {
 			return err

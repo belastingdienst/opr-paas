@@ -38,27 +38,29 @@ const (
 	ciCap        = "tekton"
 	ssoCap       = "keycloak"
 	extraCap     = "extra"
-	myKind       = "MyKind"
+	myKind       = "Paas"
 	otherKind    = "MyOtherKind"
-	myVersion    = "1.1.1"
 	otherVersion = "1.1.0"
 	myName       = "Some Name"
 	otherName    = "Some Other Name"
 )
 
-var testGroups = PaasGroups{
-	cntest1: PaasGroup{
-		Query: cntest2 + ",OU=org_unit,DC=example,DC=org",
-		Users: []string{"usr1", "usr2"},
-	},
-	cntest3: PaasGroup{
-		Query: cntest4,
-		Users: []string{"usr3", "usr2"},
-	},
-	tstGroup: PaasGroup{
-		Users: []string{"usr3", "usr2"},
-	},
-}
+var (
+	testGroups = PaasGroups{
+		cntest1: PaasGroup{
+			Query: cntest2 + ",OU=org_unit,DC=example,DC=org",
+			Users: []string{"usr1", "usr2"},
+		},
+		cntest3: PaasGroup{
+			Query: cntest4,
+			Users: []string{"usr3", "usr2"},
+		},
+		tstGroup: PaasGroup{
+			Users: []string{"usr3", "usr2"},
+		},
+	}
+	myVersion = paasAPIVersion
+)
 
 // Paas
 

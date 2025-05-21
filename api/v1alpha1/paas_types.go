@@ -464,12 +464,9 @@ func (p Paas) ClonedLabels() map[string]string {
 }
 
 func (p Paas) IsItMe(reference metav1.OwnerReference) bool {
-	apiVersion := p.APIVersion
-	kind := p.Kind
-	name := p.Name
-	if apiVersion != reference.APIVersion ||
-		kind != reference.Kind ||
-		name != reference.Name {
+	if reference.APIVersion != paasAPIVersion ||
+		reference.Kind != "Paas" ||
+		reference.Name != p.Name {
 		return false
 	}
 

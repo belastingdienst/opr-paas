@@ -132,11 +132,11 @@ func (r *PaasReconciler) backendUnneededQuotas(
 	paas *v1alpha1.Paas,
 ) (quotas []string) {
 	paasConfigSpec := config.GetConfig().Spec
-	for name, cap := range paas.Spec.Capabilities {
-		if capConfig, exists := paasConfigSpec.Capabilities[name]; !exists {
-			quotas = append(quotas, fmt.Sprintf("%s-%s", paas.Name, name))
-		} else if !cap.IsEnabled() || capConfig.QuotaSettings.Clusterwide {
-			quotas = append(quotas, fmt.Sprintf("%s-%s", paas.Name, name))
+	for name, capConfig := range paasConfigSpec.Capabilities {
+		if capability, exists := paas.Spec.Capabilities[name]; !exists {
+			quotas = append(quotas, join(paas.Name, name))
+		} else if !capability.IsEnabled() || capConfig.QuotaSettings.Clusterwide {
+			quotas = append(quotas, join(paas.Name, name))
 		}
 	}
 	return quotas

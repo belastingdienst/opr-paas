@@ -84,6 +84,7 @@ func backendNamespace(
 	}
 	logger.Info().Msgf("setting Quotagroup %s", quota)
 	ns.Labels[config.GetConfig().Spec.QuotaLabel] = quota
+	ns.Labels[ManagedByLabelKey] = paas.Name
 
 	argoNameSpace := fmt.Sprintf("%s-%s", paas.ManagedByPaas(), config.GetConfig().Spec.ManagedBySuffix)
 	logger.Info().Msg("setting managed_by_label")
@@ -118,5 +119,35 @@ func (r *PaasReconciler) reconcileNamespaces(
 		}
 		logger.Debug().Msgf("namespace %s successfully created with quota %s", nsDef.nsName, nsDef.quota)
 	}
+	return nil
+}
+
+// finalizeObsoleteNamespaces returns all groups owned by the specified Paas
+func (r *PaasReconciler) finalizeObsoleteNamespaces(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+	nsDefs namespaceDefs,
+) (err error) {
+	var nss corev1.NamespaceList
+	var i int
+	logger := log.Ctx(ctx)
+	listOpts := []client.ListOption{
+		client.MatchingLabels(map[string]string{ManagedByLabelKey: paas.Name}),
+	}
+	err = r.List(ctx, &nss, listOpts...)
+	if err != nil {
+		return err
+	}
+	for _, ns := range nss.Items {
+		if _, exists := nsDefs[ns.Name]; exists {
+			continue
+		}
+		err = r.Delete(ctx, &ns)
+		if err != nil {
+			return err
+		}
+		i++
+	}
+	logger.Debug().Msgf("found %d existing groups owned by Paas %s", i, paas.Name)
 	return nil
 }
