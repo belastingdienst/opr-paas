@@ -8,9 +8,6 @@ package controller
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
@@ -51,7 +48,7 @@ var _ = Describe("testing hashdata", func() {
 
 var _ = Describe("secret controller", Ordered, func() {
 	const (
-		paasRequestor      = "paas-controller"
+		paasRequestor      = "paas-controller-test"
 		paasName           = "my-paas"
 		capAppSetNamespace = "asns"
 		capAppSetName      = "argoas"
@@ -78,7 +75,7 @@ var _ = Describe("secret controller", Ordered, func() {
 		mycrypt, privateKey, err = newGeneratedCrypt(paasRequestor)
 		Expect(err).NotTo(HaveOccurred())
 
-		createPaasPrivateKeySecret(paasSystem, paasPkSecret, privateKey)
+		createPaasPrivateKeySecret(ctx, paasSystem, paasPkSecret, privateKey)
 
 		encryptedString, err = mycrypt.Encrypt([]byte("some encrypted string"))
 		Expect(err).NotTo(HaveOccurred())
@@ -249,40 +246,3 @@ var _ = Describe("secret controller", Ordered, func() {
 		})
 	})
 })
-
-func newGeneratedCrypt(cryptContext string) (myCrypt *crypt.Crypt, privateKey []byte, err error) {
-	tmpFileError := "failed to get new tmp private key file: %w"
-	privateKeyFile, err := os.CreateTemp("", "private")
-	if err != nil {
-		return nil, nil, fmt.Errorf(tmpFileError, err)
-	}
-	publicKeyFile, err := os.CreateTemp("", "public")
-	if err != nil {
-		return nil, nil, fmt.Errorf(tmpFileError, err)
-	}
-	myCrypt, err = crypt.NewGeneratedCrypt(privateKeyFile.Name(), publicKeyFile.Name(), cryptContext)
-	if err != nil {
-		return nil, nil, fmt.Errorf(tmpFileError, err)
-	}
-	privateKey, err = os.ReadFile(privateKeyFile.Name())
-	if err != nil {
-		return nil, nil, errors.New("failed to read private key from file")
-	}
-
-	return myCrypt, privateKey, nil
-}
-
-func createPaasPrivateKeySecret(ns string, name string, privateKey []byte) {
-	ctx := context.TODO()
-	// Set up private key
-	err := k8sClient.Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
-		},
-		Data: map[string][]byte{"privatekey0": privateKey},
-	})
-	if err != nil {
-		Fail(fmt.Errorf("failed to create %s.%s secret: %w", ns, name, err).Error())
-	}
-}
