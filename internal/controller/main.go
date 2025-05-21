@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	requeueTimeout   = time.Minute * 10
-	noConfigFoundMsg = "no config found"
+	requeueTimeout = time.Minute * 10
 )
 
 // intersect finds the intersection of 2 lists of strings

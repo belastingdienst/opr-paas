@@ -57,7 +57,7 @@ var _ = Describe("NamespaceDef", func() {
 				},
 			},
 		}
-		assurePaas(ctx, &paas)
+		assurePaas(ctx, paas)
 		paasConfig = v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
