@@ -111,7 +111,7 @@ func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) (allEntri
 // This is apparently a feature slated for Go 2. (https://github.com/golang/go/issues/48522#issuecomment-924380147)
 type withStatus interface {
 	k8s.Object
-	GetConditions() []metav1.Condition
+	GetConditions() *[]metav1.Condition
 }
 
 // waitForStatus accepts a k8s object with a `.status.conditions` block, and waits until the resource has been updated
@@ -138,7 +138,7 @@ func waitForStatus(
 
 			// Filter out all non-current status conditions
 			conds := make([]metav1.Condition, 0)
-			for _, c := range object.(withStatus).GetConditions() {
+			for _, c := range *object.(withStatus).GetConditions() {
 				if currentGen == c.ObservedGeneration {
 					conds = append(conds, c)
 				}

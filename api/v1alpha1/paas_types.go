@@ -462,9 +462,12 @@ func (p Paas) ClonedLabels() map[string]string {
 }
 
 func (p Paas) IsItMe(reference metav1.OwnerReference) bool {
-	if p.APIVersion != reference.APIVersion ||
-		p.Kind != reference.Kind ||
-		p.Name != reference.Name {
+	apiVersion := p.APIVersion
+	kind := p.Kind
+	name := p.Name
+	if apiVersion != reference.APIVersion ||
+		kind != reference.Kind ||
+		name != reference.Name {
 		return false
 	}
 
@@ -489,8 +492,14 @@ func (p Paas) WithoutMe(references []metav1.OwnerReference) (withoutMe []metav1.
 	return withoutMe
 }
 
-func (p Paas) GetConditions() []metav1.Condition {
-	return p.Status.Conditions
+// GetConditions is required for Paas to be used as v1alpha1.Resource
+func (p *Paas) GetConditions() *[]metav1.Condition {
+	return &p.Status.Conditions
+}
+
+// GetGeneration is required for Paas to be used as v1alpha1.Resource
+func (p Paas) GetGeneration() int64 {
+	return p.Generation
 }
 
 // +kubebuilder:object:root=true

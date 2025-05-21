@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package controller
 
 import (
+	"strings"
 	"time"
 )
 
@@ -14,6 +15,10 @@ const (
 	requeueTimeout   = time.Minute * 10
 	noConfigFoundMsg = "no config found"
 )
+
+func join(argv ...string) string {
+	return strings.Join(argv, "-")
+}
 
 // intersect finds the intersection of 2 lists of strings
 func intersect(l1 []string, l2 []string) (li []string) {
