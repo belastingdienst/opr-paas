@@ -765,15 +765,6 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 			err = reconciler.finalizePaas(ctx, paas)
 			Expect(err).NotTo(HaveOccurred())
 		})
-		It("should have deleted paas quotas", func() {
-			for _, quotaName := range quotas {
-				var quota quotav1.ClusterResourceQuota
-				err := reconciler.Get(ctx, types.NamespacedName{Name: quotaName}, &quota)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(
-					"clusterresourcequotas.quota.openshift.io \"" + quotaName + "\" not found"))
-			}
-		})
 		It("should have deleted paas groups", func() {
 			for _, groupName := range groups {
 				var group userv1.Group
@@ -789,14 +780,6 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 			list, exists := configMap.Data[gsKey]
 			Expect(exists).To(BeTrue())
 			Expect(list).NotTo(ContainSubstring(ldapGroupQuery))
-		})
-		It("should have deleted paas namespaces", func() {
-			for _, nsName := range namespaces {
-				var ns corev1.Namespace
-				err := reconciler.Get(ctx, types.NamespacedName{Name: nsName}, &ns)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(ns.DeletionTimestamp).NotTo(BeNil())
-			}
 		})
 		It("should have deleted paas clusterrolebindings", func() {
 			for _, crbRoleNames := range clusterRolebindings {

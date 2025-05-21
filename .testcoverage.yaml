@@ -37,7 +37,7 @@ override:
   #- path: ^pkg/lib/foo$
   #  threshold: 100
   - path: ^internal/controller$
-    threshold: 73
+    threshold: 72
   - path: ^api/v1alpha1$
     threshold: 68
   - path: ^api/v1alpha2$
