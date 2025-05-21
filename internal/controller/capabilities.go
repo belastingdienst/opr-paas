@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/fields"
 	"github.com/belastingdienst/opr-paas/internal/logging"
@@ -104,19 +105,11 @@ func (r *PaasReconciler) ensureAppSetCap(
 
 	myConfig := config.GetConfig()
 	templater := templating.NewTemplater(*paas, myConfig)
-	templatedElements := make(templating.TemplateResult)
 	spec := myConfig.GetSpec()
 	capConfig := spec.Capabilities[capName]
-	var fieldResult templating.TemplateResult
-	for name, fieldConfig := range capConfig.CustomFields {
-		if fieldConfig.Template != "" {
-			fieldResult, err = templater.TemplateToMap(name, fieldConfig.Template)
-			if err != nil {
-				templatedElements = nil
-				return err
-			}
-			templatedElements = templatedElements.Merge(fieldResult)
-		}
+	templatedElements, err := applyCustomFieldTemplates(capConfig.CustomFields, templater)
+	if err != nil {
+		return err
 	}
 
 	capability := paas.Spec.Capabilities[capName]
@@ -161,6 +154,25 @@ func (r *PaasReconciler) ensureAppSetCap(
 
 	appSet.Spec.Generators = clearGenerators(appSet.Spec.Generators)
 	return r.Patch(ctx, appSet, patch)
+}
+
+func applyCustomFieldTemplates(
+	ccfields map[string]v1alpha2.ConfigCustomField,
+	templater templating.Templater[v1alpha1.Paas, v1alpha2.PaasConfig, v1alpha2.PaasConfigSpec],
+) (templating.TemplateResult, error) {
+	var result templating.TemplateResult
+
+	for name, fieldConfig := range ccfields {
+		if fieldConfig.Template != "" {
+			fieldResult, err := templater.TemplateToMap(name, fieldConfig.Template)
+			if err != nil {
+				return nil, err
+			}
+			result = result.Merge(fieldResult)
+		}
+	}
+
+	return result, nil
 }
 
 // finalizeAppSetCap ensures the list entries in the AppSet is removed for the capability of this PaasNs
