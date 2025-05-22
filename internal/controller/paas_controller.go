@@ -245,7 +245,7 @@ func (r *PaasReconciler) reconcileNamespacedResources(
 	if err != nil {
 		return err
 	}
-	logger.Debug().Msgf("Need to create resourced for %d namespaces", len(nsDefs))
+	logger.Debug().Msgf("Need to manage resources for %d namespaces", len(nsDefs))
 	paasNsReconcilers := []func(context.Context, *v1alpha1.Paas, namespaceDefs) error{
 		r.reconcileNamespaces,
 		r.reconcilePaasRolebindings,

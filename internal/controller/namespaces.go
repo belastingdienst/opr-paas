@@ -139,15 +139,14 @@ func (r *PaasReconciler) finalizeObsoleteNamespaces(
 		return err
 	}
 	for _, ns := range nss.Items {
-		if _, exists := nsDefs[ns.Name]; exists {
-			continue
+		if _, exists := nsDefs[ns.Name]; !exists {
+			err = r.Delete(ctx, &ns)
+			if err != nil {
+				return err
+			}
+			i++
 		}
-		err = r.Delete(ctx, &ns)
-		if err != nil {
-			return err
-		}
-		i++
 	}
-	logger.Debug().Msgf("found %d existing groups owned by Paas %s", i, paas.Name)
+	logger.Debug().Msgf("found %d existing namespaces owned by Paas %s", i, paas.Name)
 	return nil
 }
