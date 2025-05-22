@@ -144,7 +144,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 
 					warn, err := validator.ValidateCreate(ctx, obj)
 					Expect(err).Error().To(HaveOccurred())
-					Expect(warn).To(HaveLen(0))
+					Expect(warn).To(BeEmpty())
 
 					var serr *apierrors.StatusError
 					Expect(errors.As(err, &serr)).To(BeTrue())
