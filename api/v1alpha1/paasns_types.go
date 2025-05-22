@@ -97,8 +97,7 @@ func (pns PaasNS) AmIOwner(references []metav1.OwnerReference) bool {
 	return false
 }
 
-// GetConditions is required for Paas to be used as v1alpha1.Resource
-func (pns PaasNS) GetConditions() *[]metav1.Condition {
+func (pns *PaasNS) GetConditions() *[]metav1.Condition {
 	return &pns.Status.Conditions
 }
 

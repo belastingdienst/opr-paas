@@ -21,6 +21,8 @@ const (
 	// TypeDegradedPaasNs represents the status used when the PaasNs is deleted
 	// and the finalizer operations are yet to occur.
 	TypeDegradedPaasNs = "Degraded"
+
+	instanceLabel = "app.kubernetes.io/instance"
 )
 
 // PaasNSSpec defines the desired state of PaasNS
@@ -52,36 +54,6 @@ type PaasNS struct {
 
 	Spec   PaasNSSpec   `json:"spec,omitempty"`
 	Status PaasNsStatus `json:"status,omitempty"`
-}
-
-func (pns PaasNS) ClonedLabels() map[string]string {
-	labels := map[string]string{}
-	for key, value := range pns.Labels {
-		if key != "app.kubernetes.io/instance" {
-			labels[key] = value
-		}
-	}
-	return labels
-}
-
-func (pns PaasNS) IsItMe(reference metav1.OwnerReference) bool {
-	if pns.APIVersion != reference.APIVersion {
-		return false
-	} else if pns.Kind != reference.Kind {
-		return false
-	} else if pns.Name != reference.Name {
-		return false
-	}
-	return true
-}
-
-func (pns PaasNS) AmIOwner(references []metav1.OwnerReference) bool {
-	for _, reference := range references {
-		if pns.IsItMe(reference) {
-			return true
-		}
-	}
-	return false
 }
 
 func (pns PaasNS) GetConditions() []metav1.Condition {

@@ -159,24 +159,6 @@ func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, quotaName str
 	return r.Delete(ctx, obj)
 }
 
-func (r *PaasReconciler) finalizeClusterQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
-	suffixes := []string{
-		"",
-	}
-	for name := range paas.Spec.Capabilities {
-		suffixes = append(suffixes, fmt.Sprintf("-%s", name))
-	}
-
-	var err error
-	for _, suffix := range suffixes {
-		quotaName := fmt.Sprintf("%s%s", paas.Name, suffix)
-		if cleanErr := r.finalizeClusterQuota(ctx, quotaName); cleanErr != nil {
-			err = cleanErr
-		}
-	}
-	return err
-}
-
 func (r *PaasReconciler) reconcileQuotas(
 	ctx context.Context,
 	paas *v1alpha1.Paas,

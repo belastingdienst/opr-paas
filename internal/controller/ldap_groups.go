@@ -42,7 +42,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 	})
 }
 
-// ensureLdapGroup ensures Group presence
+// ensureLdapGroups ensures Group presence
 func (r *PaasReconciler) ensureLdapGroups(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
