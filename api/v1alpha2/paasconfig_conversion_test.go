@@ -18,8 +18,7 @@ import (
 
 var paasconfigExV1Alpha1 = &v1alpha1.PaasConfig{
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      "config-example",
-		Namespace: "platform",
+		Name: "config-example",
 	},
 	Spec: v1alpha1.PaasConfigSpec{
 		Debug: true,
@@ -72,8 +71,7 @@ var paasconfigExV1Alpha1 = &v1alpha1.PaasConfig{
 
 var paasconfigExV1Alpha2 = &PaasConfig{
 	ObjectMeta: metav1.ObjectMeta{
-		Name:      "config-example",
-		Namespace: "platform",
+		Name: "config-example",
 	},
 	Spec: PaasConfigSpec{
 		Debug: true,
