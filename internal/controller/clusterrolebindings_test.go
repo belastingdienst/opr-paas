@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -31,28 +32,28 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 		secondPaas      *api.Paas
 		secondNsDefs    namespaceDefs
 		reconciler      *PaasReconciler
-		paasConfig      api.PaasConfig
-		capConfig       api.ConfigCapability
+		paasConfig      v1alpha2.PaasConfig
+		capConfig       v1alpha2.ConfigCapability
 		defaultCapPerms = []string{capName + "-view"}
 		extraCapPerms   = []string{capName + "-edit"}
 	)
 	BeforeAll(func() {
-		capConfig = api.ConfigCapability{
+		capConfig = v1alpha2.ConfigCapability{
 			AppSet: capAppSetName,
-			DefaultPermissions: api.ConfigCapPerm{
+			DefaultPermissions: v1alpha2.ConfigCapPerm{
 				capName: defaultCapPerms,
 			},
-			ExtraPermissions: api.ConfigCapPerm{
+			ExtraPermissions: v1alpha2.ConfigCapPerm{
 				capName: extraCapPerms,
 			},
 		}
-		paasConfig = api.PaasConfig{
+		paasConfig = v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
-			Spec: api.PaasConfigSpec{
+			Spec: v1alpha2.PaasConfigSpec{
 				ClusterWideArgoCDNamespace: capAppSetNamespace,
-				Capabilities: map[string]api.ConfigCapability{
+				Capabilities: map[string]v1alpha2.ConfigCapability{
 					capName: capConfig,
 				},
 			},

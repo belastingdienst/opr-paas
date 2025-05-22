@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 )
 
 type configInformer struct {
@@ -51,7 +52,7 @@ func addPaasConfigEventHandler(informer cache2.Informer) error {
 
 // updateHandler determines whether the updated config is the active one and if there are spec changes to consume.
 func updateHandler(_, newObj interface{}) {
-	cfg, ok := newObj.(*v1alpha1.PaasConfig)
+	cfg, ok := newObj.(*v1alpha2.PaasConfig)
 	if !ok {
 		return
 	}

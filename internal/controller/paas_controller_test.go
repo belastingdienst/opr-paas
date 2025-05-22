@@ -14,6 +14,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/fields"
 	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
@@ -140,7 +141,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		appSet       *argocd.ApplicationSet
 		reconciler   *PaasReconciler
 		request      controllerruntime.Request
-		myConfig     api.PaasConfig
+		myConfig     v1alpha2.PaasConfig
 		paasName     = paasRequestor
 		capNamespace = paasName + "-" + capName
 		privateKey   []byte
@@ -189,16 +190,16 @@ var _ = Describe("Paas Controller", Ordered, func() {
 				},
 			},
 		}
-		myConfig = api.PaasConfig{
+		myConfig = v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
-			Spec: api.PaasConfigSpec{
+			Spec: v1alpha2.PaasConfigSpec{
 				ClusterWideArgoCDNamespace: capAppSetNamespace,
-				Capabilities: map[string]api.ConfigCapability{
+				Capabilities: map[string]v1alpha2.ConfigCapability{
 					capName: {
 						AppSet: capAppSetName,
-						QuotaSettings: api.ConfigQuotaSettings{
+						QuotaSettings: v1alpha2.ConfigQuotaSettings{
 							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 								corev1.ResourceLimitsCPU: resourcev1.MustParse("5"),
 							},
@@ -206,7 +207,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 					},
 				},
 				Debug: false,
-				DecryptKeysSecret: api.NamespacedName{
+				DecryptKeysSecret: v1alpha2.NamespacedName{
 					Name:      paasPkSecret,
 					Namespace: paasSystem,
 				},
@@ -214,7 +215,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 				ManagedBySuffix: "argocd",
 				RequestorLabel:  "o.lbl",
 				QuotaLabel:      "q.lbl",
-				GroupSyncList: api.NamespacedName{
+				GroupSyncList: v1alpha2.NamespacedName{
 					Namespace: "gsns",
 					Name:      "wlname",
 				},
@@ -561,7 +562,7 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 		paas                 *api.Paas
 		reconciler           *PaasReconciler
 		request              controllerruntime.Request
-		myConfig             api.PaasConfig
+		myConfig             v1alpha2.PaasConfig
 		capNamespace         = paasName + "-" + capName
 		privateKey           []byte
 		mycrypt              *crypt.Crypt
@@ -621,32 +622,32 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 		request.Name = paasName
 		assurePaas(ctx, *paas)
 		Expect(paas.Kind).To(Equal("Paas"))
-		myConfig = api.PaasConfig{
+		myConfig = v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
-			Spec: api.PaasConfigSpec{
+			Spec: v1alpha2.PaasConfigSpec{
 				ClusterWideArgoCDNamespace: capAppSetNamespace,
-				Capabilities: map[string]api.ConfigCapability{
+				Capabilities: map[string]v1alpha2.ConfigCapability{
 					capName: {
 						AppSet: capAppSetName,
-						QuotaSettings: api.ConfigQuotaSettings{
+						QuotaSettings: v1alpha2.ConfigQuotaSettings{
 							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 								corev1.ResourceLimitsCPU: resourcev1.MustParse("5"),
 							},
 						},
-						DefaultPermissions: api.ConfigCapPerm{defaultPermSA: []string{defaultPermCR}},
-						ExtraPermissions:   api.ConfigCapPerm{extraPermSA: []string{extraPermCR}},
+						DefaultPermissions: v1alpha2.ConfigCapPerm{defaultPermSA: []string{defaultPermCR}},
+						ExtraPermissions:   v1alpha2.ConfigCapPerm{extraPermSA: []string{extraPermCR}},
 					},
 				},
-				DecryptKeysSecret: api.NamespacedName{Name: paasPkSecret, Namespace: paasSystem},
+				DecryptKeysSecret: v1alpha2.NamespacedName{Name: paasPkSecret, Namespace: paasSystem},
 				ManagedByLabel:    "argocd.argoproj.io/manby",
 				ManagedBySuffix:   "argocd",
 				RequestorLabel:    "o.lbl",
 				QuotaLabel:        "q.lbl",
-				GroupSyncList:     api.NamespacedName{Namespace: gsNamespace, Name: gsName},
+				GroupSyncList:     v1alpha2.NamespacedName{Namespace: gsNamespace, Name: gsName},
 				GroupSyncListKey:  gsKey,
-				RoleMappings: api.ConfigRoleMappings{
+				RoleMappings: v1alpha2.ConfigRoleMappings{
 					funcRoleName1: []string{techRoleName1},
 					funcRoleName2: []string{techRoleName2},
 				},

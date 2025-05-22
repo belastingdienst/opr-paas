@@ -4,6 +4,7 @@ import (
 	"context"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/quota"
 	. "github.com/onsi/ginkgo/v2"
@@ -27,7 +28,7 @@ var _ = Describe("NamespaceDef", func() {
 	)
 	var (
 		paas         api.Paas
-		paasConfig   api.PaasConfig
+		paasConfig   v1alpha2.PaasConfig
 		ctx          context.Context
 		reconciler   *PaasReconciler
 		namespaces   = []string{ns1, ns2}
@@ -57,12 +58,12 @@ var _ = Describe("NamespaceDef", func() {
 			},
 		}
 		assurePaas(ctx, paas)
-		paasConfig = api.PaasConfig{
+		paasConfig = v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
-			Spec: api.PaasConfigSpec{
-				Capabilities: map[string]api.ConfigCapability{
+			Spec: v1alpha2.PaasConfigSpec{
+				Capabilities: map[string]v1alpha2.ConfigCapability{
 					enabledCapName:   {},
 					disabledCapName1: {},
 					disabledCapName2: {},
