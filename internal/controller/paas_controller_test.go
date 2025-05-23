@@ -572,10 +572,9 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		secretHashedName     = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(secretName)[:8]))
 		quotas               = []string{paasName, capNamespace}
 		groups               = []string{ldapGroupName, join(paasName, groupName)}
-		namespaces           = []string{join(paasName, nsName), join(paasName, capName), join(paasName,
-			paasNSName)}
-		//rolebindings        = []string{techRoleName1, techRoleName2}
-		clusterRolebindings = map[string][]string{
+		namespaces           = []string{join(paasName, nsName), join(paasName, capName), join(paasName, paasNSName)}
+		rolebindings         = []string{techRoleName1, techRoleName2}
+		clusterRolebindings  = map[string][]string{
 			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR}}
 	)
 	ctx := context.Background()
@@ -662,7 +661,12 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
-			assurePaasNS(ctx, api.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)}})
+			assurePaasNS(ctx,
+				api.PaasNS{
+					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)},
+					Spec: api.PaasNSSpec{
+						Paas: paasName},
+				})
 			result, err = reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
@@ -726,17 +730,17 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(entries).To(HaveLen(1))
 			Expect(entries).To(HaveKey(paasName))
 		})
-		//It("should have created paas rolebindings", func() {
-		//	for _, nsName := range namespaces {
-		//		fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
-		//		for _, rbName := range rolebindings {
-		//			var rb rbac.RoleBinding
-		//			err := reconciler.Get(ctx,
-		//				types.NamespacedName{Namespace: nsName, Name: join("paas", rbName)}, &rb)
-		//			Expect(err).ToNot(HaveOccurred())
-		//		}
-		//	}
-		//})
+		It("should have created paas rolebindings", func() {
+			for _, nsName := range namespaces {
+				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
+				for _, rbName := range rolebindings {
+					var rb rbac.RoleBinding
+					err := reconciler.Get(ctx,
+						types.NamespacedName{Namespace: nsName, Name: join("paas", rbName)}, &rb)
+					Expect(err).ToNot(HaveOccurred())
+				}
+			}
+		})
 		It("should have created paas secrets", func() {
 			for _, nsName := range namespaces {
 				var secret corev1.Secret
@@ -751,7 +755,12 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
-			assurePaasNS(ctx, api.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: paasName}})
+			assurePaasNS(ctx,
+				api.PaasNS{
+					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: paasName},
+					Spec: api.PaasNSSpec{
+						Paas: paasName},
+				})
 			result, err = reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))

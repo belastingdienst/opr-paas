@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -78,7 +79,6 @@ var _ = Describe("NamespaceDef", func() {
 			Scheme: k8sClient.Scheme(),
 		}
 	})
-
 	When("getting a nsdef from a paas", func() {
 		Context("with any paas", func() {
 			var nsDefs namespaceDefs

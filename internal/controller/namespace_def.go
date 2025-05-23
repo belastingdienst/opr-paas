@@ -35,7 +35,8 @@ func newNamespaceDef(nsName, quota string, groups []string, secrets map[string]s
 }
 
 // Helper to create a namespaceDef from a PaasNS
-func newNamespaceDefFromPaasNS(nsName string, paasns *v1alpha1.PaasNS, quota string, defaultGroups []string, secrets map[string]string) namespaceDef {
+func newNamespaceDefFromPaasNS(nsName string, paasns *v1alpha1.PaasNS,
+	quota string, defaultGroups []string, secrets map[string]string) namespaceDef {
 	groups := defaultGroups
 	if len(paasns.Spec.Groups) > 0 {
 		groups = paasns.Spec.Groups
@@ -85,7 +86,8 @@ func (r *PaasReconciler) paasNSsFromNs(ctx context.Context, ns string) map[strin
 	return nss
 }
 
-func (r *PaasReconciler) nsDefsFromPaasNamespaces(ctx context.Context, paas *v1alpha1.Paas, paasGroups []string) namespaceDefs {
+func (r *PaasReconciler) nsDefsFromPaasNamespaces(ctx context.Context, paas *v1alpha1.Paas,
+	paasGroups []string) namespaceDefs {
 	result := namespaceDefs{}
 	for _, namespace := range paas.Spec.Namespaces {
 		fullNsName := join(paas.Name, namespace)
@@ -100,7 +102,8 @@ func (r *PaasReconciler) nsDefsFromPaasNamespaces(ctx context.Context, paas *v1a
 	return result
 }
 
-func (r *PaasReconciler) paasCapabilityNss(ctx context.Context, paas *v1alpha1.Paas, paasGroups []string) (namespaceDefs, error) {
+func (r *PaasReconciler) paasCapabilityNss(ctx context.Context, paas *v1alpha1.Paas,
+	paasGroups []string) (namespaceDefs, error) {
 	result := namespaceDefs{}
 	capsConfig := config.GetConfig().Spec.Capabilities
 
