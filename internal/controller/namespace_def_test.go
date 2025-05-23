@@ -256,13 +256,11 @@ var _ = Describe("NamespaceDef", func() {
 			AfterEach(func() {
 				_ = reconciler.Delete(ctx, &pns)
 			})
-
 			It("should succeed", func() {
 				var err error
 				nsDefs, err = reconciler.nsDefsFromPaas(ctx, &paas)
 				Expect(err).NotTo(HaveOccurred())
 			})
-
 			It("should include default secrets in paas namespace", func() {
 				ns := nsDefs[join(paasName, ns1)]
 				Expect(ns.secrets).To(HaveKeyWithValue("default-secret", "default-value"))
@@ -273,6 +271,5 @@ var _ = Describe("NamespaceDef", func() {
 				Expect(ns.secrets).To(HaveKeyWithValue("default-secret", "overridden-value"))
 			})
 		})
-
 	})
 })
