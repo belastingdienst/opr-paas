@@ -335,7 +335,7 @@ func allPaases(mgr ctrl.Manager) []reconcile.Request {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-// SetupWithManager is not unittesterd ATM. Mostly already covered by e2e tests.
+// SetupWithManager is not unit-tested ATM. Mostly covered by e2e-tests.
 func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Paas{}, builder.WithPredicates(
@@ -368,9 +368,13 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 					return []reconcile.Request{{
 						NamespacedName: types.NamespacedName{Name: paasName}}}
 				},
-			),
-			builder.WithPredicates(v1alpha1.ActivePaasConfigUpdated()),
-		).
+			), builder.WithPredicates(
+				predicate.Or(
+					// Spec updated
+					predicate.GenerationChangedPredicate{},
+					// Labels updated
+					predicate.LabelChangedPredicate{},
+				))).
 		Watches(
 			&v1alpha1.PaasConfig{},
 			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, _ client.Object) []reconcile.Request {
