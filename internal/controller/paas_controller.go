@@ -358,7 +358,13 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 					return []reconcile.Request{{
 						NamespacedName: types.NamespacedName{Name: paasName}}}
 				},
-			)).
+			), builder.WithPredicates(
+				predicate.Or(
+					// Spec updated
+					predicate.GenerationChangedPredicate{},
+					// Labels updated
+					predicate.LabelChangedPredicate{},
+				))).
 		Watches(
 			&v1alpha1.PaasConfig{},
 			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, _ client.Object) []reconcile.Request {
