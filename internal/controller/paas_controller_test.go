@@ -539,12 +539,13 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		capAppSetNamespace = paasName + "-asns"
 		capAppSetName      = "argoas"
 		capName            = "recon"
+		capNamespace       = paasName + "-" + capName
 		paasSystem         = "recon-nssystem"
 		paasPkSecret       = "recon-secret"
 		nsName             = "myns"
 		paasNSName         = "mypaasns"
-		groupName          = "mygroup"
-		ldapGroupName      = "my-ldap-group"
+		groupName          = "prcn-mygroup"
+		ldapGroupName      = "prcn-myldapgroup"
 		ldapGroupQuery     = "CN=" + ldapGroupName + ",OU=org_unit,DC=example,DC=org"
 		funcRoleName1      = "myfuncrole1"
 		funcRoleName2      = "myfuncrole2"
@@ -563,16 +564,13 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		reconciler           *PaasReconciler
 		request              controllerruntime.Request
 		myConfig             v1alpha2.PaasConfig
-		capNamespace         = paasName + "-" + capName
 		privateKey           []byte
 		mycrypt              *crypt.Crypt
 		secretValue          string
 		secretEncryptedValue string
 		secretName           = "my-secret"
 		secretHashedName     = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(secretName)[:8]))
-		quotas               = []string{paasName, capNamespace}
 		groups               = []string{ldapGroupName, join(paasName, groupName)}
-		namespaces           = []string{join(paasName, nsName), join(paasName, capName), join(paasName, paasNSName)}
 		rolebindings         = []string{techRoleName1, techRoleName2}
 		clusterRolebindings  = map[string][]string{
 			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR}}
@@ -657,21 +655,23 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 	})
 	// create Paas
 	When("creating a Paas and PaasNS", func() {
+		namespaces := []string{join(paasName, nsName), join(paasName, capName), join(paasName, paasNSName)}
 		It("should reconcile successfully", func() {
-			result, err := reconciler.Reconcile(ctx, request)
+			assurePaas(ctx, *paas)
+			_, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result).To(Equal(controllerruntime.Result{}))
 			assurePaasNS(ctx,
 				api.PaasNS{
 					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)},
 					Spec: api.PaasNSSpec{
 						Paas: paasName},
 				})
-			result, err = reconciler.Reconcile(ctx, request)
+			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
 		})
 		It("should have created paas quotas", func() {
+			var quotas = []string{paasName, capNamespace}
 			for _, quotaName := range quotas {
 				var quota quotav1.ClusterResourceQuota
 				err := reconciler.Get(ctx, types.NamespacedName{Name: quotaName}, &quota)
@@ -749,22 +749,114 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			}
 		})
 	})
-	When("finalizing a Paas", Ordered, func() {
-		It("should finalize successfully", func() {
-			Expect(paas.Kind).To(Equal("Paas"))
-			result, err := reconciler.Reconcile(ctx, request)
+	When("modifying a Paas", Ordered, func() {
+		It("should reconcile successfully", func() {
+			assurePaas(ctx, *paas)
+			_, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result).To(Equal(controllerruntime.Result{}))
 			assurePaasNS(ctx,
-				api.PaasNS{
-					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: paasName},
+				api.PaasNS{ObjectMeta:
+					metav1.ObjectMeta{Name: paasNSName, Namespace: paasName},
 					Spec: api.PaasNSSpec{
 						Paas: paasName},
 				})
-			result, err = reconciler.Reconcile(ctx, request)
+			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
-			// If we don't read it back from k8s, Kind and APIVersion are not set, and deleting groups does not work
+
+			patch := client.MergeFrom(paas.DeepCopy())
+			paas.Spec.Namespaces = nil
+			paas.Spec.Groups = nil
+			paas.Spec.Capabilities = nil
+			paas.Spec.SSHSecrets = nil
+			err = reconciler.Patch(ctx, paas, patch)
+			Expect(err).NotTo(HaveOccurred())
+			patchedPaas := getPaas(ctx, paasName)
+			Expect(patchedPaas.Spec.Namespaces).To(BeEmpty())
+			Expect(patchedPaas.Spec.Groups).To(BeEmpty())
+			Expect(patchedPaas.Spec.Capabilities).To(BeEmpty())
+			Expect(patchedPaas.Spec.SSHSecrets).To(BeEmpty())
+			_, err = reconciler.Reconcile(ctx, request)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("should have deleted paas quotas for removed capability", func() {
+			var quota quotav1.ClusterResourceQuota
+			err := reconciler.Get(ctx, types.NamespacedName{Name: capNamespace}, &quota)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(
+				"clusterresourcequotas.quota.openshift.io \"" + capNamespace + "\" not found"))
+		})
+		It("should successfully finalize removed groups", func() {
+			for _, groupName := range groups {
+				var group userv1.Group
+				err := reconciler.Get(ctx, types.NamespacedName{Name: groupName}, &group)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + groupName + "\" not found"))
+			}
+		})
+		It("should successfully finalize disabled capabilities", func() {
+			var capAppSet argocd.ApplicationSet
+			err := reconciler.Get(ctx,
+				types.NamespacedName{Namespace: capAppSetNamespace, Name: capAppSetName}, &capAppSet)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(capAppSet.Spec.Generators).To(HaveLen(1))
+			list := getListGen(capAppSet.Spec.Generators)
+			Expect(list).To(BeNil())
+		})
+		It("should have created paas ldap entries", func() {
+			var configMap corev1.ConfigMap
+			err := reconciler.Get(ctx, types.NamespacedName{Namespace: gsNamespace, Name: gsName}, &configMap)
+			Expect(err).ToNot(HaveOccurred())
+			list, exists := configMap.Data[gsKey]
+			Expect(exists).To(BeTrue())
+			Expect(list).NotTo(ContainSubstring(ldapGroupQuery))
+		})
+		It("should successfully finalize removed namespaces", func() {
+			deletedNamespaces := []string{join(paasName, nsName), join(paasName, capName)}
+			for _, nsName := range deletedNamespaces {
+				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
+				var ns corev1.Namespace
+				err := reconciler.Get(ctx, types.NamespacedName{Name: nsName}, &ns)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(ns.DeletionTimestamp).NotTo(BeNil())
+			}
+		})
+		It("should have created paas clusterrolebindings", func() {
+			for _, crbRoleNames := range clusterRolebindings {
+				for _, crbRoleName := range crbRoleNames {
+					var crb rbac.ClusterRoleBinding
+					err := reconciler.Get(ctx, types.NamespacedName{Name: join("paas", crbRoleName)}, &crb)
+					Expect(err).To(HaveOccurred())
+				}
+			}
+		})
+		It("should have created paas appset list generator entries", func() {
+			var capAppSet argocd.ApplicationSet
+			err := reconciler.Get(ctx,
+				types.NamespacedName{Namespace: capAppSetNamespace, Name: capAppSetName}, &capAppSet)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(capAppSet.Spec.Generators).To(HaveLen(1))
+			list := getListGen(capAppSet.Spec.Generators)
+			Expect(list).To(BeNil())
+		})
+		It("should have removed paas secrets", func() {
+			existingNamespaces := []string{paasName, join(paasName,
+				paasNSName)}
+			for _, nsName := range existingNamespaces {
+				if nsName == paasName {
+					continue
+				}
+				var secret corev1.Secret
+				err := reconciler.Get(ctx, types.NamespacedName{Namespace: nsName, Name: secretHashedName}, &secret)
+				Expect(err).To(HaveOccurred())
+			}
+		})
+	})
+	When("finalizing a Paas", Ordered, func() {
+		It("should finalize successfully", func() {
+			assurePaas(ctx, *paas)
+			_, err := reconciler.Reconcile(ctx, request)
+			Expect(err).NotTo(HaveOccurred())
 			err = reconciler.finalizePaas(ctx, paas)
 			Expect(err).NotTo(HaveOccurred())
 		})

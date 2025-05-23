@@ -37,7 +37,7 @@ override:
   #- path: ^pkg/lib/foo$
   #  threshold: 100
   - path: ^internal/controller$
-    threshold: 72
+    threshold: 75
   - path: ^api/v1alpha1$
     threshold: 68
   - path: ^api/v1alpha2$
@@ -58,48 +58,16 @@ override:
     threshold: 0
   - path: internal/config/watcher.go
     threshold: 0
-  - path: internal/controller/argo_app.go
-    threshold: 69
-  - path: internal/controller/argo_projects.go
-    threshold: 68
-  - path: internal/controller/argocd.go
-    threshold: 35
-  - path: internal/controller/cluster_quotas.go
-    threshold: 43
-  - path: internal/controller/clusterrolebindings.go
-    threshold: 0
-  - path: internal/controller/groups.go
-    threshold: 40
-  - path: internal/controller/ldap_groups.go
-    threshold: 35
-  - path: internal/controller/groups.go
-    threshold: 40
-  - path: internal/controller/namespace_def.go
-    threshold: 87
-  - path: internal/controller/namespaces.go
-    threshold: 33
-  - path: internal/controller/namespaces.go
-    threshold: 33
-  - path: internal/controller/paas_controller.go
-    threshold: 61
-  - path: internal/controller/paasconfig_controller.go
-    threshold: 0
-  - path: internal/controller/paasnamespaces.go
-    threshold: 59
-  - path: internal/controller/paasns_controller.go
-    threshold: 5
-  - path: internal/controller/rolebindings_controller.go
-    threshold: 10
-  - path: internal/controller/rsa_controller.go
-    threshold: 0
-  - path: internal/controller/secret_controller.go
-    threshold: 38
   - path: internal/webhook/v1alpha1/paasns_webhook.go
     threshold: 67
   - path: internal/crypt/main.go
     threshold: 12
   - path: internal/config/informer.go
     threshold: 23
+  - path: ^internal/controller/paas_controller.go$
+    threshold: 63
+  - path: ^internal/controller/paasconfig_controller.go$
+    threshold: 0
 
 # Holds regexp rules which will exclude matched files or packages
 # from coverage statistics.

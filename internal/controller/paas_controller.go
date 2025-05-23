@@ -219,8 +219,11 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	paasReconcilers := []func(context.Context, *v1alpha1.Paas) error{
 		r.reconcileQuotas,
 		r.reconcileClusterWideQuota,
+		r.reconcileNamespacedResources,
 		r.reconcileGroups,
 		r.ensureLdapGroups,
+		r.ensureAppSetCaps,
+		r.finalizeDisabledAppSetCaps,
 	}
 
 	for _, reconciler := range paasReconcilers {
@@ -228,29 +231,36 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 			return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 		}
 	}
+	// Reconciling succeeded, set appropriate Condition
+	return ctrl.Result{}, r.setSuccessfulCondition(ctx, paas)
+}
+
+func (r *PaasReconciler) reconcileNamespacedResources(
+	ctx context.Context,
+	paas *v1alpha1.Paas,
+) (err error) {
+	logger := log.Ctx(ctx)
+	logger.Debug().Msg("inside namespaced resource reconciler")
 	nsDefs, err := r.nsDefsFromPaas(ctx, paas)
 	if err != nil {
-		return ctrl.Result{}, err
+		return err
 	}
-	logger.Debug().Msgf("Need to create resourced for %d namespaces", len(nsDefs))
+	logger.Debug().Msgf("Need to manage resources for %d namespaces", len(nsDefs))
 	paasNsReconcilers := []func(context.Context, *v1alpha1.Paas, namespaceDefs) error{
 		r.reconcileNamespaces,
 		r.reconcilePaasRolebindings,
 		r.reconcilePaasSecrets,
 		r.reconcileClusterRoleBindings,
+		r.finalizeObsoleteNamespaces,
 	}
 	for _, reconciler := range paasNsReconcilers {
 		if err = reconciler(ctx, paas, nsDefs); err != nil {
-			return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
+			return errors.Join(err, r.setErrorCondition(ctx, paas, err))
 		}
 	}
 
-	if err = r.ensureAppSetCaps(ctx, paas); err != nil {
-		return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
-	}
-
 	// Reconciling succeeded, set appropriate Condition
-	return ctrl.Result{}, r.setSuccessfulCondition(ctx, paas)
+	return r.setSuccessfulCondition(ctx, paas)
 }
 
 func (r *PaasReconciler) setSuccessfulCondition(ctx context.Context, paas *v1alpha1.Paas) error {
@@ -383,7 +393,7 @@ func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) 
 		r.finalizeGroups,
 		r.finalizePaasClusterRoleBindings,
 		r.finalizeClusterWideQuotas,
-		r.finalizeAppSetCaps,
+		r.finalizeAllAppSetCaps,
 	}
 
 	for _, reconciler := range paasReconcilers {

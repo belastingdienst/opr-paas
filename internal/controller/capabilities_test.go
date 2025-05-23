@@ -175,7 +175,7 @@ g, ` + group2 + `, role:admin`
 				Expect(k8sClient.Get(ctx, appSetName, appSet)).NotTo(HaveOccurred())
 				Expect(appSet.Spec.Generators[0].List.Elements).To(HaveLen(1))
 
-				Expect(reconciler.finalizeAppSetCaps(ctx, paas)).NotTo(HaveOccurred())
+				Expect(reconciler.finalizeAllAppSetCaps(ctx, paas)).NotTo(HaveOccurred())
 
 				Expect(k8sClient.Get(ctx, appSetName, appSet)).NotTo(HaveOccurred())
 				Expect(appSet.Spec.Generators[0].List.Elements).To(BeEmpty())
