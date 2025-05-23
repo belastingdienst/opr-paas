@@ -79,6 +79,7 @@ var _ = Describe("NamespaceDef", func() {
 			Scheme: k8sClient.Scheme(),
 		}
 	})
+
 	When("getting a nsdef from a paas", func() {
 		Context("with any paas", func() {
 			var nsDefs namespaceDefs

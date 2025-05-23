@@ -46,7 +46,7 @@ func TestCapabilitySSO(t *testing.T) {
 
 func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapabilitySSO, t, cfg)
-	namespace := getOrFail(ctx, paasWithCapabilitySSO, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
+	namespace := getOrFail(ctx, paasSSO, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
 	applicationSet := getOrFail(ctx, ssoApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
 	ssoQuota := getOrFail(ctx, paasSSO, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
@@ -54,7 +54,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Equal(t, paasWithCapabilitySSO, paas.Name)
 
 	// Paas Namespace exist
-	assert.Equal(t, paasWithCapabilitySSO, namespace.Name)
+	assert.Equal(t, paasSSO, namespace.Name)
 
 	// SSO should be enabled
 	assert.True(t, paas.Spec.Capabilities.IsCap("sso"))

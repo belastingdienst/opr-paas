@@ -45,7 +45,7 @@ func TestCapabilityCap5(t *testing.T) {
 
 func assertCap5Created(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapability5, t, cfg)
-	namespace := getOrFail(ctx, paasWithCapability5, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
+	namespace := getOrFail(ctx, paasCap5Ns, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
 	applicationSet := getOrFail(ctx, cap5ApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
 	cap5Quota := getOrFail(ctx, paasCap5Ns, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
@@ -53,7 +53,7 @@ func assertCap5Created(ctx context.Context, t *testing.T, cfg *envconf.Config) c
 	assert.Equal(t, paasWithCapability5, paas.Name)
 
 	// Paas Namespace exist
-	assert.Equal(t, paasWithCapability5, namespace.Name)
+	assert.Equal(t, paasCap5Ns, namespace.Name)
 
 	// cap5 should be enabled
 	assert.True(t, paas.Spec.Capabilities.IsCap("cap5"))
