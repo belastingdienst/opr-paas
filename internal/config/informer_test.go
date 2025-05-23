@@ -3,7 +3,6 @@ package config
 import (
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -46,7 +45,7 @@ func TestHandleUpdate_NoChangeToInactiveConfig(t *testing.T) {
 	// inactive config
 	newCfg.Status.Conditions = []metav1.Condition{
 		{
-			Type:   v1alpha1.TypeActivePaasConfig,
+			Type:   v1alpha2.TypeActivePaasConfig,
 			Status: metav1.ConditionUnknown,
 		},
 	}
