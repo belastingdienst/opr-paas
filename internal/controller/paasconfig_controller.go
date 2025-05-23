@@ -53,7 +53,7 @@ func (pcr PaasConfigReconciler) GetScheme() *runtime.Scheme {
 // SetupWithManager sets up the controller with the Manager.
 func (pcr *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.PaasConfig{}).
+		For(&v1alpha2.PaasConfig{}).
 		WithEventFilter(
 			predicate.GenerationChangedPredicate{}, // Spec changed .
 		).
