@@ -25,7 +25,7 @@ const (
 func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 	dst, ok := dstRaw.(*v1alpha1.Paas)
 	if !ok {
-		return fmt.Errorf("cannot convert to %s/%s: must be v1alpha1", dst.Namespace, dst.Name)
+		return fmt.Errorf("cannot convert to v1alpha1: got %T", dstRaw)
 	}
 
 	logger := log.With().
@@ -85,7 +85,7 @@ func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 func (p *Paas) ConvertFrom(srcRaw conversion.Hub) error {
 	src, ok := srcRaw.(*v1alpha1.Paas)
 	if !ok {
-		return fmt.Errorf("cannot convert %s/%s: must be v1alpha1", src.Namespace, src.Name)
+		return fmt.Errorf("cannot convert from v1alpha1: got %T", srcRaw)
 	}
 
 	logger := log.With().

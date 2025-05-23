@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -15,7 +16,7 @@ type namespaceDef struct {
 	nsName    string
 	paasns    *v1alpha1.PaasNS
 	capName   string
-	capConfig v1alpha1.ConfigCapability
+	capConfig v1alpha2.ConfigCapability
 	quota     string
 	groups    []string
 	secrets   map[string]string

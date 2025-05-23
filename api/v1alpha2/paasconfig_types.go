@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/belastingdienst/opr-paas/api"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
@@ -45,8 +46,16 @@ type PaasConfig struct {
 	Status PaasConfigStatus `json:"status,omitempty"`
 }
 
-func (p PaasConfig) GetConditions() []metav1.Condition {
-	return p.Status.Conditions
+func (pc PaasConfig) GetConditions() []metav1.Condition {
+	return pc.Status.Conditions
+}
+
+func (pc PaasConfig) GetSpec() PaasConfigSpec {
+	return pc.Spec
+}
+
+func (pcs PaasConfigSpec) GetCapabilities() api.ConfigCapabilities {
+	return pcs.Capabilities
 }
 
 type PaasConfigSpec struct {
@@ -275,12 +284,14 @@ func (ccp ConfigCapPerm) ServiceAccounts() []string {
 
 // TODO(hikarukin): we probably need to properly determine the namespace name,
 // depends on argocd code removal
-func (config PaasConfigSpec) CapabilityK8sName(capName string) (as types.NamespacedName) {
-	if capability, exists := config.Capabilities[capName]; exists {
+func (pcs PaasConfigSpec) CapabilityK8sName(capName string) (as types.NamespacedName) {
+	if capability, exists := pcs.Capabilities[capName]; exists {
 		as.Name = capability.AppSet
 	} else {
 		as.Name = fmt.Sprintf("paas-%s", capName)
 	}
+	as.Namespace = pcs.ClusterWideArgoCDNamespace
+
 	return as
 }
 
@@ -357,4 +368,13 @@ func ActivePaasConfigUpdated() predicate.Predicate {
 			return false
 		},
 	}
+}
+
+// IsActive returns true if this PaasConfig is the active one.
+func (pc PaasConfig) IsActive() bool {
+	return meta.IsStatusConditionPresentAndEqual(
+		pc.Status.Conditions,
+		TypeActivePaasConfig,
+		metav1.ConditionTrue,
+	)
 }

@@ -10,6 +10,7 @@ import (
 	"context"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/fields"
 	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
@@ -40,7 +41,7 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 		ctx         context.Context
 		paas        *api.Paas
 		reconciler  *PaasReconciler
-		paasConfig  api.PaasConfig
+		paasConfig  v1alpha2.PaasConfig
 		group1Roles = []string{"admin"}
 		group2Users = []string{"user1", "user2"}
 		group2Roles = []string{"edit", "view"}
@@ -77,16 +78,16 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 g, {{ $groupName }}, role:admin{{end}}`
 		)
 		ctx = context.Background()
-		paasConfig = api.PaasConfig{
+		paasConfig = v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
-			Spec: api.PaasConfigSpec{
+			Spec: v1alpha2.PaasConfigSpec{
 				ClusterWideArgoCDNamespace: capAppSetNamespace,
-				Capabilities: map[string]api.ConfigCapability{
+				Capabilities: map[string]v1alpha2.ConfigCapability{
 					capName: {
 						AppSet: capAppSetName,
-						CustomFields: map[string]api.ConfigCustomField{
+						CustomFields: map[string]v1alpha2.ConfigCustomField{
 							customField1Key: {},
 							customField2Key: {},
 							"argocd_default_policy": {

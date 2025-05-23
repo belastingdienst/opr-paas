@@ -61,7 +61,10 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
-		config.SetConfig(conf)
+
+		err = config.SetConfigV1(conf)
+		Expect(err).NotTo(HaveOccurred())
+
 		createNamespace(paasSystem)
 
 		mycrypt, privateKey, err = newGeneratedCrypt(paasName)
@@ -145,7 +148,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
-		config.SetConfig(conf)
+		config.SetConfigV1(conf)
 		validator = PaasNSCustomValidator{k8sClient}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
@@ -205,7 +208,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				{name: "", validation: "^.$", valid: false},
 			} {
 				conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paasNs": {"name": test.validation}}
-				config.SetConfig(conf)
+				config.SetConfigV1(conf)
 				obj.Name = test.name
 				if test.valid {
 					warn, err := validator.ValidateCreate(ctx, obj)

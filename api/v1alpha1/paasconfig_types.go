@@ -57,6 +57,10 @@ func (p PaasConfig) GetGeneration() int64 {
 	return p.Generation
 }
 
+func (p PaasConfig) GetSpec() PaasConfigSpec {
+	return p.Spec
+}
+
 type PaasConfigSpec struct {
 	// DecryptKeysSecret is a reference to the secret containing the DecryptKeys
 	// +kubebuilder:validation:Required

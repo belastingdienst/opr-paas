@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
@@ -98,7 +97,7 @@ func (*PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Obje
 type paasSpecValidator func(
 	context.Context,
 	client.Client,
-	v1alpha1.PaasConfig,
+	v1alpha2.PaasConfig,
 	*v1alpha2.Paas,
 ) ([]*field.Error, error)
 
@@ -149,7 +148,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 func validateCaps(
 	ctx context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfig,
+	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
@@ -171,7 +170,7 @@ func validateCaps(
 func validatePaasName(
 	ctx context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfig,
+	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
@@ -195,7 +194,7 @@ func validatePaasName(
 func validatePaasNamespaceNames(
 	ctx context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfig,
+	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
@@ -227,7 +226,7 @@ func validatePaasNamespaceNames(
 func validatePaasNamespaceGroups(
 	_ context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfig,
+	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) (ferrs []*field.Error, _ error) {
 	for nsname, ns := range paas.Spec.Namespaces {
@@ -252,7 +251,7 @@ func validatePaasNamespaceGroups(
 func validatePaasRequestor(
 	ctx context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfig,
+	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
@@ -276,7 +275,7 @@ func validatePaasRequestor(
 func validateGroupNames(
 	ctx context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfig,
+	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
@@ -302,7 +301,7 @@ func validateGroupNames(
 func validateSecrets(
 	ctx context.Context,
 	k8sClient client.Client,
-	conf v1alpha1.PaasConfig,
+	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
 	decryptRes := &corev1.Secret{}
@@ -338,7 +337,7 @@ func validateSecrets(
 func validateCustomFields(
 	ctx context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfig,
+	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
@@ -405,7 +404,7 @@ func (v *PaasCustomValidator) validateQuota(paas *v1alpha2.Paas) (warnings []str
 }
 
 // validateExtraPerm returns a warning when extra permissions are requested for a capability that are not configured.
-func (v *PaasCustomValidator) validateExtraPerm(conf v1alpha1.PaasConfig, paas *v1alpha2.Paas) (warnings []string) {
+func (v *PaasCustomValidator) validateExtraPerm(conf v1alpha2.PaasConfig, paas *v1alpha2.Paas) (warnings []string) {
 	for cname, c := range paas.Spec.Capabilities {
 		if c.ExtraPermissions && conf.Spec.Capabilities[cname].ExtraPermissions == nil {
 			warnings = append(warnings, fmt.Sprintf(

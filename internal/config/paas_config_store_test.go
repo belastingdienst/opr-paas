@@ -9,24 +9,23 @@ package config
 import (
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetConfigWithEmptyConfigStore(t *testing.T) {
 	actual := GetConfig()
 
-	assert.Equal(t, v1alpha1.PaasConfig{}, actual)
+	assert.Equal(t, v1alpha2.PaasConfig{}, actual)
 }
 
 func TestGetConfig(t *testing.T) {
-	cnf = &PaasConfigStore{
-		currentConfig: v1alpha1.PaasConfig{
-			Spec: v1alpha1.PaasConfigSpec{
-				Debug: true,
-			},
+	cnf = &PaasConfigStore{}
+	SetConfig(v1alpha2.PaasConfig{
+		Spec: v1alpha2.PaasConfigSpec{
+			Debug: true,
 		},
-	}
+	})
 
 	actual := GetConfig()
 

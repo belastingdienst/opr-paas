@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/internal/fields"
 	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,7 +79,7 @@ type PaasCapability struct {
 
 // CapExtraFields returns all extra fields that are configured for a capability
 func (pc *PaasCapability) CapExtraFields(
-	fieldConfig map[string]v1alpha1.ConfigCustomField,
+	fieldConfig map[string]ConfigCustomField,
 ) (elements fields.Elements, err error) {
 	elements = make(fields.Elements)
 	var issues []error
