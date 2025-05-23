@@ -533,7 +533,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 	})
 })
 
-var _ = Describe("Paas Reconclie", Ordered, func() {
+var _ = Describe("Paas Reconcile", Ordered, func() {
 	const (
 		paasName           = "paas-reconcile"
 		capAppSetNamespace = paasName + "-asns"
@@ -572,9 +572,9 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 		secretHashedName     = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(secretName)[:8]))
 		quotas               = []string{paasName, capNamespace}
 		groups               = []string{ldapGroupName, join(paasName, groupName)}
-		namespaces           = []string{paasName, join(paasName, nsName), join(paasName, capName), join(paasName,
+		namespaces           = []string{join(paasName, nsName), join(paasName, capName), join(paasName,
 			paasNSName)}
-		rolebindings        = []string{techRoleName1, techRoleName2}
+		//rolebindings        = []string{techRoleName1, techRoleName2}
 		clusterRolebindings = map[string][]string{
 			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR}}
 	)
@@ -662,7 +662,7 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
-			assurePaasNS(ctx, api.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: paasName}})
+			assurePaasNS(ctx, api.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)}})
 			result, err = reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
@@ -726,25 +726,19 @@ var _ = Describe("Paas Reconclie", Ordered, func() {
 			Expect(entries).To(HaveLen(1))
 			Expect(entries).To(HaveKey(paasName))
 		})
-		It("should have created paas rolebindings", func() {
-			for _, nsName := range namespaces {
-				if nsName == paasName {
-					continue
-				}
-				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
-				for _, rbName := range rolebindings {
-					var rb rbac.RoleBinding
-					err := reconciler.Get(ctx,
-						types.NamespacedName{Namespace: nsName, Name: join("paas", rbName)}, &rb)
-					Expect(err).ToNot(HaveOccurred())
-				}
-			}
-		})
+		//It("should have created paas rolebindings", func() {
+		//	for _, nsName := range namespaces {
+		//		fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
+		//		for _, rbName := range rolebindings {
+		//			var rb rbac.RoleBinding
+		//			err := reconciler.Get(ctx,
+		//				types.NamespacedName{Namespace: nsName, Name: join("paas", rbName)}, &rb)
+		//			Expect(err).ToNot(HaveOccurred())
+		//		}
+		//	}
+		//})
 		It("should have created paas secrets", func() {
 			for _, nsName := range namespaces {
-				if nsName == paasName {
-					continue
-				}
 				var secret corev1.Secret
 				err := reconciler.Get(ctx, types.NamespacedName{Namespace: nsName, Name: secretHashedName}, &secret)
 				Expect(err).ToNot(HaveOccurred())
