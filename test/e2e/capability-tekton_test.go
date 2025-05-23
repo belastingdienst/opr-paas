@@ -58,16 +58,13 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 		"Paas reconciliation succeeds",
 	)
 
-	namespace := getOrFail(ctx, fmt.Sprintf("%s-%s", paasWithCapabilityTekton, "tekton"),
+	_ = getOrFail(ctx, fmt.Sprintf("%s-%s", paasWithCapabilityTekton, "tekton"),
 		cfg.Namespace(), &corev1.Namespace{}, t, cfg)
 	applicationSet := getOrFail(ctx, TektonApplicationSet, asTektonNamespace, &argo.ApplicationSet{}, t, cfg)
 	tektonQuota := getOrFail(ctx, paasTektonCRQ, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
 	// ClusterResource is created with the same name as the Paas
 	assert.Equal(t, paasWithCapabilityTekton, paas.Name)
-
-	// Paas Namespace exist
-	assert.Equal(t, paasWithCapabilityTekton, namespace.Name)
 
 	// Tekton should be enabled
 	assert.True(t, paas.Spec.Capabilities.IsCap(tektonCapName))

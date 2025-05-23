@@ -66,7 +66,7 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 
 	pnsCreatePaasNS(ctx, t, cfg, paasNs)
 
-	_ = getOrFail(ctx, fmt.Sprintf("%s-%s", generatedName, paasName), cfg.Namespace(), &corev1.Namespace{}, t, cfg)
+	_ = getOrFail(ctx, fmt.Sprintf("%s-%s", generatedName, paasNsName), cfg.Namespace(), &corev1.Namespace{}, t, cfg)
 
 	fetchedPaas := getPaas(ctx, thisPaas, t, cfg)
 
