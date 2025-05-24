@@ -257,6 +257,8 @@ func (r *PaasReconciler) reconcilePaasSecrets(
 	paas *v1alpha1.Paas,
 	nsDefs namespaceDefs,
 ) error {
+	// The nsDefs contains the desired namespaces. When obsolete namespaces are deleted, that cascade deletes
+	// the secrets in that namespace.
 	for _, nsDef := range nsDefs {
 		err := r.reconcileNamespaceSecrets(ctx, paas, nsDef.paasns, nsDef.nsName, nsDef.secrets)
 		if err != nil {
