@@ -655,13 +655,17 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 	})
 	// create Paas
 	When("creating a Paas and PaasNS", func() {
-		namespaces := []string{paasName, join(paasName, nsName), join(paasName, capName), join(paasName,
-			paasNSName)}
+		namespaces := []string{join(paasName, nsName), join(paasName, capName), join(paasName, paasNSName)}
 		It("should reconcile successfully", func() {
 			assurePaas(ctx, *paas)
 			_, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
-			assurePaasNS(ctx, api.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: paasName}})
+			assurePaasNS(ctx,
+				api.PaasNS{
+					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)},
+					Spec: api.PaasNSSpec{
+						Paas: paasName},
+				})
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
@@ -728,9 +732,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		})
 		It("should have created paas rolebindings", func() {
 			for _, nsName := range namespaces {
-				if nsName == paasName {
-					continue
-				}
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
 				for _, rbName := range rolebindings {
 					var rb rbac.RoleBinding
@@ -742,9 +743,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		})
 		It("should have created paas secrets", func() {
 			for _, nsName := range namespaces {
-				if nsName == paasName {
-					continue
-				}
 				var secret corev1.Secret
 				err := reconciler.Get(ctx, types.NamespacedName{Namespace: nsName, Name: secretHashedName}, &secret)
 				Expect(err).ToNot(HaveOccurred())
@@ -756,7 +754,11 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			assurePaas(ctx, *paas)
 			_, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
-			assurePaasNS(ctx, api.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: paasName}})
+			assurePaasNS(ctx,
+				api.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)},
+					Spec: api.PaasNSSpec{
+						Paas: paasName},
+				})
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
@@ -800,7 +802,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			list := getListGen(capAppSet.Spec.Generators)
 			Expect(list).To(BeNil())
 		})
-		It("should have created paas ldap entries", func() {
+		It("should have removed paas ldap entries", func() {
 			var configMap corev1.ConfigMap
 			err := reconciler.Get(ctx, types.NamespacedName{Namespace: gsNamespace, Name: gsName}, &configMap)
 			Expect(err).ToNot(HaveOccurred())
@@ -809,7 +811,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(list).NotTo(ContainSubstring(ldapGroupQuery))
 		})
 		It("should successfully finalize removed namespaces", func() {
-			deletedNamespaces := []string{join(paasName, nsName), join(paasName, capName)}
+			deletedNamespaces := []string{join(paasName, nsName), join(paasName, capName), join(paasName, paasNSName)}
 			for _, nsName := range deletedNamespaces {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
 				var ns corev1.Namespace
@@ -818,7 +820,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 				Expect(ns.DeletionTimestamp).NotTo(BeNil())
 			}
 		})
-		It("should have created paas clusterrolebindings", func() {
+		It("should have removed paas clusterrolebindings", func() {
 			for _, crbRoleNames := range clusterRolebindings {
 				for _, crbRoleName := range crbRoleNames {
 					var crb rbac.ClusterRoleBinding
@@ -827,7 +829,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 				}
 			}
 		})
-		It("should have created paas appset list generator entries", func() {
+		It("should have removed paas appset list generator entries", func() {
 			var capAppSet argocd.ApplicationSet
 			err := reconciler.Get(ctx,
 				types.NamespacedName{Namespace: capAppSetNamespace, Name: capAppSetName}, &capAppSet)
@@ -835,18 +837,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(capAppSet.Spec.Generators).To(HaveLen(1))
 			list := getListGen(capAppSet.Spec.Generators)
 			Expect(list).To(BeNil())
-		})
-		It("should have removed paas secrets", func() {
-			existingNamespaces := []string{paasName, join(paasName,
-				paasNSName)}
-			for _, nsName := range existingNamespaces {
-				if nsName == paasName {
-					continue
-				}
-				var secret corev1.Secret
-				err := reconciler.Get(ctx, types.NamespacedName{Namespace: nsName, Name: secretHashedName}, &secret)
-				Expect(err).To(HaveOccurred())
-			}
 		})
 	})
 	When("finalizing a Paas", Ordered, func() {

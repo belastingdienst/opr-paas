@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
@@ -51,22 +52,19 @@ func TestCapabilityTekton(t *testing.T) {
 
 func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapabilityTekton, t, cfg)
-	// tpaasns := getOrFail(ctx, tektonCapName, paasWithCapabilityTekton, &api.PaasNS{}, t, cfg)
 	require.NoError(
 		t,
 		waitForCondition(ctx, cfg, paas, 0, api.TypeReadyPaas),
-		"Tekton PaasNS reconciliation succeeds",
+		"Paas reconciliation succeeds",
 	)
 
-	namespace := getOrFail(ctx, paasWithCapabilityTekton, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
+	_ = getOrFail(ctx, fmt.Sprintf("%s-%s", paasWithCapabilityTekton, "tekton"),
+		cfg.Namespace(), &corev1.Namespace{}, t, cfg)
 	applicationSet := getOrFail(ctx, TektonApplicationSet, asTektonNamespace, &argo.ApplicationSet{}, t, cfg)
 	tektonQuota := getOrFail(ctx, paasTektonCRQ, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
 	// ClusterResource is created with the same name as the Paas
 	assert.Equal(t, paasWithCapabilityTekton, paas.Name)
-
-	// Paas Namespace exist
-	assert.Equal(t, paasWithCapabilityTekton, namespace.Name)
 
 	// Tekton should be enabled
 	assert.True(t, paas.Spec.Capabilities.IsCap(tektonCapName))
