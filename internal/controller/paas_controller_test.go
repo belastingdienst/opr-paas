@@ -215,11 +215,6 @@ var _ = Describe("Paas Controller", Ordered, func() {
 				ManagedBySuffix: "argocd",
 				RequestorLabel:  "o.lbl",
 				QuotaLabel:      "q.lbl",
-				GroupSyncList: v1alpha2.NamespacedName{
-					Namespace: "gsns",
-					Name:      "wlname",
-				},
-				GroupSyncListKey: "groupsynclist.txt",
 			},
 		}
 		config.SetConfig(myConfig)
@@ -555,9 +550,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		defaultPermCR      = "def-parm-cluster-role"
 		extraPermSA        = "extra-perm-service-account"
 		extraPermCR        = "extra-parm-cluster-role"
-		gsNamespace        = "gsns"
-		gsName             = "gsname"
-		gsKey              = "gskey"
 	)
 	var (
 		paas                 *api.Paas
@@ -570,7 +562,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		secretEncryptedValue string
 		secretName           = "my-secret"
 		secretHashedName     = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(secretName)[:8]))
-		groups               = []string{ldapGroupName, join(paasName, groupName)}
+		userGroupName        = join(paasName, groupName)
 		rolebindings         = []string{techRoleName1, techRoleName2}
 		clusterRolebindings  = map[string][]string{
 			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR}}
@@ -586,7 +578,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		createPaasPrivateKeySecret(ctx, paasSystem, paasPkSecret, privateKey)
 		secretEncryptedValue, err = mycrypt.Encrypt([]byte(secretValue))
 		Expect(err).NotTo(HaveOccurred())
-		assureNamespace(ctx, gsNamespace)
 		assureNamespace(ctx, capAppSetNamespace)
 		assureAppSet(ctx, capAppSetName, capAppSetNamespace)
 		paas = &api.Paas{
@@ -642,8 +633,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 				ManagedBySuffix:   "argocd",
 				RequestorLabel:    "o.lbl",
 				QuotaLabel:        "q.lbl",
-				GroupSyncList:     v1alpha2.NamespacedName{Namespace: gsNamespace, Name: gsName},
-				GroupSyncListKey:  gsKey,
 				RoleMappings: v1alpha2.ConfigRoleMappings{
 					funcRoleName1: []string{techRoleName1},
 					funcRoleName2: []string{techRoleName2},
@@ -678,20 +667,16 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 		})
-		It("should have created paas groups", func() {
-			for _, groupName := range groups {
-				var group userv1.Group
-				err := reconciler.Get(ctx, types.NamespacedName{Name: groupName}, &group)
-				Expect(err).ToNot(HaveOccurred())
-			}
-		})
-		It("should have created paas ldap entries", func() {
-			var configMap corev1.ConfigMap
-			err := reconciler.Get(ctx, types.NamespacedName{Namespace: gsNamespace, Name: gsName}, &configMap)
+		It("should have created paas user groups", func() {
+			var group userv1.Group
+			err := reconciler.Get(ctx, types.NamespacedName{Name: userGroupName}, &group)
 			Expect(err).ToNot(HaveOccurred())
-			list, exists := configMap.Data[gsKey]
-			Expect(exists).To(BeTrue())
-			Expect(list).To(ContainSubstring(ldapGroupQuery))
+		})
+		It("should not have created paas ldap groups", func() {
+			var group userv1.Group
+			err := reconciler.Get(ctx, types.NamespacedName{Name: ldapGroupName}, &group)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + ldapGroupName + "\" not found"))
 		})
 		It("should have created paas namespaces", func() {
 			for _, nsName := range namespaces {
@@ -785,13 +770,11 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(err.Error()).To(Equal(
 				"clusterresourcequotas.quota.openshift.io \"" + capNamespace + "\" not found"))
 		})
-		It("should successfully finalize removed groups", func() {
-			for _, groupName := range groups {
-				var group userv1.Group
-				err := reconciler.Get(ctx, types.NamespacedName{Name: groupName}, &group)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + groupName + "\" not found"))
-			}
+		It("should successfully remove user groups", func() {
+			var group userv1.Group
+			err := reconciler.Get(ctx, types.NamespacedName{Name: groupName}, &group)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + groupName + "\" not found"))
 		})
 		It("should successfully finalize disabled capabilities", func() {
 			var capAppSet argocd.ApplicationSet
@@ -801,14 +784,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(capAppSet.Spec.Generators).To(HaveLen(1))
 			list := getListGen(capAppSet.Spec.Generators)
 			Expect(list).To(BeNil())
-		})
-		It("should have removed paas ldap entries", func() {
-			var configMap corev1.ConfigMap
-			err := reconciler.Get(ctx, types.NamespacedName{Namespace: gsNamespace, Name: gsName}, &configMap)
-			Expect(err).ToNot(HaveOccurred())
-			list, exists := configMap.Data[gsKey]
-			Expect(exists).To(BeTrue())
-			Expect(list).NotTo(ContainSubstring(ldapGroupQuery))
 		})
 		It("should successfully finalize removed namespaces", func() {
 			deletedNamespaces := []string{join(paasName, nsName), join(paasName, capName), join(paasName, paasNSName)}
@@ -847,21 +822,11 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			err = reconciler.finalizePaas(ctx, paas)
 			Expect(err).NotTo(HaveOccurred())
 		})
-		It("should have deleted paas groups", func() {
-			for _, groupName := range groups {
-				var group userv1.Group
-				err := reconciler.Get(ctx, types.NamespacedName{Name: groupName}, &group)
-				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + groupName + "\" not found"))
-			}
-		})
-		It("should have deleted paas ldap entries", func() {
-			var configMap corev1.ConfigMap
-			err := reconciler.Get(ctx, types.NamespacedName{Namespace: gsNamespace, Name: gsName}, &configMap)
-			Expect(err).ToNot(HaveOccurred())
-			list, exists := configMap.Data[gsKey]
-			Expect(exists).To(BeTrue())
-			Expect(list).NotTo(ContainSubstring(ldapGroupQuery))
+		It("should have deleted user groups", func() {
+			var group userv1.Group
+			err := reconciler.Get(ctx, types.NamespacedName{Name: groupName}, &group)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + groupName + "\" not found"))
 		})
 		It("should have deleted paas clusterrolebindings", func() {
 			for _, crbRoleNames := range clusterRolebindings {

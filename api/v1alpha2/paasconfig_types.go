@@ -72,21 +72,6 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	Capabilities ConfigCapabilities `json:"capabilities"`
 
-	// Deprecated: GroupSyncList code will be removed from the operator to make it more generic
-	// A reference to a configmap containing a groupsynclist of LDAP groups to be synced using LDAP sync
-	// +kubebuilder:validation:Required
-	GroupSyncList NamespacedName `json:"groupsynclist"`
-
-	// Deprecated: GroupSyncListKey code will be removed from the operator to make it more generic
-	// A key in the configures GroupSyncList which will contain the LDAP groups to be synced using LDAP sync
-	// +kubebuilder:default:=groupsynclist.txt
-	// +kubebuilder:validation:Optional
-	GroupSyncListKey string `json:"groupsynclist_key"`
-
-	// LDAP configuration for the operator to add to Groups
-	// +kubebuilder:validation:Optional
-	LDAP ConfigLdap `json:"ldap"`
-
 	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// +kubebuilder:validation:MinLength=1

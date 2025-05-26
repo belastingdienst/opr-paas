@@ -63,7 +63,7 @@ type Reconciler interface {
 // +kubebuilder:rbac:groups=quota.openshift.io,resources=clusterresourcequotas,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=user.openshift.io,resources=groups,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=argoproj.io,resources=applicationsets,verbs=get;list;watch;patch
-// +kubebuilder:rbac:groups=core,resources=secrets;configmaps;namespaces,verbs=create;delete;get;list;patch;update;watch
+// +kubebuilder:rbac:groups=core,resources=secrets;namespaces,verbs=create;delete;get;list;patch;update;watch
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings;clusterrolebindings,verbs=create;delete;get;list;patch;update;watch
 
 // +kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paasns,verbs=get;list;watch;create;update;patch;delete
@@ -221,7 +221,6 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		r.reconcileClusterWideQuota,
 		r.reconcileNamespacedResources,
 		r.reconcileGroups,
-		r.ensureLdapGroups,
 		r.ensureAppSetCaps,
 		r.finalizeDisabledAppSetCaps,
 	}

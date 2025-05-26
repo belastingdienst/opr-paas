@@ -167,15 +167,6 @@ var examplePaasConfig = v1alpha2.PaasConfig{
 			Name:      "example-keys",
 			Namespace: "paas-system",
 		},
-		GroupSyncList: v1alpha2.NamespacedName{
-			Namespace: "gsns",
-			Name:      "wlname",
-		},
-		GroupSyncListKey: "groupsynclist.txt",
-		LDAP: v1alpha2.ConfigLdap{
-			Host: "ldap.example.com",
-			Port: 13,
-		},
 		ManagedByLabel:  "argocd.argoproj.io/manby",
 		ManagedBySuffix: "argocd",
 		RequestorLabel:  "o.lbl",
