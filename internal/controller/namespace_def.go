@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -14,7 +13,7 @@ import (
 // and reuse for every reconciliation for a subresources (.e.a. namespaces, secrets, rolebindings, etc.).
 type namespaceDef struct {
 	nsName    string
-	paasns    *v1alpha1.PaasNS
+	paasns    *v1alpha2.PaasNS
 	capName   string
 	capConfig v1alpha2.ConfigCapability
 	quota     string
@@ -27,9 +26,9 @@ type namespaceDefs map[string]namespaceDef
 // paasNSsFromNs gets all PaasNs objects from a namespace and returns a map of all paasNS's.
 // Key of the map is based on the namespaced name of the PaasNS, so that we have uniqueness
 // paasNSsFromNs runs recursively, to collect all PaasNS's in the namespaces of founds PaasNS namespaces too.
-func (r *PaasReconciler) paasNSsFromNs(ctx context.Context, ns string) map[string]v1alpha1.PaasNS {
-	nss := map[string]v1alpha1.PaasNS{}
-	pnsList := &v1alpha1.PaasNSList{}
+func (r *PaasReconciler) paasNSsFromNs(ctx context.Context, ns string) map[string]v1alpha2.PaasNS {
+	nss := map[string]v1alpha2.PaasNS{}
+	pnsList := &v1alpha2.PaasNSList{}
 	if err := r.List(ctx, pnsList, &client.ListOptions{Namespace: ns}); err != nil {
 		// In this case panic is ok, since this situation can only occur when either k8s is down,
 		// or permissions are insufficient. Both cases we should not continue executing code...
@@ -48,7 +47,7 @@ func (r *PaasReconciler) paasNSsFromNs(ctx context.Context, ns string) map[strin
 
 func (r *PaasReconciler) nsDefsFromPaasNamespaces(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	paasGroups []string,
 ) (paasNsBlockNss namespaceDefs) {
 	paasNsBlockNss = namespaceDefs{}
@@ -80,7 +79,7 @@ func (r *PaasReconciler) nsDefsFromPaasNamespaces(
 
 func (r *PaasReconciler) paasCapabilityNss(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	paasGroups []string,
 ) (capNsDefs namespaceDefs, err error) {
 	capNsDefs = namespaceDefs{}
@@ -136,7 +135,7 @@ func (r *PaasReconciler) paasCapabilityNss(
 // - all namespaces as defined in paas.spec.namespaces
 // - all namespaces as required by paas.spec.capabilities
 // - all namespaces as required by paasNS's belonging to this paas
-func (r *PaasReconciler) nsDefsFromPaas(ctx context.Context, paas *v1alpha1.Paas) (finalNss namespaceDefs, err error) {
+func (r *PaasReconciler) nsDefsFromPaas(ctx context.Context, paas *v1alpha2.Paas) (finalNss namespaceDefs, err error) {
 	var paasGroups []string
 	for key, paasGroup := range paas.Spec.Groups {
 		if paasGroup.Query == "" {

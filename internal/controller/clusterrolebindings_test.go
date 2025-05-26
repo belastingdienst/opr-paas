@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	. "github.com/onsi/ginkgo/v2"
@@ -27,9 +26,9 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 	)
 	var (
 		ctx             context.Context
-		paas            *api.Paas
+		paas            *v1alpha2.Paas
 		paasNsDefs      namespaceDefs
-		secondPaas      *api.Paas
+		secondPaas      *v1alpha2.Paas
 		secondNsDefs    namespaceDefs
 		reconciler      *PaasReconciler
 		paasConfig      v1alpha2.PaasConfig
@@ -66,16 +65,15 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),
 		}
-		paas = &api.Paas{
+		paas = &v1alpha2.Paas{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: paasName,
 				UID:  "abc", // Needed or owner references fail
 			},
-			Spec: api.PaasSpec{
+			Spec: v1alpha2.PaasSpec{
 				Requestor: capName,
-				Capabilities: api.PaasCapabilities{
-					capName: api.PaasCapability{
-						Enabled:          true,
+				Capabilities: v1alpha2.PaasCapabilities{
+					capName: v1alpha2.PaasCapability{
 						ExtraPermissions: true,
 					},
 				},

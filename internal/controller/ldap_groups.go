@@ -11,7 +11,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/groups"
 	"github.com/belastingdienst/opr-paas/internal/logging"
@@ -45,7 +45,7 @@ func (r *PaasReconciler) ensureLdapGroupsConfigMap(
 // ensureLdapGroups ensures Group presence
 func (r *PaasReconciler) ensureLdapGroups(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "ldapgroup")
 	logger.Info().Msg("creating ldap groups for PAAS object ")

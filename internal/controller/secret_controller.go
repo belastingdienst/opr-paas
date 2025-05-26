@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 
 	"github.com/rs/zerolog/log"
@@ -71,8 +71,8 @@ type: Opaque
 // backendSecret is a code for Creating Secret
 func (r *PaasReconciler) backendSecret(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
-	paasns *v1alpha1.PaasNS,
+	paas *v1alpha2.Paas,
+	paasns *v1alpha2.PaasNS,
 	namespacedName types.NamespacedName,
 	url string,
 ) (
@@ -115,8 +115,8 @@ func (r *PaasReconciler) backendSecret(
 // getSecrets returns a list of Secrets which are desired based on the Paas(Ns) spec
 func (r *PaasReconciler) backendSecrets(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
-	paasns *v1alpha1.PaasNS,
+	paas *v1alpha2.Paas,
+	paasns *v1alpha2.PaasNS,
 	namespace string,
 	encryptedSecrets map[string]string,
 ) (secrets []*corev1.Secret, err error) {
@@ -187,7 +187,7 @@ func isSecretInDesiredSecrets(secret *corev1.Secret, desiredSecrets []*corev1.Se
 // getExistingSecrets retrieves all secrets owned by this Paas in it's enabled namespaces
 func (r *PaasReconciler) getExistingSecrets(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	ns string,
 ) ([]*corev1.Secret, error) {
 	var existingSecrets []*corev1.Secret
@@ -221,8 +221,8 @@ func (r *PaasReconciler) getExistingSecrets(
 
 func (r *PaasReconciler) reconcileNamespaceSecrets(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
-	paasns *v1alpha1.PaasNS,
+	paas *v1alpha2.Paas,
+	paasns *v1alpha2.PaasNS,
 	namespace string,
 	paasSecrets map[string]string,
 ) error {
@@ -254,7 +254,7 @@ func (r *PaasReconciler) reconcileNamespaceSecrets(
 
 func (r *PaasReconciler) reconcilePaasSecrets(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	nsDefs namespaceDefs,
 ) error {
 	for _, nsDef := range nsDefs {

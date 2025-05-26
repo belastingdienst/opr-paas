@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,7 +38,7 @@ const (
 
 func (r *PaasReconciler) ensureGroup(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	group *userv1.Group,
 ) error {
 	var (
@@ -97,9 +97,9 @@ func (r *PaasReconciler) ensureGroup(
 // groups with a query can ben shared between multiple Paas'es referencing the same group.
 func (r *PaasReconciler) backendGroup(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	paasGroupKey string,
-	group v1alpha1.PaasGroup,
+	group v1alpha2.PaasGroup,
 ) (*userv1.Group, error) {
 	logger := log.Ctx(ctx)
 	logger.Debug().Msg("defining group")
@@ -135,7 +135,7 @@ func (r *PaasReconciler) backendGroup(
 
 func (r *PaasReconciler) backendGroups(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) (groups []*userv1.Group, err error) {
 	for key, group := range paas.Spec.Groups {
 		beGroup, err := r.backendGroup(ctx, paas, key, group)
@@ -149,7 +149,7 @@ func (r *PaasReconciler) backendGroups(
 
 func (r *PaasReconciler) finalizeGroups(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) error {
 	ctx, _ = logging.GetLogComponent(ctx, "group")
 	existingGroups, err := r.getExistingGroups(ctx, paas)
@@ -171,7 +171,7 @@ func (r *PaasReconciler) finalizeGroups(
 
 func (r *PaasReconciler) reconcileGroups(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "group")
 	logger.Info().Msg("reconciling groups for Paas")
@@ -207,7 +207,7 @@ func (r *PaasReconciler) reconcileGroups(
 // the LDAP query is added to a list of to be removedLdapGroups.
 func (r *PaasReconciler) deleteObsoleteGroups(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	desiredGroups []*userv1.Group,
 	existingGroups []*userv1.Group,
 ) (removedLdapGroups []string, err error) {
@@ -252,7 +252,7 @@ func isGroupInGroups(group *userv1.Group, groups []*userv1.Group) bool {
 // getExistingGroups returns all groups owned by the specified Paas
 func (r *PaasReconciler) getExistingGroups(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) (existingGroups []*userv1.Group, err error) {
 	logger := log.Ctx(ctx)
 	var groups userv1.GroupList

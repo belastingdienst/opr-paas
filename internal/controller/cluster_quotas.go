@@ -11,7 +11,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
@@ -59,7 +59,7 @@ func (r *PaasReconciler) ensureQuota(
 // backendQuota is a code for Creating Quota
 func (r *PaasReconciler) backendQuota(
 	ctx context.Context,
-	paas *v1alpha1.Paas, suffix string,
+	paas *v1alpha2.Paas, suffix string,
 	hardQuotas map[corev1.ResourceName]resourcev1.Quantity,
 ) *quotav1.ClusterResourceQuota {
 	var quotaName string
@@ -105,7 +105,7 @@ func (r *PaasReconciler) backendQuota(
 
 func (r *PaasReconciler) backendEnabledQuotas(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) (quotas []*quotav1.ClusterResourceQuota, err error) {
 	paasConfigSpec := config.GetConfig().Spec
 	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
@@ -129,7 +129,7 @@ func (r *PaasReconciler) backendEnabledQuotas(
 type PaasQuotas map[string]paasquota.Quota
 
 func (r *PaasReconciler) backendUnneededQuotas(
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) (quotas []string) {
 	paasConfigSpec := config.GetConfig().Spec
 	for name, capConfig := range paasConfigSpec.Capabilities {
@@ -161,7 +161,7 @@ func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, quotaName str
 
 func (r *PaasReconciler) reconcileQuotas(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) (err error) {
 	ctx, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("creating quotas for Paas")
