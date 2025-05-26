@@ -247,9 +247,6 @@ func (r *PaasReconciler) reconcilePaasRolebindings(
 	nsDefs namespaceDefs,
 ) error {
 	for _, nsDef := range nsDefs {
-		if nsDef.nsName == paas.Name {
-			continue
-		}
 		err := r.reconcileNamespaceRolebindings(ctx, paas, nsDef.paasns, nsDef.nsName)
 		if err != nil {
 			return err

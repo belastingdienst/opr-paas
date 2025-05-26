@@ -248,10 +248,10 @@ func (r *PaasReconciler) reconcileNamespacedResources(
 	logger.Debug().Msgf("Need to manage resources for %d namespaces", len(nsDefs))
 	paasNsReconcilers := []func(context.Context, *v1alpha1.Paas, namespaceDefs) error{
 		r.reconcileNamespaces,
+		r.finalizeObsoleteNamespaces,
 		r.reconcilePaasRolebindings,
 		r.reconcilePaasSecrets,
 		r.reconcileClusterRoleBindings,
-		r.finalizeObsoleteNamespaces,
 	}
 	for _, reconciler := range paasNsReconcilers {
 		if err = reconciler(ctx, paas, nsDefs); err != nil {
