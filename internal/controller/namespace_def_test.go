@@ -26,11 +26,14 @@ var _ = Describe("NamespaceDef", func() {
 		group3           = "g3"
 	)
 	var (
-		paas         v1alpha2.Paas
-		paasConfig   v1alpha2.PaasConfig
-		ctx          context.Context
-		reconciler   *PaasReconciler
-		namespaces   = []string{ns1, ns2}
+		paas       v1alpha2.Paas
+		paasConfig v1alpha2.PaasConfig
+		ctx        context.Context
+		reconciler *PaasReconciler
+		namespaces = v1alpha2.PaasNamespaces{
+			ns1: v1alpha2.PaasNamespace{},
+			ns2: v1alpha2.PaasNamespace{},
+		}
 		paasNsGroups = []string{group1, group2}
 	)
 	BeforeEach(func() {

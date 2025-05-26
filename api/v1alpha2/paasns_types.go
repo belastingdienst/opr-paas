@@ -9,6 +9,9 @@ See LICENSE.md for details.
 package v1alpha2
 
 import (
+	"errors"
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -79,4 +82,22 @@ func init() {
 type PaasNsStatus struct {
 	// +kubebuilder:validation:Optional
 	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+}
+
+func (pns PaasNS) ClonedLabels() map[string]string {
+	labels := make(map[string]string)
+	for key, value := range pns.Labels {
+		if key != "app.kubernetes.io/instance" {
+			labels[key] = value
+		}
+	}
+	return labels
+}
+
+func (pns PaasNS) NamespaceName() string {
+	if pns.Spec.Paas == "" || pns.Name == "" {
+		panic(errors.New("invalid paas or paasns name (empty)"))
+	}
+
+	return fmt.Sprintf("%s-%s", pns.Spec.Paas, pns.Name)
 }

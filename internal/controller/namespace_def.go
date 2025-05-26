@@ -51,12 +51,12 @@ func (r *PaasReconciler) nsDefsFromPaasNamespaces(
 	paasGroups []string,
 ) (paasNsBlockNss namespaceDefs) {
 	paasNsBlockNss = namespaceDefs{}
-	for _, nsName := range paas.Spec.Namespaces {
+	for nsname, _ := range paas.Spec.Namespaces {
 		ns := namespaceDef{
-			nsName:  join(paas.Name, nsName),
+			nsName:  join(paas.Name, nsname),
 			quota:   paas.Name,
 			groups:  paasGroups,
-			secrets: paas.Spec.SSHSecrets,
+			secrets: paas.Spec.Secrets,
 		}
 
 		paasNsBlockNss[ns.nsName] = ns
@@ -66,7 +66,7 @@ func (r *PaasReconciler) nsDefsFromPaasNamespaces(
 				paasns:  &paasns,
 				quota:   paas.Name,
 				groups:  paasns.Spec.Groups,
-				secrets: paas.Spec.SSHSecrets,
+				secrets: paas.Spec.Secrets,
 			}
 			if len(paasns.Spec.Groups) > 0 {
 				ns.groups = paasns.Spec.Groups
@@ -85,9 +85,6 @@ func (r *PaasReconciler) paasCapabilityNss(
 	capNsDefs = namespaceDefs{}
 	capsConfig := config.GetConfig().Spec.Capabilities
 	for capName, capDefinition := range paas.Spec.Capabilities {
-		if !capDefinition.Enabled {
-			continue
-		}
 		capConfig, ok := capsConfig[capName]
 		if !ok {
 			return nil, fmt.Errorf("capability %s is not in PaasConfig", capName)
@@ -98,10 +95,10 @@ func (r *PaasReconciler) paasCapabilityNss(
 			quotaName = clusterWideQuotaName(capName)
 		}
 		secrets := map[string]string{}
-		for secretName, secretValue := range paas.Spec.SSHSecrets {
+		for secretName, secretValue := range paas.Spec.Secrets {
 			secrets[secretName] = secretValue
 		}
-		for secretName, secretValue := range capDefinition.SSHSecrets {
+		for secretName, secretValue := range capDefinition.Secrets {
 			secrets[secretName] = secretValue
 		}
 		ns := namespaceDef{
@@ -119,7 +116,7 @@ func (r *PaasReconciler) paasCapabilityNss(
 				paasns:  &paasns,
 				quota:   paas.Name,
 				groups:  paasGroups,
-				secrets: paas.Spec.SSHSecrets,
+				secrets: paas.Spec.Secrets,
 			}
 			if len(paasns.Spec.Groups) > 0 {
 				ns.groups = paasns.Spec.Groups
@@ -156,7 +153,7 @@ func (r *PaasReconciler) nsDefsFromPaas(ctx context.Context, paas *v1alpha2.Paas
 			paasns:  &paasns,
 			quota:   paas.Name,
 			groups:  paasGroups,
-			secrets: paas.Spec.SSHSecrets,
+			secrets: paas.Spec.Secrets,
 		}
 		if len(paasns.Spec.Groups) > 0 {
 			ns.groups = paasns.Spec.Groups

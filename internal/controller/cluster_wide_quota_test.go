@@ -66,9 +66,7 @@ var _ = Describe("ClusterResourceQuota controller", Ordered, func() {
 				Requestor: "foo",
 				Quota:     quota.Quota{},
 				Capabilities: v1alpha2.PaasCapabilities{
-					capName: v1alpha2.PaasCapability{
-						Enabled: true,
-					},
+					capName: v1alpha2.PaasCapability{},
 				},
 			},
 		}

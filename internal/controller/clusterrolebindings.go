@@ -168,8 +168,7 @@ func (r *PaasReconciler) reconcileClusterRoleBinding(
 	}
 
 	ctx, _ = logging.GetLogComponent(ctx, "clusterrolebinding")
-
-	permissions := capConfig.ExtraPermissions.AsConfigRolesSas(capability.WithExtraPermissions())
+	permissions := capConfig.ExtraPermissions.AsConfigRolesSas(capability.ExtraPermissions)
 	permissions.Merge(capConfig.DefaultPermissions.AsConfigRolesSas(true))
 	for role, sas := range permissions {
 		if crb, err = getClusterRoleBinding(ctx, r.Client, role); err != nil {
@@ -231,7 +230,7 @@ func (r *PaasReconciler) finalizeClusterRoleBinding(
 func (r *PaasReconciler) finalizeCapClusterRoleBindings(ctx context.Context, paas *v1alpha2.Paas) error {
 	for capName, capConfig := range config.GetConfig().Spec.Capabilities {
 		nsRE := regexp.MustCompile(fmt.Sprintf("^%s-%s$", paas.Name, capName))
-		if paasCap, isDefined := paas.Spec.Capabilities[capName]; isDefined && paasCap.Enabled {
+		if _, isDefined := paas.Spec.Capabilities[capName]; isDefined {
 			continue
 		}
 		var roles []string

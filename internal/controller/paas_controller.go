@@ -214,8 +214,6 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return ctrl.Result{}, nil
 	}
 
-	paas.Status.Truncate()
-
 	paasReconcilers := []func(context.Context, *v1alpha2.Paas) error{
 		r.reconcileQuotas,
 		r.reconcileClusterWideQuota,

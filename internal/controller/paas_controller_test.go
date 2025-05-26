@@ -400,7 +400,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			var result controllerruntime.Result
 			request.Name = paasName
 			request.NamespacedName = types.NamespacedName{Name: paasName}
-			paas.Spec.SSHSecrets = map[string]string{"validSecret": paasSecret}
+			paas.Spec.Secrets = map[string]string{"validSecret": paasSecret}
 			result, err = reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
@@ -449,7 +449,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			paasName = paasRequestor + "-secret-failure"
 			brokenPaas := paas.DeepCopy()
 			brokenPaas.Name = paasName
-			brokenPaas.Spec.SSHSecrets = map[string]string{"broken": paasSecret}
+			brokenPaas.Spec.Secrets = map[string]string{"broken": paasSecret}
 			assurePaas(ctx, *brokenPaas)
 			request.Name = paasName
 			request.NamespacedName = types.NamespacedName{Name: paasName}
@@ -606,7 +606,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 					groupName:     v1alpha2.PaasGroup{Roles: []string{funcRoleName1}},
 					ldapGroupName: v1alpha2.PaasGroup{Roles: []string{funcRoleName2}, Query: ldapGroupQuery},
 				},
-				SSHSecrets: map[string]string{secretName: secretEncryptedValue},
+				Secrets: map[string]string{secretName: secretEncryptedValue},
 			},
 		}
 		Expect(paas.Kind).To(Equal("Paas"))
@@ -759,14 +759,14 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			paas.Spec.Namespaces = nil
 			paas.Spec.Groups = nil
 			paas.Spec.Capabilities = nil
-			paas.Spec.SSHSecrets = nil
+			paas.Spec.Secrets = nil
 			err = reconciler.Patch(ctx, paas, patch)
 			Expect(err).NotTo(HaveOccurred())
 			patchedPaas := getPaas(ctx, paasName)
 			Expect(patchedPaas.Spec.Namespaces).To(BeEmpty())
 			Expect(patchedPaas.Spec.Groups).To(BeEmpty())
 			Expect(patchedPaas.Spec.Capabilities).To(BeEmpty())
-			Expect(patchedPaas.Spec.SSHSecrets).To(BeEmpty())
+			Expect(patchedPaas.Spec.Secrets).To(BeEmpty())
 			_, err = reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 		})

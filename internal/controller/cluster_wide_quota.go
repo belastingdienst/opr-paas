@@ -148,8 +148,10 @@ func (r *PaasReconciler) finalizeClusterWideQuotas(ctx context.Context, paas *v1
 }
 
 func (r *PaasReconciler) reconcileClusterWideQuota(ctx context.Context, paas *v1alpha2.Paas) error {
-	for capabilityName, capability := range paas.Spec.Capabilities {
-		if capability.IsEnabled() {
+	myconfig := config.GetConfig()
+
+	for capabilityName, _ := range myconfig.Spec.Capabilities {
+		if _, enabled := paas.Spec.Capabilities[capabilityName]; enabled {
 			err := r.addToClusterWideQuota(ctx, paas, capabilityName)
 			if err != nil && k8serrors.IsNotFound(err) {
 				continue

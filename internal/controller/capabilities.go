@@ -220,7 +220,7 @@ func (r *PaasReconciler) finalizeDisabledAppSetCaps(
 	ctx, logger := logging.GetLogComponent(ctx, "Applicationsets")
 	for capName := range config.GetConfig().Spec.Capabilities {
 		logger.Info().Msgf("reconciling %s Applicationset", capName)
-		if capability, exists := paas.Spec.Capabilities[capName]; exists && capability.Enabled {
+		if _, exists := paas.Spec.Capabilities[capName]; exists {
 			continue
 		}
 		err := r.finalizeAppSetCap(ctx, paas.Name, capName)
