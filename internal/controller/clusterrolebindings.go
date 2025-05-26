@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 
@@ -156,7 +156,7 @@ func addOrUpdateCrb(
 
 func (r *PaasReconciler) reconcileClusterRoleBinding(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	nsName string,
 	capName string,
 ) (err error) {
@@ -186,7 +186,7 @@ func (r *PaasReconciler) reconcileClusterRoleBinding(
 
 func (r *PaasReconciler) reconcileClusterRoleBindings(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	nsDefs namespaceDefs,
 ) (err error) {
 	for _, nsDef := range nsDefs {
@@ -228,7 +228,7 @@ func (r *PaasReconciler) finalizeClusterRoleBinding(
 	return updateClusterRoleBinding(ctx, r.Client, crb)
 }
 
-func (r *PaasReconciler) finalizeCapClusterRoleBindings(ctx context.Context, paas *v1alpha1.Paas) error {
+func (r *PaasReconciler) finalizeCapClusterRoleBindings(ctx context.Context, paas *v1alpha2.Paas) error {
 	for capName, capConfig := range config.GetConfig().Spec.Capabilities {
 		nsRE := regexp.MustCompile(fmt.Sprintf("^%s-%s$", paas.Name, capName))
 		if paasCap, isDefined := paas.Spec.Capabilities[capName]; isDefined && paasCap.Enabled {
@@ -250,7 +250,7 @@ func (r *PaasReconciler) finalizeCapClusterRoleBindings(ctx context.Context, paa
 
 func (r *PaasReconciler) finalizePaasClusterRoleBindings(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) (err error) {
 	var capRoles []string
 	for _, capConfig := range config.GetConfig().Spec.Capabilities {

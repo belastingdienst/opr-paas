@@ -40,7 +40,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	// +kubebuilder:scaffold:imports
 )
@@ -131,7 +130,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = api.AddToScheme(scheme.Scheme)
+	err = v1alpha2.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = userv1.AddToScheme(scheme.Scheme)
@@ -232,7 +231,7 @@ func assureNamespace(ctx context.Context, namespaceName string) {
 
 func assureNamespaceWithPaasReference(ctx context.Context, namespaceName string, paasName string) {
 	assureNamespace(ctx, namespaceName)
-	paas := &api.Paas{}
+	paas := &v1alpha2.Paas{}
 	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasName}, paas)
 	Expect(err).NotTo(HaveOccurred())
 	ns := &corev1.Namespace{}
@@ -247,8 +246,8 @@ func assureNamespaceWithPaasReference(ctx context.Context, namespaceName string,
 	}
 }
 
-func assurePaas(ctx context.Context, newPaas api.Paas) {
-	oldPaas := &api.Paas{}
+func assurePaas(ctx context.Context, newPaas v1alpha2.Paas) {
+	oldPaas := &v1alpha2.Paas{}
 	namespacedName := types.NamespacedName{
 		Name: newPaas.Name,
 	}
@@ -262,14 +261,14 @@ func assurePaas(ctx context.Context, newPaas api.Paas) {
 }
 
 func validatePaasNSExists(ctx context.Context, namespaceName string, paasNSName string) {
-	pns := api.PaasNS{}
+	pns := v1alpha2.PaasNS{}
 	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasNSName, Namespace: namespaceName}, &pns)
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func assurePaasNS(ctx context.Context, paasNs api.PaasNS) {
+func assurePaasNS(ctx context.Context, paasNs v1alpha2.PaasNS) {
 	assureNamespace(ctx, paasNs.GetNamespace())
-	oldPaasNS := &api.PaasNS{}
+	oldPaasNS := &v1alpha2.PaasNS{}
 	namespacedName := types.NamespacedName{Name: paasNs.GetName(), Namespace: paasNs.GetNamespace()}
 	err := k8sClient.Get(ctx, namespacedName, oldPaasNS)
 	if err == nil {
@@ -283,8 +282,8 @@ func assurePaasNS(ctx context.Context, paasNs api.PaasNS) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func getPaas(ctx context.Context, paasName string) *api.Paas {
-	paas := &api.Paas{}
+func getPaas(ctx context.Context, paasName string) *v1alpha2.Paas {
+	paas := &v1alpha2.Paas{}
 	namespacedName := types.NamespacedName{
 		Name: paasName,
 	}

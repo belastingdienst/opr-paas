@@ -9,7 +9,7 @@ package controller
 import (
 	"context"
 
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -21,7 +21,7 @@ import (
 var _ = Describe("Group controller", Ordered, func() {
 	var (
 		ctx        context.Context
-		paas       *api.Paas
+		paas       *v1alpha2.Paas
 		group      *userv1.Group
 		reconciler *PaasReconciler
 	)
@@ -30,7 +30,7 @@ var _ = Describe("Group controller", Ordered, func() {
 		// Set the PaasConfig so reconcilers know where to find our fixtures
 		config.SetConfig(genericConfig)
 
-		paas = &api.Paas{ObjectMeta: metav1.ObjectMeta{
+		paas = &v1alpha2.Paas{ObjectMeta: metav1.ObjectMeta{
 			Name: "my-paas",
 			UID:  "abc", // Needed or owner references fail
 		}}

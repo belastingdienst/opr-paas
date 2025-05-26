@@ -18,7 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"github.com/belastingdienst/opr-paas/internal/paasresource"
 
@@ -84,8 +84,8 @@ type Reconciler interface {
 func (r *PaasReconciler) getPaasFromRequest(
 	ctx context.Context,
 	req ctrl.Request,
-) (paas *v1alpha1.Paas, err error) {
-	paas = &v1alpha1.Paas{}
+) (paas *v1alpha2.Paas, err error) {
+	paas = &v1alpha2.Paas{}
 	ctx, logger := logging.GetLogComponent(ctx, "paas")
 	if err = r.Get(ctx, req.NamespacedName, paas); err != nil {
 		return nil, client.IgnoreNotFound(err)
@@ -96,7 +96,7 @@ func (r *PaasReconciler) getPaasFromRequest(
 		if !controllerutil.ContainsFinalizer(paas, paasFinalizer) {
 			return nil, nil
 		}
-		for _, finalizationFunc := range []func(context.Context, *v1alpha1.Paas) error{
+		for _, finalizationFunc := range []func(context.Context, *v1alpha2.Paas) error{
 			r.setFinalizing,
 			r.finalizePaas,
 			r.removeFinalizer,
@@ -112,14 +112,14 @@ func (r *PaasReconciler) getPaasFromRequest(
 	meta.SetStatusCondition(
 		&paas.Status.Conditions,
 		metav1.Condition{
-			Type:               v1alpha1.TypeReadyPaas,
+			Type:               v1alpha2.TypeReadyPaas,
 			Status:             metav1.ConditionUnknown,
 			ObservedGeneration: paas.Generation,
 			Reason:             "Reconciling",
 			Message:            "Starting reconciliation",
 		},
 	)
-	meta.RemoveStatusCondition(&paas.Status.Conditions, v1alpha1.TypeHasErrorsPaas)
+	meta.RemoveStatusCondition(&paas.Status.Conditions, v1alpha2.TypeHasErrorsPaas)
 	if err = r.Status().Update(ctx, paas); err != nil {
 		logger.Err(err).Msg("failed to update Paas status")
 		return nil, err
@@ -149,14 +149,14 @@ func (r *PaasReconciler) getPaasFromRequest(
 
 func (r *PaasReconciler) setFinalizing(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) error {
 	logger := log.Ctx(ctx)
 
 	logger.Info().Msg("finalizing Paas")
 	// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
 	meta.SetStatusCondition(paas.GetConditions(), metav1.Condition{
-		Type:   v1alpha1.TypeDegradedPaas,
+		Type:   v1alpha2.TypeDegradedPaas,
 		Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: paas.GetGeneration(),
 		Message: fmt.Sprintf("Performing finalizer operations for Paas: %s ", paas.GetName()),
 	})
@@ -170,11 +170,11 @@ func (r *PaasReconciler) setFinalizing(
 
 func (r *PaasReconciler) removeFinalizer(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) error {
 	logger := log.Ctx(ctx)
 	meta.SetStatusCondition(paas.GetConditions(), metav1.Condition{
-		Type:   v1alpha1.TypeDegradedPaas,
+		Type:   v1alpha2.TypeDegradedPaas,
 		Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: paas.GetGeneration(),
 		Message: fmt.Sprintf("Finalizer operations for Paas %s name were successfully accomplished",
 			paas.GetName()),
@@ -201,7 +201,7 @@ func (r *PaasReconciler) removeFinalizer(
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/reconcile
 func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
-	paas := &v1alpha1.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
+	paas := &v1alpha2.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
 	ctx, logger := logging.SetControllerLogger(ctx, paas, r.Scheme, req)
 
 	if paas, err = r.getPaasFromRequest(ctx, req); err != nil {
@@ -216,7 +216,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 
 	paas.Status.Truncate()
 
-	paasReconcilers := []func(context.Context, *v1alpha1.Paas) error{
+	paasReconcilers := []func(context.Context, *v1alpha2.Paas) error{
 		r.reconcileQuotas,
 		r.reconcileClusterWideQuota,
 		r.reconcileNamespacedResources,
@@ -237,7 +237,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 
 func (r *PaasReconciler) reconcileNamespacedResources(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) (err error) {
 	logger := log.Ctx(ctx)
 	logger.Debug().Msg("inside namespaced resource reconciler")
@@ -246,7 +246,7 @@ func (r *PaasReconciler) reconcileNamespacedResources(
 		return err
 	}
 	logger.Debug().Msgf("Need to manage resources for %d namespaces", len(nsDefs))
-	paasNsReconcilers := []func(context.Context, *v1alpha1.Paas, namespaceDefs) error{
+	paasNsReconcilers := []func(context.Context, *v1alpha2.Paas, namespaceDefs) error{
 		r.reconcileNamespaces,
 		r.reconcilePaasRolebindings,
 		r.reconcilePaasSecrets,
@@ -263,14 +263,14 @@ func (r *PaasReconciler) reconcileNamespacedResources(
 	return r.setSuccessfulCondition(ctx, paas)
 }
 
-func (r *PaasReconciler) setSuccessfulCondition(ctx context.Context, paas *v1alpha1.Paas) error {
+func (r *PaasReconciler) setSuccessfulCondition(ctx context.Context, paas *v1alpha2.Paas) error {
 	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{
-		Type:   v1alpha1.TypeReadyPaas,
+		Type:   v1alpha2.TypeReadyPaas,
 		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: paas.Generation,
 		Message: fmt.Sprintf("Reconciled (%s) successfully", paas.Name),
 	})
 	meta.SetStatusCondition(&paas.Status.Conditions, metav1.Condition{
-		Type:   v1alpha1.TypeHasErrorsPaas,
+		Type:   v1alpha2.TypeHasErrorsPaas,
 		Status: metav1.ConditionFalse, Reason: "Reconciling", ObservedGeneration: paas.Generation,
 		Message: fmt.Sprintf("Reconciled (%s) successfully", paas.Name),
 	})
@@ -280,12 +280,12 @@ func (r *PaasReconciler) setSuccessfulCondition(ctx context.Context, paas *v1alp
 
 func (r *PaasReconciler) setErrorCondition(ctx context.Context, resource paasresource.Resource, err error) error {
 	meta.SetStatusCondition(resource.GetConditions(), metav1.Condition{
-		Type:   v1alpha1.TypeReadyPaas,
+		Type:   v1alpha2.TypeReadyPaas,
 		Status: metav1.ConditionFalse, Reason: "ReconcilingError", ObservedGeneration: resource.GetGeneration(),
 		Message: fmt.Sprintf("Reconciling (%s) failed", resource.GetName()),
 	})
 	meta.SetStatusCondition(resource.GetConditions(), metav1.Condition{
-		Type:   v1alpha1.TypeHasErrorsPaas,
+		Type:   v1alpha2.TypeHasErrorsPaas,
 		Status: metav1.ConditionTrue, Reason: "ReconcilingError", ObservedGeneration: resource.GetGeneration(),
 		Message: err.Error(),
 	})
@@ -316,7 +316,7 @@ func paasFromNs(ns corev1.Namespace) (string, error) {
 func allPaases(mgr ctrl.Manager) []reconcile.Request {
 	// Enqueue all Paas objects
 	var reqs []reconcile.Request
-	var paasList v1alpha1.PaasList
+	var paasList v1alpha2.PaasList
 	if err := mgr.GetClient().List(context.Background(), &paasList); err != nil {
 		mgr.GetLogger().Error(err, "unable to list paases")
 		return nil
@@ -338,16 +338,16 @@ func allPaases(mgr ctrl.Manager) []reconcile.Request {
 // SetupWithManager is not unit-tested ATM. Mostly covered by e2e-tests.
 func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Paas{}, builder.WithPredicates(
+		For(&v1alpha2.Paas{}, builder.WithPredicates(
 			predicate.Or(
 				// Spec updated
 				predicate.GenerationChangedPredicate{},
 				// Labels updated
 				predicate.LabelChangedPredicate{},
 			))).
-		Owns(&v1alpha1.PaasNS{}).
+		Owns(&v1alpha2.PaasNS{}).
 		Watches(
-			&v1alpha1.PaasNS{},
+			&v1alpha2.PaasNS{},
 			handler.EnqueueRequestsFromMapFunc(
 				func(_ context.Context, paasNsObj client.Object) []reconcile.Request {
 					var ns corev1.Namespace
@@ -376,20 +376,20 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 					predicate.LabelChangedPredicate{},
 				))).
 		Watches(
-			&v1alpha1.PaasConfig{},
+			&v1alpha2.PaasConfig{},
 			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, _ client.Object) []reconcile.Request {
 				return allPaases(mgr)
 			}),
-			builder.WithPredicates(v1alpha1.ActivePaasConfigUpdated()),
+			builder.WithPredicates(v1alpha2.ActivePaasConfigUpdated()),
 		).
 		Complete(r)
 }
 
-func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha1.Paas) error {
+func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha2.Paas) error {
 	logger := log.Ctx(ctx)
 	logger.Debug().Msg("inside Paas finalizer")
 
-	paasReconcilers := []func(context.Context, *v1alpha1.Paas) error{
+	paasReconcilers := []func(context.Context, *v1alpha2.Paas) error{
 		r.finalizeGroups,
 		r.finalizePaasClusterRoleBindings,
 		r.finalizeClusterWideQuotas,
