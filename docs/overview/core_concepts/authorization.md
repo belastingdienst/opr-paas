@@ -5,8 +5,7 @@ to request a context for their project, which we like to call a 'Project as a Se
 e.a. Paas.
 
 Requestors of a Paas have the option to set up permissions for groups. Groups can
-get permissions on namespaces, and additionally get access in the ArgoCD deployed
-for their Paas. Additionally, default groups can get permissions on these ArgoCDs as well.
+get permissions on namespaces and thereby for all resources in that namespace.
 
 Configuring authorization is done by:
 
@@ -27,9 +26,6 @@ Configuring authorization is done by:
   - For every PaasNs namespace the PaasNs controller creates a role binding for
     every applicable technical role, and adds the groups that should have the
     required permissions;
-- For the `argocd` capability, the PaasNs controller adds the required permissions
-  to the RBAC block so that the applicable groups get the permissions in ArgoCD
-  as required;
 
   Additionally, the PaasConfig can have additional `argopermissions` to
   be handed to additional groups (e.a. cluster admins).
