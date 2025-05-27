@@ -233,5 +233,8 @@ func configureWebhooks(mgr ctrl.Manager) {
 		if err := webhookv1alpha1.SetupPaasNsWebhookWithManager(mgr); err != nil {
 			log.Fatal().Err(err).Str("webhook", "PaasNS").Msg("unable to create webhook")
 		}
+		if err := webhookv1alpha2.SetupPaasNsWebhookWithManager(mgr); err != nil {
+			log.Fatal().Err(err).Str("webhook", "PaasNS").Msg("unable to create webhook")
+		}
 	}
 }
