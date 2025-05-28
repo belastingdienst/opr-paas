@@ -43,8 +43,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		mycrypt = c
 
-		createNamespace("paas-system")
-		createPaasPrivateKeySecret("paas-system", "keys", pkey)
+		createNamespace(k8sClient, "paas-system")
+		createPaasPrivateKeySecret(k8sClient, "paas-system", "keys", pkey)
 	})
 
 	BeforeEach(func() {

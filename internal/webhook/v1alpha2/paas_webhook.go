@@ -33,7 +33,8 @@ import (
 
 // SetupPaasWebhookWithManager registers the webhook for Paas in the manager.
 func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(&v1alpha2.Paas{}).
+	return ctrl.NewWebhookManagedBy(mgr).
+		For(&v1alpha2.Paas{}).
 		WithValidator(&PaasCustomValidator{client: mgr.GetClient()}).
 		Complete()
 }
@@ -104,6 +105,7 @@ type paasSpecValidator func(
 func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	var warnings []string
+	ctx, logger := logging.GetLogComponent(ctx, "webhook_paas_validate")
 	conf := config.GetConfig()
 	// Check for uninitialized config
 	if conf.Spec.DecryptKeysSecret.Name == "" {
@@ -114,7 +116,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		validatePaasName,
 		validatePaasRequestor,
 		validateCaps,
-		validateSecrets,
+		validatePaasSecrets,
 		validateCustomFields,
 		validateGroupNames,
 		validatePaasNamespaceNames,
@@ -132,6 +134,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 	warnings = append(warnings, v.validateExtraPerm(conf, paas)...)
 
 	if len(allErrs) == 0 && len(warnings) == 0 {
+		logger.Info().Msg("validate ok")
 		return nil, nil
 	} else if len(allErrs) == 0 {
 		return warnings, nil
@@ -298,7 +301,7 @@ func validateGroupNames(
 	return errs, nil
 }
 
-func validateSecrets(
+func validatePaasSecrets(
 	ctx context.Context,
 	k8sClient client.Client,
 	conf v1alpha2.PaasConfig,

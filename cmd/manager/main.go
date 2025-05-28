@@ -40,6 +40,8 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
+const webhookErrMsg = "unable to create webhook"
+
 var scheme = runtime.NewScheme()
 
 type flags struct {
@@ -216,22 +218,24 @@ func configureManager(f *flags) ctrl.Manager {
 }
 
 func configureWebhooks(mgr ctrl.Manager) {
-	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err := webhookv1alpha1.SetupPaasWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create webhook")
+			log.Fatal().Err(err).Str("webhook", "Paas").Msg(webhookErrMsg)
 		}
 		if err := webhookv1alpha2.SetupPaasWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "Paas").Msg("unable to create webhook")
+			log.Fatal().Err(err).Str("webhook", "Paas").Msg(webhookErrMsg)
 		}
 		if err := webhookv1alpha1.SetupPaasConfigWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "PaasConfig").Msg("unable to create webhook")
+			log.Fatal().Err(err).Str("webhook", "PaasConfig").Msg(webhookErrMsg)
 		}
 		if err := webhookv1alpha2.SetupPaasConfigWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "PaasConfig").Msg("unable to create webhook")
+			log.Fatal().Err(err).Str("webhook", "PaasConfig").Msg(webhookErrMsg)
 		}
 		if err := webhookv1alpha1.SetupPaasNsWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "PaasNS").Msg("unable to create webhook")
+			log.Fatal().Err(err).Str("webhook", "PaasNS").Msg(webhookErrMsg)
+		}
+		if err := webhookv1alpha2.SetupPaasNsWebhookWithManager(mgr); err != nil {
+			log.Fatal().Err(err).Str("webhook", "PaasNS").Msg(webhookErrMsg)
 		}
 	}
 }
