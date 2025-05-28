@@ -207,11 +207,11 @@ func (r *PaasReconciler) reconcileNamespaceRolebindings(
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
 	// Use a map of sets to avoid duplicates
-	roleGroups := map[string]map[string]bool{}
+	roleGroups := map[string]map[string]struct{}{}
 
 	for _, roleList := range config.GetConfig().Spec.RoleMappings {
 		for _, role := range roleList {
-			roleGroups[role] = map[string]bool{}
+			roleGroups[role] = map[string]struct{}{}
 		}
 	}
 
@@ -226,21 +226,17 @@ func (r *PaasReconciler) reconcileNamespaceRolebindings(
 		groupName := paas.GroupKey2GroupName(groupKey)
 		for _, mappedRole := range config.GetConfig().Spec.RoleMappings.Roles(groupRoles) {
 			if _, exists := roleGroups[mappedRole]; !exists {
-				roleGroups[mappedRole] = map[string]bool{}
+				roleGroups[mappedRole] = map[string]struct{}{}
 			}
-			roleGroups[mappedRole][groupName] = true
+			roleGroups[mappedRole][groupName] = struct{}{}
 		}
 	}
 
-	roles := map[string][]string{}
-	for role, groupSet := range roleGroups {
+	for roleName, groupSet := range roleGroups {
+		groupNames := make([]string, 0, len(groupSet))
 		for groupName := range groupSet {
-			roles[role] = append(roles[role], groupName)
+			groupNames = append(groupNames, groupName)
 		}
-	}
-
-	logger.Info().Any("Rolebindings map", roles).Msg("creating paas RoleBindings for PAASNS object")
-	for roleName, groupNames := range roles {
 		err := r.reconcileNamespaceRolebinding(ctx, paas, nsName, roleName, groupNames)
 		if err != nil {
 			return err
