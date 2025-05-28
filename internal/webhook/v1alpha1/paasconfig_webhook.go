@@ -188,23 +188,6 @@ func validatePaasConfigSpec(
 	if spec.ExcludeAppSetName != "" {
 		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("excludeappsetname"), "deprecated"))
 	}
-	if spec.GroupSyncListKey != "" {
-		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("groupsynclistkey"), "deprecated"))
-	}
-	if spec.GroupSyncList.Name != "" {
-		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("groupsynclist"), "deprecated"))
-	}
-
-	// Ensure LDAP.Host is syntactically valid string, connection check is not done
-	if spec.LDAP.Host != "" {
-		if valid, err := validate.Hostname(spec.LDAP.Host); !valid {
-			allErrs = append(allErrs, field.Invalid(
-				childPath.Child("LDAP"),
-				spec.LDAP.Host,
-				err.Error(),
-			))
-		}
-	}
 
 	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, k8sClient, spec.DecryptKeysSecret, childPath)...)
 	allErrs = append(allErrs, validateValidationFields(spec.Validations, childPath)...)

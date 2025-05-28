@@ -181,25 +181,6 @@ func validatePaasConfigSpec(
 	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validatePaasConfig")
 	childPath := field.NewPath("spec")
 
-	// Ensure we generate some warnings if deprecated items are used
-	if spec.GroupSyncListKey != "" {
-		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("groupsynclistkey"), "deprecated"))
-	}
-	if spec.GroupSyncList.Name != "" {
-		warn = append(warn, fmt.Sprintf("%s: %s", childPath.Child("groupsynclist"), "deprecated"))
-	}
-
-	// Ensure LDAP.Host is syntactically valid string, connection check is not done
-	if spec.LDAP.Host != "" {
-		if valid, err := validate.Hostname(spec.LDAP.Host); !valid {
-			allErrs = append(allErrs, field.Invalid(
-				childPath.Child("LDAP"),
-				spec.LDAP.Host,
-				err.Error(),
-			))
-		}
-	}
-
 	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, k8sClient, spec.DecryptKeysSecret, childPath)...)
 	allErrs = append(allErrs, validateValidationFields(spec.Validations, childPath)...)
 	allErrs = append(allErrs, validateConfigCapabilityNames(spec, childPath)...)
