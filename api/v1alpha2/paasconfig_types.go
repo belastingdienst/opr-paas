@@ -37,6 +37,8 @@ const (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:storageversion
+// +kubebuilder:conversion:hub
 // +kubebuilder:resource:path=paasconfig,scope=Cluster
 type PaasConfig struct {
 	metav1.TypeMeta   `json:""`
