@@ -193,11 +193,3 @@ type PaasList struct {
 func init() {
 	SchemeBuilder.Register(&Paas{}, &PaasList{})
 }
-
-// Keys can return a list of all keys in paas.spec.groups
-func (pgs PaasGroups) Keys() (keys []string) {
-	for key := range pgs {
-		keys = append(keys, key)
-	}
-	return keys
-}

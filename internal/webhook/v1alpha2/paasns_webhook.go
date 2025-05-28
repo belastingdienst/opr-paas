@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -135,16 +136,8 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 	}
 	logger.Info().Msg("starting validation webhook for update")
 
-	paas, _ := paasNStoPaas(ctx, v.client, newPaasns)
 	// This will not occur.
-	// if err != nil {
-	// 	return w, &field.Error{
-	// 		Type:     field.ErrorTypeNotSupported,
-	// 		Field:    field.NewPath("spec").Child("paas").String(),
-	// 		BadValue: newPaasns.Spec.Paas,
-	// 		Detail:   fmt.Sprintf("paas %s does not exist", newPaasns.Spec.Paas),
-	// 	}
-	// }
+	paas, _ := paasNStoPaas(ctx, v.client, newPaasns)
 
 	for _, validator := range []paasNsSpecValidator{
 		validatePaasNsGroups,
@@ -210,9 +203,9 @@ func validatePaasNsGroups(
 	paasns v1alpha2.PaasNS,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
-	superGroups := paas.Spec.Groups.Keys()
+	superGroups := maps.Keys(paas.Spec.Groups)
 	uqSuperGroups := map[string]bool{}
-	for _, group := range superGroups {
+	for group := range superGroups {
 		uqSuperGroups[group] = true
 	}
 	// Err when the optional groupKey(s) don't exist in referenced Paas
