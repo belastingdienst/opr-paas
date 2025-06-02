@@ -10,9 +10,7 @@ package v1alpha1
 //revive:disable:dot-imports
 
 import (
-	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
@@ -21,67 +19,24 @@ import (
 	"github.com/belastingdienst/opr-paas/internal/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
-func createNamespace(ns string) {
-	// Create system namespace
-	err := k8sClient.Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: ns},
-	})
-	if err != nil {
-		Fail(fmt.Errorf("failed to create %s namespace: %w", ns, err).Error())
-	}
-}
-
-func createPaasPrivateKeySecret(ns string, name string, privateKey []byte) {
-	// Set up private key
-	err := k8sClient.Create(ctx, &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: ns,
-		},
-		Data: map[string][]byte{"privatekey0": privateKey},
-	})
-	if err != nil {
-		Fail(fmt.Errorf("failed to create %s.%s secret: %w", ns, name, err).Error())
-	}
-}
-
-func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte, err error) {
-	tmpFileError := "failed to get new tmp private key file: %w"
-	privateKeyFile, err := os.CreateTemp("", "private")
-	if err != nil {
-		return nil, nil, fmt.Errorf(tmpFileError, err)
-	}
-	publicKeyFile, err := os.CreateTemp("", "public")
-	if err != nil {
-		return nil, nil, fmt.Errorf(tmpFileError, err)
-	}
-	myCrypt, err = crypt.NewGeneratedCrypt(privateKeyFile.Name(), publicKeyFile.Name(), context)
-	if err != nil {
-		return nil, nil, fmt.Errorf(tmpFileError, err)
-	}
-	privateKey, err = os.ReadFile(privateKeyFile.Name())
-	if err != nil {
-		return nil, nil, errors.New("failed to read private key from file")
-	}
-
-	return myCrypt, privateKey, nil
-}
-
 var _ = Describe("PaasNS Webhook", Ordered, func() {
+	const (
+		paasSystem        = "paasnssystem"
+		paasPkSecret      = "paasns-pk-secret"
+		paasName          = "mypaas"
+		otherPaasName     = "myotherpaas"
+		nsWithoutOwnerRef = paasName + "-without-owner-ref"
+		groupName1        = "mygroup1"
+		groupName2        = "mygroup2"
+		otherGroup        = "myothergroup"
+		paasNsName        = "mypaasns"
+	)
 	var (
-		paasSystem      = "paasnssystem"
-		paasPkSecret    = "paasns-pk-secret"
-		paasName        = "mypaas"
-		otherPaasName   = "myotherpaas"
-		groupName1      = "mygroup1"
-		groupName2      = "mygroup2"
-		otherGroup      = "myothergroup"
-		paasNsName      = "mypaasns"
 		privateKey      []byte
 		paas            *v1alpha1.Paas
 		obj             *v1alpha1.PaasNS
@@ -106,7 +61,10 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
-		config.SetConfig(conf)
+
+		err = config.SetConfigV1(conf)
+		Expect(err).NotTo(HaveOccurred())
+
 		createNamespace(paasSystem)
 
 		mycrypt, privateKey, err = newGeneratedCrypt(paasName)
@@ -116,17 +74,11 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 
 		createPaasPrivateKeySecret(paasSystem, paasPkSecret, privateKey)
 		paasSecret, err = mycrypt.Encrypt([]byte("paaSecret"))
-		if err != nil {
-			Fail(fmt.Errorf("encrypting paas secret failed: %w", err).Error())
-		}
+		Expect(err).NotTo(HaveOccurred())
 		validSecret1, err = mycrypt.Encrypt([]byte("validSecretCreated"))
-		if err != nil {
-			Fail(fmt.Errorf("encrypting valid paasns secret failed: %w", err).Error())
-		}
+		Expect(err).NotTo(HaveOccurred())
 		validSecret2, err = mycrypt.Encrypt([]byte("validSecretUpdated"))
-		if err != nil {
-			Fail(fmt.Errorf("encrypting valid paasns secret failed: %w", err).Error())
-		}
+		Expect(err).NotTo(HaveOccurred())
 		paas = &v1alpha1.Paas{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Paas",
@@ -150,11 +102,16 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			},
 		}
 		err = k8sClient.Create(ctx, paas)
-		if err != nil {
-			Fail(fmt.Errorf("failed to create paas: %w", err).Error())
-		}
-		createNamespace(paasName)
-		createNamespace(otherPaasName)
+		Expect(err).NotTo(HaveOccurred())
+		retrievedPaas := &v1alpha1.Paas{}
+		err = k8sClient.Get(ctx, types.NamespacedName{Name: paasName}, retrievedPaas)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(retrievedPaas.Name).To(Equal(paasName))
+		createPaasNamespace(*retrievedPaas, paasName)
+		// This is a namespace with Owner ref to mypaas and prefix set to myotherpaas-
+		createPaasNamespace(*retrievedPaas, otherPaasName)
+		// This is a namespace without Owner ref
+		createNamespace(nsWithoutOwnerRef)
 	})
 
 	BeforeEach(func() {
@@ -191,7 +148,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
-		config.SetConfig(conf)
+		config.SetConfigV1(conf)
 		validator = PaasNSCustomValidator{k8sClient}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
@@ -218,24 +175,20 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 
 	Context("When creating or updating a PaasNS with incorrect Paas reference", func() {
 		It("Should deny creation", func() {
-			By("simulating with reference to other Paas then where created")
-			obj.Spec.Paas = otherPaasName
-			warn, err := validator.ValidateCreate(ctx, obj)
-			Expect(warn, err).Error().To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("paas %s does not exist", otherPaasName))
+			By("created in namespace with wrong prefix")
+			obj.Namespace = otherPaasName
+			_, err := validator.ValidateCreate(ctx, obj)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(
+				"namespace %s is not named after paas, and not prefixed with 'mypaas-'", otherPaasName))
 		})
 		It("Should deny creation", func() {
-			By("simulating PaasNs creation in Namespace for other Paas")
-			obj.Namespace = otherPaasName
+			By("created in ns without Owner Ref")
+			obj.Namespace = nsWithoutOwnerRef
 			warn, err := validator.ValidateCreate(ctx, obj)
 			Expect(warn, err).Error().To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("paasns not in namespace belonging to paas %s", paasName))
-		})
-		It("Should deny updating", func() {
-			By("checking old vs new and raising error if they differ")
-			obj.Spec.Paas = "changing this should fail"
-			_, err := validator.ValidateUpdate(ctx, oldObj, obj)
-			Expect(err.Error()).To(ContainSubstring("field is immutable"))
+			Expect(err.Error()).To(ContainSubstring(
+				"failed to get owner reference with kind paas and controller=true from namespace resource"))
 		})
 		It("Should validate paasns name not containing dots", func() {
 			obj.Name = "invalid.name.foo"
@@ -255,7 +208,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				{name: "", validation: "^.$", valid: false},
 			} {
 				conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paasNs": {"name": test.validation}}
-				config.SetConfig(conf)
+				config.SetConfigV1(conf)
 				obj.Name = test.name
 				if test.valid {
 					warn, err := validator.ValidateCreate(ctx, obj)
@@ -290,13 +243,9 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			var err error
 			var invalidSecret1 string
 			mycrypt, privateKey, err = newGeneratedCrypt(paasName)
-			if err != nil {
-				Fail(err.Error())
-			}
+			Expect(err).ToNot(HaveOccurred())
 			invalidSecret1, err = mycrypt.Encrypt([]byte("paasns_secret"))
-			if err != nil {
-				Fail(fmt.Errorf("encrypting invalid paasns secret failed: %w", err).Error())
-			}
+			Expect(err).ToNot(HaveOccurred())
 			obj.Spec.SSHSecrets["invalidSecret1"] = invalidSecret1
 			warn, err := validator.ValidateCreate(ctx, obj)
 			Expect(warn, err).Error().To(HaveOccurred())

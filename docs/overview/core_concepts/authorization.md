@@ -125,7 +125,7 @@ Devops engineers could create a Paas with the following definition:
           # `them` group has view permissions
           roles:
             - view
-        # An OpenShift group called `others` is created, as this is named after the CN value.
+        # A rolebinding to an OpenShift group called `others` is created, as the group is expected to be created by the groupsync operator, with its name being the CN value.
         # The users spec will be ignored.
         others:
           query: 'CN=others,..'
@@ -154,7 +154,7 @@ With this example (combined with the operator config example), the following wou
   there will be RoleBindings for `view`. They will all contain the groups `my-paas-us`, and `my-paas-them`;
 
 !!! Note
-That there is also options to manage users with a federated solution.
+In case of a Query value, no groups are created. But this data provides the possibility to integrate with options to manage users with a federated solution.
 For more information, see [ldap integration with groupsynclist](groupsynclist.md).
 
 ### PaasNS
@@ -185,5 +185,3 @@ DevOps engineers could additionally create a PaasNS with the following definitio
 - Next to permissions on groups and users, there is also capabilities to implement
   permissions for service accounts. See [extra_permissions](../../administrators-guide/capabilities.md#configuring-permissions) for
   more info.
-- For ldap integration, the operator has options to manage groups using a groupsynclist
-  implementation. For more information, see [ldap integration with groupsynclist](groupsynclist.md).

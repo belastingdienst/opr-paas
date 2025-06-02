@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/belastingdienst/opr-paas/internal/fields"
+	"github.com/belastingdienst/opr-paas/internal/paasresource"
 	argo "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -105,15 +106,6 @@ func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) (allEntri
 	return allEntries, nil
 }
 
-// withStatus represents a k8s object with a `.status.conditions` slice field of conditions.
-// This is a workaround to match our custom resource types; all our custom resource types have the same
-// `.status.conditions` fields, but Go generics do not currently allow accessing shared struct fields via generic types.
-// This is apparently a feature slated for Go 2. (https://github.com/golang/go/issues/48522#issuecomment-924380147)
-type withStatus interface {
-	k8s.Object
-	GetConditions() *[]metav1.Condition
-}
-
 // waitForStatus accepts a k8s object with a `.status.conditions` block, and waits until the resource has been updated
 // and status conditions have been matched as per the passed function. Only conditions matching the current generation
 // of the resource are passed to the match function. `oldGeneration` must contain the generation of the resource prior
@@ -122,7 +114,7 @@ type withStatus interface {
 func waitForStatus(
 	ctx context.Context,
 	cfg *envconf.Config,
-	obj withStatus,
+	obj paasresource.Resource,
 	oldGeneration int64,
 	match func(conds []metav1.Condition) bool,
 ) error {
@@ -138,7 +130,7 @@ func waitForStatus(
 
 			// Filter out all non-current status conditions
 			conds := make([]metav1.Condition, 0)
-			for _, c := range *object.(withStatus).GetConditions() {
+			for _, c := range *object.(paasresource.Resource).GetConditions() {
 				if currentGen == c.ObservedGeneration {
 					conds = append(conds, c)
 				}
@@ -152,7 +144,7 @@ func waitForStatus(
 			"failed waiting for %s to be reconciled: %w and has status block: %v",
 			fetched.GetName(),
 			err,
-			fetched.(withStatus).GetConditions(),
+			fetched.(paasresource.Resource).GetConditions(),
 		)
 	}
 
@@ -163,7 +155,7 @@ func waitForStatus(
 func waitForCondition(
 	ctx context.Context,
 	cfg *envconf.Config,
-	obj withStatus,
+	obj paasresource.Resource,
 	oldGeneration int64,
 	readyCondition string,
 ) error {
@@ -173,7 +165,7 @@ func waitForCondition(
 }
 
 // createSync creates the resource, blocking until the given status condition is true.
-func createSync(ctx context.Context, cfg *envconf.Config, obj withStatus, readyCondition string) error {
+func createSync(ctx context.Context, cfg *envconf.Config, obj paasresource.Resource, readyCondition string) error {
 	if err := cfg.Client().Resources().Create(ctx, obj); err != nil {
 		return fmt.Errorf("failed to create %s: %w", obj.GetName(), err)
 	}
@@ -182,7 +174,7 @@ func createSync(ctx context.Context, cfg *envconf.Config, obj withStatus, readyC
 }
 
 // updateSync updates the resource, blocking until the given status condition is true.
-func updateSync(ctx context.Context, cfg *envconf.Config, obj withStatus, readyCondition string) error {
+func updateSync(ctx context.Context, cfg *envconf.Config, obj paasresource.Resource, readyCondition string) error {
 	gen := obj.GetGeneration()
 
 	if err := cfg.Client().Resources().Update(ctx, obj); err != nil {

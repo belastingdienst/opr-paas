@@ -12,21 +12,27 @@ package v1alpha1
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
+	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
 	"testing"
 	"time"
 
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	apiv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	apiv1alpha2 "github.com/belastingdienst/opr-paas/api/v1alpha2"
+	webhookv1alpha2 "github.com/belastingdienst/opr-paas/internal/webhook/v1alpha2"
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -50,6 +56,72 @@ var (
 	paasConfigPkSecret   = "paasconfig-testpksecret"
 	paasConfigPrivateKey []byte
 )
+
+func createNamespace(ns string) {
+	// Create system namespace
+	err := k8sClient.Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: ns},
+	})
+	if err != nil {
+		Fail(fmt.Errorf("failed to create %s namespace: %w", ns, err).Error())
+	}
+}
+
+func createPaasNamespace(paas apiv1alpha1.Paas, nsName string) {
+	controller := true
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nsName,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Name:       paas.Name,
+					APIVersion: apiv1alpha1.GroupVersion.Version,
+					Kind:       "Paas",
+					UID:        paas.UID,
+					Controller: &controller,
+				},
+			},
+		},
+	}
+	err := k8sClient.Create(ctx, ns)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func createPaasPrivateKeySecret(ns string, name string, privateKey []byte) {
+	// Set up private key
+	err := k8sClient.Create(ctx, &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: ns,
+		},
+		Data: map[string][]byte{"privatekey0": privateKey},
+	})
+	if err != nil {
+		Fail(fmt.Errorf("failed to create %s.%s secret: %w", ns, name, err).Error())
+	}
+}
+
+func newGeneratedCrypt(ctx string) (myCrypt *crypt.Crypt, privateKey []byte, err error) {
+	tmpFileError := "failed to get new tmp private key file: %w"
+	privateKeyFile, err := os.CreateTemp("", "private")
+	if err != nil {
+		return nil, nil, fmt.Errorf(tmpFileError, err)
+	}
+	publicKeyFile, err := os.CreateTemp("", "public")
+	if err != nil {
+		return nil, nil, fmt.Errorf(tmpFileError, err)
+	}
+	myCrypt, err = crypt.NewGeneratedCrypt(privateKeyFile.Name(), publicKeyFile.Name(), ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf(tmpFileError, err)
+	}
+	privateKey, err = os.ReadFile(privateKeyFile.Name())
+	if err != nil {
+		return nil, nil, errors.New("failed to read private key from file")
+	}
+
+	return myCrypt, privateKey, nil
+}
 
 func TestWebhooks(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -96,6 +168,9 @@ var _ = BeforeSuite(func() {
 	err = apiv1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = apiv1alpha2.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
@@ -117,6 +192,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	err = SetupPaasWebhookWithManager(mgr)
+	Expect(err).NotTo(HaveOccurred())
+	// The v1alpha2 webhook is registered in the manifest, so we must also install it
+	err = webhookv1alpha2.SetupPaasWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
 
 	// Ensure we have a namespace and privatekey for PaasConfig testing

@@ -101,7 +101,7 @@ func (p Paas) GetNsSSHSecrets(ns string) (secrets map[string]string) {
 }
 
 func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
-	ns = make(map[string]bool)
+	ns = map[string]bool{}
 	for name, cap := range p.Spec.Capabilities {
 		if cap.IsEnabled() {
 			ns[name] = true
@@ -111,7 +111,7 @@ func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 }
 
 func (p Paas) allCapNamespaces() (ns map[string]bool) {
-	ns = make(map[string]bool)
+	ns = map[string]bool{}
 	for name := range p.Spec.Capabilities {
 		ns[name] = true
 	}
@@ -130,7 +130,7 @@ func (p Paas) AllEnabledNamespaces() (ns map[string]bool) {
 
 func (p Paas) extraNamespaces() (ns map[string]bool) {
 	capNs := p.allCapNamespaces()
-	ns = make(map[string]bool)
+	ns = map[string]bool{}
 	for _, name := range p.Spec.Namespaces {
 		if _, isCap := capNs[name]; !isCap {
 			ns[name] = true
@@ -432,6 +432,8 @@ func (ps *PaasStatus) GetMessages() []string {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:storageversion
+// +kubebuilder:conversion:hub
 // +kubebuilder:resource:path=paas,scope=Cluster
 
 // Paas is the Schema for the paas API
@@ -462,12 +464,9 @@ func (p Paas) ClonedLabels() map[string]string {
 }
 
 func (p Paas) IsItMe(reference metav1.OwnerReference) bool {
-	apiVersion := p.APIVersion
-	kind := p.Kind
-	name := p.Name
-	if apiVersion != reference.APIVersion ||
-		kind != reference.Kind ||
-		name != reference.Name {
+	if reference.APIVersion != paasAPIVersion ||
+		reference.Kind != "Paas" ||
+		reference.Name != p.Name {
 		return false
 	}
 

@@ -352,3 +352,260 @@ spec:
     storage: true
     subresources:
       status: {}
+  - name: v1alpha2
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            properties:
+              capabilities:
+                additionalProperties:
+                  properties:
+                    applicationset:
+                      description: Name of the ArgoCD ApplicationSet which manages
+                        this capability
+                      minLength: 1
+                      type: string
+                    custom_fields:
+                      additionalProperties:
+                        properties:
+                          default:
+                            description: |-
+                              Set a default when no value is specified, defaults to ''.
+                              Only applies when Required is false.
+                            type: string
+                          required:
+                            description: |-
+                              Define if the value must be specified in the PaaS.
+                              When set to true, and no value is set, PaasNs has error in status field, and capability is not built.
+                              When set to false, and no value is set, Default is used.
+                            type: boolean
+                          template:
+                            description: You can now use a go-template string to use
+                              Paas and PaasConfig variables and compile a value
+                            type: string
+                          validation:
+                            description: Regular expression for validating input,
+                              defaults to '', which means no validation.
+                            type: string
+                        type: object
+                      description: Settings to allow specific configuration specific
+                        to a capability
+                      type: object
+                    default_permissions:
+                      additionalProperties:
+                        items:
+                          type: string
+                        type: array
+                      description: Default permissions set for this capability
+                      type: object
+                    extra_permissions:
+                      additionalProperties:
+                        items:
+                          type: string
+                        type: array
+                      description: Extra permissions set for this capability
+                      type: object
+                    quotas:
+                      description: Quota settings for this capability
+                      properties:
+                        clusterwide:
+                          default: false
+                          description: Is this a clusterwide quota or not
+                          type: boolean
+                        defaults:
+                          additionalProperties:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          description: The default quota which the enabled capability
+                            gets
+                          type: object
+                        max:
+                          additionalProperties:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          description: The maximum quota which the capability gets
+                          type: object
+                        min:
+                          additionalProperties:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          description: The minimum quota which the enabled capability
+                            gets
+                          type: object
+                        ratio:
+                          description: The ratio of the requested quota which will
+                            be applied to the total quota
+                          format: float
+                          maximum: 1
+                          minimum: 0
+                          type: number
+                      required:
+                      - defaults
+                      type: object
+                  required:
+                  - applicationset
+                  - quotas
+                  type: object
+                description: A map with zero or more ConfigCapability
+                type: object
+              clusterwide_argocd_namespace:
+                description: |-
+                  Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
+                  Deprecated: ArgoCD specific code will be removed from the operator
+                minLength: 1
+                type: string
+              debug:
+                default: false
+                description: Enable debug information generation or not
+                type: boolean
+              decryptKeySecret:
+                description: DecryptKeysSecret is a reference to the secret containing
+                  the DecryptKeys
+                properties:
+                  name:
+                    minLength: 1
+                    type: string
+                  namespace:
+                    minLength: 1
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+              managed_by_label:
+                default: argocd.argoproj.io/managed-by
+                description: |-
+                  Deprecated: ArgoCD specific code will be removed from the operator
+                  Name of the label used to define by whom the resource is managed.
+                type: string
+              managed_by_suffix:
+                default: argocd
+                description: |-
+                  Deprecated: ManagedBySuffix is a temporary implementation, to be replaced by go template functionality
+                  once available
+                  Suffix to be appended to the managed-by-label
+                type: string
+              quota_label:
+                default: clusterquotagroup
+                description: Label which is added to clusterquotas
+                type: string
+              requestor_label:
+                default: requestor
+                description: Name of the label used to define who is the contact for
+                  this resource
+                type: string
+              rolemappings:
+                additionalProperties:
+                  items:
+                    type: string
+                  type: array
+                description: Grant permissions to all groups according to config in
+                  configmap and role selected per group in paas.
+                type: object
+              validations:
+                additionalProperties:
+                  additionalProperties:
+                    type: string
+                  description: |-
+                    PaasConfigTypeValidations can have custom validations for a specific CRD (e.a. paas, paasConfig or PaasNs).
+                    Refer to https://belastingdienst.github.io/opr-paas/latest/administrators-guide/validations/ for more info.
+                  type: object
+                description: Set regular expressions to have the webhooks validate
+                  the fields
+                type: object
+            required:
+            - clusterwide_argocd_namespace
+            - decryptKeySecret
+            type: object
+          status:
+            properties:
+              conditions:
+                description: Conditions of this resource
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: false
+    subresources:
+      status: {}

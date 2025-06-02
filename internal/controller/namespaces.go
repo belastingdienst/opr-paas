@@ -84,6 +84,7 @@ func backendNamespace(
 	}
 	logger.Info().Msgf("setting Quotagroup %s", quota)
 	ns.Labels[config.GetConfig().Spec.QuotaLabel] = quota
+	ns.Labels[ManagedByLabelKey] = paas.Name
 
 	argoNameSpace := fmt.Sprintf("%s-%s", paas.ManagedByPaas(), config.GetConfig().Spec.ManagedBySuffix)
 	logger.Info().Msg("setting managed_by_label")
@@ -103,53 +104,49 @@ func backendNamespace(
 	return ns, nil
 }
 
-func (r *PaasNSReconciler) finalizeNamespace(
+func (r *PaasReconciler) reconcileNamespaces(
 	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
 	paas *v1alpha1.Paas,
-) error {
-	// Hoe voorkomen wij dat iemand een paasns maakt voor een verkeerde paas en als hij wordt weggegooid,
-	// dat hij dan de verkeerde namespace weggooit???
-
-	found := &corev1.Namespace{}
-	err := r.Get(ctx, types.NamespacedName{
-		Name: paasns.NamespaceName(),
-	}, found)
-	if err != nil && errors.IsNotFound(err) {
-		return nil
-	} else if err != nil {
-		// Error that isn't due to the namespace not existing
-		return err
-	} else if !paas.AmIOwner(found.OwnerReferences) {
-		err = fmt.Errorf("cannot remove Namespace %s because Paas %s is not the owner", found.Name, paas.Name)
-		return err
-	} else if err = r.Delete(ctx, found); err != nil {
-		// deleting the namespace failed
-		return err
+	nsDefs namespaceDefs,
+) (err error) {
+	ctx, logger := logging.GetLogComponent(ctx, "namespace")
+	for _, nsDef := range nsDefs {
+		var ns *corev1.Namespace
+		if ns, err = backendNamespace(ctx, paas, nsDef.nsName, nsDef.quota, r.Scheme); err != nil {
+			return fmt.Errorf("failure while defining namespace %s: %s", nsDef.nsName, err.Error())
+		} else if err = ensureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
+			return fmt.Errorf("failure while creating namespace %s: %s", nsDef.nsName, err.Error())
+		}
+		logger.Debug().Msgf("namespace %s successfully created with quota %s", nsDef.nsName, nsDef.quota)
 	}
 	return nil
 }
 
-func (r *PaasNSReconciler) reconcileNamespaces(
+// finalizeObsoleteNamespaces returns all groups owned by the specified Paas
+func (r *PaasReconciler) finalizeObsoleteNamespaces(
 	ctx context.Context,
 	paas *v1alpha1.Paas,
-	paasns *v1alpha1.PaasNS,
+	nsDefs namespaceDefs,
 ) (err error) {
-	nsName := paasns.NamespaceName()
-	var nsQuota string
-	if configCapability, exists := config.GetConfig().Spec.Capabilities[paasns.Name]; !exists {
-		nsQuota = paas.Name
-	} else if !configCapability.QuotaSettings.Clusterwide {
-		nsQuota = nsName
-	} else {
-		nsQuota = clusterWideQuotaName(paasns.Name)
+	var nss corev1.NamespaceList
+	var i int
+	logger := log.Ctx(ctx)
+	listOpts := []client.ListOption{
+		client.MatchingLabels(map[string]string{ManagedByLabelKey: paas.Name}),
 	}
-
-	var ns *corev1.Namespace
-	if ns, err = backendNamespace(ctx, paas, nsName, nsQuota, r.Scheme); err != nil {
-		return fmt.Errorf("failure while defining namespace %s: %s", nsName, err.Error())
-	} else if err = ensureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
-		return fmt.Errorf("failure while creating namespace %s: %s", nsName, err.Error())
+	err = r.List(ctx, &nss, listOpts...)
+	if err != nil {
+		return err
 	}
-	return err
+	for _, ns := range nss.Items {
+		if _, exists := nsDefs[ns.Name]; !exists {
+			err = r.Delete(ctx, &ns)
+			if err != nil {
+				return err
+			}
+			i++
+		}
+	}
+	logger.Debug().Msgf("found %d existing namespaces owned by Paas %s", i, paas.Name)
+	return nil
 }

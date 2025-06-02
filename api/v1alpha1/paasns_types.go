@@ -28,6 +28,7 @@ const (
 
 // PaasNSSpec defines the desired state of PaasNS
 type PaasNSSpec struct {
+	// Deprecated: not required once paas controller is managing the PaasNS resources.
 	// The `metadata.name` of the Paas which created the namespace in which this PaasNS is applied
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
@@ -45,6 +46,8 @@ type PaasNSSpec struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:storageversion
+// +kubebuilder:conversion:hub
 // +kubebuilder:resource:path=paasns,scope=Namespaced
 
 // PaasNS is the Schema for the PaasNS API
@@ -96,6 +99,11 @@ func (pns PaasNS) AmIOwner(references []metav1.OwnerReference) bool {
 
 func (pns *PaasNS) GetConditions() *[]metav1.Condition {
 	return &pns.Status.Conditions
+}
+
+// GetGeneration is required for Paas to be used as v1alpha1.Resource
+func (pns PaasNS) GetGeneration() int64 {
+	return pns.Generation
 }
 
 // +kubebuilder:object:root=true

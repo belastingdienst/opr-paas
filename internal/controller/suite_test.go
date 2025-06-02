@@ -36,10 +36,12 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -48,9 +50,9 @@ var (
 	k8sClient     client.Client
 	testEnv       *envtest.Environment
 	pubkey        *rsa.PublicKey
-	genericConfig = api.PaasConfig{
-		Spec: api.PaasConfigSpec{
-			DecryptKeysSecret: api.NamespacedName{
+	genericConfig = v1alpha2.PaasConfig{
+		Spec: v1alpha2.PaasConfigSpec{
+			DecryptKeysSecret: v1alpha2.NamespacedName{
 				Name:      "keys",
 				Namespace: "paas-system",
 			},
@@ -228,7 +230,24 @@ func assureNamespace(ctx context.Context, namespaceName string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func assurePaas(ctx context.Context, newPaas *api.Paas) {
+func assureNamespaceWithPaasReference(ctx context.Context, namespaceName string, paasName string) {
+	assureNamespace(ctx, namespaceName)
+	paas := &api.Paas{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasName}, paas)
+	Expect(err).NotTo(HaveOccurred())
+	ns := &corev1.Namespace{}
+	err = k8sClient.Get(ctx, types.NamespacedName{Name: namespaceName}, ns)
+	Expect(err).NotTo(HaveOccurred())
+
+	if !paas.AmIOwner(ns.GetOwnerReferences()) {
+		patchedNs := client.MergeFrom(ns.DeepCopy())
+		controllerutil.SetControllerReference(paas, ns, scheme.Scheme)
+		err = k8sClient.Patch(ctx, ns, patchedNs)
+		Expect(err).NotTo(HaveOccurred())
+	}
+}
+
+func assurePaas(ctx context.Context, newPaas api.Paas) {
 	oldPaas := &api.Paas{}
 	namespacedName := types.NamespacedName{
 		Name: newPaas.Name,
@@ -238,7 +257,13 @@ func assurePaas(ctx context.Context, newPaas *api.Paas) {
 		return
 	}
 	Expect(err.Error()).To(MatchRegexp(`paas.cpet.belastingdienst.nl .* not found`))
-	err = k8sClient.Create(ctx, newPaas)
+	err = k8sClient.Create(ctx, &newPaas)
+	Expect(err).NotTo(HaveOccurred())
+}
+
+func validatePaasNSExists(ctx context.Context, namespaceName string, paasNSName string) {
+	pns := api.PaasNS{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Name: paasNSName, Namespace: namespaceName}, &pns)
 	Expect(err).NotTo(HaveOccurred())
 }
 

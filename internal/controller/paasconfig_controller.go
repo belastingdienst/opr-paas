@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	"github.com/rs/zerolog/log"
@@ -52,7 +52,7 @@ func (pcr PaasConfigReconciler) GetScheme() *runtime.Scheme {
 // SetupWithManager sets up the controller with the Manager.
 func (pcr *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.PaasConfig{}).
+		For(&v1alpha2.PaasConfig{}).
 		WithEventFilter(
 			predicate.GenerationChangedPredicate{}, // Spec changed .
 		).
@@ -61,7 +61,7 @@ func (pcr *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // Reconcile is the main entrypoint for Reconciliation of a PaasConfig resource
 func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	cfg := &v1alpha1.PaasConfig{}
+	cfg := &v1alpha2.PaasConfig{}
 	ctx, _ = logging.SetControllerLogger(ctx, cfg, pcr.Scheme, req)
 	ctx, logger := logging.GetLogComponent(ctx, "paasconfig")
 
@@ -72,7 +72,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	meta.SetStatusCondition(
 		&cfg.Status.Conditions,
 		metav1.Condition{
-			Type:               v1alpha1.TypeHasErrorsPaasConfig,
+			Type:               v1alpha2.TypeHasErrorsPaasConfig,
 			Status:             metav1.ConditionUnknown,
 			ObservedGeneration: cfg.Generation,
 			Reason:             "Reconciling",
@@ -131,7 +131,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	return ctrl.Result{}, nil
 }
 
-func (pcr *PaasConfigReconciler) addFinalizer(ctx context.Context, cfg *v1alpha1.PaasConfig) (requeue bool, err error) {
+func (pcr *PaasConfigReconciler) addFinalizer(ctx context.Context, cfg *v1alpha2.PaasConfig) (requeue bool, err error) {
 	logger := log.Ctx(ctx)
 
 	if !controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
@@ -150,7 +150,7 @@ func (pcr *PaasConfigReconciler) addFinalizer(ctx context.Context, cfg *v1alpha1
 
 func (pcr *PaasConfigReconciler) finalize(
 	ctx context.Context,
-	cfg *v1alpha1.PaasConfig,
+	cfg *v1alpha2.PaasConfig,
 ) (requeue bool, err error) {
 	logger := log.Ctx(ctx)
 	logger.Info().Msg("paasconfig marked for deletion")
@@ -158,7 +158,7 @@ func (pcr *PaasConfigReconciler) finalize(
 	if controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
 		// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
 		meta.SetStatusCondition(&cfg.Status.Conditions, metav1.Condition{
-			Type:   v1alpha1.TypeDegradedPaasConfig,
+			Type:   v1alpha2.TypeDegradedPaasConfig,
 			Status: metav1.ConditionUnknown, Reason: "Finalizing", ObservedGeneration: cfg.Generation,
 			Message: fmt.Sprintf("Performing finalizer operations for PaasConfig: %s ", cfg.Name),
 		})
@@ -170,7 +170,7 @@ func (pcr *PaasConfigReconciler) finalize(
 
 		logger.Info().Msg("config reset successfully")
 		meta.SetStatusCondition(&cfg.Status.Conditions, metav1.Condition{
-			Type:   v1alpha1.TypeDegradedPaasConfig,
+			Type:   v1alpha2.TypeDegradedPaasConfig,
 			Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: cfg.Generation,
 			Message: fmt.Sprintf(
 				"Finalizer operations for PaasConfig %s name were successfully accomplished",
@@ -195,14 +195,14 @@ func (pcr *PaasConfigReconciler) finalize(
 	return false, nil
 }
 
-func (pcr *PaasConfigReconciler) setSuccessfulCondition(ctx context.Context, paasConfig *v1alpha1.PaasConfig) error {
+func (pcr *PaasConfigReconciler) setSuccessfulCondition(ctx context.Context, paasConfig *v1alpha2.PaasConfig) error {
 	meta.SetStatusCondition(&paasConfig.Status.Conditions, metav1.Condition{
-		Type:   v1alpha1.TypeActivePaasConfig,
+		Type:   v1alpha2.TypeActivePaasConfig,
 		Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: paasConfig.Generation,
 		Message: "This config is the active config!",
 	})
 	meta.SetStatusCondition(&paasConfig.Status.Conditions, metav1.Condition{
-		Type:   v1alpha1.TypeHasErrorsPaasConfig,
+		Type:   v1alpha2.TypeHasErrorsPaasConfig,
 		Status: metav1.ConditionFalse, Reason: "Reconciling", ObservedGeneration: paasConfig.Generation,
 		Message: fmt.Sprintf("Reconciled (%s) successfully", paasConfig.Name),
 	})

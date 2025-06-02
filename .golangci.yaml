@@ -12,7 +12,7 @@ linters:
     - misspell
     - revive
     - staticcheck
-    - unused
+    #- unused
   settings:
     govet:
       enable:

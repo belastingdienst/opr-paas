@@ -45,13 +45,12 @@ The crypttool is managed from its own repository on GitHub at [https://github.co
 
 ## Groups [openshift]
 
-Access to a Paas is granted to specific groups, which can be listed in the PaasConfig.
+Access to a Paas is granted to specific groups, which can be listed in the Paas.Groups spec.
+
+We are working on redesigning user management. The goal is to not be responsible for group / user management, only for creating rolebindings to groups specified in the Paas.
 
 A group can contain roles that allow them certain permissions, users and/or an
-LDAP query. When configured, the LDAP query is used to find the members of the
-group, *in addition* to any users listed specifically in the PaasConfig.
-
-Please be aware that this is an OpenShift specific feature.
+LDAP query. When configured, the LDAP query takes presedence above the specified users. This OpenShift specific feature relies on the groupsync. The paas operator will only create a rolebinding to a group named after the CN value. It is expected that the groupsync operator will create the group following the query value. One can think of a cronjob to list all queries from all Paas resources and sync those using the groupsync. 
 
 ## ManagedByPaas
 

@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/quota"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,41 +26,12 @@ const (
 )
 
 func TestPaasNS(t *testing.T) {
-	paasSpec := api.PaasSpec{
-		Requestor: "paasns-requestor",
-		Quota:     make(quota.Quota),
-	}
 	testenv.Test(
 		t,
 		features.New("PaasNS").
-			Assess("PaasNS deletion", assertPaasNSDeletion).
-			Setup(createPaasFn(paasNsPaasName, paasSpec)).
 			Assess("PaasNS creation with linked Paas", assertPaasNSCreated).
-			Assess("PaasNS deletion", assertPaasNSDeletion).
 			Feature(),
 	)
-}
-
-func assertPaasNSDeletion(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	paasNs := &api.PaasNS{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      paasNsName,
-			Namespace: paasNsPaasName,
-		},
-		Spec: api.PaasNSSpec{Paas: paasNsPaasName},
-	}
-
-	// create basic paasns
-	pnsCreatePaasNS(ctx, t, cfg, paasNs)
-
-	// remove it immediately
-	pnsDeletePaasNS(ctx, t, cfg, paasNs)
-
-	// check that we cannot get the paasns because we deleted it
-	_, errPaasNS := pnsGetPaasNS(ctx, cfg, paasNsName, cfg.Namespace())
-	require.Error(t, errPaasNS)
-
-	return ctx
 }
 
 func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
@@ -96,35 +66,33 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 
 	pnsCreatePaasNS(ctx, t, cfg, paasNs)
 
-	// check that the paasns has been created and is linked to the correct paas
-	fetchedPaasNS, _ := pnsGetPaasNS(ctx, cfg, paasNsName, generatedName)
+	_ = getOrFail(ctx, fmt.Sprintf("%s-%s", thisPaas, paasNsName), cfg.Namespace(), &corev1.Namespace{}, t, cfg)
 
-	linkedPaas := fetchedPaasNS.Spec.Paas
-	assert.Equal(t, linkedPaas, thisPaas)
+	fetchedPaas := getPaas(ctx, thisPaas, t, cfg)
 
 	// check that there are no errors
 	assert.True(
 		t,
 		meta.IsStatusConditionPresentAndEqual(
-			fetchedPaasNS.Status.Conditions,
-			api.TypeReadyPaasNs,
+			fetchedPaas.Status.Conditions,
+			api.TypeReadyPaas,
 			metav1.ConditionTrue,
 		),
 	)
 	assert.True(
 		t,
 		meta.IsStatusConditionPresentAndEqual(
-			fetchedPaasNS.Status.Conditions,
-			api.TypeHasErrorsPaasNs,
+			fetchedPaas.Status.Conditions,
+			api.TypeHasErrorsPaas,
 			metav1.ConditionFalse,
 		),
 	)
-	foundCondition := meta.FindStatusCondition(paasNs.Status.Conditions, api.TypeHasErrorsPaasNs)
-	assert.Equal(t, fmt.Sprintf("Reconciled (%s) successfully", paasNsName), foundCondition.Message)
+	foundCondition := meta.FindStatusCondition(paas.Status.Conditions, api.TypeHasErrorsPaas)
+	assert.Equal(t, fmt.Sprintf("Reconciled (%s) successfully", thisPaas), foundCondition.Message)
 
 	// cleanup
 	deletePaasSync(ctx, thisPaas, t, cfg)
-	pnsDeletePaasNS(ctx, t, cfg, paasNs)
+	failWhenExists(ctx, fmt.Sprintf("%s-%s", generatedName, paasName), cfg.Namespace(), &corev1.Namespace{}, t, cfg)
 
 	return ctx
 }
@@ -136,18 +104,4 @@ func pnsCreatePaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paa
 		return obj.(*api.PaasNS).Name == paasns.Name
 	})
 	require.NoError(t, waitForDefaultOpts(ctx, waitUntilPaasNSExists))
-}
-
-func pnsGetPaasNS(
-	ctx context.Context,
-	cfg *envconf.Config,
-	paasnsName string,
-	namespace string,
-) (paasns api.PaasNS, err error) {
-	err = cfg.Client().Resources().Get(ctx, paasnsName, namespace, &paasns)
-	return paasns, err
-}
-
-func pnsDeletePaasNS(ctx context.Context, t *testing.T, cfg *envconf.Config, paasns *api.PaasNS) {
-	require.NoError(t, deleteResourceSync(ctx, cfg, paasns))
 }

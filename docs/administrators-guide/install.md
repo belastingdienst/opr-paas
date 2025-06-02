@@ -12,7 +12,7 @@ Deploy the operator using the following command:
 
 ```
 kubectl apply -f https://github.com/belastingdienst/opr-paas/releases/latest/download/install.yaml
-kubectl apply -f https://raw.githubusercontent.com/belastingdienst/opr-paas/refs/heads/main/examples/resources/_v1alpha1_paasconfig.yaml
+kubectl apply -f https://raw.githubusercontent.com/belastingdienst/opr-paas/refs/heads/main/examples/resources/_v1alpha2_paasconfig.yaml
 ```
 
 The second command will load an example PaasConfig resource from the main branch
