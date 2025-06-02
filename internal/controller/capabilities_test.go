@@ -155,9 +155,6 @@ g, ` + group2 + `, role:admin`
 					map[string]string{
 						customField1Key:         customField1Value,
 						customField2Key:         customField2Value,
-						"git_path":              "",
-						"git_revision":          "",
-						"git_url":               "",
 						"paas":                  paasName,
 						"argocd_default_policy": "",
 						"argocd_policy":         expectedPolicy,

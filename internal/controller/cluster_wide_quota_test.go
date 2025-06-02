@@ -85,20 +85,6 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),
 		}
-
-		paas = &v1alpha2.Paas{
-			Spec: v1alpha2.PaasSpec{
-				Requestor: "foo",
-				Quota:     quota.Quota{},
-				Capabilities: v1alpha2.PaasCapabilities{
-					capName: v1alpha2.PaasCapability{},
-				},
-			},
-		}
-		Expect(k8sClient.Create(ctx, paas)).NotTo(HaveOccurred())
-
-		Expect(reconciler.addToClusterWideQuota(ctx, paas, capName)).
-			NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
