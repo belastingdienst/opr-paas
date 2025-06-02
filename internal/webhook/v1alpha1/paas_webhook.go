@@ -81,6 +81,10 @@ func (v *PaasCustomValidator) ValidateUpdate(
 		return nil, fmt.Errorf("expected a Paas object for the newObj but got %T", newObj)
 	}
 	ctx, logger := logging.SetWebhookLogger(ctx, paas)
+	if paas.GetDeletionTimestamp() != nil {
+		logger.Info().Msg("paas is being deleted")
+		return nil, nil
+	}
 	logger.Info().Msg("starting validation webhook for update")
 
 	return v.validate(ctx, paas)
