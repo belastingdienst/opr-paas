@@ -45,9 +45,9 @@ func (pc *PaasConfig) ConvertTo(dstRaw conversion.Hub) error {
 		spec.Capabilities[key] = val.ConvertTo()
 	}
 
-	spec.GroupSyncList = pc.Spec.GroupSyncList.ConvertTo()
-	spec.GroupSyncListKey = pc.Spec.GroupSyncListKey
-	spec.LDAP = v1alpha1.ConfigLdap(pc.Spec.LDAP)
+	spec.GroupSyncList = v1alpha1.NamespacedName{}
+	spec.GroupSyncListKey = ""
+	spec.LDAP = v1alpha1.ConfigLdap{}
 	spec.ArgoPermissions = v1alpha1.ConfigArgoPermissions{}
 	spec.ArgoEnabled = false
 	spec.ClusterWideArgoCDNamespace = pc.Spec.ClusterWideArgoCDNamespace
@@ -176,9 +176,6 @@ func (pc *PaasConfig) ConvertFrom(srcRaw conversion.Hub) error {
 		spec.Capabilities[key] = ConfigCapability{}.convertFrom(val)
 	}
 
-	spec.GroupSyncList = spec.GroupSyncList.ConvertFrom(src.Spec.GroupSyncList)
-	spec.GroupSyncListKey = src.Spec.GroupSyncListKey
-	spec.LDAP = ConfigLdap(src.Spec.LDAP)
 	spec.ClusterWideArgoCDNamespace = src.Spec.ClusterWideArgoCDNamespace
 	spec.QuotaLabel = src.Spec.QuotaLabel
 	spec.RequestorLabel = src.Spec.RequestorLabel

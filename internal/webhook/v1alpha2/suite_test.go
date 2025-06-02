@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
@@ -71,7 +72,7 @@ var _ = BeforeSuite(func() {
 	slices.Sort(binDirs)
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "manifests", "crd", "bases")},
-		ErrorIfCRDPathMissing: false,
+		ErrorIfCRDPathMissing: true,
 
 		// The BinaryAssetsDirectory is only required if you want to run the tests directly
 		// without call the makefile target test. If not informed it will look for the
@@ -92,6 +93,9 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	err = corev1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = v1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = v1alpha2.AddToScheme(scheme.Scheme)
@@ -121,8 +125,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Ensure we have a namespace and privatekey for PaasConfig testing
-	createNamespace(paasConfigSystem)
-	createPaasPrivateKeySecret(paasConfigSystem, paasConfigPkSecret, paasConfigPrivateKey)
+	createNamespace(k8sClient, paasConfigSystem)
+	createPaasPrivateKeySecret(k8sClient, paasConfigSystem, paasConfigPkSecret, paasConfigPrivateKey)
 
 	// +kubebuilder:scaffold:webhook
 
@@ -152,9 +156,9 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 })
 
-func createNamespace(ns string) {
+func createNamespace(cl client.Client, ns string) {
 	// Create system namespace
-	err := k8sClient.Create(ctx, &corev1.Namespace{
+	err := cl.Create(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: ns},
 	})
 	if err != nil {
@@ -162,9 +166,9 @@ func createNamespace(ns string) {
 	}
 }
 
-func createPaasPrivateKeySecret(ns string, name string, privateKey []byte) {
+func createPaasPrivateKeySecret(cl client.Client, ns string, name string, privateKey []byte) {
 	// Set up private key
-	err := k8sClient.Create(ctx, &corev1.Secret{
+	err := cl.Create(ctx, &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: ns,
@@ -174,4 +178,24 @@ func createPaasPrivateKeySecret(ns string, name string, privateKey []byte) {
 	if err != nil {
 		Fail(fmt.Errorf("failed to create %s.%s secret: %w", ns, name, err).Error())
 	}
+}
+
+func createPaasNamespace(cl client.Client, paas v1alpha2.Paas, nsName string) {
+	controller := true
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nsName,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					Name:       paas.Name,
+					APIVersion: v1alpha2.GroupVersion.Version,
+					Kind:       "Paas",
+					UID:        paas.UID,
+					Controller: &controller,
+				},
+			},
+		},
+	}
+	err := cl.Create(ctx, ns)
+	Expect(err).NotTo(HaveOccurred())
 }

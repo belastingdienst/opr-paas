@@ -7,8 +7,19 @@ See LICENSE.md for details.
 package controller
 
 import (
+	"context"
+
+	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
+	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/internal/config"
+	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("testing hashdata", func() {
@@ -35,96 +46,215 @@ var _ = Describe("testing hashdata", func() {
 	})
 })
 
-/*
-var _ = describe("secret controller", ordered, func() {
-	ctx := context.background()
+var _ = Describe("secret controller", Ordered, func() {
+	const (
+		paasRequestor      = "paas-controller-test"
+		paasName           = "secret-controller-paas"
+		capAppSetNamespace = "asns"
+		capAppSetName      = "argoas"
+		capName            = "argocd"
+		paasSystem         = "paasnssystem"
+		paasPkSecret       = "secret-pk-secret"
+	)
+	var (
+		paas            *v1alpha2.Paas
+		reconciler      *PaasReconciler
+		myConfig        v1alpha2.PaasConfig
+		privateKey      []byte
+		mycrypt         *crypt.Crypt
+		pns             *v1alpha2.PaasNS
+		encryptedString string
+	)
+	ctx := context.Background()
 
-	beforeall(func() {
-		// set the paasconfig so reconcilers know where to find our fixtures
-		config.setconfig(genericconfig)
-	})
+	BeforeAll(func() {
+		var err error
 
-	var reconciler *paasreconciler
-	beforeeach(func() {
-		reconciler = &paasreconciler{
-			client: k8sclient,
-			scheme: k8sclient.scheme(),
+		assureNamespace(ctx, paasName)
+		assureNamespace(ctx, paasSystem)
+		mycrypt, privateKey, err = newGeneratedCrypt(paasRequestor)
+		Expect(err).NotTo(HaveOccurred())
+
+		createPaasPrivateKeySecret(ctx, paasSystem, paasPkSecret, privateKey)
+
+		encryptedString, err = mycrypt.Encrypt([]byte("some encrypted string"))
+		Expect(err).NotTo(HaveOccurred())
+
+		pns = &v1alpha2.PaasNS{
+			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: paasName},
+			Spec: v1alpha2.PaasNSSpec{
+				Paas: paasName,
+				Secrets: map[string]string{
+					"paasns-git-repo": encryptedString,
+				},
+			},
 		}
 	})
 
-	when("reconciling a paasns with no secrets", func() {
-		pns := &api.paasns{
-			objectmeta: metav1.objectmeta{name: "foo"},
-			spec: api.paasnsspec{
-				paas: "my-paas",
+	BeforeEach(func() {
+		reconciler = &PaasReconciler{
+			Client: k8sClient,
+			Scheme: k8sClient.Scheme(),
+		}
+
+		paas = &v1alpha2.Paas{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: paasRequestor,
+			},
+			Spec: v1alpha2.PaasSpec{
+				Requestor: paasRequestor,
+				Capabilities: v1alpha2.PaasCapabilities{
+					capName: v1alpha2.PaasCapability{
+						Secrets: map[string]string{
+							"paas-capability-git-repo": encryptedString,
+						},
+					},
+				},
+				Quota: paasquota.Quota{
+					"cpu": resourcev1.MustParse("1"),
+				},
+				Namespaces: v1alpha2.PaasNamespaces{
+					paasName: v1alpha2.PaasNamespace{},
+				},
+				Secrets: map[string]string{
+					"paas-namespace-git-repo": encryptedString,
+				},
 			},
 		}
 
-		it("should not return an error", func() {
-			err := reconciler.reconcilesecret(ctx, &api.paas{}, pns)
-
-			expect(err).notto(haveoccurred())
+		// Delete if exists to avoid "already exists" error
+		_ = k8sClient.Delete(ctx, &api.Paas{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: paasRequestor,
+			},
 		})
 
-		it("should not create any secrets", func() {
-			secrets := &corev1.secretlist{}
-			err := k8sclient.list(ctx, secrets, client.innamespace("my-paas-foo"))
+		// Create the Paas in the cluster to get a UID
+		err := k8sClient.Create(ctx, paas)
+		Expect(err).NotTo(HaveOccurred())
 
-			expect(err).notto(haveoccurred())
-			expect(secrets.items).to(bezero())
-		})
-	})
-
-	When("reconciling a PaasNS with an SshSecrets value", func() {
-		paas := &api.Paas{ObjectMeta: metav1.ObjectMeta{
-			Name: "my-paas",
-			UID:  "abc", // Needed or owner references fail
-		}}
-		var pns *api.PaasNS
-		BeforeAll(func() {
-			encrypted, err := rsa.EncryptOAEP(
-				sha512.New(),
-				rand.Reader,
-				pubkey,
-				[]byte("some encrypted string"),
-				[]byte("my-paas"),
-			)
-			Expect(err).NotTo(HaveOccurred())
-
-			pns = &api.PaasNS{
-				ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "my-paas"},
-				Spec: api.PaasNSSpec{
-					Paas: "my-paas",
-					SSHSecrets: map[string]string{
-						"probably a git repo.git": base64.StdEncoding.EncodeToString(encrypted),
+		myConfig = v1alpha2.PaasConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "paas-config",
+			},
+			Spec: v1alpha2.PaasConfigSpec{
+				ClusterWideArgoCDNamespace: capAppSetNamespace,
+				Capabilities: map[string]v1alpha2.ConfigCapability{
+					capName: {
+						AppSet: capAppSetName,
+						QuotaSettings: v1alpha2.ConfigQuotaSettings{
+							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+								corev1.ResourceLimitsCPU: resourcev1.MustParse("5"),
+							},
+						},
 					},
 				},
-			}
-			err = k8sClient.Create(ctx, &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{Name: "my-paas"},
-			})
-			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Create(ctx, &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{Name: "my-paas-foo"},
-			})
-			Expect(err).NotTo(HaveOccurred())
-		})
+				Debug: false,
+				DecryptKeysSecret: v1alpha2.NamespacedName{
+					Name:      paasPkSecret,
+					Namespace: paasSystem,
+				},
+				ManagedByLabel:  "argocd.argoproj.io/manby",
+				ManagedBySuffix: "argocd",
+				RequestorLabel:  "o.lbl",
+				QuotaLabel:      "q.lbl",
+			},
+		}
+		config.SetConfig(myConfig)
+	})
 
+	When("reconciling a PaasNS with a SshSecrets value", func() {
 		It("should not return an error", func() {
-			err := reconciler.reconcileSecret(ctx, paas, pns)
+			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, pns.GetObjectMeta().GetNamespace(),
+				pns.Spec.Secrets)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should create a secret with the decrypted data", func() {
 			secrets := &corev1.SecretList{}
-			err := k8sClient.List(ctx, secrets, client.InNamespace("my-paas-foo"))
+			err := k8sClient.List(ctx, secrets, client.InNamespace(paasName))
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(secrets.Items).To(HaveLen(1))
-			Expect(secrets.Items[0].Data["url"]).To(Equal([]byte("probably a git repo.git")))
-			Expect(secrets.Items[0].Data["sshPrivateKey"]).To(Equal([]byte("some encrypted string")))
+			found := findSecretByURL(secrets.Items, "paasns-git-repo")
+			Expect(found).NotTo(BeNil())
+			Expect(found.Data["sshPrivateKey"]).To(Equal([]byte("some encrypted string")))
+		})
+	})
+
+	When("reconciling a paas namespace with a SshSecrets value", func() {
+		It("should not return an error", func() {
+			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, paasName,
+				paas.Spec.Secrets)
+
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should create a secret with the decrypted data", func() {
+			secrets := &corev1.SecretList{}
+			err := k8sClient.List(ctx, secrets, client.InNamespace(paasName))
+			Expect(err).NotTo(HaveOccurred())
+
+			found := findSecretByURL(secrets.Items, "paas-namespace-git-repo")
+			Expect(found).NotTo(BeNil())
+			Expect(found.Data["sshPrivateKey"]).To(Equal([]byte("some encrypted string")))
+		})
+	})
+
+	When("reconciling a paas capability with a SSHSecret", func() {
+		It("should not return an error", func() {
+			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, paasName,
+				paas.Spec.Capabilities[capName].Secrets)
+
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should create a secret with the decrypted data", func() {
+			secrets := &corev1.SecretList{}
+			err := k8sClient.List(ctx, secrets, client.InNamespace(paasName))
+			Expect(err).NotTo(HaveOccurred())
+
+			found := findSecretByURL(secrets.Items, "paas-capability-git-repo")
+			Expect(found).NotTo(BeNil())
+			Expect(found.Data["sshPrivateKey"]).To(Equal([]byte("some encrypted string")))
+		})
+	})
+
+	When("reconciling a paas namespace with one secret removed", func() {
+		It("should not return an error", func() {
+			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, pns.GetObjectMeta().GetNamespace(),
+				paas.Spec.Capabilities[capName].Secrets)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Remove the secret from the paas spec (simulate user removing the secret)
+			capability := paas.Spec.Capabilities[capName]
+			capability.Secrets = nil
+			paas.Spec.Capabilities[capName] = capability
+			err = k8sClient.Update(ctx, paas)
+			Expect(err).NotTo(HaveOccurred())
+
+			// Reconcile again with SSHSecrets now nil (should trigger deletion)
+			err = reconciler.reconcileNamespaceSecrets(ctx, paas, pns, pns.GetObjectMeta().GetNamespace(),
+				paas.Spec.Capabilities[capName].Secrets)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should have removed this secret", func() {
+			secrets := &corev1.SecretList{}
+			err := k8sClient.List(ctx, secrets, client.InNamespace(paasName))
+			Expect(err).NotTo(HaveOccurred())
+
+			found := findSecretByURL(secrets.Items, "paas-capability-git-repo")
+			Expect(found).To(BeNil())
 		})
 	})
 })
-*/
+
+func findSecretByURL(secrets []corev1.Secret, url string) *corev1.Secret {
+	for _, s := range secrets {
+		if string(s.Data["url"]) == url {
+			return &s
+		}
+	}
+	return nil
+}

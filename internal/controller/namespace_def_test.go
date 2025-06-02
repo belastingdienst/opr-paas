@@ -56,6 +56,9 @@ var _ = Describe("NamespaceDef", func() {
 				Quota: quota.Quota{
 					"cpu": resourcev1.MustParse("1"),
 				},
+				Secrets: map[string]string{
+					"default-secret": "default-value",
+				},
 			},
 		}
 		assurePaas(ctx, paas)
@@ -86,8 +89,8 @@ var _ = Describe("NamespaceDef", func() {
 				nsDefs, err = reconciler.nsDefsFromPaas(ctx, &paas)
 				Expect(err).NotTo(HaveOccurred())
 			})
-			It("should return a nsdef for a ns named after the paas", func() {
-				Expect(nsDefs).To(HaveKey(paasName))
+			It("should not return a nsdef for a ns named after the paas", func() {
+				Expect(nsDefs).ToNot(HaveKey(paasName))
 			})
 		})
 		Context("with some capabilities enabled and others disabled", func() {
@@ -125,7 +128,6 @@ var _ = Describe("NamespaceDef", func() {
 					namespace string
 					groups    []string
 				}{
-					"defaultns":      {namespace: paasName},
 					ns1:              {namespace: join(paasName, ns1)},
 					enabledCapName:   {namespace: join(paasName, enabledCapName)},
 					disabledCapName1: {namespace: join(paasName, disabledCapName1)},
@@ -154,9 +156,6 @@ var _ = Describe("NamespaceDef", func() {
 				nsDefs, err = reconciler.nsDefsFromPaas(ctx, &paas)
 				Expect(err).NotTo(HaveOccurred())
 			})
-			It("should return a nsdef for every paasns in default ns", func() {
-				Expect(nsDefs).To(HaveKey(join(paasName, "mypns", "defaultns")))
-			})
 			It("should return a nsdef for every paasns in a namespace block ns", func() {
 				Expect(nsDefs).To(HaveKey(join(paasName, "mypns", ns1)))
 			})
@@ -179,8 +178,8 @@ var _ = Describe("NamespaceDef", func() {
 					namespace string
 					groups    []string
 				}{
-					"nongroups": {namespace: paasName},
-					"groups":    {namespace: paasName, groups: paasNsGroups},
+					"nongroups": {namespace: join(paasName, ns1)},
+					"groups":    {namespace: join(paasName, ns1), groups: paasNsGroups},
 				}
 				for pnsName, pnsDef := range myPnss {
 					assureNamespaceWithPaasReference(ctx, pnsDef.namespace, paasName)
@@ -196,7 +195,7 @@ var _ = Describe("NamespaceDef", func() {
 					}
 					err := reconciler.Create(ctx, &pns)
 					Expect(err).NotTo(HaveOccurred())
-					validatePaasNSExists(ctx, paasName, pnsName)
+					validatePaasNSExists(ctx, join(paasName, ns1), pnsName)
 				}
 			})
 			It("should succeed", func() {
@@ -215,10 +214,9 @@ var _ = Describe("NamespaceDef", func() {
 				nsName := join(paasName, "nongroups")
 				Expect(nsDefs).To(HaveKey(nsName))
 				withoutGroups := nsDefs[nsName].groups
-				Expect(withoutGroups).To(ContainElement(join(paasName, group2)))
-				Expect(withoutGroups).NotTo(ContainElement(group2))
-				Expect(withoutGroups).To(ContainElement(join(paasName, group3)))
-				Expect(withoutGroups).NotTo(ContainElement(group3))
+				Expect(withoutGroups).To(ContainElement(group2))
+				Expect(withoutGroups).To(ContainElement(group2))
+				Expect(withoutGroups).To(ContainElement(group3))
 			})
 			It("should have proper group config if paasns has group config set", func() {
 				nsName := join(paasName, "groups")
@@ -228,6 +226,50 @@ var _ = Describe("NamespaceDef", func() {
 				Expect(withGroups).NotTo(ContainElement(join(paasName, group1)))
 				Expect(withGroups).To(ContainElement(group2))
 				Expect(withGroups).NotTo(ContainElement(join(paasName, group2)))
+			})
+		})
+		Context("with secrets defined in paas and paasns", func() {
+			var nsDefs namespaceDefs
+			var pns v1alpha2.PaasNS
+			const paasNsName string = "secret"
+
+			BeforeEach(func() {
+				// Create a PaasNS with its own secrets
+				nsName := join(paasName, ns1)
+				assureNamespaceWithPaasReference(ctx, nsName, paasName)
+				pns = v1alpha2.PaasNS{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      paasNsName,
+						Namespace: nsName,
+					},
+					Spec: v1alpha2.PaasNSSpec{
+						Paas: paasName,
+						Secrets: map[string]string{
+							"pns-secret":     "pns-value",
+							"default-secret": "overridden-value",
+						},
+					},
+				}
+				err := reconciler.Create(ctx, &pns)
+				Expect(err).NotTo(HaveOccurred())
+				validatePaasNSExists(ctx, nsName, paasNsName)
+			})
+			AfterEach(func() {
+				_ = reconciler.Delete(ctx, &pns)
+			})
+			It("should succeed", func() {
+				var err error
+				nsDefs, err = reconciler.nsDefsFromPaas(ctx, &paas)
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("should include default secrets in paas namespace", func() {
+				ns := nsDefs[join(paasName, ns1)]
+				Expect(ns.secrets).To(HaveKeyWithValue("default-secret", "default-value"))
+			})
+			It("should include paasns secrets in paasns namespace def", func() {
+				ns := nsDefs[join(paasName, paasNsName)]
+				Expect(ns.secrets).To(HaveKeyWithValue("pns-secret", "pns-value"))
+				Expect(ns.secrets).To(HaveKeyWithValue("default-secret", "overridden-value"))
 			})
 		})
 	})
