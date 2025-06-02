@@ -35,7 +35,8 @@ func newNamespaceDef(nsName, quota string, groups []string, secrets map[string]s
 
 // Helper to create a namespaceDef from a PaasNS
 func newNamespaceDefFromPaasNS(nsName string, paasns *v1alpha2.PaasNS,
-	quota string, defaultGroups []string, secrets map[string]string) namespaceDef {
+	quota string, defaultGroups []string, secrets map[string]string,
+) namespaceDef {
 	groups := defaultGroups
 	if len(paasns.Spec.Groups) > 0 {
 		groups = paasns.Spec.Groups
@@ -91,7 +92,7 @@ func (r *PaasReconciler) nsDefsFromPaasNamespaces(
 	paasGroups []string,
 ) namespaceDefs {
 	result := namespaceDefs{}
-	for namespace, _ := range paas.Spec.Namespaces {
+	for namespace := range paas.Spec.Namespaces {
 		fullNsName := join(paas.Name, namespace)
 		base := newNamespaceDef(fullNsName, paas.Name, paasGroups, paas.Spec.Secrets)
 		result[base.nsName] = base

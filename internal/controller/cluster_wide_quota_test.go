@@ -32,7 +32,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 	)
 
 	addPaasWithCap := func(name string, pc v1alpha2.PaasCapability) *v1alpha2.Paas {
-		paas := &v1alpha2.Paas{
+		paas = &v1alpha2.Paas{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},

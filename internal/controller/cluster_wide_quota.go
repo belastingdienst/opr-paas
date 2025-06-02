@@ -137,7 +137,7 @@ func clusterWideCapabilityName(quotaName string) (capabilityName string, err err
 }
 
 func (r *PaasReconciler) finalizeClusterWideQuotas(ctx context.Context, paas *v1alpha2.Paas) error {
-	for capabilityName, _ := range paas.Spec.Capabilities {
+	for capabilityName := range paas.Spec.Capabilities {
 		err := r.removeFromClusterWideQuota(ctx, paas, capabilityName)
 		if err != nil && k8serrors.IsNotFound(err) {
 			continue
@@ -150,7 +150,7 @@ func (r *PaasReconciler) finalizeClusterWideQuotas(ctx context.Context, paas *v1
 func (r *PaasReconciler) reconcileClusterWideQuota(ctx context.Context, paas *v1alpha2.Paas) error {
 	myconfig := config.GetConfig()
 
-	for capabilityName, _ := range myconfig.Spec.Capabilities {
+	for capabilityName := range myconfig.Spec.Capabilities {
 		if _, enabled := paas.Spec.Capabilities[capabilityName]; enabled {
 			err := r.addToClusterWideQuota(ctx, paas, capabilityName)
 			if err != nil && k8serrors.IsNotFound(err) {

@@ -136,7 +136,7 @@ var _ = Describe("NamespaceDef", func() {
 				}
 				for pnsName, pnsDef := range myPnss {
 					assureNamespaceWithPaasReference(ctx, pnsDef.namespace, paasName)
-					var pns = v1alpha2.PaasNS{
+					pns := v1alpha2.PaasNS{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      join("mypns", pnsName),
 							Namespace: pnsDef.namespace,
@@ -183,7 +183,7 @@ var _ = Describe("NamespaceDef", func() {
 				}
 				for pnsName, pnsDef := range myPnss {
 					assureNamespaceWithPaasReference(ctx, pnsDef.namespace, paasName)
-					var pns = v1alpha2.PaasNS{
+					pns := v1alpha2.PaasNS{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      pnsName,
 							Namespace: pnsDef.namespace,

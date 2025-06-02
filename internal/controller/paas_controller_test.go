@@ -244,7 +244,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		})
 
 		It("should return nil when paas is being deleted", func() {
-			var gracePeriodSeconds = int64(2)
+			gracePeriodSeconds := int64(2)
 			paasName = paasRequestor + "-request-being-deleted"
 			paas.Name = paasName
 			assurePaas(ctx, *paas)
@@ -560,7 +560,8 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		userGroupName        = join(paasName, groupName)
 		rolebindings         = []string{techRoleName1, techRoleName2}
 		clusterRolebindings  = map[string][]string{
-			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR}}
+			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR},
+		}
 	)
 	ctx := context.Background()
 	BeforeAll(func() {
@@ -650,14 +651,15 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 				v1alpha2.PaasNS{
 					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)},
 					Spec: v1alpha2.PaasNSSpec{
-						Paas: paasName},
+						Paas: paasName,
+					},
 				})
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
 		})
 		It("should have created paas quotas", func() {
-			var quotas = []string{paasName, capNamespace}
+			quotas := []string{paasName, capNamespace}
 			for _, quotaName := range quotas {
 				var quota quotav1.ClusterResourceQuota
 				err := reconciler.Get(ctx, types.NamespacedName{Name: quotaName}, &quota)
@@ -737,9 +739,11 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			_, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			assurePaasNS(ctx,
-				v1alpha2.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)},
+				v1alpha2.PaasNS{
+					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)},
 					Spec: v1alpha2.PaasNSSpec{
-						Paas: paasName},
+						Paas: paasName,
+					},
 				})
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())

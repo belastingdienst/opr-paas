@@ -115,7 +115,8 @@ g, {{ $groupName }}, role:admin{{end}}`
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      capAppSetName,
 				Namespace: capAppSetNamespace,
-			}}
+			},
+		}
 		err := k8sClient.Delete(ctx, appset)
 		Expect(err).NotTo(HaveOccurred())
 	})

@@ -201,6 +201,7 @@ func init() {
 	SchemeBuilder.Register(&Paas{}, &PaasList{})
 }
 
+// ClonedLabels returns a map of labels that can be used to clone a Paas
 func (p Paas) ClonedLabels() map[string]string {
 	labels := make(map[string]string)
 	for key, value := range p.Labels {
@@ -211,6 +212,7 @@ func (p Paas) ClonedLabels() map[string]string {
 	return labels
 }
 
+// AmIOwner returns true if the Paas is listed in the given ownerReferences
 func (p Paas) AmIOwner(references []metav1.OwnerReference) bool {
 	for _, reference := range references {
 		if p.IsItMe(reference) {
@@ -220,6 +222,7 @@ func (p Paas) AmIOwner(references []metav1.OwnerReference) bool {
 	return false
 }
 
+// IsItMe returns true if the given OwnerReference is of Kind "Paas" and has the same Name as the Paas.
 func (p Paas) IsItMe(reference metav1.OwnerReference) bool {
 	if reference.APIVersion != paasAPIVersion ||
 		reference.Kind != "Paas" ||
@@ -230,6 +233,7 @@ func (p Paas) IsItMe(reference metav1.OwnerReference) bool {
 	return true
 }
 
+// WithoutMe returns a list of OwnerReferences that do not include a reference to the Paas.
 func (p Paas) WithoutMe(references []metav1.OwnerReference) (withoutMe []metav1.OwnerReference) {
 	for _, reference := range references {
 		if !p.IsItMe(reference) {

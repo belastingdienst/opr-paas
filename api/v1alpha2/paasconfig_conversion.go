@@ -8,7 +8,6 @@ package v1alpha2
 
 import (
 	"fmt"
-
 	"maps"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha1"

@@ -27,9 +27,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const allowedOriginsVal = "*"
-const rsaKeySize = 2048
-const testPaasName = "testPaas"
+const (
+	allowedOriginsVal = "*"
+	rsaKeySize        = 2048
+	testPaasName      = "testPaas"
+)
 
 // Helper function for testing
 func performRequest(r http.Handler, method, path string) *httptest.ResponseRecorder {

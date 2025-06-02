@@ -363,7 +363,8 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 						return nil
 					}
 					return []reconcile.Request{{
-						NamespacedName: types.NamespacedName{Name: paasName}}}
+						NamespacedName: types.NamespacedName{Name: paasName},
+					}}
 				},
 			), builder.WithPredicates(
 				predicate.Or(
