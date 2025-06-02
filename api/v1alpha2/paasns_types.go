@@ -54,12 +54,7 @@ type PaasNS struct {
 	metav1.TypeMeta   `json:""`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PaasNSSpec   `json:"spec,omitempty"`
-	Status PaasNsStatus `json:"status,omitempty"`
-}
-
-func (pns PaasNS) GetConditions() []metav1.Condition {
-	return pns.Status.Conditions
+	Spec PaasNSSpec `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -76,9 +71,3 @@ func init() {
 }
 
 // revive:disable:line-length-limit
-
-// PaasNsStatus defines the observed state of Paas
-type PaasNsStatus struct {
-	// +kubebuilder:validation:Optional
-	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-}
