@@ -600,8 +600,11 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 						ExtraPermissions: true,
 					},
 				},
-				Quota:      paasquota.Quota{"cpu": resourcev1.MustParse("1")},
-				Namespaces: []string{nsName},
+				Quota: paasquota.Quota{"cpu": resourcev1.MustParse("1")},
+				// Namespaces: []string{nsName},
+				Namespaces: v1alpha2.PaasNamespaces{
+					nsName: v1alpha2.PaasNamespace{},
+				},
 				Groups: v1alpha2.PaasGroups{
 					groupName:     v1alpha2.PaasGroup{Roles: []string{funcRoleName1}},
 					ldapGroupName: v1alpha2.PaasGroup{Roles: []string{funcRoleName2}, Query: ldapGroupQuery},

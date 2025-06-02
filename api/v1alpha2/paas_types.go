@@ -277,3 +277,36 @@ func (pgs PaasGroups) LdapQueries() []string {
 	}
 	return queries
 }
+
+// ManagedByPaas can be used to retrieve the Paas that manages all namespaces from this Paas,
+// which is either stated in p.spec.managedByPaas, or this paas itself.
+func (p Paas) ManagedByPaas() string {
+	if p.Spec.ManagedByPaas != "" {
+		return p.Spec.ManagedByPaas
+	}
+
+	return p.Name
+}
+
+// Filtered returns a list of PaasGroups which have a key that is in the list of groups, specified as string.
+func (pgs PaasGroups) Filtered(paasGroupNames []string) PaasGroups {
+	filtered := make(PaasGroups)
+	if len(paasGroupNames) == 0 {
+		return pgs
+	}
+	for _, paasGroupName := range paasGroupNames {
+		if paasGroup, exists := pgs[paasGroupName]; exists {
+			filtered[paasGroupName] = paasGroup
+		}
+	}
+	return filtered
+}
+
+// Roles returns a map of groupKeys with the roles defined within that groupKey
+func (pgs PaasGroups) Roles() map[string][]string {
+	roles := make(map[string][]string)
+	for groupKey, group := range pgs {
+		roles[groupKey] = group.Roles
+	}
+	return roles
+}
