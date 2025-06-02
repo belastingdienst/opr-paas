@@ -455,7 +455,6 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			request.NamespacedName = types.NamespacedName{Name: paasName}
 			assureAppSet(ctx, capAppSetName, capAppSetNamespace)
 			result, err = reconciler.Reconcile(ctx, request)
-			fmt.Printf("DEBUG - Reconcile result: %v, error: %v\n", result, err)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("failed to decrypt secret")))
 			Expect(result).To(Equal(controllerruntime.Result{}))
