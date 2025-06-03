@@ -7,4 +7,4 @@ See LICENSE.md for details.
 package v1alpha2
 
 // Hub marks this type as a conversion hub.
-func (*PaasConfig) Hub() {}
+func (*PaasNS) Hub() {}
