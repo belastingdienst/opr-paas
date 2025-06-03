@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/quota"
@@ -28,18 +27,19 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 		ctx        context.Context
 		reconciler *PaasReconciler
 		paasConfig v1alpha2.PaasConfig
+		paas       *v1alpha2.Paas
 		quotaName  = types.NamespacedName{Name: join("paas", capName)}
 	)
 
-	addPaasWithCap := func(name string, pc api.PaasCapability) *api.Paas {
-		paas := &api.Paas{
+	addPaasWithCap := func(name string, pc v1alpha2.PaasCapability) *v1alpha2.Paas {
+		paas = &v1alpha2.Paas{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: name,
 			},
-			Spec: api.PaasSpec{
+			Spec: v1alpha2.PaasSpec{
 				Requestor: "foo",
 				Quota:     quota.Quota{},
-				Capabilities: api.PaasCapabilities{
+				Capabilities: v1alpha2.PaasCapabilities{
 					capName: pc,
 				},
 			},
@@ -47,15 +47,15 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 		Expect(k8sClient.Create(ctx, paas)).NotTo(HaveOccurred())
 		// The k8s client strips type meta, but it's needed for equality checks within our reconciler
 		paas.TypeMeta = metav1.TypeMeta{
-			APIVersion: api.GroupVersion.String(),
+			APIVersion: v1alpha2.GroupVersion.String(),
 			Kind:       "Paas",
 		}
 
 		Expect(reconciler.addToClusterWideQuota(ctx, paas, capName)).NotTo(HaveOccurred())
 		return paas
 	}
-	addPaasWithDefCap := func(name string) *api.Paas {
-		return addPaasWithCap(name, api.PaasCapability{Enabled: true})
+	addPaasWithDefCap := func(name string) *v1alpha2.Paas {
+		return addPaasWithCap(name, v1alpha2.PaasCapability{})
 	}
 
 	BeforeEach(func() {
@@ -93,7 +93,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 			Expect(k8sClient.Delete(ctx, q)).NotTo(HaveOccurred())
 		}
 
-		ps := &api.PaasList{}
+		ps := &v1alpha2.PaasList{}
 		Expect(k8sClient.List(ctx, ps)).NotTo(HaveOccurred())
 		for _, p := range ps.Items {
 			Expect(k8sClient.Delete(ctx, &p)).NotTo(HaveOccurred())
@@ -115,8 +115,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 
 		It("should update the ClusterResourceQuota when changing the capability quota", func() {
 			paas := addPaasWithDefCap(paasPrefix)
-			paas.Spec.Capabilities[capName] = api.PaasCapability{
-				Enabled: true,
+			paas.Spec.Capabilities[capName] = v1alpha2.PaasCapability{
 				Quota: quota.Quota{
 					corev1.ResourceLimitsCPU:   resourcev1.MustParse("1500m"),
 					corev1.ResourceRequestsCPU: resourcev1.MustParse("500m"),
@@ -138,9 +137,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 
 		It("should remove the ClusterResourceQuota when the capability is disabled", func() {
 			paas := addPaasWithDefCap(paasPrefix)
-			paas.Spec.Capabilities[capName] = api.PaasCapability{
-				Enabled: false,
-			}
+			delete(paas.Spec.Capabilities, capName)
 			Expect(reconciler.reconcileClusterWideQuota(ctx, paas)).
 				NotTo(HaveOccurred())
 
@@ -176,8 +173,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 			paas1 := addPaasWithDefCap(join(paasPrefix, "1"))
 			addPaasWithCap(
 				join(paasPrefix, "2"),
-				api.PaasCapability{
-					Enabled: true,
+				v1alpha2.PaasCapability{
 					Quota: quota.Quota{
 						corev1.ResourceLimitsCPU:   resourcev1.MustParse("1500m"),
 						corev1.ResourceRequestsCPU: resourcev1.MustParse("500m"),
@@ -236,8 +232,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 			}
 			addPaasWithCap(
 				join(paasPrefix, "5"),
-				api.PaasCapability{
-					Enabled: true,
+				v1alpha2.PaasCapability{
 					Quota: quota.Quota{
 						corev1.ResourceLimitsCPU: resourcev1.MustParse("5"),
 					},
@@ -255,8 +250,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 			addPaasWithDefCap(join(paasPrefix, "1"))
 			addPaasWithCap(
 				join(paasPrefix, "2"),
-				api.PaasCapability{
-					Enabled: true,
+				v1alpha2.PaasCapability{
 					Quota: quota.Quota{
 						corev1.ResourceLimitsCPU: resourcev1.MustParse("17"),
 					},
@@ -281,8 +275,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 			addPaasWithDefCap(join(paasPrefix, "1"))
 			addPaasWithCap(
 				join(paasPrefix, "2"),
-				api.PaasCapability{
-					Enabled: true,
+				v1alpha2.PaasCapability{
 					Quota: quota.Quota{
 						corev1.ResourceLimitsCPU: resourcev1.MustParse("8"),
 					},

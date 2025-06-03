@@ -9,7 +9,6 @@ package controller
 import (
 	"context"
 
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/fields"
@@ -39,7 +38,7 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 
 	var (
 		ctx         context.Context
-		paas        *api.Paas
+		paas        *v1alpha2.Paas
 		reconciler  *PaasReconciler
 		paasConfig  v1alpha2.PaasConfig
 		group1Roles = []string{"admin"}
@@ -48,25 +47,24 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 	)
 
 	BeforeAll(func() {
-		paas = &api.Paas{
+		paas = &v1alpha2.Paas{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: paasName,
 				UID:  "abc", // Needed or owner references fail
 			},
-			Spec: api.PaasSpec{
+			Spec: v1alpha2.PaasSpec{
 				Requestor: capName,
-				Capabilities: api.PaasCapabilities{
-					capName: api.PaasCapability{
-						Enabled: true,
+				Capabilities: v1alpha2.PaasCapabilities{
+					capName: v1alpha2.PaasCapability{
 						CustomFields: map[string]string{
 							customField1Key: customField1Value,
 							customField2Key: customField2Value,
 						},
 					},
 				},
-				Groups: api.PaasGroups{
-					group1: api.PaasGroup{Query: group1Query, Roles: group1Roles},
-					group2: api.PaasGroup{Users: group2Users, Roles: group2Roles},
+				Groups: v1alpha2.PaasGroups{
+					group1: v1alpha2.PaasGroup{Query: group1Query, Roles: group1Roles},
+					group2: v1alpha2.PaasGroup{Users: group2Users, Roles: group2Roles},
 				},
 			},
 		}
@@ -117,7 +115,8 @@ g, {{ $groupName }}, role:admin{{end}}`
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      capAppSetName,
 				Namespace: capAppSetNamespace,
-			}}
+			},
+		}
 		err := k8sClient.Delete(ctx, appset)
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -156,9 +155,6 @@ g, ` + group2 + `, role:admin`
 					map[string]string{
 						customField1Key:         customField1Value,
 						customField2Key:         customField2Value,
-						"git_path":              "",
-						"git_revision":          "",
-						"git_url":               "",
 						"paas":                  paasName,
 						"argocd_default_policy": "",
 						"argocd_policy":         expectedPolicy,

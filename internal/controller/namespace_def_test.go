@@ -3,7 +3,6 @@ package controller
 import (
 	"context"
 
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/quota"
@@ -27,35 +26,37 @@ var _ = Describe("NamespaceDef", func() {
 		group3           = "g3"
 	)
 	var (
-		paas         api.Paas
-		paasConfig   v1alpha2.PaasConfig
-		ctx          context.Context
-		reconciler   *PaasReconciler
-		namespaces   = []string{ns1, ns2}
+		paas       v1alpha2.Paas
+		paasConfig v1alpha2.PaasConfig
+		ctx        context.Context
+		reconciler *PaasReconciler
+		namespaces = v1alpha2.PaasNamespaces{
+			ns1: v1alpha2.PaasNamespace{},
+			ns2: v1alpha2.PaasNamespace{},
+		}
 		paasNsGroups = []string{group1, group2}
 	)
 	BeforeEach(func() {
 		ctx = context.Background()
-		paas = api.Paas{
+		paas = v1alpha2.Paas{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: paasName,
 			},
-			Spec: api.PaasSpec{
+			Spec: v1alpha2.PaasSpec{
 				Requestor: "somebody",
-				Capabilities: api.PaasCapabilities{
-					enabledCapName:   api.PaasCapability{Enabled: true},
-					disabledCapName1: api.PaasCapability{},
+				Capabilities: v1alpha2.PaasCapabilities{
+					enabledCapName: v1alpha2.PaasCapability{},
 				},
 				Namespaces: namespaces,
-				Groups: api.PaasGroups{
-					group1: api.PaasGroup{Query: group1Query},
-					group2: api.PaasGroup{Users: []string{"usr2"}},
-					group3: api.PaasGroup{Users: []string{"usr3"}},
+				Groups: v1alpha2.PaasGroups{
+					group1: v1alpha2.PaasGroup{Query: group1Query},
+					group2: v1alpha2.PaasGroup{Users: []string{"usr2"}},
+					group3: v1alpha2.PaasGroup{Users: []string{"usr3"}},
 				},
 				Quota: quota.Quota{
 					"cpu": resourcev1.MustParse("1"),
 				},
-				SSHSecrets: map[string]string{
+				Secrets: map[string]string{
 					"default-secret": "default-value",
 				},
 			},
@@ -135,12 +136,12 @@ var _ = Describe("NamespaceDef", func() {
 				}
 				for pnsName, pnsDef := range myPnss {
 					assureNamespaceWithPaasReference(ctx, pnsDef.namespace, paasName)
-					var pns = api.PaasNS{
+					pns := v1alpha2.PaasNS{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      join("mypns", pnsName),
 							Namespace: pnsDef.namespace,
 						},
-						Spec: api.PaasNSSpec{
+						Spec: v1alpha2.PaasNSSpec{
 							Paas:   paasName,
 							Groups: pnsDef.groups,
 						},
@@ -182,12 +183,12 @@ var _ = Describe("NamespaceDef", func() {
 				}
 				for pnsName, pnsDef := range myPnss {
 					assureNamespaceWithPaasReference(ctx, pnsDef.namespace, paasName)
-					var pns = api.PaasNS{
+					pns := v1alpha2.PaasNS{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      pnsName,
 							Namespace: pnsDef.namespace,
 						},
-						Spec: api.PaasNSSpec{
+						Spec: v1alpha2.PaasNSSpec{
 							Paas:   paasName,
 							Groups: pnsDef.groups,
 						},
@@ -229,21 +230,21 @@ var _ = Describe("NamespaceDef", func() {
 		})
 		Context("with secrets defined in paas and paasns", func() {
 			var nsDefs namespaceDefs
-			var pns api.PaasNS
+			var pns v1alpha2.PaasNS
 			const paasNsName string = "secret"
 
 			BeforeEach(func() {
 				// Create a PaasNS with its own secrets
 				nsName := join(paasName, ns1)
 				assureNamespaceWithPaasReference(ctx, nsName, paasName)
-				pns = api.PaasNS{
+				pns = v1alpha2.PaasNS{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      paasNsName,
 						Namespace: nsName,
 					},
-					Spec: api.PaasNSSpec{
+					Spec: v1alpha2.PaasNSSpec{
 						Paas: paasName,
-						SSHSecrets: map[string]string{
+						Secrets: map[string]string{
 							"pns-secret":     "pns-value",
 							"default-secret": "overridden-value",
 						},

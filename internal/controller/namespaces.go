@@ -10,7 +10,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 
@@ -28,7 +28,7 @@ import (
 func ensureNamespace(
 	ctx context.Context,
 	r client.Client,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	ns *corev1.Namespace,
 	scheme *runtime.Scheme,
 ) error {
@@ -63,7 +63,7 @@ func ensureNamespace(
 // backendNamespace is a code for Creating Namespace
 func backendNamespace(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	name string,
 	quota string,
 	scheme *runtime.Scheme,
@@ -106,7 +106,7 @@ func backendNamespace(
 
 func (r *PaasReconciler) reconcileNamespaces(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	nsDefs namespaceDefs,
 ) (err error) {
 	ctx, logger := logging.GetLogComponent(ctx, "namespace")
@@ -125,7 +125,7 @@ func (r *PaasReconciler) reconcileNamespaces(
 // finalizeObsoleteNamespaces returns all groups owned by the specified Paas
 func (r *PaasReconciler) finalizeObsoleteNamespaces(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	nsDefs namespaceDefs,
 ) (err error) {
 	var nss corev1.NamespaceList

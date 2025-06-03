@@ -12,7 +12,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/fields"
@@ -55,18 +54,16 @@ func splitToService(paasName string) (string, string) {
 // ensureAppSetCap ensures a list entry in the AppSet for each capability
 func (r *PaasReconciler) ensureAppSetCaps(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) error {
 	paasConfigSpec := config.GetConfig().Spec
-	for capName, capability := range paas.Spec.Capabilities {
+	for capName := range paas.Spec.Capabilities {
 		if _, exists := paasConfigSpec.Capabilities[capName]; !exists {
 			return errors.New("capability not configured")
 		}
-		// Only do this when enabled
-		if enabled := capability.IsEnabled(); enabled {
-			if err := r.ensureAppSetCap(ctx, paas, capName); err != nil {
-				return err
-			}
+
+		if err := r.ensureAppSetCap(ctx, paas, capName); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -75,7 +72,7 @@ func (r *PaasReconciler) ensureAppSetCaps(
 // ensureAppSetCap ensures a list entry in the AppSet for the capability
 func (r *PaasReconciler) ensureAppSetCap(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	capName string,
 ) error {
 	var err error
@@ -113,10 +110,9 @@ func (r *PaasReconciler) ensureAppSetCap(
 
 	capability := paas.Spec.Capabilities[capName]
 
-	// FIXME(hikarukin): temporarily convert v2 to v1
-	cfs := make(map[string]v1alpha1.ConfigCustomField, len(myConfig.Spec.Capabilities[capName].CustomFields))
+	cfs := make(map[string]v1alpha2.ConfigCustomField, len(myConfig.Spec.Capabilities[capName].CustomFields))
 	for key, val := range myConfig.Spec.Capabilities[capName].CustomFields {
-		cfs[key] = val.ConvertTo()
+		cfs[key] = val
 	}
 
 	capElements, err := capability.CapExtraFields(cfs)
@@ -157,7 +153,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 
 func applyCustomFieldTemplates(
 	ccfields map[string]v1alpha2.ConfigCustomField,
-	templater templating.Templater[v1alpha1.Paas, v1alpha2.PaasConfig, v1alpha2.PaasConfigSpec],
+	templater templating.Templater[v1alpha2.Paas, v1alpha2.PaasConfig, v1alpha2.PaasConfigSpec],
 ) (templating.TemplateResult, error) {
 	var result templating.TemplateResult
 
@@ -209,7 +205,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 // finalizeAllAppSetCaps removes this paas from all capability appsets
 func (r *PaasReconciler) finalizeAllAppSetCaps(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) error {
 	paasWithoutCaps := paas.DeepCopy()
 	paasWithoutCaps.Spec.Capabilities = nil
@@ -219,12 +215,12 @@ func (r *PaasReconciler) finalizeAllAppSetCaps(
 // finalizeAppSetCaps removes this paas from all capability appsets that are not enabled in this paas
 func (r *PaasReconciler) finalizeDisabledAppSetCaps(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "Applicationsets")
 	for capName := range config.GetConfig().Spec.Capabilities {
 		logger.Info().Msgf("reconciling %s Applicationset", capName)
-		if capability, exists := paas.Spec.Capabilities[capName]; exists && capability.Enabled {
+		if _, exists := paas.Spec.Capabilities[capName]; exists {
 			continue
 		}
 		err := r.finalizeAppSetCap(ctx, paas.Name, capName)

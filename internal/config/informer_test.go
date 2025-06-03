@@ -18,13 +18,12 @@ func TestHandleUpdate_UpdatesActiveConfig(t *testing.T) {
 	}
 	SetConfig(oldCfg)
 
-	newCfg.Status.Conditions =
-		[]metav1.Condition{
-			{
-				Type:   v1alpha2.TypeActivePaasConfig,
-				Status: metav1.ConditionTrue,
-			},
-		}
+	newCfg.Status.Conditions = []metav1.Condition{
+		{
+			Type:   v1alpha2.TypeActivePaasConfig,
+			Status: metav1.ConditionTrue,
+		},
+	}
 
 	defer SetConfig(v1alpha2.PaasConfig{})
 

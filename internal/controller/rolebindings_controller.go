@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 
@@ -27,7 +27,7 @@ import (
 func ensureRoleBinding(
 	ctx context.Context,
 	r Reconciler,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	rb *rbac.RoleBinding,
 ) error {
 	logger := log.Ctx(ctx)
@@ -104,7 +104,7 @@ func createRoleBinding(
 func backendRoleBinding(
 	ctx context.Context,
 	r Reconciler,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	name types.NamespacedName,
 	role string,
 	groupNames []string,
@@ -171,7 +171,7 @@ func finalizeRoleBinding(
 // reconcileRolebindings is used by the Paas reconciler to reconcile RB's
 func (r *PaasReconciler) reconcileNamespaceRolebinding(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	nsName string,
 	roleName string,
 	groupNames []string,
@@ -201,8 +201,8 @@ func (r *PaasReconciler) reconcileNamespaceRolebinding(
 // reconcileRolebindings is used by the Paas reconciler to reconcile RB's
 func (r *PaasReconciler) reconcileNamespaceRolebindings(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
-	paasns *v1alpha1.PaasNS,
+	paas *v1alpha2.Paas,
+	paasns *v1alpha2.PaasNS,
 	nsName string,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
@@ -248,7 +248,7 @@ func (r *PaasReconciler) reconcileNamespaceRolebindings(
 // reconcileRolebindings is used by the Paas reconciler to reconcile RB's
 func (r *PaasReconciler) reconcilePaasRolebindings(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	nsDefs namespaceDefs,
 ) error {
 	for _, nsDef := range nsDefs {

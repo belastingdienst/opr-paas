@@ -18,6 +18,8 @@ var (
 	// GroupVersion is group version used to register these objects
 	GroupVersion = schema.GroupVersion{Group: "cpet.belastingdienst.nl", Version: "v1alpha2"}
 
+	paasAPIVersion = GroupVersion.Group + "/" + GroupVersion.Version
+
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
 

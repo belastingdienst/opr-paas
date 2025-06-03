@@ -9,6 +9,9 @@ See LICENSE.md for details.
 package v1alpha2
 
 import (
+	"errors"
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -45,6 +48,8 @@ type PaasNSSpec struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:storageversion
+// +kubebuilder:conversion:hub
 // +kubebuilder:resource:path=paasns,scope=Namespaced
 
 // PaasNS is the Schema for the PaasNS API
@@ -52,12 +57,7 @@ type PaasNS struct {
 	metav1.TypeMeta   `json:""`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PaasNSSpec   `json:"spec,omitempty"`
-	Status PaasNsStatus `json:"status,omitempty"`
-}
-
-func (pns PaasNS) GetConditions() []metav1.Condition {
-	return pns.Status.Conditions
+	Spec PaasNSSpec `json:"spec,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -73,10 +73,20 @@ func init() {
 	SchemeBuilder.Register(&PaasNS{}, &PaasNSList{})
 }
 
-// revive:disable:line-length-limit
+func (pns PaasNS) ClonedLabels() map[string]string {
+	labels := make(map[string]string)
+	for key, value := range pns.Labels {
+		if key != "app.kubernetes.io/instance" {
+			labels[key] = value
+		}
+	}
+	return labels
+}
 
-// PaasNsStatus defines the observed state of Paas
-type PaasNsStatus struct {
-	// +kubebuilder:validation:Optional
-	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+func (pns PaasNS) NamespaceName() string {
+	if pns.Spec.Paas == "" || pns.Name == "" {
+		panic(errors.New("invalid paas or paasns name (empty)"))
+	}
+
+	return fmt.Sprintf("%s-%s", pns.Spec.Paas, pns.Name)
 }
