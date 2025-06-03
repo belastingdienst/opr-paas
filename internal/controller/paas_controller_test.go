@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/fields"
@@ -33,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func getConditionsFromPaas(paas *api.Paas) map[string]metav1.Condition {
+func getConditionsFromPaas(paas *v1alpha2.Paas) map[string]metav1.Condition {
 	conditions := map[string]metav1.Condition{}
 	for _, condition := range paas.Status.Conditions {
 		conditions[condition.Type] = condition
@@ -137,7 +136,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		paasWithArgoCDName = paasRequestor + "-with-argocd"
 	)
 	var (
-		paas         *api.Paas
+		paas         *v1alpha2.Paas
 		appSet       *argocd.ApplicationSet
 		reconciler   *PaasReconciler
 		request      controllerruntime.Request
@@ -174,16 +173,14 @@ var _ = Describe("Paas Controller", Ordered, func() {
 
 	BeforeEach(func() {
 		paasName = paasRequestor
-		paas = &api.Paas{
+		paas = &v1alpha2.Paas{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: paasName,
 			},
-			Spec: api.PaasSpec{
+			Spec: v1alpha2.PaasSpec{
 				Requestor: paasRequestor,
-				Capabilities: api.PaasCapabilities{
-					capName: api.PaasCapability{
-						Enabled: true,
-					},
+				Capabilities: v1alpha2.PaasCapabilities{
+					capName: v1alpha2.PaasCapability{},
 				},
 				Quota: paasquota.Quota{
 					"cpu": resourcev1.MustParse("1"),
@@ -247,7 +244,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		})
 
 		It("should return nil when paas is being deleted", func() {
-			var gracePeriodSeconds = int64(2)
+			gracePeriodSeconds := int64(2)
 			paasName = paasRequestor + "-request-being-deleted"
 			paas.Name = paasName
 			assurePaas(ctx, *paas)
@@ -287,16 +284,16 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			paas, err = reconciler.getPaasFromRequest(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			preConditions := getConditionsFromPaas(paas)
-			Expect(preConditions).To(HaveKey(api.TypeReadyPaas))
-			Expect(preConditions).NotTo(HaveKey(api.TypeDegradedPaas))
+			Expect(preConditions).To(HaveKey(v1alpha2.TypeReadyPaas))
+			Expect(preConditions).NotTo(HaveKey(v1alpha2.TypeDegradedPaas))
 
 			err = reconciler.setFinalizing(ctx, paas)
 			Expect(err).NotTo(HaveOccurred())
 			paas = getPaas(ctx, paasName)
 
 			postConditions := getConditionsFromPaas(paas)
-			Expect(postConditions).To(HaveKey(api.TypeDegradedPaas))
-			finalizingCondition := postConditions[api.TypeDegradedPaas]
+			Expect(postConditions).To(HaveKey(v1alpha2.TypeDegradedPaas))
+			finalizingCondition := postConditions[v1alpha2.TypeDegradedPaas]
 			Expect(finalizingCondition.Status).To(Equal(metav1.ConditionUnknown))
 			Expect(finalizingCondition.Reason).To(Equal("Finalizing"))
 			Expect(finalizingCondition.Message).To(Equal(
@@ -313,10 +310,10 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			paas, err = reconciler.getPaasFromRequest(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			preConditions := getConditionsFromPaas(paas)
-			Expect(preConditions).To(HaveKey(api.TypeReadyPaas))
-			Expect(preConditions).NotTo(HaveKey(api.TypeHasErrorsPaas))
-			Expect(preConditions).NotTo(HaveKey(api.TypeDegradedPaas))
-			preReadyCondition := preConditions[api.TypeReadyPaas]
+			Expect(preConditions).To(HaveKey(v1alpha2.TypeReadyPaas))
+			Expect(preConditions).NotTo(HaveKey(v1alpha2.TypeHasErrorsPaas))
+			Expect(preConditions).NotTo(HaveKey(v1alpha2.TypeDegradedPaas))
+			preReadyCondition := preConditions[v1alpha2.TypeReadyPaas]
 			Expect(preReadyCondition.Status).To(Equal(metav1.ConditionUnknown))
 			Expect(preReadyCondition.Reason).To(Equal("Reconciling"))
 			Expect(preReadyCondition.Message).To(Equal("Starting reconciliation"))
@@ -327,42 +324,42 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			paas = getPaas(ctx, paasName)
 
 			errorConditions := getConditionsFromPaas(paas)
-			Expect(errorConditions).To(HaveKey(api.TypeReadyPaas))
-			errorReadyCondition := errorConditions[api.TypeReadyPaas]
+			Expect(errorConditions).To(HaveKey(v1alpha2.TypeReadyPaas))
+			errorReadyCondition := errorConditions[v1alpha2.TypeReadyPaas]
 			Expect(errorReadyCondition.Status).To(Equal(metav1.ConditionFalse))
 			Expect(errorReadyCondition.Reason).To(Equal("ReconcilingError"))
 			Expect(errorReadyCondition.Message).To(Equal(fmt.Sprintf("Reconciling (%s) failed", paasName)))
-			Expect(errorConditions).To(HaveKey(api.TypeHasErrorsPaas))
-			errorErrorsCondition := errorConditions[api.TypeHasErrorsPaas]
+			Expect(errorConditions).To(HaveKey(v1alpha2.TypeHasErrorsPaas))
+			errorErrorsCondition := errorConditions[v1alpha2.TypeHasErrorsPaas]
 			Expect(errorErrorsCondition.Status).To(Equal(metav1.ConditionTrue))
 			Expect(errorErrorsCondition.Reason).To(Equal("ReconcilingError"))
 			Expect(errorErrorsCondition.Message).To(Equal(myError.Error()))
-			Expect(errorConditions).NotTo(HaveKey(api.TypeDegradedPaas))
+			Expect(errorConditions).NotTo(HaveKey(v1alpha2.TypeDegradedPaas))
 
 			err = reconciler.setSuccessfulCondition(ctx, paas)
 			Expect(err).NotTo(HaveOccurred())
 			paas = getPaas(ctx, paasName)
 
 			resetConditions := getConditionsFromPaas(paas)
-			Expect(resetConditions).To(HaveKey(api.TypeReadyPaas))
-			resetReadyCondition := resetConditions[api.TypeReadyPaas]
+			Expect(resetConditions).To(HaveKey(v1alpha2.TypeReadyPaas))
+			resetReadyCondition := resetConditions[v1alpha2.TypeReadyPaas]
 			Expect(resetReadyCondition.Status).To(Equal(metav1.ConditionTrue))
 			Expect(resetReadyCondition.Reason).To(Equal("Reconciling"))
 			Expect(resetReadyCondition.Message).To(Equal(fmt.Sprintf("Reconciled (%s) successfully", paasName)))
-			Expect(resetConditions).To(HaveKey(api.TypeHasErrorsPaas))
-			resetErrorsCondition := resetConditions[api.TypeHasErrorsPaas]
+			Expect(resetConditions).To(HaveKey(v1alpha2.TypeHasErrorsPaas))
+			resetErrorsCondition := resetConditions[v1alpha2.TypeHasErrorsPaas]
 			Expect(resetErrorsCondition.Status).To(Equal(metav1.ConditionFalse))
 			Expect(resetErrorsCondition.Reason).To(Equal("Reconciling"))
 			Expect(resetErrorsCondition.Message).To(Equal(fmt.Sprintf("Reconciled (%s) successfully", paasName)))
-			Expect(resetConditions).NotTo(HaveKey(api.TypeDegradedPaas))
+			Expect(resetConditions).NotTo(HaveKey(v1alpha2.TypeDegradedPaas))
 
 			err = reconciler.setFinalizing(ctx, paas)
 			Expect(err).NotTo(HaveOccurred())
 			paas = getPaas(ctx, paasName)
 
 			finalizingConditions := getConditionsFromPaas(paas)
-			Expect(finalizingConditions).To(HaveKey(api.TypeDegradedPaas))
-			finalizingCondition := finalizingConditions[api.TypeDegradedPaas]
+			Expect(finalizingConditions).To(HaveKey(v1alpha2.TypeDegradedPaas))
+			finalizingCondition := finalizingConditions[v1alpha2.TypeDegradedPaas]
 			Expect(finalizingCondition.Status).To(Equal(metav1.ConditionUnknown))
 			Expect(finalizingCondition.Reason).To(Equal("Finalizing"))
 			Expect(finalizingCondition.Message).To(Equal(
@@ -398,7 +395,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			var result controllerruntime.Result
 			request.Name = paasName
 			request.NamespacedName = types.NamespacedName{Name: paasName}
-			paas.Spec.SSHSecrets = map[string]string{"validSecret": paasSecret}
+			paas.Spec.Secrets = map[string]string{"validSecret": paasSecret}
 			result, err = reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
@@ -425,9 +422,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			paasName = paasRequestor + "-non-existent-cap"
 			brokenPaas := paas.DeepCopy()
 			brokenPaas.Name = paasName
-			brokenPaas.Spec.Capabilities["non-existent"] = api.PaasCapability{
-				Enabled: true,
-			}
+			brokenPaas.Spec.Capabilities["non-existent"] = v1alpha2.PaasCapability{}
 			assurePaas(ctx, *brokenPaas)
 			request.Name = paasName
 			request.NamespacedName = types.NamespacedName{Name: paasName}
@@ -449,7 +444,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			paasName = paasRequestor + "-secret-failure"
 			brokenPaas := paas.DeepCopy()
 			brokenPaas.Name = paasName
-			brokenPaas.Spec.SSHSecrets = map[string]string{"broken": paasSecret}
+			brokenPaas.Spec.Secrets = map[string]string{"broken": paasSecret}
 			assurePaas(ctx, *brokenPaas)
 			request.Name = paasName
 			request.NamespacedName = types.NamespacedName{Name: paasName}
@@ -497,13 +492,13 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		It("should not return an error", func() {
 			paasName = paasRequestor + "-nocap"
 			paas.Name = paasName
-			paas.Spec.Capabilities = make(api.PaasCapabilities)
+			paas.Spec.Capabilities = make(v1alpha2.PaasCapabilities)
 			request.Name = paasName
 			capNamespace = paasName + "-" + capName
 			assurePaas(ctx, *paas)
 			assureNamespace(ctx, capNamespace)
 			patchAppSet(ctx, appSet)
-			paas.Spec.Capabilities = make(api.PaasCapabilities)
+			paas.Spec.Capabilities = make(v1alpha2.PaasCapabilities)
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.RequeueAfter.Microseconds()).To(BeZero())
@@ -552,7 +547,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		extraPermCR        = "extra-parm-cluster-role"
 	)
 	var (
-		paas                 *api.Paas
+		paas                 *v1alpha2.Paas
 		reconciler           *PaasReconciler
 		request              controllerruntime.Request
 		myConfig             v1alpha2.PaasConfig
@@ -565,7 +560,8 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		userGroupName        = join(paasName, groupName)
 		rolebindings         = []string{techRoleName1, techRoleName2}
 		clusterRolebindings  = map[string][]string{
-			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR}}
+			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR},
+		}
 	)
 	ctx := context.Background()
 	BeforeAll(func() {
@@ -580,30 +576,32 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		assureNamespace(ctx, capAppSetNamespace)
 		assureAppSet(ctx, capAppSetName, capAppSetNamespace)
-		paas = &api.Paas{
+		paas = &v1alpha2.Paas{
 			// We need to set this for AmIOwner to work properly
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Paas",
-				APIVersion: api.GroupVersion.String(),
+				APIVersion: v1alpha2.GroupVersion.String(),
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name: paasName,
 			},
-			Spec: api.PaasSpec{
+			Spec: v1alpha2.PaasSpec{
 				Requestor: paasName,
-				Capabilities: api.PaasCapabilities{
-					capName: api.PaasCapability{
-						Enabled:          true,
+				Capabilities: v1alpha2.PaasCapabilities{
+					capName: v1alpha2.PaasCapability{
 						ExtraPermissions: true,
 					},
 				},
-				Quota:      paasquota.Quota{"cpu": resourcev1.MustParse("1")},
-				Namespaces: []string{nsName},
-				Groups: api.PaasGroups{
-					groupName:     api.PaasGroup{Roles: []string{funcRoleName1}},
-					ldapGroupName: api.PaasGroup{Roles: []string{funcRoleName2}, Query: ldapGroupQuery},
+				Quota: paasquota.Quota{"cpu": resourcev1.MustParse("1")},
+				// Namespaces: []string{nsName},
+				Namespaces: v1alpha2.PaasNamespaces{
+					nsName: v1alpha2.PaasNamespace{},
 				},
-				SSHSecrets: map[string]string{secretName: secretEncryptedValue},
+				Groups: v1alpha2.PaasGroups{
+					groupName:     v1alpha2.PaasGroup{Roles: []string{funcRoleName1}},
+					ldapGroupName: v1alpha2.PaasGroup{Roles: []string{funcRoleName2}, Query: ldapGroupQuery},
+				},
+				Secrets: map[string]string{secretName: secretEncryptedValue},
 			},
 		}
 		Expect(paas.Kind).To(Equal("Paas"))
@@ -650,17 +648,18 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			_, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			assurePaasNS(ctx,
-				api.PaasNS{
+				v1alpha2.PaasNS{
 					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)},
-					Spec: api.PaasNSSpec{
-						Paas: paasName},
+					Spec: v1alpha2.PaasNSSpec{
+						Paas: paasName,
+					},
 				})
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result).To(Equal(controllerruntime.Result{}))
 		})
 		It("should have created paas quotas", func() {
-			var quotas = []string{paasName, capNamespace}
+			quotas := []string{paasName, capNamespace}
 			for _, quotaName := range quotas {
 				var quota quotav1.ClusterResourceQuota
 				err := reconciler.Get(ctx, types.NamespacedName{Name: quotaName}, &quota)
@@ -740,9 +739,11 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			_, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			assurePaasNS(ctx,
-				api.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)},
-					Spec: api.PaasNSSpec{
-						Paas: paasName},
+				v1alpha2.PaasNS{
+					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)},
+					Spec: v1alpha2.PaasNSSpec{
+						Paas: paasName,
+					},
 				})
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
@@ -752,14 +753,14 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			paas.Spec.Namespaces = nil
 			paas.Spec.Groups = nil
 			paas.Spec.Capabilities = nil
-			paas.Spec.SSHSecrets = nil
+			paas.Spec.Secrets = nil
 			err = reconciler.Patch(ctx, paas, patch)
 			Expect(err).NotTo(HaveOccurred())
 			patchedPaas := getPaas(ctx, paasName)
 			Expect(patchedPaas.Spec.Namespaces).To(BeEmpty())
 			Expect(patchedPaas.Spec.Groups).To(BeEmpty())
 			Expect(patchedPaas.Spec.Capabilities).To(BeEmpty())
-			Expect(patchedPaas.Spec.SSHSecrets).To(BeEmpty())
+			Expect(patchedPaas.Spec.Secrets).To(BeEmpty())
 			_, err = reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 		})

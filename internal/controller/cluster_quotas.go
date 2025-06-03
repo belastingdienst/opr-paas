@@ -11,7 +11,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
@@ -59,7 +59,7 @@ func (r *PaasReconciler) ensureQuota(
 // backendQuota is a code for Creating Quota
 func (r *PaasReconciler) backendQuota(
 	ctx context.Context,
-	paas *v1alpha1.Paas, suffix string,
+	paas *v1alpha2.Paas, suffix string,
 	hardQuotas map[corev1.ResourceName]resourcev1.Quantity,
 ) *quotav1.ClusterResourceQuota {
 	var quotaName string
@@ -105,21 +105,22 @@ func (r *PaasReconciler) backendQuota(
 
 func (r *PaasReconciler) backendEnabledQuotas(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) (quotas []*quotav1.ClusterResourceQuota, err error) {
 	paasConfigSpec := config.GetConfig().Spec
 	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
+	var capConfig v1alpha2.ConfigCapability
 	for name, cap := range paas.Spec.Capabilities {
-		if capConfig, exists := paasConfigSpec.Capabilities[name]; !exists {
+		capConfig = v1alpha2.ConfigCapability{}
+
+		if _, exists := paasConfigSpec.Capabilities[name]; !exists {
 			return nil, errors.New("a capability is requested, but not configured")
-		} else if cap.IsEnabled() {
-			if !capConfig.QuotaSettings.Clusterwide {
-				defaults := capConfig.QuotaSettings.DefQuota
-				quotaValues := cap.Quotas().MergeWith(
-					defaults)
-				quotas = append(quotas,
-					r.backendQuota(ctx, paas, name, quotaValues))
-			}
+		}
+
+		if !capConfig.QuotaSettings.Clusterwide {
+			defaults := capConfig.QuotaSettings.DefQuota
+			quotaValues := cap.Quotas().MergeWith(defaults)
+			quotas = append(quotas, r.backendQuota(ctx, paas, name, quotaValues))
 		}
 	}
 	return quotas, nil
@@ -129,13 +130,13 @@ func (r *PaasReconciler) backendEnabledQuotas(
 type PaasQuotas map[string]paasquota.Quota
 
 func (r *PaasReconciler) backendUnneededQuotas(
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) (quotas []string) {
 	paasConfigSpec := config.GetConfig().Spec
 	for name, capConfig := range paasConfigSpec.Capabilities {
-		if capability, exists := paas.Spec.Capabilities[name]; !exists {
+		if _, exists := paas.Spec.Capabilities[name]; !exists {
 			quotas = append(quotas, join(paas.Name, name))
-		} else if !capability.IsEnabled() || capConfig.QuotaSettings.Clusterwide {
+		} else if capConfig.QuotaSettings.Clusterwide {
 			quotas = append(quotas, join(paas.Name, name))
 		}
 	}
@@ -161,7 +162,7 @@ func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, quotaName str
 
 func (r *PaasReconciler) reconcileQuotas(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) (err error) {
 	ctx, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("creating quotas for Paas")
@@ -177,8 +178,7 @@ func (r *PaasReconciler) reconcileQuotas(
 			return err
 		}
 	}
-	// TODO(portly-halicore-76) remove once quota is removed from Status in a future release
-	paas.Status.Quota = map[string]paasquota.Quota{}
+
 	for _, name := range r.backendUnneededQuotas(paas) {
 		logger.Info().Msg("cleaning quota " + name + " for PAAS object ")
 		if err := r.finalizeClusterQuota(ctx, name); err != nil {

@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
@@ -38,11 +37,11 @@ func (r *PaasReconciler) fetchAllPaasCapabilityResources(
 	if err != nil {
 		return resources, err
 	}
-	paas := &v1alpha1.Paas{}
+	paas := &v1alpha2.Paas{}
 	resources = paasquota.NewQuotas()
 	for _, reference := range quota.OwnerReferences {
 		paasNamespacedName := types.NamespacedName{Name: reference.Name}
-		if reference.Kind != "Paas" || reference.APIVersion != v1alpha1.GroupVersion.String() {
+		if reference.Kind != "Paas" || reference.APIVersion != v1alpha2.GroupVersion.String() {
 			// We don't bother the owner reference to a different CR is here.
 			// We just don't add it to the list of resources.
 			continue
@@ -137,22 +136,22 @@ func clusterWideCapabilityName(quotaName string) (capabilityName string, err err
 	return capabilityName, err
 }
 
-func (r *PaasReconciler) finalizeClusterWideQuotas(ctx context.Context, paas *v1alpha1.Paas) error {
-	for capabilityName, capability := range paas.Spec.Capabilities {
-		if capability.IsEnabled() {
-			err := r.removeFromClusterWideQuota(ctx, paas, capabilityName)
-			if err != nil && k8serrors.IsNotFound(err) {
-				continue
-			}
-			return err
+func (r *PaasReconciler) finalizeClusterWideQuotas(ctx context.Context, paas *v1alpha2.Paas) error {
+	for capabilityName := range paas.Spec.Capabilities {
+		err := r.removeFromClusterWideQuota(ctx, paas, capabilityName)
+		if err != nil && k8serrors.IsNotFound(err) {
+			continue
 		}
+		return err
 	}
 	return nil
 }
 
-func (r *PaasReconciler) reconcileClusterWideQuota(ctx context.Context, paas *v1alpha1.Paas) error {
-	for capabilityName, capability := range paas.Spec.Capabilities {
-		if capability.IsEnabled() {
+func (r *PaasReconciler) reconcileClusterWideQuota(ctx context.Context, paas *v1alpha2.Paas) error {
+	myconfig := config.GetConfig()
+
+	for capabilityName := range myconfig.Spec.Capabilities {
+		if _, enabled := paas.Spec.Capabilities[capabilityName]; enabled {
 			err := r.addToClusterWideQuota(ctx, paas, capabilityName)
 			if err != nil && k8serrors.IsNotFound(err) {
 				continue
@@ -173,7 +172,7 @@ func (r *PaasReconciler) reconcileClusterWideQuota(ctx context.Context, paas *v1
 	return nil
 }
 
-func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alpha1.Paas, capabilityName string) error {
+func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alpha2.Paas, capabilityName string) error {
 	var quota *quotav1.ClusterResourceQuota
 	var exists bool
 	quotaName := clusterWideQuotaName(capabilityName)
@@ -209,7 +208,7 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 
 func (r *PaasReconciler) removeFromClusterWideQuota(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	capabilityName string,
 ) error {
 	var quota *quotav1.ClusterResourceQuota

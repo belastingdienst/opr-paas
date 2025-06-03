@@ -11,6 +11,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
 	. "github.com/onsi/ginkgo/v2"
@@ -56,12 +57,12 @@ var _ = Describe("secret controller", Ordered, func() {
 		paasPkSecret       = "secret-pk-secret"
 	)
 	var (
-		paas            *api.Paas
+		paas            *v1alpha2.Paas
 		reconciler      *PaasReconciler
-		myConfig        api.PaasConfig
+		myConfig        v1alpha2.PaasConfig
 		privateKey      []byte
 		mycrypt         *crypt.Crypt
-		pns             *api.PaasNS
+		pns             *v1alpha2.PaasNS
 		encryptedString string
 	)
 	ctx := context.Background()
@@ -79,11 +80,11 @@ var _ = Describe("secret controller", Ordered, func() {
 		encryptedString, err = mycrypt.Encrypt([]byte("some encrypted string"))
 		Expect(err).NotTo(HaveOccurred())
 
-		pns = &api.PaasNS{
+		pns = &v1alpha2.PaasNS{
 			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: paasName},
-			Spec: api.PaasNSSpec{
+			Spec: v1alpha2.PaasNSSpec{
 				Paas: paasName,
-				SSHSecrets: map[string]string{
+				Secrets: map[string]string{
 					"paasns-git-repo": encryptedString,
 				},
 			},
@@ -96,16 +97,15 @@ var _ = Describe("secret controller", Ordered, func() {
 			Scheme: k8sClient.Scheme(),
 		}
 
-		paas = &api.Paas{
+		paas = &v1alpha2.Paas{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: paasRequestor,
 			},
-			Spec: api.PaasSpec{
+			Spec: v1alpha2.PaasSpec{
 				Requestor: paasRequestor,
-				Capabilities: api.PaasCapabilities{
-					capName: api.PaasCapability{
-						Enabled: true,
-						SSHSecrets: map[string]string{
+				Capabilities: v1alpha2.PaasCapabilities{
+					capName: v1alpha2.PaasCapability{
+						Secrets: map[string]string{
 							"paas-capability-git-repo": encryptedString,
 						},
 					},
@@ -113,8 +113,10 @@ var _ = Describe("secret controller", Ordered, func() {
 				Quota: paasquota.Quota{
 					"cpu": resourcev1.MustParse("1"),
 				},
-				Namespaces: []string{paasName},
-				SSHSecrets: map[string]string{
+				Namespaces: v1alpha2.PaasNamespaces{
+					paasName: v1alpha2.PaasNamespace{},
+				},
+				Secrets: map[string]string{
 					"paas-namespace-git-repo": encryptedString,
 				},
 			},
@@ -131,16 +133,16 @@ var _ = Describe("secret controller", Ordered, func() {
 		err := k8sClient.Create(ctx, paas)
 		Expect(err).NotTo(HaveOccurred())
 
-		myConfig = api.PaasConfig{
+		myConfig = v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
-			Spec: api.PaasConfigSpec{
+			Spec: v1alpha2.PaasConfigSpec{
 				ClusterWideArgoCDNamespace: capAppSetNamespace,
-				Capabilities: map[string]api.ConfigCapability{
+				Capabilities: map[string]v1alpha2.ConfigCapability{
 					capName: {
 						AppSet: capAppSetName,
-						QuotaSettings: api.ConfigQuotaSettings{
+						QuotaSettings: v1alpha2.ConfigQuotaSettings{
 							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 								corev1.ResourceLimitsCPU: resourcev1.MustParse("5"),
 							},
@@ -148,7 +150,7 @@ var _ = Describe("secret controller", Ordered, func() {
 					},
 				},
 				Debug: false,
-				DecryptKeysSecret: api.NamespacedName{
+				DecryptKeysSecret: v1alpha2.NamespacedName{
 					Name:      paasPkSecret,
 					Namespace: paasSystem,
 				},
@@ -156,20 +158,15 @@ var _ = Describe("secret controller", Ordered, func() {
 				ManagedBySuffix: "argocd",
 				RequestorLabel:  "o.lbl",
 				QuotaLabel:      "q.lbl",
-				GroupSyncList: api.NamespacedName{
-					Namespace: "gsns",
-					Name:      "wlname",
-				},
-				GroupSyncListKey: "groupsynclist.txt",
 			},
 		}
-		config.SetConfigV1(myConfig)
+		config.SetConfig(myConfig)
 	})
 
 	When("reconciling a PaasNS with a SshSecrets value", func() {
 		It("should not return an error", func() {
 			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, pns.GetObjectMeta().GetNamespace(),
-				pns.Spec.SSHSecrets)
+				pns.Spec.Secrets)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -188,7 +185,7 @@ var _ = Describe("secret controller", Ordered, func() {
 	When("reconciling a paas namespace with a SshSecrets value", func() {
 		It("should not return an error", func() {
 			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, paasName,
-				paas.Spec.SSHSecrets)
+				paas.Spec.Secrets)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -207,7 +204,7 @@ var _ = Describe("secret controller", Ordered, func() {
 	When("reconciling a paas capability with a SSHSecret", func() {
 		It("should not return an error", func() {
 			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, paasName,
-				paas.Spec.Capabilities[capName].SSHSecrets)
+				paas.Spec.Capabilities[capName].Secrets)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -226,19 +223,19 @@ var _ = Describe("secret controller", Ordered, func() {
 	When("reconciling a paas namespace with one secret removed", func() {
 		It("should not return an error", func() {
 			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, pns.GetObjectMeta().GetNamespace(),
-				paas.Spec.Capabilities[capName].SSHSecrets)
+				paas.Spec.Capabilities[capName].Secrets)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Remove the secret from the paas spec (simulate user removing the secret)
 			capability := paas.Spec.Capabilities[capName]
-			capability.SSHSecrets = nil
+			capability.Secrets = nil
 			paas.Spec.Capabilities[capName] = capability
 			err = k8sClient.Update(ctx, paas)
 			Expect(err).NotTo(HaveOccurred())
 
 			// Reconcile again with SSHSecrets now nil (should trigger deletion)
 			err = reconciler.reconcileNamespaceSecrets(ctx, paas, pns, pns.GetObjectMeta().GetNamespace(),
-				paas.Spec.Capabilities[capName].SSHSecrets)
+				paas.Spec.Capabilities[capName].Secrets)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
