@@ -12,9 +12,9 @@ package v1alpha1
 
 import (
 	"github.com/belastingdienst/opr-paas/internal/quota"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -174,21 +174,21 @@ func (in *ConfigQuotaSettings) DeepCopyInto(out *ConfigQuotaSettings) {
 	*out = *in
 	if in.DefQuota != nil {
 		in, out := &in.DefQuota, &out.DefQuota
-		*out = make(map[v1.ResourceName]resource.Quantity, len(*in))
+		*out = make(map[corev1.ResourceName]resource.Quantity, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val.DeepCopy()
 		}
 	}
 	if in.MinQuotas != nil {
 		in, out := &in.MinQuotas, &out.MinQuotas
-		*out = make(map[v1.ResourceName]resource.Quantity, len(*in))
+		*out = make(map[corev1.ResourceName]resource.Quantity, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val.DeepCopy()
 		}
 	}
 	if in.MaxQuotas != nil {
 		in, out := &in.MaxQuotas, &out.MaxQuotas
-		*out = make(map[v1.ResourceName]resource.Quantity, len(*in))
+		*out = make(map[corev1.ResourceName]resource.Quantity, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val.DeepCopy()
 		}
@@ -340,13 +340,7 @@ func (in *PaasCapability) DeepCopyInto(out *PaasCapability) {
 			(*out)[key] = val
 		}
 	}
-	if in.Quota != nil {
-		in, out := &in.Quota, &out.Quota
-		*out = make(quota.Quota, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val.DeepCopy()
-		}
-	}
+	out.Quota = in.Quota.DeepCopy()
 	if in.SSHSecrets != nil {
 		in, out := &in.SSHSecrets, &out.SSHSecrets
 		*out = make(map[string]string, len(*in))
@@ -490,7 +484,7 @@ func (in *PaasConfigStatus) DeepCopyInto(out *PaasConfigStatus) {
 	*out = *in
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make([]metav1.Condition, len(*in))
+		*out = make([]v1.Condition, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -734,7 +728,7 @@ func (in *PaasNsStatus) DeepCopyInto(out *PaasNsStatus) {
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make([]metav1.Condition, len(*in))
+		*out = make([]v1.Condition, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -768,13 +762,7 @@ func (in *PaasSpec) DeepCopyInto(out *PaasSpec) {
 			(*out)[key] = *val.DeepCopy()
 		}
 	}
-	if in.Quota != nil {
-		in, out := &in.Quota, &out.Quota
-		*out = make(quota.Quota, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val.DeepCopy()
-		}
-	}
+	out.Quota = in.Quota.DeepCopy()
 	if in.Namespaces != nil {
 		in, out := &in.Namespaces, &out.Namespaces
 		*out = make([]string, len(*in))
@@ -811,23 +799,12 @@ func (in *PaasStatus) DeepCopyInto(out *PaasStatus) {
 		in, out := &in.Quota, &out.Quota
 		*out = make(map[string]quota.Quota, len(*in))
 		for key, val := range *in {
-			var outVal map[v1.ResourceName]resource.Quantity
-			if val == nil {
-				(*out)[key] = nil
-			} else {
-				inVal := (*in)[key]
-				in, out := &inVal, &outVal
-				*out = make(quota.Quota, len(*in))
-				for key, val := range *in {
-					(*out)[key] = val.DeepCopy()
-				}
-			}
-			(*out)[key] = outVal
+			(*out)[key] = val.DeepCopy()
 		}
 	}
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
-		*out = make([]metav1.Condition, len(*in))
+		*out = make([]v1.Condition, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

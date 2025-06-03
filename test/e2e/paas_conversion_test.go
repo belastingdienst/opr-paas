@@ -34,9 +34,9 @@ func TestPaasConversion(t *testing.T) {
 					"git_path": ".",
 				},
 			},
-			"sso": {Enabled: true},
+			"sso": {Enabled: false},
 			"tekton": {
-				Enabled: false,
+				Enabled: true,
 				SSHSecrets: map[string]string{
 					paasArgoGitURL: paasArgoSecret,
 				},
@@ -62,7 +62,10 @@ func assertV2Conversion(ctx context.Context, t *testing.T, cfg *envconf.Config) 
 	paas := v1alpha2.Paas{}
 	require.NoError(t, cfg.Client().Resources().Get(ctx, paasv1Name, cfg.Namespace(), &paas))
 
-	assert.Len(t, paas.Spec.Capabilities, 3)
+	assert.Len(t, paas.Spec.Capabilities, 2)
+	// SSO shouldn't be converted as it was not Enabled in v1alpha1
+	_, exists := paas.Spec.Capabilities["sso"]
+	assert.False(t, exists)
 	assert.Equal(
 		t,
 		map[string]string{

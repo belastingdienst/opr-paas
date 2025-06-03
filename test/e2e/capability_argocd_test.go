@@ -62,16 +62,6 @@ func TestCapabilityArgoCD(t *testing.T) {
 }
 
 func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	// argopaasns := &api.PaasNS{ObjectMeta: metav1.ObjectMeta{
-	// 	Name:      argoCapName,
-	// 	Namespace: paasWithArgo,
-	// }}
-	// require.NoError(
-	// 	t,
-	// 	waitForCondition(ctx, cfg, argopaasns, 0, api.TypeReadyPaasNs),
-	// 	"ArgoCD PaasNS reconciliation succeeds",
-	// )
-
 	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
 	entries, _ := getApplicationSetListEntries(argoAppSet)
 

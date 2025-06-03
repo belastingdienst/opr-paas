@@ -10,7 +10,6 @@ import (
 	"context"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
@@ -123,7 +122,7 @@ var _ = Describe("secret controller", Ordered, func() {
 		}
 
 		// Delete if exists to avoid "already exists" error
-		_ = k8sClient.Delete(ctx, &api.Paas{
+		_ = k8sClient.Delete(ctx, &v1alpha2.Paas{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: paasRequestor,
 			},
