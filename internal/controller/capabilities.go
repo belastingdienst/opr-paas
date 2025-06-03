@@ -113,10 +113,9 @@ func (r *PaasReconciler) ensureAppSetCap(
 
 	capability := paas.Spec.Capabilities[capName]
 
-	// FIXME(hikarukin): temporarily convert v2 to v1
-	cfs := make(map[string]v1alpha1.ConfigCustomField, len(myConfig.Spec.Capabilities[capName].CustomFields))
+	cfs := make(map[string]v1alpha2.ConfigCustomField, len(myConfig.Spec.Capabilities[capName].CustomFields))
 	for key, val := range myConfig.Spec.Capabilities[capName].CustomFields {
-		cfs[key] = val.ConvertTo()
+		cfs[key] = val
 	}
 
 	capElements, err := capability.CapExtraFields(cfs)

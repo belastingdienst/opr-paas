@@ -33,9 +33,6 @@ func (p *PaasNS) ConvertFrom(srcRaw conversion.Hub) error {
 	p.Spec.Paas = src.GetObjectMeta().GetName()
 	p.Spec.Groups = src.Spec.Groups
 	p.Spec.SSHSecrets = src.Spec.Secrets
-	p.Status.Conditions = src.Status.Conditions
-	// Deprecated: use paasns.status.conditions instead
-	// p.Status.Messages = ...
 
 	return nil
 }
@@ -56,9 +53,6 @@ func (p *PaasNS) ConvertTo(dstRaw conversion.Hub) error {
 	dst.ObjectMeta = p.ObjectMeta
 	dst.Spec.Groups = p.Spec.Groups
 	dst.Spec.Secrets = p.Spec.SSHSecrets
-	dst.Status.Conditions = p.Status.Conditions
-	// How to convert Messages ([]string) to Conditions ([]metav1.Condition)?
-	// dst.Status.Conditions = ...
 
 	return nil
 }

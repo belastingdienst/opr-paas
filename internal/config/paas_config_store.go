@@ -37,7 +37,8 @@ func GetConfigV1() (v1alpha1.PaasConfig, error) {
 	defer cnf.mutex.RUnlock()
 
 	var v1conf v1alpha1.PaasConfig
-	err := (&cnf.store).ConvertTo(&v1conf)
+	err := v1conf.ConvertFrom(&cnf.store)
+	// err := (&cnf.store).ConvertTo(&v1conf)
 	return v1conf, err
 }
 
@@ -53,5 +54,6 @@ func SetConfigV1(cfg v1alpha1.PaasConfig) error {
 	cnf.mutex.Lock()
 	defer cnf.mutex.Unlock()
 
-	return (&cnf.store).ConvertFrom(&cfg)
+	return cfg.ConvertTo(&cnf.store)
+	// return (&cnf.store).ConvertFrom(&cfg)
 }
