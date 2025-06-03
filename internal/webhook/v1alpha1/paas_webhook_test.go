@@ -224,7 +224,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		It("Should deny creation when a capability custom field is not configured", func() {
 			v1conf := v1alpha1.PaasConfig{}
 			v2conf := config.GetConfig()
-			(&v2conf).ConvertTo(&v1conf)
+			v1conf.ConvertFrom(&v2conf)
 			conf := v1conf.Spec
 
 			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
