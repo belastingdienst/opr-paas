@@ -137,7 +137,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 
 		It("should remove the ClusterResourceQuota when the capability is disabled", func() {
 			paas := addPaasWithDefCap(paasPrefix)
-			paas.Spec.Capabilities[capName] = v1alpha2.PaasCapability{}
+			delete(paas.Spec.Capabilities, capName)
 			Expect(reconciler.reconcileClusterWideQuota(ctx, paas)).
 				NotTo(HaveOccurred())
 
