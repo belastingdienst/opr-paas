@@ -45,7 +45,7 @@ var _ = Describe("NamespaceDef", func() {
 			Spec: v1alpha2.PaasSpec{
 				Requestor: "somebody",
 				Capabilities: v1alpha2.PaasCapabilities{
-					disabledCapName1: v1alpha2.PaasCapability{},
+					enabledCapName: v1alpha2.PaasCapability{},
 				},
 				Namespaces: namespaces,
 				Groups: v1alpha2.PaasGroups{

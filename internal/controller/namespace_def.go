@@ -149,15 +149,19 @@ func (r *PaasReconciler) paasCapabilityNss(
 func (r *PaasReconciler) nsDefsFromPaas(ctx context.Context, paas *v1alpha2.Paas) (namespaceDefs, error) {
 	paasGroups := paas.Spec.Groups.Keys()
 	nsDefs := namespaceDefs{}
+
 	for _, ns := range r.nsDefsFromPaasNamespaces(ctx, paas, paasGroups) {
 		nsDefs[ns.nsName] = ns
 	}
+
 	capNss, err := r.paasCapabilityNss(ctx, paas, paasGroups)
 	if err != nil {
 		return nil, err
 	}
+
 	for _, ns := range capNss {
 		nsDefs[ns.nsName] = ns
 	}
+
 	return nsDefs, nil
 }
