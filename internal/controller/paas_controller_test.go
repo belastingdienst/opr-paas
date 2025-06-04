@@ -532,9 +532,10 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		capNamespace       = paasName + "-" + capName
 		paasSystem         = "recon-nssystem"
 		paasPkSecret       = "recon-secret"
-		nsName             = "myns"
+		ns1Name            = "myns1"
+		ns2Name            = "myns2"
 		paasNSName         = "mypaasns"
-		groupName          = "prcn-mygroup"
+		paasGroupName      = "prcn-my-paas-group"
 		ldapGroupName      = "prcn-myldapgroup"
 		ldapGroupQuery     = "CN=" + ldapGroupName + ",OU=org_unit,DC=example,DC=org"
 		funcRoleName1      = "myfuncrole1"
@@ -547,19 +548,27 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		extraPermCR        = "extra-parm-cluster-role"
 	)
 	var (
-		paas                 *v1alpha2.Paas
-		reconciler           *PaasReconciler
-		request              controllerruntime.Request
-		myConfig             v1alpha2.PaasConfig
-		privateKey           []byte
-		mycrypt              *crypt.Crypt
-		secretValue          string
-		secretEncryptedValue string
-		secretName           = "my-secret"
-		secretHashedName     = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(secretName)[:8]))
-		userGroupName        = join(paasName, groupName)
-		rolebindings         = []string{techRoleName1, techRoleName2}
-		clusterRolebindings  = map[string][]string{
+		paas                     *v1alpha2.Paas
+		reconciler               *PaasReconciler
+		request                  controllerruntime.Request
+		myConfig                 v1alpha2.PaasConfig
+		privateKey               []byte
+		mycrypt                  *crypt.Crypt
+		paasSecretValue          string
+		paasSecretEncryptedValue string
+		paasSecretName           = "my-paas-secret"
+		paasSecretHashedName     = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(paasSecretName)[:8]))
+		ns1SecretValue           string
+		ns1SecretEncryptedValue  string
+		ns1SecretName            = "my-ns1-secret"
+		ns1SecretHashedName      = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(ns1SecretName)[:8]))
+		ns2SecretValue           string
+		ns2SecretEncryptedValue  string
+		ns2SecretName            = "my-ns2-secret"
+		ns2SecretHashedName      = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(ns2SecretName)[:8]))
+		userGroupName            = join(paasName, paasGroupName)
+		rolebindings             = []string{techRoleName1, techRoleName2}
+		clusterRolebindings      = map[string][]string{
 			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR},
 		}
 	)
@@ -572,7 +581,11 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Fail(err.Error())
 		}
 		createPaasPrivateKeySecret(ctx, paasSystem, paasPkSecret, privateKey)
-		secretEncryptedValue, err = mycrypt.Encrypt([]byte(secretValue))
+		paasSecretEncryptedValue, err = mycrypt.Encrypt([]byte(paasSecretValue))
+		Expect(err).NotTo(HaveOccurred())
+		ns1SecretEncryptedValue, err = mycrypt.Encrypt([]byte(ns1SecretValue))
+		Expect(err).NotTo(HaveOccurred())
+		ns2SecretEncryptedValue, err = mycrypt.Encrypt([]byte(ns2SecretValue))
 		Expect(err).NotTo(HaveOccurred())
 		assureNamespace(ctx, capAppSetNamespace)
 		assureAppSet(ctx, capAppSetName, capAppSetNamespace)
@@ -595,13 +608,25 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 				Quota: paasquota.Quota{"cpu": resourcev1.MustParse("1")},
 				// Namespaces: []string{nsName},
 				Namespaces: v1alpha2.PaasNamespaces{
-					nsName: v1alpha2.PaasNamespace{},
+					ns1Name: v1alpha2.PaasNamespace{
+						Groups: []string{
+							paasGroupName,
+						},
+						Secrets: map[string]string{
+							ns1SecretName: ns1SecretEncryptedValue,
+						},
+					},
+					ns2Name: v1alpha2.PaasNamespace{
+						Secrets: map[string]string{
+							ns2SecretName: ns2SecretEncryptedValue,
+						},
+					},
 				},
 				Groups: v1alpha2.PaasGroups{
-					groupName:     v1alpha2.PaasGroup{Roles: []string{funcRoleName1}},
+					paasGroupName: v1alpha2.PaasGroup{Roles: []string{funcRoleName1}},
 					ldapGroupName: v1alpha2.PaasGroup{Roles: []string{funcRoleName2}, Query: ldapGroupQuery},
 				},
-				Secrets: map[string]string{secretName: secretEncryptedValue},
+				Secrets: map[string]string{paasSecretName: paasSecretEncryptedValue},
 			},
 		}
 		Expect(paas.Kind).To(Equal("Paas"))
@@ -642,14 +667,19 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 	})
 	// create Paas
 	When("creating a Paas and PaasNS", func() {
-		namespaces := []string{join(paasName, nsName), join(paasName, capName), join(paasName, paasNSName)}
+		namespaces := []string{
+			join(paasName, ns1Name),
+			join(paasName, ns2Name),
+			join(paasName, capName),
+			join(paasName, paasNSName),
+		}
 		It("should reconcile successfully", func() {
 			assurePaas(ctx, *paas)
 			_, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			assurePaasNS(ctx,
 				v1alpha2.PaasNS{
-					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)},
+					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, ns1Name)},
 					Spec: v1alpha2.PaasNSSpec{
 						Paas: paasName,
 					},
@@ -726,11 +756,34 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			}
 		})
 		It("should have created paas secrets", func() {
+			var secret corev1.Secret
+			var err error
 			for _, nsName := range namespaces {
-				var secret corev1.Secret
-				err := reconciler.Get(ctx, types.NamespacedName{Namespace: nsName, Name: secretHashedName}, &secret)
+				err = reconciler.Get(ctx, types.NamespacedName{Namespace: nsName, Name: paasSecretHashedName}, &secret)
 				Expect(err).ToNot(HaveOccurred())
 			}
+			err = reconciler.Get(
+				ctx,
+				types.NamespacedName{Namespace: join(paasName, ns1Name),
+					Name: ns1SecretHashedName},
+				&secret,
+			)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveKey("sshPrivateKey"))
+			Expect(secret.Data["sshPrivateKey"]).To(Equal([]byte(ns1SecretValue)))
+			err = reconciler.Get(
+				ctx,
+				types.NamespacedName{Namespace: join(paasName, ns2Name),
+					Name: ns2SecretHashedName},
+				&secret,
+			)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secret.Data).To(HaveKey("sshPrivateKey"))
+			Expect(secret.Data["sshPrivateKey"]).To(Equal([]byte(ns2SecretValue)))
+			err = reconciler.Get(ctx, types.NamespacedName{Namespace: ns1Name, Name: ns2SecretHashedName}, &secret)
+			Expect(err.Error()).To(Equal("secrets \"" + ns2SecretHashedName + "\" not found"))
+			err = reconciler.Get(ctx, types.NamespacedName{Namespace: ns2Name, Name: ns1SecretHashedName}, &secret)
+			Expect(err.Error()).To(Equal("secrets \"" + ns1SecretHashedName + "\" not found"))
 		})
 	})
 	When("modifying a Paas", Ordered, func() {
@@ -740,7 +793,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			assurePaasNS(ctx,
 				v1alpha2.PaasNS{
-					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, nsName)},
+					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, ns1Name)},
 					Spec: v1alpha2.PaasNSSpec{
 						Paas: paasName,
 					},
@@ -750,14 +803,16 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(result).To(Equal(controllerruntime.Result{}))
 
 			patch := client.MergeFrom(paas.DeepCopy())
-			paas.Spec.Namespaces = nil
+			ns2 := paas.Spec.Namespaces[ns2Name]
+			ns2.Secrets = nil
+			paas.Spec.Namespaces = v1alpha2.PaasNamespaces{ns2Name: ns2}
 			paas.Spec.Groups = nil
 			paas.Spec.Capabilities = nil
 			paas.Spec.Secrets = nil
 			err = reconciler.Patch(ctx, paas, patch)
 			Expect(err).NotTo(HaveOccurred())
 			patchedPaas := getPaas(ctx, paasName)
-			Expect(patchedPaas.Spec.Namespaces).To(BeEmpty())
+			Expect(patchedPaas.Spec.Namespaces).To(HaveLen(1))
 			Expect(patchedPaas.Spec.Groups).To(BeEmpty())
 			Expect(patchedPaas.Spec.Capabilities).To(BeEmpty())
 			Expect(patchedPaas.Spec.Secrets).To(BeEmpty())
@@ -773,9 +828,9 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		})
 		It("should successfully remove user groups", func() {
 			var group userv1.Group
-			err := reconciler.Get(ctx, types.NamespacedName{Name: groupName}, &group)
+			err := reconciler.Get(ctx, types.NamespacedName{Name: paasGroupName}, &group)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + groupName + "\" not found"))
+			Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + paasGroupName + "\" not found"))
 		})
 		It("should successfully finalize disabled capabilities", func() {
 			var capAppSet argocd.ApplicationSet
@@ -786,8 +841,8 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			list := getListGen(capAppSet.Spec.Generators)
 			Expect(list).To(BeNil())
 		})
-		It("should successfully finalize removed namespaces", func() {
-			deletedNamespaces := []string{join(paasName, nsName), join(paasName, capName), join(paasName, paasNSName)}
+		It("should successfully finalize removed namespace1", func() {
+			deletedNamespaces := []string{join(paasName, ns1Name), join(paasName, capName), join(paasName, paasNSName)}
 			for _, nsName := range deletedNamespaces {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
 				var ns corev1.Namespace
@@ -795,6 +850,11 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(ns.DeletionTimestamp).NotTo(BeNil())
 			}
+		})
+		It("should have deleted paas secrets", func() {
+			var secret corev1.Secret
+			err := reconciler.Get(ctx, types.NamespacedName{Namespace: ns2Name, Name: ns2SecretHashedName}, &secret)
+			Expect(err.Error()).To(Equal("secrets \"" + ns2SecretHashedName + "\" not found"))
 		})
 		It("should have removed paas clusterrolebindings", func() {
 			for _, crbRoleNames := range clusterRolebindings {
@@ -825,9 +885,9 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		})
 		It("should have deleted user groups", func() {
 			var group userv1.Group
-			err := reconciler.Get(ctx, types.NamespacedName{Name: groupName}, &group)
+			err := reconciler.Get(ctx, types.NamespacedName{Name: paasGroupName}, &group)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + groupName + "\" not found"))
+			Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + paasGroupName + "\" not found"))
 		})
 		It("should have deleted paas clusterrolebindings", func() {
 			for _, crbRoleNames := range clusterRolebindings {
