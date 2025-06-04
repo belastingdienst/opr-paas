@@ -30,7 +30,7 @@ func (p *PaasNS) ConvertFrom(srcRaw conversion.Hub) error {
 	p.ObjectMeta = src.ObjectMeta
 	// Deprecated: not required once paas controller is managing the PaasNS resources.
 	// The `metadata.name` of the Paas which created the namespace in which this PaasNS is applied
-	p.Spec.Paas = src.GetObjectMeta().GetName()
+	p.Spec.Paas = ""
 	p.Spec.Groups = src.Spec.Groups
 	p.Spec.SSHSecrets = src.Spec.Secrets
 
