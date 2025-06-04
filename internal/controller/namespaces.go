@@ -112,12 +112,12 @@ func (r *PaasReconciler) reconcileNamespaces(
 	ctx, logger := logging.GetLogComponent(ctx, "namespace")
 	for _, nsDef := range nsDefs {
 		var ns *corev1.Namespace
-		if ns, err = backendNamespace(ctx, paas, nsDef.nsName, nsDef.quota, r.Scheme); err != nil {
+		if ns, err = backendNamespace(ctx, paas, nsDef.nsName, nsDef.quotaName, r.Scheme); err != nil {
 			return fmt.Errorf("failure while defining namespace %s: %s", nsDef.nsName, err.Error())
 		} else if err = ensureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
 			return fmt.Errorf("failure while creating namespace %s: %s", nsDef.nsName, err.Error())
 		}
-		logger.Debug().Msgf("namespace %s successfully created with quota %s", nsDef.nsName, nsDef.quota)
+		logger.Debug().Msgf("namespace %s successfully created with quotaName %s", nsDef.nsName, nsDef.quotaName)
 	}
 	return nil
 }

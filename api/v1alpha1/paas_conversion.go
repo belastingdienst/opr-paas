@@ -97,7 +97,7 @@ func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 	dst.ObjectMeta = p.ObjectMeta
 	dst.Status.Conditions = p.Status.Conditions
 	dst.Spec.Requestor = p.Spec.Requestor
-	dst.Spec.Quota = p.Spec.Quota
+	dst.Spec.Quota = p.Spec.Quota.DeepCopy()
 	dst.Spec.Capabilities = make(v1alpha2.PaasCapabilities)
 	dst.Spec.Groups = make(v1alpha2.PaasGroups)
 	dst.Spec.Namespaces = make(v1alpha2.PaasNamespaces)
@@ -105,25 +105,27 @@ func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec.ManagedByPaas = p.Spec.ManagedByPaas
 
 	for name, capability := range p.Spec.Capabilities {
-		fields := make(map[string]string)
-		for f := range capability.CustomFields {
-			fields[f] = capability.CustomFields[f]
-		}
-		if capability.GitURL != "" {
-			fields[gitUrlKey] = capability.GitURL
-		}
-		if capability.GitRevision != "" {
-			fields[gitRevisionKey] = capability.GitRevision
-		}
-		if capability.GitPath != "" {
-			fields[gitPathKey] = capability.GitPath
-		}
+		if capability.Enabled {
+			fields := make(map[string]string)
+			for f := range capability.CustomFields {
+				fields[f] = capability.CustomFields[f]
+			}
+			if capability.GitURL != "" {
+				fields[gitUrlKey] = capability.GitURL
+			}
+			if capability.GitRevision != "" {
+				fields[gitRevisionKey] = capability.GitRevision
+			}
+			if capability.GitPath != "" {
+				fields[gitPathKey] = capability.GitPath
+			}
 
-		dst.Spec.Capabilities[name] = v1alpha2.PaasCapability{
-			CustomFields:     fields,
-			Quota:            capability.Quota,
-			Secrets:          capability.SSHSecrets,
-			ExtraPermissions: capability.ExtraPermissions,
+			dst.Spec.Capabilities[name] = v1alpha2.PaasCapability{
+				CustomFields:     fields,
+				Quota:            capability.Quota.DeepCopy(),
+				Secrets:          capability.SSHSecrets,
+				ExtraPermissions: capability.ExtraPermissions,
+			}
 		}
 	}
 

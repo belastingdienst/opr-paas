@@ -30,3 +30,13 @@ func (pq Quota) Resized(scale float64) (q Quota) {
 	}
 	return q
 }
+
+// DeepCopy is a deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (pq Quota) DeepCopy() Quota {
+	in, out := &pq, &Quota{}
+	*out = make(Quota, len(*in))
+	for key, val := range *in {
+		(*out)[key] = val.DeepCopy()
+	}
+	return *out
+}

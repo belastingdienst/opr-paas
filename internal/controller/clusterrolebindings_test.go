@@ -80,12 +80,12 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			},
 		}
 		paasNsDefs = namespaceDefs{
-			capNSName: namespaceDef{nsName: capNSName, capName: capName, capConfig: capConfig, quota: capNSName},
+			capNSName: namespaceDef{nsName: capNSName, capName: capName, capConfig: capConfig, quotaName: capNSName},
 		}
 		secondNsDefs = namespaceDefs{
 			secondCapNSName: namespaceDef{
 				nsName: secondCapNSName, capName: capName, capConfig: capConfig,
-				quota: secondCapNSName,
+				quotaName: secondCapNSName,
 			},
 		}
 		secondPaas = paas.DeepCopy()

@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	paasv1Name = "paas-v1alpha1"
 	paasv2Name = "paas-v1alpha2"
 	// revive:disable-next-line
 	paasV1alpha2Secret = "M9rkiqfVqvE5kjMkaZLt8jokIIAuVLfTS8dXFQa3drmOyIFWSzHJym1PKyzkwnK07vcJkxbfEkO22IbpkziXxrF1OflpNMzIcFFALMw472sczeeJDPvl1u6/F14agq4avc/Osk0zreRLRPS2jkhXE8VnbNsi+//PuRssCbp/ink8mpMg7mVKL9BfQXBu37KppvXEfOA+M6C4ZkNIVqrl7HcRW/e296GpCFkbQ7qa6JWwmgR22j64hcFJDorWhALAuGj7lZ/Wsm0ZzuFFD9tRKuFnxMFRlfDPMm26+NyXTUPNEZuqfeswaa8TLv/ldjr4Y78e+F3q5G0IGFj2sdTp08SMkLDfa8eYfxqa83EWQjiJcxggrPUs2eZZ0hN/IjxDjRh/nwSrKfugk/SQL61jC7slB8Beh8xurfpw/YEOwwooItkjp+1kliDLepUgixm9iY6Mrk4oNfOl2Ul2xggnijd4q2mQ8sPXf++R7ntV5zdcvKW411b93d9CTLgf+I2+2dqYK2TqPZmzVOPqigx1bIGCpbsD6xQH/QcuOPSOnvluDTJKFx3jENwzQ41wXr06Uv45WIUcdgUKwQkRFJ/dBeaQyBiB+oBXu3PcTsXi6MziHbPdxH0Xnv1SPkVnd0oFbxqwzhtabvKnc/opuaTosaDCWMjdRoJFh01rs4MdELQ="
@@ -34,9 +33,9 @@ func TestPaasConversion(t *testing.T) {
 					"git_path": ".",
 				},
 			},
-			"sso": {Enabled: true},
+			"sso": {Enabled: false},
 			"tekton": {
-				Enabled: false,
+				Enabled: true,
 				SSHSecrets: map[string]string{
 					paasArgoGitURL: paasArgoSecret,
 				},
@@ -48,11 +47,11 @@ func TestPaasConversion(t *testing.T) {
 	testenv.Test(
 		t,
 		features.New("Conversion between Paas versions").
-			Setup(createPaasFn(paasv1Name, v1Spec)).
+			Setup(createPaasFn(paasWithArgo, v1Spec)).
 			Assess("converted to v1alpha2 when requested", assertV2Conversion).
 			Assess("v1alpha2 can be created", assertV2Created).
 			Assess("v1alpha2 retrieved as v1alpha1", assertV1Conversion).
-			Teardown(teardownPaasFn(paasv1Name)).
+			Teardown(teardownPaasFn(paasWithArgo)).
 			Teardown(teardownPaasFn(paasv2Name)).
 			Feature(),
 	)
@@ -60,9 +59,12 @@ func TestPaasConversion(t *testing.T) {
 
 func assertV2Conversion(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := v1alpha2.Paas{}
-	require.NoError(t, cfg.Client().Resources().Get(ctx, paasv1Name, cfg.Namespace(), &paas))
+	require.NoError(t, cfg.Client().Resources().Get(ctx, paasWithArgo, cfg.Namespace(), &paas))
 
-	assert.Len(t, paas.Spec.Capabilities, 3)
+	assert.Len(t, paas.Spec.Capabilities, 2)
+	// SSO shouldn't be converted as it was not Enabled in v1alpha1
+	_, exists := paas.Spec.Capabilities["sso"]
+	assert.False(t, exists)
 	assert.Equal(
 		t,
 		map[string]string{
