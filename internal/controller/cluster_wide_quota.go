@@ -151,16 +151,16 @@ func (r *PaasReconciler) reconcileClusterWideQuota(ctx context.Context, paas *v1
 	myconfig := config.GetConfig()
 
 	for capabilityName := range myconfig.Spec.Capabilities {
-		err := r.removeFromClusterWideQuota(ctx, paas, capabilityName)
-		if err != nil && k8serrors.IsNotFound(err) {
-			continue
-		}
-		if err != nil {
-			return err
-		}
-
-		if _, enabled := paas.Spec.Capabilities[capabilityName]; enabled {
+		if _, exists := paas.Spec.Capabilities[capabilityName]; exists {
 			err := r.addToClusterWideQuota(ctx, paas, capabilityName)
+			if err != nil && k8serrors.IsNotFound(err) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+		} else {
+			err := r.removeFromClusterWideQuota(ctx, paas, capabilityName)
 			if err != nil && k8serrors.IsNotFound(err) {
 				continue
 			}
@@ -212,7 +212,7 @@ func (r *PaasReconciler) removeFromClusterWideQuota(
 	capabilityName string,
 ) error {
 	var quota *quotav1.ClusterResourceQuota
-	quotaName := fmt.Sprintf("%s%s", cwqPrefix, capabilityName)
+	quotaName := clusterWideQuotaName(capabilityName)
 	var capConfig v1alpha2.ConfigCapability
 	var exists bool
 	if capConfig, exists = config.GetConfig().Spec.Capabilities[capabilityName]; !exists {

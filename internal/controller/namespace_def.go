@@ -16,7 +16,7 @@ type namespaceDef struct {
 	paasns    *v1alpha2.PaasNS
 	capName   string
 	capConfig v1alpha2.ConfigCapability
-	quota     string
+	quotaName string
 	groups    []string
 	secrets   map[string]string
 }
@@ -26,10 +26,10 @@ type namespaceDefs map[string]namespaceDef
 // Helper to create a base namespaceDef
 func newNamespaceDef(nsName, quota string, groups []string, secrets map[string]string) namespaceDef {
 	return namespaceDef{
-		nsName:  nsName,
-		quota:   quota,
-		groups:  groups,
-		secrets: secrets,
+		nsName:    nsName,
+		quotaName: quota,
+		groups:    groups,
+		secrets:   secrets,
 	}
 }
 
@@ -45,11 +45,11 @@ func newNamespaceDefFromPaasNS(nsName string, paasns *v1alpha2.PaasNS,
 		secrets = mergeSecrets(secrets, paasns.Spec.Secrets)
 	}
 	return namespaceDef{
-		nsName:  nsName,
-		paasns:  paasns,
-		quota:   quota,
-		groups:  groups,
-		secrets: secrets,
+		nsName:    nsName,
+		paasns:    paasns,
+		quotaName: quota,
+		groups:    groups,
+		secrets:   secrets,
 	}
 }
 
@@ -128,7 +128,7 @@ func (r *PaasReconciler) paasCapabilityNss(
 			nsName:    capNS,
 			capName:   capName,
 			capConfig: capConfig,
-			quota:     quota,
+			quotaName: quota,
 			groups:    paasGroups,
 			secrets:   secrets,
 		}
