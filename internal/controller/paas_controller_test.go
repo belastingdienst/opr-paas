@@ -853,7 +853,12 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		})
 		It("should have deleted paas secrets", func() {
 			var secret corev1.Secret
-			err := reconciler.Get(ctx, types.NamespacedName{Namespace: ns2Name, Name: ns2SecretHashedName}, &secret)
+			err := reconciler.Get(
+				ctx,
+				types.NamespacedName{Namespace: join(paasName, ns2Name),
+					Name: ns2SecretHashedName},
+				&secret,
+			)
 			Expect(err.Error()).To(Equal("secrets \"" + ns2SecretHashedName + "\" not found"))
 		})
 		It("should have removed paas clusterrolebindings", func() {

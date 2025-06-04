@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -92,13 +93,25 @@ func (r *PaasReconciler) nsDefsFromPaasNamespaces(
 	paasGroups []string,
 ) namespaceDefs {
 	result := namespaceDefs{}
-	for namespace := range paas.Spec.Namespaces {
+	for namespace, nsConfig := range paas.Spec.Namespaces {
 		fullNsName := join(paas.Name, namespace)
-		base := newNamespaceDef(fullNsName, paas.Name, paasGroups, paas.Spec.Secrets)
+		secrets := map[string]string{}
+		maps.Copy(secrets, paas.Spec.Secrets)
+		maps.Copy(secrets, nsConfig.Secrets)
+		base := newNamespaceDef(fullNsName, paas.Name, append(paasGroups, nsConfig.Groups...), secrets)
 		result[base.nsName] = base
 
 		for nsName, paasns := range r.paasNSsFromNs(ctx, base.nsName) {
-			ns := newNamespaceDefFromPaasNS(nsName, &paasns, paas.Name, paasGroups, paas.Spec.Secrets)
+			secrets = map[string]string{}
+			maps.Copy(secrets, paas.Spec.Secrets)
+			maps.Copy(secrets, paasns.Spec.Secrets)
+			ns := newNamespaceDefFromPaasNS(
+				nsName,
+				&paasns,
+				paas.Name,
+				append(paasGroups, paasns.Spec.Groups...),
+				secrets,
+			)
 			result[ns.nsName] = ns
 		}
 	}
