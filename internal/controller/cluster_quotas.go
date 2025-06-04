@@ -109,17 +109,12 @@ func (r *PaasReconciler) backendEnabledQuotas(
 ) (quotas []*quotav1.ClusterResourceQuota, err error) {
 	paasConfigSpec := config.GetConfig().Spec
 	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
-	var capConfig v1alpha2.ConfigCapability
-	for name, cap := range paas.Spec.Capabilities {
-		capConfig = v1alpha2.ConfigCapability{}
-
-		if _, exists := paasConfigSpec.Capabilities[name]; !exists {
+	for name, capability := range paas.Spec.Capabilities {
+		if capConfig, exists := paasConfigSpec.Capabilities[name]; !exists {
 			return nil, errors.New("a capability is requested, but not configured")
-		}
-
-		if !capConfig.QuotaSettings.Clusterwide {
+		} else if !capConfig.QuotaSettings.Clusterwide {
 			defaults := capConfig.QuotaSettings.DefQuota
-			quotaValues := cap.Quotas().MergeWith(defaults)
+			quotaValues := capability.Quotas().MergeWith(defaults)
 			quotas = append(quotas, r.backendQuota(ctx, paas, name, quotaValues))
 		}
 	}
