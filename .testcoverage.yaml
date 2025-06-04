@@ -65,7 +65,7 @@ override:
   - path: internal/config/informer.go
     threshold: 23
   - path: ^internal/controller/paas_controller.go$
-    threshold: 63
+    threshold: 62
   - path: ^internal/controller/paasconfig_controller.go$
     threshold: 0
   - path: internal/controller/rolebindings_controller.go
