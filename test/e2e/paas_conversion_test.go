@@ -100,6 +100,7 @@ func assertV2Created(ctx context.Context, t *testing.T, cfg *envconf.Config) con
 					CustomFields: map[string]string{
 						"git_url":      "ssh://git@scm/repo.git",
 						"git_revision": "main",
+						"git_path": ".",
 					},
 				},
 				"sso": {},
