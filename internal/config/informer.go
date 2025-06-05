@@ -11,7 +11,7 @@ import (
 	cache2 "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 )
 
 type configInformer struct {
@@ -27,7 +27,7 @@ func SetupPaasConfigInformer(mgr manager.Manager) error {
 func (w *configInformer) Start(ctx context.Context) error {
 	log.Info().Msg("starting config informer")
 
-	informer, err := w.mgr.GetCache().GetInformer(ctx, &v1alpha1.PaasConfig{})
+	informer, err := w.mgr.GetCache().GetInformer(ctx, &v1alpha2.PaasConfig{})
 	if err != nil {
 		return fmt.Errorf("failed to get informer for PaasConfig: %w", err)
 	}
@@ -51,7 +51,7 @@ func addPaasConfigEventHandler(informer cache2.Informer) error {
 
 // updateHandler determines whether the updated config is the active one and if there are spec changes to consume.
 func updateHandler(_, newObj interface{}) {
-	cfg, ok := newObj.(*v1alpha1.PaasConfig)
+	cfg, ok := newObj.(*v1alpha2.PaasConfig)
 	if !ok {
 		return
 	}

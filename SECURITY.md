@@ -36,3 +36,4 @@ In summary:
 ## Policy
 
 - The Dutch Tax Office (Dutch: Belastingdienst) follows the principle of [Coordinated Vulnerability Disclosure](https://www.belastingdienst.nl/wps/wcm/connect/bldcontenten/standaard_functies/individuals/contact/data-leak-vulnerability-abuse-computer-systems/coordinated-vulnerability-disclosure).
+

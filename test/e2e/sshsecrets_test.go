@@ -71,15 +71,10 @@ func TestSecrets(t *testing.T) {
 func assertSecretCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasName, t, cfg)
 	assert.NotNil(t, paas)
-	// Wait for namespace created by waiting for reconciliation of sso paasns
-	ssopaasns := &api.PaasNS{ObjectMeta: k8sv1.ObjectMeta{
-		Name:      paasCap1,
-		Namespace: paasName,
-	}}
 	require.NoError(
 		t,
-		waitForCondition(ctx, cfg, ssopaasns, 0, api.TypeReadyPaasNs),
-		"SSO PaasNS reconciliation succeeds",
+		waitForCondition(ctx, cfg, paas, 0, api.TypeReadyPaas),
+		"Paas reconciliation succeeds",
 	)
 
 	// Assert secrets
@@ -129,19 +124,9 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 		t.Fatal(err)
 	}
 
-	oldSsoPaasNs := getOrFail(ctx, paasCap1, paasName, &api.PaasNS{}, t, cfg)
-
 	if err = updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
-
-	// Wait for reconciliation of sso paasns
-	ssopaasns := getOrFail(ctx, paasCap1, paasName, &api.PaasNS{}, t, cfg)
-	require.NoError(
-		t,
-		waitForCondition(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation, api.TypeReadyPaasNs),
-		"SSO PaasNS reconciliation succeeds",
-	)
 
 	// List secrets in namespace to be sure
 	secrets := &corev1.SecretList{}
@@ -199,19 +184,9 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 		t.Fatal(err)
 	}
 
-	oldSsoPaasNs := getOrFail(ctx, paasCap1, paasName, &api.PaasNS{}, t, cfg)
-
 	if err = updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
-
-	// Wait for reconciliation of sso paasns
-	ssopaasns := getOrFail(ctx, paasCap1, paasName, &api.PaasNS{}, t, cfg)
-	require.NoError(
-		t,
-		waitForCondition(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation, api.TypeReadyPaasNs),
-		"SSO PaasNS reconciliation succeeds",
-	)
 
 	// List secrets in namespace to be sure
 	secrets := &corev1.SecretList{}
@@ -252,19 +227,9 @@ func assertSecretRemovedAfterRemovingFromPaas(ctx context.Context, t *testing.T,
 		t.Fatal(err)
 	}
 
-	oldSsoPaasNs := getOrFail(ctx, paasCap1, paasName, &api.PaasNS{}, t, cfg)
-
 	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
-
-	// Wait for reconciliation of sso paasns
-	ssopaasns := getOrFail(ctx, paasCap1, paasName, &api.PaasNS{}, t, cfg)
-	require.NoError(
-		t,
-		waitForCondition(ctx, cfg, ssopaasns, oldSsoPaasNs.Generation, api.TypeReadyPaasNs),
-		"SSO PaasNS reconciliation succeeds",
-	)
 
 	secrets := &corev1.SecretList{}
 	err := cfg.Client().

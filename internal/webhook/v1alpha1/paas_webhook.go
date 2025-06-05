@@ -4,6 +4,7 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
+// Package v1alpha1 contains all webhook code for the v1alpha admission and conversion webhooks
 package v1alpha1
 
 import (
@@ -106,16 +107,23 @@ func (*PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Obje
 type paasSpecValidator func(
 	context.Context,
 	client.Client,
-	v1alpha1.PaasConfigSpec,
+	v1alpha1.PaasConfig,
 	*v1alpha1.Paas,
 ) ([]*field.Error, error)
 
 func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	var warnings []string
-	conf := config.GetConfig().Spec
+	if paas.DeletionTimestamp != nil {
+		return nil, nil
+	}
+	conf, err := config.GetConfigV1()
+	if err != nil {
+		return nil, err
+	}
+
 	// Check for uninitialized config
-	if conf.DecryptKeysSecret.Name == "" {
+	if conf.Spec.DecryptKeysSecret.Name == "" {
 		return nil, apierrors.NewInternalError(errors.New("uninitialized PaasConfig"))
 	}
 
@@ -156,13 +164,13 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 func validateCaps(
 	ctx context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfigSpec,
+	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
 	for name := range paas.Spec.Capabilities {
-		if _, ok := conf.Capabilities[name]; !ok {
+		if _, ok := conf.Spec.Capabilities[name]; !ok {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("capabilities"),
 				name,
@@ -178,12 +186,12 @@ func validateCaps(
 func validatePaasName(
 	ctx context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfigSpec,
+	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
-	nameValidationRE := config.GetConfig().GetValidationRE("paas", "name")
+	nameValidationRE := conf.GetValidationRE("paas", "name")
 	if nameValidationRE == nil {
 		return nil, nil
 	}
@@ -202,16 +210,16 @@ func validatePaasName(
 func validatePaasNamespaceNames(
 	ctx context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfigSpec,
+	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
 	// We use same value for paas.spec.namespaces and paasns.metadata.name validation.
 	// Unless both are set.
-	nameValidationRE := config.GetConfig().GetValidationRE("paas", "namespaceName")
+	nameValidationRE := conf.GetValidationRE("paas", "namespaceName")
 	if nameValidationRE == nil {
-		nameValidationRE = config.GetConfig().GetValidationRE("paasNs", "name")
+		nameValidationRE = conf.GetValidationRE("paasNs", "name")
 	}
 	if nameValidationRE == nil {
 		return nil, nil
@@ -233,12 +241,12 @@ func validatePaasNamespaceNames(
 func validatePaasRequestor(
 	ctx context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfigSpec,
+	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
-	nameValidationRE := config.GetConfig().GetValidationRE("paas", "requestor")
+	nameValidationRE := conf.GetValidationRE("paas", "requestor")
 	if nameValidationRE == nil {
 		return nil, nil
 	}
@@ -257,11 +265,11 @@ func validatePaasRequestor(
 func validateGroupNames(
 	ctx context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfigSpec,
+	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
-	groupNameValidationRE := config.GetConfig().GetValidationRE("paas", "groupName")
+	groupNameValidationRE := conf.GetValidationRE("paas", "groupName")
 	if groupNameValidationRE == nil {
 		return nil, nil
 	}
@@ -283,13 +291,13 @@ func validateGroupNames(
 func validateSecrets(
 	ctx context.Context,
 	k8sClient client.Client,
-	conf v1alpha1.PaasConfigSpec,
+	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	decryptRes := &corev1.Secret{}
 	if err := k8sClient.Get(ctx, types.NamespacedName{
-		Name:      conf.DecryptKeysSecret.Name,
-		Namespace: conf.DecryptKeysSecret.Namespace,
+		Name:      conf.Spec.DecryptKeysSecret.Name,
+		Namespace: conf.Spec.DecryptKeysSecret.Namespace,
 	}, decryptRes); err != nil {
 		return nil, fmt.Errorf("could not retrieve decryption secret: %w", err)
 	}
@@ -321,14 +329,14 @@ func validateSecrets(
 func validateCustomFields(
 	ctx context.Context,
 	_ client.Client,
-	conf v1alpha1.PaasConfigSpec,
+	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
 	for cname, c := range paas.Spec.Capabilities {
 		// validateCaps() has already ensured the capability configuration exists
-		if _, err := c.CapExtraFields(config.GetConfig().Spec.Capabilities[cname].CustomFields); err != nil {
+		if _, err := c.CapExtraFields(conf.Spec.Capabilities[cname].CustomFields); err != nil {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("capabilities").Key(cname),
 				"custom_fields",
@@ -388,9 +396,9 @@ func (v *PaasCustomValidator) validateQuota(paas *v1alpha1.Paas) (warnings []str
 }
 
 // validateExtraPerm returns a warning when extra permissions are requested for a capability that are not configured.
-func (v *PaasCustomValidator) validateExtraPerm(conf v1alpha1.PaasConfigSpec, paas *v1alpha1.Paas) (warnings []string) {
+func (v *PaasCustomValidator) validateExtraPerm(conf v1alpha1.PaasConfig, paas *v1alpha1.Paas) (warnings []string) {
 	for cname, c := range paas.Spec.Capabilities {
-		if c.ExtraPermissions && conf.Capabilities[cname].ExtraPermissions == nil {
+		if c.ExtraPermissions && conf.Spec.Capabilities[cname].ExtraPermissions == nil {
 			warnings = append(warnings, fmt.Sprintf(
 				"%s capability does not have extra permissions configured",
 				field.NewPath("spec", "capabilities").Key(cname).Child("extra_permissions"),

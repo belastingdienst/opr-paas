@@ -11,7 +11,6 @@ package validate
 
 import (
 	"errors"
-	"net"
 	"regexp"
 )
 
@@ -19,20 +18,6 @@ import (
 func StringIsRegex(regex string) (bool, error) {
 	if _, err := regexp.Compile(regex); err != nil {
 		return false, errors.New("uncompilable regular expression")
-	}
-
-	return true, nil
-}
-
-// Hostname checks if a given string is either a valid IP or valid hostname.
-func Hostname(hostname string) (bool, error) {
-	// checks if the input string is a valid hostname according to RFC 1035
-	hostnameRegex := `^([a-zA-Z0-9][a-zA-Z0-9\-]{0,62}\.)+[a-zA-Z]{2,}$`
-	match, _ := regexp.MatchString(hostnameRegex, hostname)
-
-	// ParseIP checks if the input string is a valid IPv4 or IPv6 address
-	if net.ParseIP(hostname) == nil && !match {
-		return false, errors.New("invalid host name / ip address")
 	}
 
 	return true, nil

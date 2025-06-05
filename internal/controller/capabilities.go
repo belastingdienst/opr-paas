@@ -4,6 +4,7 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
+// Package controller has all logic for reconciling Paas resources
 package controller
 
 import (
@@ -11,7 +12,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/fields"
 	"github.com/belastingdienst/opr-paas/internal/logging"
@@ -53,19 +54,16 @@ func splitToService(paasName string) (string, string) {
 // ensureAppSetCap ensures a list entry in the AppSet for each capability
 func (r *PaasReconciler) ensureAppSetCaps(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 ) error {
 	paasConfigSpec := config.GetConfig().Spec
 	for capName := range paas.Spec.Capabilities {
 		if _, exists := paasConfigSpec.Capabilities[capName]; !exists {
 			return errors.New("capability not configured")
 		}
-		// Only do this when enabled
-		capability := paas.Spec.Capabilities[capName]
-		if enabled := capability.IsEnabled(); enabled {
-			if err := r.ensureAppSetCap(ctx, paas, capName); err != nil {
-				return err
-			}
+
+		if err := r.ensureAppSetCap(ctx, paas, capName); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -74,7 +72,7 @@ func (r *PaasReconciler) ensureAppSetCaps(
 // ensureAppSetCap ensures a list entry in the AppSet for the capability
 func (r *PaasReconciler) ensureAppSetCap(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	capName string,
 ) error {
 	var err error
@@ -103,12 +101,21 @@ func (r *PaasReconciler) ensureAppSetCap(
 
 	myConfig := config.GetConfig()
 	templater := templating.NewTemplater(*paas, myConfig)
-	templatedElements, err := templater.CapCustomFieldsToMap(capName)
+	spec := myConfig.GetSpec()
+	capConfig := spec.Capabilities[capName]
+	templatedElements, err := applyCustomFieldTemplates(capConfig.CustomFields, templater)
 	if err != nil {
 		return err
 	}
+
 	capability := paas.Spec.Capabilities[capName]
-	capElements, err := capability.CapExtraFields(myConfig.Spec.Capabilities[capName].CustomFields)
+
+	cfs := make(map[string]v1alpha2.ConfigCustomField, len(myConfig.Spec.Capabilities[capName].CustomFields))
+	for key, val := range myConfig.Spec.Capabilities[capName].CustomFields {
+		cfs[key] = val
+	}
+
+	capElements, err := capability.CapExtraFields(cfs)
 	if err != nil {
 		return err
 	}
@@ -144,16 +151,34 @@ func (r *PaasReconciler) ensureAppSetCap(
 	return r.Patch(ctx, appSet, patch)
 }
 
+func applyCustomFieldTemplates(
+	ccfields map[string]v1alpha2.ConfigCustomField,
+	templater templating.Templater[v1alpha2.Paas, v1alpha2.PaasConfig, v1alpha2.PaasConfigSpec],
+) (templating.TemplateResult, error) {
+	var result templating.TemplateResult
+
+	for name, fieldConfig := range ccfields {
+		if fieldConfig.Template != "" {
+			fieldResult, err := templater.TemplateToMap(name, fieldConfig.Template)
+			if err != nil {
+				return nil, err
+			}
+			result = result.Merge(fieldResult)
+		}
+	}
+
+	return result, nil
+}
+
 // finalizeAppSetCap ensures the list entries in the AppSet is removed for the capability of this PaasNs
-func (r *PaasNSReconciler) finalizeAppSetCap(
+func (r *PaasReconciler) finalizeAppSetCap(
 	ctx context.Context,
-	paasns *v1alpha1.PaasNS,
+	paasName string,
+	capName string,
 ) error {
 	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := config.GetConfig().Spec.CapabilityK8sName(paasns.Name)
-	ctx, logger := logging.GetLogComponent(ctx, "appset")
-	logger.Info().Msgf("reconciling %s Applicationset", paasns.Name)
+	asNamespacedName := config.GetConfig().Spec.CapabilityK8sName(capName)
 	err := r.Get(ctx, asNamespacedName, as)
 	var entries fields.Entries
 	var listGen *appv1.ApplicationSetGenerator
@@ -168,11 +193,40 @@ func (r *PaasNSReconciler) finalizeAppSetCap(
 	} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
 		return err
 	}
-	delete(entries, paasns.Spec.Paas)
+	delete(entries, paasName)
 	jsonentries, err := entries.AsJSON()
 	if err != nil {
 		return err
 	}
 	listGen.List.Elements = jsonentries
 	return r.Patch(ctx, as, patch)
+}
+
+// finalizeAllAppSetCaps removes this paas from all capability appsets
+func (r *PaasReconciler) finalizeAllAppSetCaps(
+	ctx context.Context,
+	paas *v1alpha2.Paas,
+) error {
+	paasWithoutCaps := paas.DeepCopy()
+	paasWithoutCaps.Spec.Capabilities = nil
+	return r.finalizeDisabledAppSetCaps(ctx, paasWithoutCaps)
+}
+
+// finalizeAppSetCaps removes this paas from all capability appsets that are not enabled in this paas
+func (r *PaasReconciler) finalizeDisabledAppSetCaps(
+	ctx context.Context,
+	paas *v1alpha2.Paas,
+) error {
+	ctx, logger := logging.GetLogComponent(ctx, "Applicationsets")
+	for capName := range config.GetConfig().Spec.Capabilities {
+		logger.Info().Msgf("reconciling %s Applicationset", capName)
+		if _, exists := paas.Spec.Capabilities[capName]; exists {
+			continue
+		}
+		err := r.finalizeAppSetCap(ctx, paas.Name, capName)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 
@@ -27,7 +27,7 @@ import (
 func ensureRoleBinding(
 	ctx context.Context,
 	r Reconciler,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	rb *rbac.RoleBinding,
 ) error {
 	logger := log.Ctx(ctx)
@@ -104,7 +104,7 @@ func createRoleBinding(
 func backendRoleBinding(
 	ctx context.Context,
 	r Reconciler,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
 	name types.NamespacedName,
 	role string,
 	groupNames []string,
@@ -169,93 +169,91 @@ func finalizeRoleBinding(
 }
 
 // reconcileRolebindings is used by the Paas reconciler to reconcile RB's
-func (r *PaasReconciler) reconcileRolebindings(
+func (r *PaasReconciler) reconcileNamespaceRolebinding(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
+	paas *v1alpha2.Paas,
+	nsName string,
+	roleName string,
+	groupNames []string,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
-	for _, paasns := range r.pnsFromNs(ctx, paas.Name) {
-		roles := make(map[string][]string)
+	rbName := types.NamespacedName{Namespace: nsName, Name: fmt.Sprintf("paas-%s", roleName)}
+	logger.Debug().
+		Str("role", roleName).
+		Strs("groups", groupNames).
+		Msg("creating Rolebinding")
+	rb, err := backendRoleBinding(ctx, r, paas, rbName, roleName, groupNames)
+	if err != nil {
+		return err
+	}
+	if err := ensureRoleBinding(ctx, r, paas, rb); err != nil {
+		err = fmt.Errorf(
+			"failure while creating/updating rolebinding %s/%s: %s",
+			rb.Namespace,
+			rb.Name,
+			err.Error(),
+		)
+		return err
+	}
+	return nil
+}
 
-		// Guarantee use of value for current iteration when referencing
-		paasns := paasns
-		for _, roleList := range config.GetConfig().Spec.RoleMappings {
-			for _, role := range roleList {
-				roles[role] = []string{}
-			}
+// reconcileRolebindings is used by the Paas reconciler to reconcile RB's
+func (r *PaasReconciler) reconcileNamespaceRolebindings(
+	ctx context.Context,
+	paas *v1alpha2.Paas,
+	paasns *v1alpha2.PaasNS,
+	nsName string,
+) error {
+	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
+	// Use a map of sets to avoid duplicates
+	roleGroups := map[string]map[string]struct{}{}
+
+	for _, roleList := range config.GetConfig().Spec.RoleMappings {
+		for _, role := range roleList {
+			roleGroups[role] = map[string]struct{}{}
 		}
-		logger.Info().Any("Rolebindings map", roles).Msg("all roles")
-		for groupKey, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
-			logger.Info().Msgf("defining Rolebindings for Group %s", groupKey)
-			// Convert the groupKey to a groupName to map the rolebinding subjects to a group
-			groupName := paas.GroupKey2GroupName(groupKey)
-			for _, mappedRole := range config.GetConfig().Spec.RoleMappings.Roles(groupRoles) {
-				if role, exists := roles[mappedRole]; exists {
-					roles[mappedRole] = append(role, groupName)
-				} else {
-					roles[mappedRole] = []string{groupName}
-				}
+	}
+
+	logger.Info().Any("Rolebindings map", roleGroups).Msg("all roles")
+	paasGroups := paas.Spec.Groups
+	if paasns != nil {
+		paasGroups = paasGroups.Filtered(paasns.Spec.Groups)
+	}
+	for groupKey, groupRoles := range paasGroups.Roles() {
+		logger.Info().Msgf("defining Rolebindings for Group %s", groupKey)
+		// Convert the groupKey to a groupName to map the rolebinding subjects to a group
+		groupName := paas.GroupKey2GroupName(groupKey)
+		for _, mappedRole := range config.GetConfig().Spec.RoleMappings.Roles(groupRoles) {
+			if _, exists := roleGroups[mappedRole]; !exists {
+				roleGroups[mappedRole] = map[string]struct{}{}
 			}
+			roleGroups[mappedRole][groupName] = struct{}{}
 		}
-		logger.Info().Any("Rolebindings map", roles).Msg("creating paas RoleBindings for PAASNS object")
-		for roleName, groupNames := range roles {
-			rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
-			logger.Debug().
-				Str("role", roleName).
-				Strs("groups", groupNames).
-				Msg("creating Rolebinding")
-			rb, err := backendRoleBinding(ctx, r, paas, rbName, roleName, groupNames)
-			if err != nil {
-				return err
-			}
-			if err := ensureRoleBinding(ctx, r, paas, rb); err != nil {
-				err = fmt.Errorf(
-					"failure while creating/updating rolebinding %s/%s: %s",
-					rb.Namespace,
-					rb.Name,
-					err.Error(),
-				)
-				return err
-			}
+	}
+
+	for roleName, groupSet := range roleGroups {
+		groupNames := make([]string, 0, len(groupSet))
+		for groupName := range groupSet {
+			groupNames = append(groupNames, groupName)
+		}
+		err := r.reconcileNamespaceRolebinding(ctx, paas, nsName, roleName, groupNames)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func (r *PaasNSReconciler) reconcileRolebindings(
+// reconcileRolebindings is used by the Paas reconciler to reconcile RB's
+func (r *PaasReconciler) reconcilePaasRolebindings(
 	ctx context.Context,
-	paas *v1alpha1.Paas,
-	paasns *v1alpha1.PaasNS,
+	paas *v1alpha2.Paas,
+	nsDefs namespaceDefs,
 ) error {
-	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
-	// Creating a list of roles and the groups that should have them, for this namespace
-	roles := make(map[string][]string)
-	for groupKey, groupRoles := range paas.Spec.Groups.Filtered(paasns.Spec.Groups).Roles() {
-		// Convert the groupKey to a groupName to map the rolebinding subjects to a group
-		groupName := paas.GroupKey2GroupName(groupKey)
-		for _, mappedRole := range config.GetConfig().Spec.RoleMappings.Roles(groupRoles) {
-			if groups, exists := roles[mappedRole]; exists {
-				roles[mappedRole] = append(groups, groupName)
-			} else {
-				roles[mappedRole] = []string{groupName}
-			}
-		}
-	}
-	logger.Info().
-		Any("Rolebindings map", roles).
-		Msg("creating paas RoleBindings for PaasNs object")
-	for roleName, groupNames := range roles {
-		rbName := types.NamespacedName{Namespace: paasns.NamespaceName(), Name: fmt.Sprintf("paas-%s", roleName)}
-		logger.Debug().
-			Str("role", roleName).
-			Strs("groups", groupNames).
-			Msg("creating Rolebinding")
-		rb, err := backendRoleBinding(ctx, r, paas, rbName, roleName, groupNames)
+	for _, nsDef := range nsDefs {
+		err := r.reconcileNamespaceRolebindings(ctx, paas, nsDef.paasns, nsDef.nsName)
 		if err != nil {
-			return err
-		}
-		if err := ensureRoleBinding(ctx, r, paas, rb); err != nil {
-			err = fmt.Errorf("failure while creating rolebinding %s/%s: %s", rb.Namespace, rb.Name, err.Error())
 			return err
 		}
 	}

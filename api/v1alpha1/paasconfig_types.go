@@ -45,8 +45,18 @@ type PaasConfig struct {
 	Status PaasConfigStatus `json:"status,omitempty"`
 }
 
+// GetConditions is required for Paas to be used as v1alpha1.Resource
 func (p PaasConfig) GetConditions() []metav1.Condition {
 	return p.Status.Conditions
+}
+
+// GetGeneration is required for Paas to be used as v1alpha1.Resource
+func (p PaasConfig) GetGeneration() int64 {
+	return p.Generation
+}
+
+func (p PaasConfig) GetSpec() PaasConfigSpec {
+	return p.Spec
 }
 
 type PaasConfigSpec struct {

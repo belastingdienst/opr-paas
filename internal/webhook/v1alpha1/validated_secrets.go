@@ -24,7 +24,7 @@ type validatedSecrets struct {
 // appendFromPaas appends validated secrets from a Paas
 func (vs *validatedSecrets) appendFromPaas(paas v1alpha1.Paas) {
 	if vs.v == nil {
-		vs.v = make(map[validatedHash]bool)
+		vs.v = map[validatedHash]bool{}
 	}
 	for _, secret := range paas.Spec.SSHSecrets {
 		hash := hashFromString(secret)

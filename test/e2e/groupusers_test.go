@@ -11,7 +11,6 @@ import (
 
 	userv1 "github.com/openshift/api/user/v1"
 	"github.com/stretchr/testify/assert"
-	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
@@ -24,7 +23,6 @@ const (
 	groupKey              = "aug-cet-test"
 	secondGroupKey        = "aug-cet-viewrole"
 	updatedSecondGroupKey = "aug-cet-viewrole-updated"
-	groupSyncListName     = "groupsynclist.txt"
 )
 
 func TestGroupUsers(t *testing.T) {
@@ -53,7 +51,6 @@ func TestGroupUsers(t *testing.T) {
 func assertGroupCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithGroups, t, cfg)
 	group := getOrFail(ctx, paas.GroupKey2GroupName(groupKey), cfg.Namespace(), &userv1.Group{}, t, cfg)
-	groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
 	rolebinding := getOrFail(ctx, "paas-admin", paasAbsoluteNs, &rbacv1.RoleBinding{}, t, cfg)
 	rolebindingsPaas := listOrFail(ctx, paasWithGroups, &rbacv1.RoleBindingList{}, t, cfg)
 
@@ -66,8 +63,6 @@ func assertGroupCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) 
 	assert.Empty(t, group.Annotations, "Group should have no annotations")
 	// The owner of the group is the Paas that created it
 	assert.Equal(t, paas.UID, group.OwnerReferences[0].UID)
-	// The groupsynclist is unchanged (empty)
-	assert.Empty(t, groupsynclist.Data[groupSyncListName])
 	// Default RoleBinding (as per Paas config) is set for group
 	assert.Len(t, rolebinding.Subjects, 1)
 	assert.Equal(t, paas.GroupKey2GroupName(groupKey), rolebinding.Subjects[0].Name)
@@ -94,7 +89,6 @@ func assertGroupCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *envco
 	}
 
 	group2 := getOrFail(ctx, paas.GroupKey2GroupName(secondGroupKey), cfg.Namespace(), &userv1.Group{}, t, cfg)
-	groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
 	rolebinding := getOrFail(ctx, "paas-view", paasAbsoluteNs, &rbacv1.RoleBinding{}, t, cfg)
 	rolebindingsPaas := listOrFail(ctx, paasWithGroups, &rbacv1.RoleBindingList{}, t, cfg)
 
@@ -111,8 +105,6 @@ func assertGroupCreatedAfterUpdate(ctx context.Context, t *testing.T, cfg *envco
 	)
 	// The owner of the group is the Paas that created it
 	assert.Equal(t, paas.UID, group2.OwnerReferences[0].UID)
-	// The groupsynclist is unchanged (empty)
-	assert.Empty(t, groupsynclist.Data[groupSyncListName])
 	// Default RoleBinding (as per Paas config) is set for group
 	assert.Len(t, rolebinding.Subjects, 1)
 	assert.Equal(t, fmt.Sprintf(GroupNameFormat, paasWithGroups, secondGroupKey), rolebinding.Subjects[0].Name)
@@ -151,7 +143,6 @@ func assertOldGroupRemovedAfterUpdatingKey(ctx context.Context, t *testing.T, cf
 		t,
 		cfg,
 	)
-	groupsynclist := getOrFail(ctx, "wlname", "gsns", &corev1.ConfigMap{}, t, cfg)
 	rolebinding := getOrFail(ctx, "paas-view", paasAbsoluteNs, &rbacv1.RoleBinding{}, t, cfg)
 	rolebindingsPaas := listOrFail(ctx, paasWithGroups, &rbacv1.RoleBindingList{}, t, cfg)
 
@@ -161,7 +152,6 @@ func assertOldGroupRemovedAfterUpdatingKey(ctx context.Context, t *testing.T, cf
 	assert.Equal(t, "[bar]", updatedGroup2.Users.String())
 	// Correct labels are defined
 	assert.Len(t, updatedGroup2.Labels, 1)
-	assert.NotContains(t, controller.LdapHostLabelKey, updatedGroup2.Labels)
 	assert.Equal(
 		t,
 		paasWithGroups,
@@ -170,8 +160,6 @@ func assertOldGroupRemovedAfterUpdatingKey(ctx context.Context, t *testing.T, cf
 	)
 	// The owner of the group is the Paas that created it
 	assert.Equal(t, paas.UID, updatedGroup2.OwnerReferences[0].UID)
-	// The groupsynclist is unchanged (empty)
-	assert.Empty(t, groupsynclist.Data[groupSyncListName])
 	// Default RoleBinding (as per Paas config) is set for group
 	assert.Len(t, rolebinding.Subjects, 1)
 	assert.Equal(t, paas.GroupKey2GroupName(updatedSecondGroupKey), rolebinding.Subjects[0].Name)
