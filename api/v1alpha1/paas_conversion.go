@@ -46,9 +46,15 @@ func (p *Paas) ConvertFrom(srcRaw conversion.Hub) error {
 
 	for name, capability := range src.Spec.Capabilities {
 		fields := capability.DeepCopy().CustomFields
+		gitUrl := fields[gitUrlKey]
+		gitRevision := fields[gitRevisionKey]
+		gitPath := fields[gitPathKey]
 
 		p.Spec.Capabilities[name] = PaasCapability{
 			Enabled:          true,
+			GitURL:           gitUrl,
+			GitRevision:      gitRevision,
+			GitPath:          gitPath,
 			CustomFields:     fields,
 			Quota:            capability.Quota,
 			SSHSecrets:       capability.Secrets,
