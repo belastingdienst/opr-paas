@@ -98,18 +98,26 @@ func (r *PaasReconciler) nsDefsFromPaasNamespaces(
 		secrets := map[string]string{}
 		maps.Copy(secrets, paas.Spec.Secrets)
 		maps.Copy(secrets, nsConfig.Secrets)
-		base := newNamespaceDef(fullNsName, paas.Name, append(paasGroups, nsConfig.Groups...), secrets)
+		paasNsGroups := nsConfig.Groups
+		if len(paasNsGroups) == 0 {
+			paasNsGroups = paasGroups
+		}
+		base := newNamespaceDef(fullNsName, paas.Name, paasNsGroups, secrets)
 		result[base.nsName] = base
 
 		for nsName, paasns := range r.paasNSsFromNs(ctx, base.nsName) {
 			secrets = map[string]string{}
 			maps.Copy(secrets, paas.Spec.Secrets)
 			maps.Copy(secrets, paasns.Spec.Secrets)
+			paasNsGroups = nsConfig.Groups
+			if len(paasNsGroups) == 0 {
+				paasNsGroups = paasGroups
+			}
 			ns := newNamespaceDefFromPaasNS(
 				nsName,
 				&paasns,
 				paas.Name,
-				append(paasGroups, paasns.Spec.Groups...),
+				append(paasGroups, paasNsGroups...),
 				secrets,
 			)
 			result[ns.nsName] = ns
