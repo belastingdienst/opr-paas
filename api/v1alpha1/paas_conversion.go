@@ -49,9 +49,6 @@ func (p *Paas) ConvertFrom(srcRaw conversion.Hub) error {
 		gitUrl := fields[gitUrlKey]
 		gitRevision := fields[gitRevisionKey]
 		gitPath := fields[gitPathKey]
-		delete(fields, gitUrlKey)
-		delete(fields, gitRevisionKey)
-		delete(fields, gitPathKey)
 
 		p.Spec.Capabilities[name] = PaasCapability{
 			Enabled:          true,
