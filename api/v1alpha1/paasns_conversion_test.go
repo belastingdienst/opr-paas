@@ -24,10 +24,6 @@ var paasNsExV1Alpha1 = &PaasNS{
 		Groups:     []string{},
 		SSHSecrets: map[string]string{},
 	},
-	// Status: PaasNsStatus{
-	// 	Messages:   []string{},
-	// 	Conditions: []metav1.Condition{},
-	// },
 }
 
 var paasNsExV1Alpha2 = &v1alpha2.PaasNS{
