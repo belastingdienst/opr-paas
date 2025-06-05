@@ -139,8 +139,13 @@ func TestConvertTo(t *testing.T) {
 
 	err := dst.ConvertFrom(src)
 
+	expectedV1Alpha1 := exV1Alpha1.DeepCopy()
+	expectedFields := expectedV1Alpha1.Spec.Capabilities["argocd"].CustomFields
+	expectedFields["git_url"] = "ssh://git@example.com/some-repo.git"
+	expectedFields["git_revision"] = "main"
+	expectedFields["git_path"] = "."
 	assert.NoError(t, err)
-	assert.Equal(t, exV1Alpha1, dst)
+	assert.Equal(t, expectedV1Alpha1, dst)
 }
 
 // Test conversion FROM v1alpha1 TO v1alpha2
