@@ -130,9 +130,10 @@ func assertV1Conversion(ctx context.Context, t *testing.T, cfg *envconf.Config) 
 	require.NoError(t, cfg.Client().Resources().Get(ctx, paasv2Name, cfg.Namespace(), &paas))
 
 	assert.Len(t, paas.Spec.Capabilities, 3)
-	assert.Len(t, paas.Spec.Capabilities["argocd"].CustomFields, 0)
+	assert.Len(t, paas.Spec.Capabilities["argocd"].CustomFields, 3)
 	assert.Equal(t, "ssh://git@scm/repo.git", paas.Spec.Capabilities["argocd"].GitURL)
 	assert.Equal(t, "main", paas.Spec.Capabilities["argocd"].GitRevision)
+	assert.Equal(t, ".", paas.Spec.Capabilities["argocd"].GitPath)
 	assert.Equal(
 		t,
 		map[string]string{
