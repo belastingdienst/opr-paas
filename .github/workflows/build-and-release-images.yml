@@ -13,7 +13,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # v4.0.0
+        uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f # v4.0.0
 
       # https://github.com/docker/setup-qemu-action
       - name: Set up QEMU
@@ -53,7 +53,7 @@ jobs:
           build-args: VERSION=${{ github.ref_name }}
 
       - name: Generate opr-paas image SBOM
-        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 # v0.30.0
+        uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # v0.31.0
         with:
           image-ref: 'ghcr.io/belastingdienst/opr-paas'
           scan-type: image
@@ -79,7 +79,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2 # v4.0.0
+        uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f # v4.0.0
 
       # https://github.com/docker/setup-qemu-action
       - name: Set up QEMU
@@ -120,7 +120,7 @@ jobs:
           build-args: VERSION=${{ github.ref_name }}
 
       - name: Generate webservice image SBOM
-        uses: aquasecurity/trivy-action@6c175e9c4083a92bbca2f9724c8a5e33bc2d97a5 # v0.30.0
+        uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # v0.31.0
         with:
           image-ref: 'ghcr.io/belastingdienst/webservice'
           scan-type: image
