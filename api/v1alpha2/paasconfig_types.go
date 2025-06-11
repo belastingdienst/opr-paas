@@ -85,18 +85,19 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	QuotaLabel string `json:"quota_label"`
 
+	// Deprecated: RequestorLabel is replaced by go template functionality
 	// Name of the label used to define who is the contact for this resource
 	// +kubebuilder:default:=requestor
 	// +kubebuilder:validation:Optional
 	RequestorLabel string `json:"requestor_label"`
 
-	// Deprecated: ArgoCD specific code will be removed from the operator
+	// Deprecated: ManagedByLabel is replaced by go template functionality
 	// Name of the label used to define by whom the resource is managed.
 	// +kubebuilder:default:=argocd.argoproj.io/managed-by
 	// +kubebuilder:validation:Optional
 	ManagedByLabel string `json:"managed_by_label"`
 
-	// Deprecated: ManagedBySuffix is a temporary implementation, to be replaced by go template functionality
+	// Deprecated: ManagedBySuffix is replaced by go template functionality
 	// once available
 	// Suffix to be appended to the managed-by-label
 	// +kubebuilder:default:=argocd
@@ -110,6 +111,10 @@ type PaasConfigSpec struct {
 	// Set regular expressions to have the webhooks validate the fields
 	// +kubebuilder:validation:Optional
 	Validations PaasConfigValidations `json:"validations"`
+
+	// Set regular expressions to have the webhooks validate the fields
+	// +kubebuilder:validation:Optional
+	ResourceLabels ConfigResourceLabelConfigs `json:"resourceLabels"`
 }
 
 type NamespacedName struct {
@@ -171,6 +176,35 @@ type ConfigCapability struct {
 	// Settings to allow specific configuration specific to a capability
 	CustomFields map[string]ConfigCustomField `json:"custom_fields,omitempty"`
 }
+
+// For each resource type go templating can be used to derive the labels to be set on the resource when created
+type ConfigResourceLabelConfigs struct {
+
+	// Template to describe labels for groups
+	// +kubebuilder:validation:Optional
+	GroupLabels ConfigResourceLabelConfig `json:"groups,omitempty"`
+
+	// Template to describe labels for rolebindings
+	// +kubebuilder:validation:Optional
+	RoleBindingLabels ConfigResourceLabelConfig `json:"roleBindings,omitempty"`
+
+	// Template to describe labels for secrets
+	// +kubebuilder:validation:Optional
+	SecretLabels ConfigResourceLabelConfig `json:"secrets,omitempty"`
+
+	// Template to describe labels for namespaces
+	// +kubebuilder:validation:Optional
+	NamespaceLabels ConfigResourceLabelConfig `json:"namespaces,omitempty"`
+
+	// Template to describe labels for cluster quotas
+	// +kubebuilder:validation:Optional
+	ClusterQuotaLabels ConfigResourceLabelConfig `json:"clusterQuotas,omitempty"`
+
+	// We could also add labels to Applicationsets and ClusterRoleBindings
+}
+
+// go templating can be used to derive the labels to be set on the resource when created
+type ConfigResourceLabelConfig map[string]string
 
 type ConfigCustomField struct {
 	// Regular expression for validating input, defaults to '', which means no validation.

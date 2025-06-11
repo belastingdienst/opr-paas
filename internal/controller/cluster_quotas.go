@@ -10,11 +10,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
 	"github.com/belastingdienst/opr-paas/internal/logging"
 	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
+	"github.com/belastingdienst/opr-paas/internal/templating"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -68,8 +70,22 @@ func (r *PaasReconciler) backendQuota(
 	} else {
 		quotaName = fmt.Sprintf("%s-%s", paas.Name, suffix)
 	}
+
 	_, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("defining quota")
+
+	labels := map[string]string{}
+	myConfig := config.GetConfig()
+	labelTemplater := templating.NewTemplater(*paas, myConfig)
+	for name, tpl := range myConfig.Spec.ResourceLabels.ClusterQuotaLabels {
+		result, err := labelTemplater.TemplateToMap(name, tpl)
+		if err != nil {
+			logger.Err(err).Msg("failed to run template " + tpl)
+		} else {
+			maps.Copy(labels, result)
+		}
+	}
+
 	// matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	quota := &quotav1.ClusterResourceQuota{
 		TypeMeta: metav1.TypeMeta{
@@ -78,7 +94,7 @@ func (r *PaasReconciler) backendQuota(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   quotaName,
-			Labels: paas.ClonedLabels(),
+			Labels: labels,
 		},
 		Spec: quotav1.ClusterResourceQuotaSpec{
 			Selector: quotav1.ClusterResourceQuotaSelector{
