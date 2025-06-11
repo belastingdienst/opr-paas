@@ -502,13 +502,13 @@ spec:
               managed_by_label:
                 default: argocd.argoproj.io/managed-by
                 description: |-
-                  Deprecated: ArgoCD specific code will be removed from the operator
+                  Deprecated: ManagedByLabel is replaced by go template functionality
                   Name of the label used to define by whom the resource is managed.
                 type: string
               managed_by_suffix:
                 default: argocd
                 description: |-
-                  Deprecated: ManagedBySuffix is a temporary implementation, to be replaced by go template functionality
+                  Deprecated: ManagedBySuffix is replaced by go template functionality
                   once available
                   Suffix to be appended to the managed-by-label
                 type: string
@@ -518,9 +518,35 @@ spec:
                 type: string
               requestor_label:
                 default: requestor
-                description: Name of the label used to define who is the contact for
-                  this resource
+                description: |-
+                  Deprecated: RequestorLabel is replaced by go template functionality
+                  Name of the label used to define who is the contact for this resource
                 type: string
+              resourceLabels:
+                description: Set regular expressions to have the webhooks validate
+                  the fields
+                properties:
+                  clusterQuotas:
+                    additionalProperties:
+                      type: string
+                    description: Template to describe labels for cluster quotas
+                    type: object
+                  groups:
+                    additionalProperties:
+                      type: string
+                    description: Template to describe labels for groups
+                    type: object
+                  namespaces:
+                    additionalProperties:
+                      type: string
+                    description: Template to describe labels for namespaces
+                    type: object
+                  roleBindings:
+                    additionalProperties:
+                      type: string
+                    description: Template to describe labels for rolebindings
+                    type: object
+                type: object
               rolemappings:
                 additionalProperties:
                   items:

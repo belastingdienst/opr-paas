@@ -10,11 +10,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 
 	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v2/internal/config"
 	"github.com/belastingdienst/opr-paas/v2/internal/logging"
 	paasquota "github.com/belastingdienst/opr-paas/v2/internal/quota"
+	"github.com/belastingdienst/opr-paas/v2/internal/templating"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -61,15 +63,28 @@ func (r *PaasReconciler) backendQuota(
 	ctx context.Context,
 	paas *v1alpha2.Paas, suffix string,
 	hardQuotas map[corev1.ResourceName]resourcev1.Quantity,
-) *quotav1.ClusterResourceQuota {
+) (*quotav1.ClusterResourceQuota, error) {
 	var quotaName string
 	if suffix == "" {
 		quotaName = paas.Name
 	} else {
 		quotaName = fmt.Sprintf("%s-%s", paas.Name, suffix)
 	}
+
 	_, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("defining quota")
+
+	labels := map[string]string{}
+	myConfig := config.GetConfig()
+	labelTemplater := templating.NewTemplater(*paas, myConfig)
+	for name, tpl := range myConfig.Spec.ResourceLabels.ClusterQuotaLabels {
+		result, err := labelTemplater.TemplateToMap(name, tpl)
+		if err != nil {
+			return nil, err
+		}
+		maps.Copy(labels, result)
+	}
+
 	// matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	quota := &quotav1.ClusterResourceQuota{
 		TypeMeta: metav1.TypeMeta{
@@ -78,7 +93,7 @@ func (r *PaasReconciler) backendQuota(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   quotaName,
-			Labels: paas.ClonedLabels(),
+			Labels: labels,
 		},
 		Spec: quotav1.ClusterResourceQuotaSpec{
 			Selector: quotav1.ClusterResourceQuotaSelector{
@@ -100,7 +115,7 @@ func (r *PaasReconciler) backendQuota(
 		logger.Err(err).Msg("error setting owner")
 	}
 
-	return quota
+	return quota, nil
 }
 
 func (r *PaasReconciler) backendEnabledQuotas(
@@ -108,14 +123,22 @@ func (r *PaasReconciler) backendEnabledQuotas(
 	paas *v1alpha2.Paas,
 ) (quotas []*quotav1.ClusterResourceQuota, err error) {
 	paasConfigSpec := config.GetConfig().Spec
-	quotas = append(quotas, r.backendQuota(ctx, paas, "", paas.Spec.Quota))
+	quota, err := r.backendQuota(ctx, paas, "", paas.Spec.Quota)
+	if err != nil {
+		return nil, err
+	}
+	quotas = append(quotas, quota)
 	for name, capability := range paas.Spec.Capabilities {
 		if capConfig, exists := paasConfigSpec.Capabilities[name]; !exists {
 			return nil, errors.New("a capability is requested, but not configured")
 		} else if !capConfig.QuotaSettings.Clusterwide {
 			defaults := capConfig.QuotaSettings.DefQuota
 			quotaValues := capability.Quotas().MergeWith(defaults)
-			quotas = append(quotas, r.backendQuota(ctx, paas, name, quotaValues))
+			capQuota, err := r.backendQuota(ctx, paas, name, quotaValues)
+			if err != nil {
+				return nil, err
+			}
+			quotas = append(quotas, capQuota)
 		}
 	}
 	return quotas, nil

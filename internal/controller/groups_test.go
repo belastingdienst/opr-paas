@@ -29,13 +29,19 @@ var _ = Describe("Group controller", Ordered, func() {
 	var (
 		ctx        context.Context
 		paas       *v1alpha2.Paas
+		myConfig   *v1alpha2.PaasConfig
 		group      *userv1.Group
 		reconciler *PaasReconciler
 	)
 
 	BeforeAll(func() {
 		// Set the PaasConfig so reconcilers know where to find our fixtures
-		config.SetConfig(genericConfig)
+		myConfig = genericConfig.DeepCopy()
+		myConfig.Spec.ResourceLabels.GroupLabels = v1alpha2.ConfigResourceLabelConfig{
+			//revive:disable-next-line
+			"": "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" + kubeInstLabel + "\" }}{{$key}}: {{$value}}\n{{end}}{{end}}",
+		}
+		config.SetConfig(*myConfig)
 
 		paas = &v1alpha2.Paas{ObjectMeta: metav1.ObjectMeta{
 			Name: "my-paas",
