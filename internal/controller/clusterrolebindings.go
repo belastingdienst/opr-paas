@@ -73,10 +73,11 @@ func backendClusterRoleBinding(
 		ObjectMeta: metav1.ObjectMeta{
 			Name: crbName,
 			// TODO are these labels still correct?
-			Labels: map[string]string{
-				"app.kubernetes.io/created-by": "opr-paas",
-				"app.kubernetes.io/part-of":    "opr-paas",
-			},
+			// Moving this to go templating functionalities
+			// Labels: map[string]string{
+			// 	"app.kubernetes.io/created-by": "opr-paas",
+			// 	"app.kubernetes.io/part-of":    "opr-paas",
+			// },
 		},
 		RoleRef: rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",

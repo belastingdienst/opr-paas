@@ -10,7 +10,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/belastingdienst/opr-paas/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/internal/config"
@@ -43,13 +42,13 @@ func getListGen(generators []appv1.ApplicationSetGenerator) *appv1.ApplicationSe
 	return nil
 }
 
-func splitToService(paasName string) (string, string) {
-	parts := strings.SplitN(paasName, "-", 3)
-	if len(parts) < 2 {
-		return paasName, ""
-	}
-	return parts[0], parts[1]
-}
+// func splitToService(paasName string) (string, string) {
+// 	parts := strings.SplitN(paasName, "-", 3)
+// 	if len(parts) < 2 {
+// 		return paasName, ""
+// 	}
+// 	return parts[0], parts[1]
+// }
 
 // ensureAppSetCap ensures a list entry in the AppSet for each capability
 func (r *PaasReconciler) ensureAppSetCaps(
@@ -120,11 +119,12 @@ func (r *PaasReconciler) ensureAppSetCap(
 		return err
 	}
 	elements = templatedElements.AsFieldElements().Merge(capElements)
-	service, subService := splitToService(paas.Name)
-	elements["requestor"] = paas.Spec.Requestor
-	elements["paas"] = paas.Name
-	elements["service"] = service
-	elements["subservice"] = subService
+	// We should change these to templates
+	// service, subService := splitToService(paas.Name)
+	// elements["requestor"] = paas.Spec.Requestor
+	// elements["paas"] = paas.Name
+	// elements["service"] = service
+	// elements["subservice"] = subService
 	patch := client.MergeFrom(appSet.DeepCopy())
 	if listGen = getListGen(appSet.Spec.Generators); listGen == nil {
 		// create the list

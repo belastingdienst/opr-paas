@@ -31,6 +31,7 @@ const (
 
 // PaasSpec defines the desired state of Paas
 type PaasSpec struct {
+	// Deprecated, the requestor implementation will be replaced by an annotation and go template functionality
 	// Requestor is an informational field which decides on the requestor (also application responsible)
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
@@ -201,17 +202,6 @@ type PaasList struct {
 
 func init() {
 	SchemeBuilder.Register(&Paas{}, &PaasList{})
-}
-
-// ClonedLabels returns a map of labels that can be used to clone a Paas
-func (p Paas) ClonedLabels() map[string]string {
-	labels := make(map[string]string)
-	for key, value := range p.Labels {
-		if key != "app.kubernetes.io/instance" {
-			labels[key] = value
-		}
-	}
-	return labels
 }
 
 // AmIOwner returns true if the Paas is listed in the given ownerReferences
