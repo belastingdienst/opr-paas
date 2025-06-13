@@ -154,19 +154,30 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 // validateCaps returns an error if any of the passed capabilities is not configured.
 func validateCaps(
 	ctx context.Context,
-	_ client.Client,
+	k8sClient client.Client,
 	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
-	for name := range paas.Spec.Capabilities {
+	rsa, err := getCryptInstance(ctx, k8sClient, conf, paas.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	for name, capability := range paas.Spec.Capabilities {
 		if _, ok := conf.Spec.Capabilities[name]; !ok {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("capabilities"),
 				name,
 				"capability not configured",
 			))
+		} else {
+			errs = append(errs, validateSecrets(
+				capability.Secrets,
+				rsa,
+				field.NewPath("spec").Child("capabilities").Key(name).Child("secrets"),
+			)...)
 		}
 	}
 
@@ -311,29 +322,12 @@ func validatePaasSecrets(
 	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
-	decryptRes := &corev1.Secret{}
-	if err := k8sClient.Get(ctx, types.NamespacedName{
-		Name:      conf.Spec.DecryptKeysSecret.Name,
-		Namespace: conf.Spec.DecryptKeysSecret.Namespace,
-	}, decryptRes); err != nil {
-		return nil, fmt.Errorf("could not retrieve decryption secret: %w", err)
+	rsa, err := getCryptInstance(ctx, k8sClient, conf, paas.Name)
+	if err != nil {
+		return nil, err
 	}
 
-	keys, _ := crypt.NewPrivateKeysFromSecretData(decryptRes.Data)
-	rsa, _ := crypt.NewCryptFromKeys(keys, "", paas.Name)
-
-	var errs []*field.Error
-	for name, secret := range paas.Spec.Secrets {
-		if _, err := rsa.Decrypt(secret); err != nil {
-			errs = append(errs, field.Invalid(
-				field.NewPath("spec").Child("secrets"),
-				name,
-				fmt.Sprintf("cannot be decrypted: %s", err),
-			))
-		}
-	}
-
-	return errs, nil
+	return validateSecrets(paas.Spec.Secrets, rsa, field.NewPath("spec").Child("secrets")), nil
 }
 
 // validateCustomFields ensures that for a given capability in the Paas:
@@ -422,4 +416,51 @@ func (v *PaasCustomValidator) validateExtraPerm(conf v1alpha2.PaasConfig, paas *
 	}
 
 	return warnings
+}
+
+// getCryptInstance returns a crypt based on the provided config and paasName
+func getCryptInstance(
+	ctx context.Context,
+	k8sClient client.Client,
+	conf v1alpha2.PaasConfig,
+	paasName string,
+) (*crypt.Crypt, error) {
+	decryptRes := &corev1.Secret{}
+	if err := k8sClient.Get(ctx, types.NamespacedName{
+		Name:      conf.Spec.DecryptKeysSecret.Name,
+		Namespace: conf.Spec.DecryptKeysSecret.Namespace,
+	}, decryptRes); err != nil {
+		return nil, fmt.Errorf("could not retrieve decryption secret: %w", err)
+	}
+
+	keys, err := crypt.NewPrivateKeysFromSecretData(decryptRes.Data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private keys: %w", err)
+	}
+
+	rsa, err := crypt.NewCryptFromKeys(keys, "", paasName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create crypt instance: %w", err)
+	}
+
+	return rsa, nil
+}
+
+// validateSecrets validates a map of Secrets based on a provided rsa
+func validateSecrets(
+	secrets map[string]string,
+	rsa *crypt.Crypt,
+	basePath *field.Path,
+) []*field.Error {
+	var errs []*field.Error
+	for name, secret := range secrets {
+		if _, err := rsa.Decrypt(secret); err != nil {
+			errs = append(errs, field.Invalid(
+				basePath.Key(name),
+				secret,
+				fmt.Sprintf("cannot be decrypted: %s", err),
+			))
+		}
+	}
+	return errs
 }
