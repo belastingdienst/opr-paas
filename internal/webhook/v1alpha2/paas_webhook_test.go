@@ -185,43 +185,6 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			},
 		)
 
-		It("Should deny creation when a secret is set that cannot be decrypted", func() {
-			encrypted, err := mycrypt.Encrypt([]byte("some encrypted string"))
-			Expect(err).NotTo(HaveOccurred())
-
-			obj = &v1alpha2.Paas{
-				ObjectMeta: metav1.ObjectMeta{Name: paasName},
-				Spec: v1alpha2.PaasSpec{
-					Secrets: map[string]string{
-						"valid secret":   encrypted,
-						"invalid secret": base64.StdEncoding.EncodeToString([]byte("foo bar baz")),
-						"invalid base64": "foo bar baz",
-					},
-				},
-			}
-
-			_, err = validator.ValidateCreate(ctx, obj)
-			var serr *apierrors.StatusError
-			Expect(errors.As(err, &serr)).To(BeTrue())
-
-			causes := serr.Status().Details.Causes
-			Expect(causes).To(ContainElements(
-				metav1.StatusCause{
-					Type: metav1.CauseTypeFieldValueInvalid,
-					Message: "Invalid value: \"foo bar baz\": cannot be decrypted: " +
-						"illegal base64 data at input byte 8",
-					Field: "spec.secrets[invalid base64]",
-				},
-				metav1.StatusCause{
-					Type: metav1.CauseTypeFieldValueInvalid,
-					Message: "Invalid value: \"Zm9vIGJhciBiYXo=\": cannot be decrypted: " +
-						"unable to decrypt data with any of the private keys",
-					Field: "spec.secrets[invalid secret]",
-				},
-			))
-			Expect(causes).To(HaveLen(2))
-		})
-
 		It("Should deny creation when a capability secret is set that cannot be decrypted", func() {
 			encrypted, err := mycrypt.Encrypt([]byte("some encrypted string"))
 			Expect(err).NotTo(HaveOccurred())
@@ -233,6 +196,11 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			obj = &v1alpha2.Paas{
 				ObjectMeta: metav1.ObjectMeta{Name: paasName},
 				Spec: v1alpha2.PaasSpec{
+					Secrets: map[string]string{
+						"valid secret":   encrypted,
+						"invalid secret": base64.StdEncoding.EncodeToString([]byte("foo bar baz")),
+						"invalid base64": "foo bar baz",
+					},
 					Capabilities: map[string]v1alpha2.PaasCapability{
 						"foo": {
 							Secrets: map[string]string{
@@ -263,8 +231,20 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 						"unable to decrypt data with any of the private keys",
 					Field: "spec.capabilities[foo].secrets[invalid secret]",
 				},
+				metav1.StatusCause{
+					Type: metav1.CauseTypeFieldValueInvalid,
+					Message: "Invalid value: \"foo bar baz\": cannot be decrypted: " +
+						"illegal base64 data at input byte 8",
+					Field: "spec.secrets[invalid base64]",
+				},
+				metav1.StatusCause{
+					Type: metav1.CauseTypeFieldValueInvalid,
+					Message: "Invalid value: \"Zm9vIGJhciBiYXo=\": cannot be decrypted: " +
+						"unable to decrypt data with any of the private keys",
+					Field: "spec.secrets[invalid secret]",
+				},
 			))
-			Expect(causes).To(HaveLen(2))
+			Expect(causes).To(HaveLen(4))
 		})
 
 		It("Should deny creation when a capability custom field is not configured", func() {
