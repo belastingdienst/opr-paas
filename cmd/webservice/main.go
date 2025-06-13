@@ -14,8 +14,8 @@ import (
 	"sync"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/internal/utils"
-	"github.com/belastingdienst/opr-paas/internal/version"
+	"github.com/belastingdienst/opr-paas/v2/internal/utils"
+	"github.com/belastingdienst/opr-paas/v2/internal/version"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

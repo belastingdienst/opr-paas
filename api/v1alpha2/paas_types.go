@@ -12,9 +12,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/internal/fields"
-	"github.com/belastingdienst/opr-paas/internal/groups"
-	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
+	"github.com/belastingdienst/opr-paas/v2/internal/fields"
+	"github.com/belastingdienst/opr-paas/v2/internal/groups"
+	paasquota "github.com/belastingdienst/opr-paas/v2/internal/quota"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

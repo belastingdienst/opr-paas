@@ -3,7 +3,7 @@ package templating
 import (
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/internal/fields"
+	"github.com/belastingdienst/opr-paas/v2/internal/fields"
 	"gopkg.in/yaml.v3"
 )
 

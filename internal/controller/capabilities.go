@@ -12,12 +12,12 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/internal/config"
-	"github.com/belastingdienst/opr-paas/internal/fields"
-	"github.com/belastingdienst/opr-paas/internal/logging"
-	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
-	"github.com/belastingdienst/opr-paas/internal/templating"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v2/internal/config"
+	"github.com/belastingdienst/opr-paas/v2/internal/fields"
+	"github.com/belastingdienst/opr-paas/v2/internal/logging"
+	appv1 "github.com/belastingdienst/opr-paas/v2/internal/stubs/argoproj/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v2/internal/templating"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

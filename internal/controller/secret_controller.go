@@ -13,8 +13,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/internal/logging"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v2/internal/logging"
 
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"

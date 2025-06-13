@@ -11,10 +11,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/internal/config"
-	"github.com/belastingdienst/opr-paas/internal/logging"
-	paasquota "github.com/belastingdienst/opr-paas/internal/quota"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v2/internal/config"
+	"github.com/belastingdienst/opr-paas/v2/internal/logging"
+	paasquota "github.com/belastingdienst/opr-paas/v2/internal/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"

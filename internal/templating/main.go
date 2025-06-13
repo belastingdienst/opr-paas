@@ -7,9 +7,9 @@ import (
 	"github.com/go-sprout/sprout"
 	"github.com/go-sprout/sprout/group/all"
 
-	"github.com/belastingdienst/opr-paas/api"
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v2/api"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 )
 
 // PaasUnion is an interface representing either a v1alpha1.Paas or a v1alpha2.Paas

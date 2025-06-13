@@ -18,9 +18,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/internal/logging"
-	"github.com/belastingdienst/opr-paas/internal/paasresource"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v2/internal/logging"
+	"github.com/belastingdienst/opr-paas/v2/internal/paasresource"
 
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/runtime"

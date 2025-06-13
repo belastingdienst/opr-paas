@@ -6,7 +6,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	api "github.com/belastingdienst/opr-paas/api/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v2/api/v1alpha1"
 	quotav1 "github.com/openshift/api/quota/v1"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/resource"

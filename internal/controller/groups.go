@@ -10,8 +10,8 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/internal/logging"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v2/internal/logging"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	userv1 "github.com/openshift/api/user/v1"
