@@ -14,12 +14,13 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	appv1 "github.com/belastingdienst/opr-paas/v2/internal/stubs/argoproj/v1alpha1"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
 	"testing"
+
+	appv1 "github.com/belastingdienst/opr-paas/v2/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
