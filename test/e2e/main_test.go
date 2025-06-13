@@ -12,13 +12,13 @@ import (
 	"os"
 	"testing"
 
-	argoprojv1alpha1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+	argoprojv1alpha1 "github.com/belastingdienst/opr-paas/v2/internal/stubs/argoproj/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"

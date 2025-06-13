@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

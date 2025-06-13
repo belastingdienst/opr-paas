@@ -19,8 +19,8 @@ import (
 	"testing"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/api/v1alpha1"
-	v "github.com/belastingdienst/opr-paas/internal/version"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha1"
+	v "github.com/belastingdienst/opr-paas/v2/internal/version"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

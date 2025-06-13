@@ -12,9 +12,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/internal/config"
-	"github.com/belastingdienst/opr-paas/internal/logging"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v2/internal/config"
+	"github.com/belastingdienst/opr-paas/v2/internal/logging"
 
 	"github.com/rs/zerolog/log"
 	rbac "k8s.io/api/rbac/v1"

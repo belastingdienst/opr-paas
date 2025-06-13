@@ -20,7 +20,7 @@ import (
 	"slices"
 	"testing"
 
-	appv1 "github.com/belastingdienst/opr-paas/internal/stubs/argoproj/v1alpha1"
+	appv1 "github.com/belastingdienst/opr-paas/v2/internal/stubs/argoproj/v1alpha1"
 
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
@@ -40,7 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 	// +kubebuilder:scaffold:imports
 )
 

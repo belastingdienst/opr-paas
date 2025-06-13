@@ -23,9 +23,9 @@ import (
 	"time"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	apiv1alpha1 "github.com/belastingdienst/opr-paas/api/v1alpha1"
-	apiv1alpha2 "github.com/belastingdienst/opr-paas/api/v1alpha2"
-	webhookv1alpha2 "github.com/belastingdienst/opr-paas/internal/webhook/v1alpha2"
+	apiv1alpha1 "github.com/belastingdienst/opr-paas/v2/api/v1alpha1"
+	apiv1alpha2 "github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+	webhookv1alpha2 "github.com/belastingdienst/opr-paas/v2/internal/webhook/v1alpha2"
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
