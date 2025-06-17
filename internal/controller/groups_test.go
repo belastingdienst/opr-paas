@@ -19,6 +19,13 @@ import (
 )
 
 var _ = Describe("Group controller", Ordered, func() {
+	const (
+		lbl1Key       = "key1"
+		lbl1Value     = "value1"
+		lbl2Key       = "key2"
+		lbl2Value     = "value2"
+		kubeInstLabel = "app.kubernetes.io/instance"
+	)
 	var (
 		ctx        context.Context
 		paas       *v1alpha2.Paas
@@ -33,6 +40,11 @@ var _ = Describe("Group controller", Ordered, func() {
 		paas = &v1alpha2.Paas{ObjectMeta: metav1.ObjectMeta{
 			Name: "my-paas",
 			UID:  "abc", // Needed or owner references fail
+			Labels: map[string]string{
+				lbl1Key:       lbl1Value,
+				lbl2Key:       lbl2Value,
+				kubeInstLabel: "whatever",
+			},
 		}}
 	})
 
@@ -45,15 +57,13 @@ var _ = Describe("Group controller", Ordered, func() {
 
 		group = &userv1.Group{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-group",
-				Namespace: "default",
+				Name: "test-group",
 			},
 		}
 	})
 
 	AfterEach(func() {
-		err := k8sClient.Delete(ctx, group)
-		Expect(err).NotTo(HaveOccurred())
+		_ = k8sClient.Delete(ctx, group)
 	})
 
 	It("should create the group if it does not exist", func() {
@@ -98,5 +108,32 @@ var _ = Describe("Group controller", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(updated.OwnerReferences).NotTo(BeEmpty())
 		Expect(updated.OwnerReferences[0].UID).To(Equal(paas.UID))
+	})
+
+	It("have set all expected labels", func() {
+		var (
+			expectedLabels = map[string]string{
+				lbl1Key:           lbl1Value,
+				lbl2Key:           lbl2Value,
+				ManagedByLabelKey: paas.Name,
+			}
+		)
+		paas.Spec.Groups = v1alpha2.PaasGroups{
+			group.Name: v1alpha2.PaasGroup{Users: []string{"u1", "u2"}},
+		}
+		err := reconciler.reconcileGroups(ctx, paas)
+		Expect(err).NotTo(HaveOccurred())
+		groups, err := reconciler.backendGroups(ctx, paas)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(groups).To(HaveLen(1))
+
+		for _, group := range groups {
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: group.Name}, group)
+			Expect(err).NotTo(HaveOccurred())
+			for key, value := range expectedLabels {
+				Expect(group.ObjectMeta.Labels).To(HaveKeyWithValue(key, value))
+			}
+			Expect(group.ObjectMeta.Labels).NotTo(HaveKey(kubeInstLabel))
+		}
 	})
 })
