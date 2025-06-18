@@ -88,7 +88,8 @@ var _ = Describe("Namespace", Ordered, func() {
 				ResourceLabels: v1alpha2.ConfigResourceLabelConfigs{
 					NamespaceLabels: v1alpha2.ConfigResourceLabelConfig{
 						//revive:disable-next-line
-						"": "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" + kubeInstLabel + "\" }}{{$key}}: {{$value}}\n{{end}}{{end}}",
+						"":       "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" + kubeInstLabel + "\" }}{{$key}}: {{$value}}\n{{end}}{{end}}",
+						manByLbl: "{{ .Paas.Spec.ManagedByPaas }}-" + manBySuffix,
 					},
 				},
 			},
