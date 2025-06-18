@@ -8,10 +8,13 @@ package controller
 
 import (
 	"context"
+	"maps"
 	"reflect"
 
 	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v2/internal/config"
 	"github.com/belastingdienst/opr-paas/v2/internal/logging"
+	"github.com/belastingdienst/opr-paas/v2/internal/templating"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	userv1 "github.com/openshift/api/user/v1"
@@ -98,11 +101,23 @@ func (r *PaasReconciler) backendGroup(
 	if len(group.Query) != 0 {
 		return nil, nil
 	}
+
+	labels := map[string]string{}
+	myConfig := config.GetConfig()
+	labelTemplater := templating.NewTemplater(*paas, myConfig)
+	for name, tpl := range myConfig.Spec.ResourceLabels.GroupLabels {
+		result, err := labelTemplater.TemplateToMap(name, tpl)
+		if err != nil {
+			return nil, err
+		}
+		maps.Copy(labels, result)
+	}
+
 	g := &userv1.Group{}
 	groupName := paas.GroupKey2GroupName(paasGroupKey)
 	g.ObjectMeta = metav1.ObjectMeta{
 		Name:   groupName,
-		Labels: paas.ClonedLabels(),
+		Labels: labels,
 	}
 	g.Users = group.Users
 	g.Labels[ManagedByLabelKey] = paas.Name

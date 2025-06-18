@@ -9,10 +9,12 @@ package controller
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v2/internal/config"
 	"github.com/belastingdienst/opr-paas/v2/internal/logging"
+	"github.com/belastingdienst/opr-paas/v2/internal/templating"
 
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
@@ -71,6 +73,18 @@ func backendNamespace(
 	ctx, _ = logging.GetLogComponent(ctx, "namespace")
 	logger := log.Ctx(ctx)
 	logger.Info().Msgf("defining %s Namespace", name)
+
+	labels := map[string]string{}
+	myConfig := config.GetConfig()
+	labelTemplater := templating.NewTemplater(*paas, myConfig)
+	for tplName, tpl := range myConfig.Spec.ResourceLabels.NamespaceLabels {
+		result, err := labelTemplater.TemplateToMap(tplName, tpl)
+		if err != nil {
+			return nil, err
+		}
+		maps.Copy(labels, result)
+	}
+
 	ns := &corev1.Namespace{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Namespace",
@@ -78,20 +92,13 @@ func backendNamespace(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
-			Labels: paas.ClonedLabels(),
+			Labels: labels,
 		},
 		Spec: corev1.NamespaceSpec{},
 	}
 	logger.Info().Msgf("setting Quotagroup %s", quota)
 	ns.Labels[config.GetConfig().Spec.QuotaLabel] = quota
 	ns.Labels[ManagedByLabelKey] = paas.Name
-
-	argoNameSpace := fmt.Sprintf("%s-%s", paas.ManagedByPaas(), config.GetConfig().Spec.ManagedBySuffix)
-	logger.Info().Msg("setting managed_by_label")
-	ns.Labels[config.GetConfig().Spec.ManagedByLabel] = argoNameSpace
-
-	logger.Info().Msg("setting requestor_label")
-	ns.Labels[config.GetConfig().Spec.RequestorLabel] = paas.Spec.Requestor
 
 	logger.Info().Str("Paas", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
 	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {

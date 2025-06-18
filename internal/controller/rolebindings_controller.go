@@ -9,11 +9,13 @@ package controller
 import (
 	"context"
 	"fmt"
+	"maps"
 	"reflect"
 
 	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v2/internal/config"
 	"github.com/belastingdienst/opr-paas/v2/internal/logging"
+	"github.com/belastingdienst/opr-paas/v2/internal/templating"
 
 	"github.com/rs/zerolog/log"
 	rbac "k8s.io/api/rbac/v1"
@@ -121,6 +123,16 @@ func backendRoleBinding(
 			})
 	}
 
+	labels := map[string]string{}
+	myConfig := config.GetConfig()
+	labelTemplater := templating.NewTemplater(*paas, myConfig)
+	for name, tpl := range myConfig.Spec.ResourceLabels.RoleBindingLabels {
+		result, err := labelTemplater.TemplateToMap(name, tpl)
+		if err != nil {
+			return nil, err
+		}
+		maps.Copy(labels, result)
+	}
 	rb := &rbac.RoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "RoleBinding",
@@ -129,7 +141,7 @@ func backendRoleBinding(
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name.Name,
 			Namespace: name.Namespace,
-			Labels:    paas.ClonedLabels(),
+			Labels:    labels,
 		},
 		Subjects: subjects,
 		RoleRef: rbac.RoleRef{
