@@ -81,7 +81,7 @@ func capElementsFromPaas(
 	}
 	elements = templatedElements.AsFieldElements().Merge(capElements)
 
-	for name, tpl := range myConfig.Spec.ResourceLabels.AppSetLabels {
+	for name, tpl := range myConfig.Spec.Templating.GenericCapabilityFields {
 		result, templateErr := templater.TemplateToMap(name, tpl)
 		if templateErr != nil {
 			return nil, fmt.Errorf("failed to run template %s", tpl)

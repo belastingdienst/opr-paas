@@ -522,36 +522,6 @@ spec:
                   Deprecated: RequestorLabel is replaced by go template functionality
                   Name of the label used to define who is the contact for this resource
                 type: string
-              resourceLabels:
-                description: Set regular expressions to have the webhooks validate
-                  the fields
-                properties:
-                  applicationSets:
-                    additionalProperties:
-                      type: string
-                    description: Template to describe labels for cluster quotas
-                    type: object
-                  clusterQuotas:
-                    additionalProperties:
-                      type: string
-                    description: Template to describe labels for cluster quotas
-                    type: object
-                  groups:
-                    additionalProperties:
-                      type: string
-                    description: Template to describe labels for groups
-                    type: object
-                  namespaces:
-                    additionalProperties:
-                      type: string
-                    description: Template to describe labels for namespaces
-                    type: object
-                  roleBindings:
-                    additionalProperties:
-                      type: string
-                    description: Template to describe labels for rolebindings
-                    type: object
-                type: object
               rolemappings:
                 additionalProperties:
                   items:
@@ -559,6 +529,36 @@ spec:
                   type: array
                 description: Grant permissions to all groups according to config in
                   configmap and role selected per group in paas.
+                type: object
+              templating:
+                description: With templating Administrators can define labels and
+                  generic custom fields to be applied on sub resources
+                properties:
+                  clusterQuotaLabels:
+                    additionalProperties:
+                      type: string
+                    description: Templates to add labels to cluster quota labels
+                    type: object
+                  genericCapabilityFields:
+                    additionalProperties:
+                      type: string
+                    description: Templates to add fields to all capabilities
+                    type: object
+                  groupLabels:
+                    additionalProperties:
+                      type: string
+                    description: Templates to add labels to group labels
+                    type: object
+                  namespaceLabels:
+                    additionalProperties:
+                      type: string
+                    description: Templates to add labels to namespace labels
+                    type: object
+                  roleBindingLabels:
+                    additionalProperties:
+                      type: string
+                    description: Templates to describe labels for rolebindings
+                    type: object
                 type: object
               validations:
                 additionalProperties:

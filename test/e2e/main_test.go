@@ -175,8 +175,8 @@ var examplePaasConfig = v1alpha2.PaasConfig{
 			"default": {"admin"},
 			"viewer":  {"view"},
 		},
-		ResourceLabels: v1alpha2.ConfigResourceLabelConfigs{
-			AppSetLabels: v1alpha2.ConfigResourceLabelConfig{
+		Templating: v1alpha2.ConfigTemplatingItems{
+			GenericCapabilityFields: v1alpha2.ConfigTemplatingItem{
 				"requestor":  "{{ .Paas.Spec.Requestor }}",
 				"service":    "{{ (split \"-\" .Paas.Name)._0 }}",
 				"subservice": "{{ (split \"-\" .Paas.Name)._1 }}",

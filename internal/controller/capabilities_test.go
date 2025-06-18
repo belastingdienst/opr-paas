@@ -100,8 +100,8 @@ g, {{ $groupName }}, role:admin{{end}}`
 						},
 					},
 				},
-				ResourceLabels: v1alpha2.ConfigResourceLabelConfigs{
-					AppSetLabels: v1alpha2.ConfigResourceLabelConfig{
+				Templating: v1alpha2.ConfigTemplatingItems{
+					GenericCapabilityFields: v1alpha2.ConfigTemplatingItem{
 						"requestor":  "{{ .Paas.Spec.Requestor }}",
 						"service":    "{{ (splitn \"-\" 2 .Paas.Name)._0 }}",
 						"subservice": "{{ (splitn \"-\" 2 .Paas.Name)._1 }}",
