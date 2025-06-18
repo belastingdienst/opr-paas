@@ -31,6 +31,7 @@ const (
 
 // PaasSpec defines the desired state of Paas
 type PaasSpec struct {
+	// Deprecated, the requestor implementation will be replaced by an annotation and go template functionality
 	// Requestor is an informational field which decides on the requestor (also application responsible)
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
@@ -57,6 +58,7 @@ type PaasSpec struct {
 	// +kubebuilder:validation:Optional
 	Secrets map[string]string `json:"secrets"`
 
+	// Deprecated, the managedByPaas implementation will be replaced by an annotation and go template functionality
 	// Indicated by which 3rd party Paas this Paas is managed
 	// +kubebuilder:validation:Optional
 	ManagedByPaas string `json:"managedByPaas"`

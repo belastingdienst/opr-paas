@@ -100,13 +100,6 @@ func backendNamespace(
 	ns.Labels[config.GetConfig().Spec.QuotaLabel] = quota
 	ns.Labels[ManagedByLabelKey] = paas.Name
 
-	argoNameSpace := fmt.Sprintf("%s-%s", paas.ManagedByPaas(), config.GetConfig().Spec.ManagedBySuffix)
-	logger.Info().Msg("setting managed_by_label")
-	ns.Labels[config.GetConfig().Spec.ManagedByLabel] = argoNameSpace
-
-	logger.Info().Msg("setting requestor_label")
-	ns.Labels[config.GetConfig().Spec.RequestorLabel] = paas.Spec.Requestor
-
 	logger.Info().Str("Paas", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
 	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {
 		logger.Err(err).Msg("setControllerReference failure")
