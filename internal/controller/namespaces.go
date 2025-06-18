@@ -9,10 +9,12 @@ package controller
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v2/internal/config"
 	"github.com/belastingdienst/opr-paas/v2/internal/logging"
+	"github.com/belastingdienst/opr-paas/v2/internal/templating"
 
 	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
@@ -71,6 +73,18 @@ func backendNamespace(
 	ctx, _ = logging.GetLogComponent(ctx, "namespace")
 	logger := log.Ctx(ctx)
 	logger.Info().Msgf("defining %s Namespace", name)
+
+	labels := map[string]string{}
+	myConfig := config.GetConfig()
+	labelTemplater := templating.NewTemplater(*paas, myConfig)
+	for tplName, tpl := range myConfig.Spec.ResourceLabels.NamespaceLabels {
+		result, err := labelTemplater.TemplateToMap(tplName, tpl)
+		if err != nil {
+			return nil, err
+		}
+		maps.Copy(labels, result)
+	}
+
 	ns := &corev1.Namespace{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Namespace",
@@ -78,7 +92,7 @@ func backendNamespace(
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
-			Labels: paas.ClonedLabels(),
+			Labels: labels,
 		},
 		Spec: corev1.NamespaceSpec{},
 	}

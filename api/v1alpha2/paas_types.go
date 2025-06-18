@@ -203,17 +203,6 @@ func init() {
 	SchemeBuilder.Register(&Paas{}, &PaasList{})
 }
 
-// ClonedLabels returns a map of labels that can be used to clone a Paas
-func (p Paas) ClonedLabels() map[string]string {
-	labels := make(map[string]string)
-	for key, value := range p.Labels {
-		if key != "app.kubernetes.io/instance" {
-			labels[key] = value
-		}
-	}
-	return labels
-}
-
 // AmIOwner returns true if the Paas is listed in the given ownerReferences
 func (p Paas) AmIOwner(references []metav1.OwnerReference) bool {
 	for _, reference := range references {
