@@ -47,3 +47,15 @@ The process to create a release is mostly automated, to start it:
 - Merge one or more PRs to `main`;
 - Ensure completeness;
 - Edit the draft release and publish it;
+
+#### Creating a hotfix release
+
+Hotfix releases are created from the relevant tag. The process is similar to creating a regular release.
+The process is as follows:
+
+- Create a new branch based on the tagged release that needs the fix;
+- Merge one or more PRs to this branch;
+- Ensure completeness;
+- Edit the draft release and publish it;
+  Ensure the release only contains the hotfix!
+- Merge the branch back into `main`;
