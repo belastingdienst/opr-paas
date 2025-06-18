@@ -170,6 +170,11 @@ type ConfigCapability struct {
 
 // For each resource type go templating can be used to derive the labels to be set on the resource when created
 type ConfigResourceLabelConfigs struct {
+
+	// Template to describe labels for cluster quotas
+	// +kubebuilder:validation:Optional
+	AppSetLabels ConfigResourceLabelConfig `json:"applicationSets,omitempty"`
+
 	// Template to describe labels for cluster quotas
 	// +kubebuilder:validation:Optional
 	ClusterQuotaLabels ConfigResourceLabelConfig `json:"clusterQuotas,omitempty"`

@@ -526,6 +526,11 @@ spec:
                 description: Set regular expressions to have the webhooks validate
                   the fields
                 properties:
+                  applicationSets:
+                    additionalProperties:
+                      type: string
+                    description: Template to describe labels for cluster quotas
+                    type: object
                   clusterQuotas:
                     additionalProperties:
                       type: string
