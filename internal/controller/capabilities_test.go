@@ -100,6 +100,13 @@ g, {{ $groupName }}, role:admin{{end}}`
 						},
 					},
 				},
+				Templating: v1alpha2.ConfigTemplatingItems{
+					GenericCapabilityFields: v1alpha2.ConfigTemplatingItem{
+						"requestor":  "{{ .Paas.Spec.Requestor }}",
+						"service":    "{{ (splitn \"-\" 2 .Paas.Name)._0 }}",
+						"subservice": "{{ (splitn \"-\" 2 .Paas.Name)._1 }}",
+					},
+				},
 			},
 		}
 		config.SetConfig(paasConfig)

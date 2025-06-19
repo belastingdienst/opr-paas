@@ -126,7 +126,7 @@ func backendRoleBinding(
 	labels := map[string]string{}
 	myConfig := config.GetConfig()
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
-	for name, tpl := range myConfig.Spec.ResourceLabels.RoleBindingLabels {
+	for name, tpl := range myConfig.Spec.Templating.RoleBindingLabels {
 		result, err := labelTemplater.TemplateToMap(name, tpl)
 		if err != nil {
 			return nil, err
