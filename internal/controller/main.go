@@ -8,11 +8,6 @@ package controller
 
 import (
 	"strings"
-	"time"
-)
-
-const (
-	requeueTimeout = time.Minute * 10
 )
 
 func join(argv ...string) string {

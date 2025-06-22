@@ -12,6 +12,8 @@ import (
 	"maps"
 	"reflect"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v2/internal/config"
 	"github.com/belastingdienst/opr-paas/v2/internal/logging"
@@ -36,13 +38,9 @@ func ensureRoleBinding(
 	if len(rb.Subjects) < 1 {
 		return finalizeRoleBinding(ctx, r, rb)
 	}
-	namespacedName := types.NamespacedName{
-		Name:      rb.Name,
-		Namespace: rb.Namespace,
-	}
 	// See if rolebinding exists and create if it doesn't
 	found := &rbac.RoleBinding{}
-	err := r.Get(ctx, namespacedName, found)
+	err := r.Get(ctx, client.ObjectKeyFromObject(rb), found)
 	if err != nil && errors.IsNotFound(err) {
 		return createRoleBinding(ctx, r, rb)
 	} else if err != nil {
@@ -198,7 +196,7 @@ func (r *PaasReconciler) reconcileNamespaceRolebinding(
 	if err != nil {
 		return err
 	}
-	if err := ensureRoleBinding(ctx, r, paas, rb); err != nil {
+	if err = ensureRoleBinding(ctx, r, paas, rb); err != nil {
 		err = fmt.Errorf(
 			"failure while creating/updating rolebinding %s/%s: %s",
 			rb.Namespace,

@@ -9,7 +9,6 @@ package controller
 import (
 	"context"
 	"errors"
-	"fmt"
 	"maps"
 
 	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
@@ -17,6 +16,7 @@ import (
 	"github.com/belastingdienst/opr-paas/v2/internal/logging"
 	paasquota "github.com/belastingdienst/opr-paas/v2/internal/quota"
 	"github.com/belastingdienst/opr-paas/v2/internal/templating"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -33,9 +33,7 @@ func (r *PaasReconciler) ensureQuota(
 ) error {
 	// See if quota already exists and create if it doesn't
 	found := &quotav1.ClusterResourceQuota{}
-	err := r.Get(ctx, types.NamespacedName{
-		Name: quota.Name,
-	}, found)
+	err := r.Get(ctx, client.ObjectKeyFromObject(quota), found)
 	if err != nil && k8serrors.IsNotFound(err) {
 		// Create the quota
 		if err = r.Create(ctx, quota); err != nil {
@@ -68,7 +66,7 @@ func (r *PaasReconciler) backendQuota(
 	if suffix == "" {
 		quotaName = paas.Name
 	} else {
-		quotaName = fmt.Sprintf("%s-%s", paas.Name, suffix)
+		quotaName = join(paas.Name, suffix)
 	}
 
 	_, logger := logging.GetLogComponent(ctx, "quota")
@@ -87,10 +85,6 @@ func (r *PaasReconciler) backendQuota(
 
 	// matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	quota := &quotav1.ClusterResourceQuota{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ClusterResourceQuota",
-			APIVersion: "quota.openshift.io/v1",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   quotaName,
 			Labels: labels,
@@ -134,7 +128,8 @@ func (r *PaasReconciler) backendEnabledQuotas(
 		} else if !capConfig.QuotaSettings.Clusterwide {
 			defaults := capConfig.QuotaSettings.DefQuota
 			quotaValues := capability.Quotas().MergeWith(defaults)
-			capQuota, err := r.backendQuota(ctx, paas, name, quotaValues)
+			var capQuota *quotav1.ClusterResourceQuota
+			capQuota, err = r.backendQuota(ctx, paas, name, quotaValues)
 			if err != nil {
 				return nil, err
 			}
@@ -164,10 +159,10 @@ func (r *PaasReconciler) backendUnneededQuotas(
 func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, quotaName string) error {
 	ctx, logger := logging.GetLogComponent(ctx, "quota")
 	logger.Info().Msg("finalizing")
-	obj := &quotav1.ClusterResourceQuota{}
+	quota := &quotav1.ClusterResourceQuota{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Name: quotaName,
-	}, obj); err != nil && k8serrors.IsNotFound(err) {
+	}, quota); err != nil && k8serrors.IsNotFound(err) {
 		logger.Info().Msg("does not exist")
 		return nil
 	} else if err != nil {
@@ -175,7 +170,7 @@ func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, quotaName str
 		return err
 	}
 	logger.Info().Msg("deleting")
-	return r.Delete(ctx, obj)
+	return r.Delete(ctx, quota)
 }
 
 func (r *PaasReconciler) reconcileQuotas(
