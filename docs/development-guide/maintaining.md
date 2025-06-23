@@ -32,7 +32,7 @@ With:
 
 - X being major, including breaking, changes;
 - Y being minor, possibly including patch but never breaking, changes;
-- Z being patch, but never breaking, changes;
+- Z being a patch, but never breaking, changes;
 
 Methods used
 ------------

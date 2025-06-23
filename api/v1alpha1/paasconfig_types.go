@@ -46,17 +46,17 @@ type PaasConfig struct {
 }
 
 // GetConditions is required for Paas to be used as v1alpha1.Resource
-func (p PaasConfig) GetConditions() []metav1.Condition {
-	return p.Status.Conditions
+func (pc PaasConfig) GetConditions() []metav1.Condition {
+	return pc.Status.Conditions
 }
 
 // GetGeneration is required for Paas to be used as v1alpha1.Resource
-func (p PaasConfig) GetGeneration() int64 {
-	return p.Generation
+func (pc PaasConfig) GetGeneration() int64 {
+	return pc.Generation
 }
 
-func (p PaasConfig) GetSpec() PaasConfigSpec {
-	return p.Spec
+func (pc PaasConfig) GetSpec() PaasConfigSpec {
+	return pc.Spec
 }
 
 type PaasConfigSpec struct {
@@ -273,7 +273,7 @@ type ConfigQuotaSettings struct {
 	MaxQuotas map[corev1.ResourceName]resourcev1.Quantity `json:"max"`
 }
 
-// This is a insoudeout representation of ConfigCapPerm, closer to rb representation
+// This is an insoudeout representation of ConfigCapPerm, closer to rb representation
 type ConfigRolesSas map[string]map[string]bool
 
 func (crs ConfigRolesSas) Merge(other ConfigRolesSas) ConfigRolesSas {
@@ -413,9 +413,9 @@ func ActivePaasConfigUpdated() predicate.Predicate {
 	}
 }
 
-func (p PaasConfig) IsActive() bool {
+func (pc PaasConfig) IsActive() bool {
 	return meta.IsStatusConditionPresentAndEqual(
-		p.Status.Conditions,
+		pc.Status.Conditions,
 		TypeActivePaasConfig,
 		metav1.ConditionTrue,
 	)

@@ -309,7 +309,7 @@ func paasFromNs(ns corev1.Namespace) (string, error) {
 }
 
 // allPaases is a simple wrapper to collect all Paas'es and created requests for them on PaasConfig changes
-// allPaases is not unittests ATM. We might add a e2e test for this instead.
+// allPaases is not unittests ATM. We might add an e2e test for this instead.
 func allPaases(mgr ctrl.Manager) []reconcile.Request {
 	// Enqueue all Paas objects
 	var reqs []reconcile.Request

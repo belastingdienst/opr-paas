@@ -455,7 +455,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			Expect(result).To(Equal(controllerruntime.Result{}))
 		})
 
-		// ensureAppSetCaps returns error is very difficult to test on it's own. Skipping.
+		// ensureAppSetCaps returns error is very difficult to test on its own. Skipping.
 	})
 
 	When("reconciling a Paas with argocd capability", func() {

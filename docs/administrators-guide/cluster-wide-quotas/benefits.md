@@ -89,5 +89,5 @@ Once 10 Paas'es would be created:
 - without CWQ's, about 50 CPU limits would be reserved for all Tekton namespaces;
 - with a ratio of 0.3 only 15 would be reserved, saving 35 CPU limits;
 
-Beyond 14 Paas'es, there would only be 20 CPU's reserved no matter how much Paas'es
+Beyond 14 Paas'es, there would only be 20 CPUs reserved no matter how much Paas'es
 would be created.

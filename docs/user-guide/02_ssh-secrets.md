@@ -66,7 +66,7 @@ Options are endless. Be creative...
 
 Encrypted SSH Secrets can be specified in multiple places.
 
-By defining the secret in in the Paas spec directly (`Paas.spec.sshSecrets`) the
+By defining the secret in the Paas spec directly (`Paas.spec.sshSecrets`) the
 secret will be created in all namespaces belonging to the paas.
 
 !!! example

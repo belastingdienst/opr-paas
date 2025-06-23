@@ -24,7 +24,7 @@ spec:
       containers:
         - command:
             - /webservice
-          environment:
+          env:
             - name: PAAS_PUBLIC_KEY_PATH
               value: /secrets/paas/publicKey
             - name: PAAS_WS_ALLOWED_ORIGINS

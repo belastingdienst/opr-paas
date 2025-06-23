@@ -239,7 +239,7 @@ type ConfigQuotaSettings struct {
 	MaxQuotas map[corev1.ResourceName]resourcev1.Quantity `json:"max"`
 }
 
-// This is a insoudeout representation of ConfigCapPerm, closer to rb representation
+// This is an insoudeout representation of ConfigCapPerm, closer to rb representation
 type ConfigRolesSas map[string]map[string]bool
 
 func (crs ConfigRolesSas) Merge(other ConfigRolesSas) ConfigRolesSas {

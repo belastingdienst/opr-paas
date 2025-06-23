@@ -7,7 +7,7 @@ cpu: 100m
 memory: 1GiB
 storage.nfs: 100GiB
 
-Multiple Paas'es could have multiple CLusterwide quota's, each with it's own list of items.
+Multiple Paas'es could have multiple CLusterwide quota's, each with its own list of items.
 Quotas are meant to bring them (across Paas'es an even across capabilities) in maps of lists of quantities.
 After collecting the info, Quotas can summarize (e.a. min, max, sum all values, sum largest two values, etc.).
 Quotas can combine these summarizing techniques to calculate the optimal value for each quotum (key, value pair).
@@ -35,7 +35,7 @@ func NewQuotas() Quotas {
 
 // Append can be used to append quotas.
 // For resource names that had previously been fed, it appends to the existing list.
-// For new resource names is creates a new list.
+// For new resource names is creating a new list.
 func (pcr *Quotas) Append(quotas Quota) {
 	for key, value := range quotas {
 		if values, exists := pcr.list[key]; exists {

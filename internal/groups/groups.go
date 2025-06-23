@@ -16,7 +16,7 @@ type Groups struct {
 	byKey map[string]Group
 }
 
-// Group is a simple struct with a key, and a LDAP query
+// Group is a simple struct with a key, and an LDAP query
 type Group struct {
 	Key   string
 	Query string
