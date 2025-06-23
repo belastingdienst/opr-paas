@@ -111,7 +111,7 @@ func backendRoleBinding(
 ) (*rbac.RoleBinding, error) {
 	logger := log.Ctx(ctx)
 	logger.Info().Msgf("defining %s RoleBinding", name)
-	subjects := []rbac.Subject{}
+	var subjects []rbac.Subject
 	for _, groupName := range groupNames {
 		subjects = append(subjects,
 			rbac.Subject{

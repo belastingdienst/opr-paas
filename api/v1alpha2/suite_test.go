@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
-	"strings"
 	"testing"
 
 	"github.com/go-logr/zerologr"
@@ -37,10 +36,6 @@ func TestApiV1Alpha2(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	RunSpecs(t, "v1alpha2 api Suite")
-}
-
-func join(argv ...string) string {
-	return strings.Join(argv, "-")
 }
 
 var _ = BeforeSuite(func() {

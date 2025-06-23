@@ -66,7 +66,7 @@ func (gs *Groups) Add(other *Groups) bool {
 // NewGroup creates a new Group from a Query (deriving the Name from the Query)
 func NewGroup(query string) *Group {
 	// CN=gkey,OU=org_unit,DC=example,DC=org
-	cn := strings.Split(string(query), ",")[0]
+	cn := strings.Split(query, ",")[0]
 	if !strings.ContainsAny(cn, "=") {
 		return nil
 	}

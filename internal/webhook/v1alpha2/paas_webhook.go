@@ -69,7 +69,7 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
 func (v *PaasCustomValidator) ValidateUpdate(
 	ctx context.Context,
-	oldObj, newObj runtime.Object,
+	_, newObj runtime.Object,
 ) (admission.Warnings, error) {
 	paas, ok := newObj.(*v1alpha2.Paas)
 	if !ok {
@@ -186,7 +186,7 @@ func validateCaps(
 
 // validatePaasName returns an error if the name of the paas does not meet validations.
 func validatePaasName(
-	ctx context.Context,
+	_ context.Context,
 	_ client.Client,
 	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
@@ -210,7 +210,7 @@ func validatePaasName(
 
 // validatePaasNamespaceNames returns an error for every namespace that does not meet validations.
 func validatePaasNamespaceNames(
-	ctx context.Context,
+	_ context.Context,
 	_ client.Client,
 	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
@@ -244,7 +244,7 @@ func validatePaasNamespaceNames(
 func validatePaasNamespaceGroups(
 	_ context.Context,
 	_ client.Client,
-	conf v1alpha2.PaasConfig,
+	_ v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) (ferrs []*field.Error, _ error) {
 	for nsname, ns := range paas.Spec.Namespaces {
@@ -267,7 +267,7 @@ func validatePaasNamespaceGroups(
 
 // validatePaasRequestor returns an error if The requestor field in a Paas does not meet with validation RE
 func validatePaasRequestor(
-	ctx context.Context,
+	_ context.Context,
 	_ client.Client,
 	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
@@ -291,7 +291,7 @@ func validatePaasRequestor(
 
 // validateGroupNames returns an error for every group name that does not meet validations RE
 func validateGroupNames(
-	ctx context.Context,
+	_ context.Context,
 	_ client.Client,
 	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
@@ -336,7 +336,7 @@ func validatePaasSecrets(
 //
 // Returns an internal error if the validation regexp cannot be compiled.
 func validateCustomFields(
-	ctx context.Context,
+	_ context.Context,
 	_ client.Client,
 	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,

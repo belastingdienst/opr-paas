@@ -21,8 +21,7 @@ import (
 )
 
 const (
-	paasNsPaasName = "paasns-paas"
-	paasNsName     = "paasns"
+	paasNsName = "paasns"
 )
 
 func TestPaasNS(t *testing.T) {

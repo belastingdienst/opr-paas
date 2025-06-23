@@ -30,8 +30,8 @@ func (vs *validatedSecrets) appendFromPaas(paas v1alpha1.Paas) {
 		hash := hashFromString(secret)
 		vs.v[hash] = true
 	}
-	for _, cap := range paas.Spec.Capabilities {
-		for _, secret := range cap.SSHSecrets {
+	for _, capability := range paas.Spec.Capabilities {
+		for _, secret := range capability.SSHSecrets {
 			hash := sha512.Sum512([]byte(secret))
 			vs.v[hash] = true
 		}
