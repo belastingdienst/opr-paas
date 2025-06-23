@@ -77,7 +77,7 @@ func backendNamespace(
 	labels := map[string]string{}
 	myConfig := config.GetConfig()
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
-	for tplName, tpl := range myConfig.Spec.ResourceLabels.NamespaceLabels {
+	for tplName, tpl := range myConfig.Spec.Templating.NamespaceLabels {
 		result, err := labelTemplater.TemplateToMap(tplName, tpl)
 		if err != nil {
 			return nil, err

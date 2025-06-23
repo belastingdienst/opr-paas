@@ -37,7 +37,7 @@ var _ = Describe("Group controller", Ordered, func() {
 	BeforeAll(func() {
 		// Set the PaasConfig so reconcilers know where to find our fixtures
 		myConfig = genericConfig.DeepCopy()
-		myConfig.Spec.ResourceLabels.GroupLabels = v1alpha2.ConfigResourceLabelConfig{
+		myConfig.Spec.Templating.GroupLabels = v1alpha2.ConfigTemplatingItem{
 			//revive:disable-next-line
 			"": "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" + kubeInstLabel + "\" }}{{$key}}: {{$value}}\n{{end}}{{end}}",
 		}

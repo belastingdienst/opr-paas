@@ -233,6 +233,53 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 				}
 			})
 		})
+		Context("having templating defined", func() {
+			It("should verify Template field to be valid", func() {
+				const (
+					keyName = "test"
+				)
+				tests := []struct {
+					template string
+					valid    bool
+				}{
+					{template: "{{ .Paas.Name }}", valid: true},
+					{template: "{{ .DoesNotExist }}", valid: true},
+					{template: "{{ .MissingBrace }", valid: false},
+					{template: "{{ range group in .Paas.Groups}}{{ .MissingEnd }}", valid: false},
+				}
+				for _, test := range tests {
+					fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
+					obj.Spec.Templating = v1alpha2.ConfigTemplatingItems{
+						GenericCapabilityFields: v1alpha2.ConfigTemplatingItem{keyName: test.template},
+						GroupLabels:             v1alpha2.ConfigTemplatingItem{keyName: test.template},
+						NamespaceLabels:         v1alpha2.ConfigTemplatingItem{keyName: test.template},
+						ClusterQuotaLabels:      v1alpha2.ConfigTemplatingItem{keyName: test.template},
+						RoleBindingLabels:       v1alpha2.ConfigTemplatingItem{keyName: test.template},
+					}
+					_, err := validator.ValidateCreate(ctx, obj)
+					if test.valid {
+						Expect(err).Error().NotTo(HaveOccurred())
+					} else {
+						Expect(err).Error().To(HaveOccurred())
+						for _, fieldName := range []string{
+							"genericCapabilityFields",
+							"clusterQuotaLabels",
+							"groupLabels",
+							"namespaceLabels",
+							"roleBindingLabels",
+						} {
+							Expect(err.Error()).To(ContainSubstring(
+								`spec.templating.%s[%s].template: Invalid value: "%s": template: %s`,
+								fieldName,
+								keyName,
+								test.template,
+								keyName,
+							))
+						}
+					}
+				}
+			})
+		})
 	})
 })
 

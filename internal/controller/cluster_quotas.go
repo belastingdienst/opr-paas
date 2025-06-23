@@ -77,7 +77,7 @@ func (r *PaasReconciler) backendQuota(
 	labels := map[string]string{}
 	myConfig := config.GetConfig()
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
-	for name, tpl := range myConfig.Spec.ResourceLabels.ClusterQuotaLabels {
+	for name, tpl := range myConfig.Spec.Templating.ClusterQuotaLabels {
 		result, err := labelTemplater.TemplateToMap(name, tpl)
 		if err != nil {
 			return nil, err

@@ -185,6 +185,7 @@ func validatePaasConfigSpec(
 	allErrs = append(allErrs, validateValidationFields(spec.Validations, childPath)...)
 	allErrs = append(allErrs, validateConfigCapabilityNames(spec, childPath)...)
 	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, childPath)...)
+	allErrs = append(allErrs, validateTemplatingFields(spec.Templating, childPath)...)
 
 	if len(allErrs) > 0 {
 		logger.Error().Strs(
@@ -416,6 +417,44 @@ func validateConfigCustomField(
 		}
 	}
 
+	return allErrs
+}
+
+func validateTemplatingFields(
+	templatingConfig v1alpha2.ConfigTemplatingItems,
+	rootPath *field.Path,
+) field.ErrorList {
+	var allErrs field.ErrorList
+	childPath := rootPath.Child("templating")
+	for name, resourceType := range map[string]v1alpha2.ConfigTemplatingItem{
+		"genericCapabilityFields": templatingConfig.GenericCapabilityFields,
+		"clusterQuotaLabels":      templatingConfig.ClusterQuotaLabels,
+		"groupLabels":             templatingConfig.GroupLabels,
+		"namespaceLabels":         templatingConfig.NamespaceLabels,
+		"roleBindingLabels":       templatingConfig.RoleBindingLabels,
+	} {
+		allErrs = append(allErrs, validateTemplatingField(resourceType, childPath.Child(name))...)
+	}
+
+	return allErrs
+}
+
+func validateTemplatingField(
+	templatingField v1alpha2.ConfigTemplatingItem,
+	rootPath *field.Path,
+) field.ErrorList {
+	var allErrs field.ErrorList
+	for name, template := range templatingField {
+		childPath := rootPath.Key(name)
+		err := templating.NewTemplater(v1alpha2.Paas{}, v1alpha2.PaasConfig{}).Verify(name, template)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(
+				childPath.Child("template"),
+				template,
+				err.Error(),
+			))
+		}
+	}
 	return allErrs
 }
 
