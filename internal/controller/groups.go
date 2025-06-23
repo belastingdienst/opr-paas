@@ -105,7 +105,7 @@ func (r *PaasReconciler) backendGroup(
 	labels := map[string]string{}
 	myConfig := config.GetConfig()
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
-	for name, tpl := range myConfig.Spec.ResourceLabels.GroupLabels {
+	for name, tpl := range myConfig.Spec.Templating.GroupLabels {
 		result, err := labelTemplater.TemplateToMap(name, tpl)
 		if err != nil {
 			return nil, err

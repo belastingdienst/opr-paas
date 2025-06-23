@@ -112,9 +112,9 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	Validations PaasConfigValidations `json:"validations"`
 
-	// Set regular expressions to have the webhooks validate the fields
+	// With templating Administrators can define labels and generic custom fields to be applied on sub resources
 	// +kubebuilder:validation:Optional
-	ResourceLabels ConfigResourceLabelConfigs `json:"resourceLabels,omitempty"`
+	Templating ConfigTemplatingItems `json:"templating,omitempty"`
 }
 
 type ConfigRoleMappings map[string][]string
@@ -169,26 +169,31 @@ type ConfigCapability struct {
 }
 
 // For each resource type go templating can be used to derive the labels to be set on the resource when created
-type ConfigResourceLabelConfigs struct {
-	// Template to describe labels for cluster quotas
-	// +kubebuilder:validation:Optional
-	ClusterQuotaLabels ConfigResourceLabelConfig `json:"clusterQuotas,omitempty"`
+type ConfigTemplatingItems struct {
 
-	// Template to describe labels for groups
+	// Templates to add fields to all capabilities
 	// +kubebuilder:validation:Optional
-	GroupLabels ConfigResourceLabelConfig `json:"groups,omitempty"`
+	GenericCapabilityFields ConfigTemplatingItem `json:"genericCapabilityFields,omitempty"`
 
-	// Template to describe labels for namespaces
+	// Templates to add labels to cluster quota labels
 	// +kubebuilder:validation:Optional
-	NamespaceLabels ConfigResourceLabelConfig `json:"namespaces,omitempty"`
+	ClusterQuotaLabels ConfigTemplatingItem `json:"clusterQuotaLabels,omitempty"`
 
-	// Template to describe labels for rolebindings
+	// Templates to add labels to group labels
 	// +kubebuilder:validation:Optional
-	RoleBindingLabels ConfigResourceLabelConfig `json:"roleBindings,omitempty"`
+	GroupLabels ConfigTemplatingItem `json:"groupLabels,omitempty"`
+
+	// Templates to add labels to namespace labels
+	// +kubebuilder:validation:Optional
+	NamespaceLabels ConfigTemplatingItem `json:"namespaceLabels,omitempty"`
+
+	// Templates to describe labels for rolebindings
+	// +kubebuilder:validation:Optional
+	RoleBindingLabels ConfigTemplatingItem `json:"roleBindingLabels,omitempty"`
 }
 
 // go templating can be used to derive the labels to be set on the resource when created
-type ConfigResourceLabelConfig map[string]string
+type ConfigTemplatingItem map[string]string
 
 type ConfigCustomField struct {
 	// Regular expression for validating input, defaults to '', which means no validation.
