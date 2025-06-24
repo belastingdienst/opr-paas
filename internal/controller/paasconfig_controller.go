@@ -163,7 +163,7 @@ func (pcr *PaasConfigReconciler) finalize(
 			Message: fmt.Sprintf("Performing finalizer operations for PaasConfig: %s ", cfg.Name),
 		})
 
-		if err := pcr.Status().Update(ctx, cfg); err != nil {
+		if err = pcr.Status().Update(ctx, cfg); err != nil {
 			logger.Err(err).Msg("Failed to update PaasConfig status")
 			return true, nil
 		}
@@ -178,7 +178,7 @@ func (pcr *PaasConfigReconciler) finalize(
 			),
 		})
 
-		if err := pcr.Status().Update(ctx, cfg); err != nil {
+		if err = pcr.Status().Update(ctx, cfg); err != nil {
 			logger.Err(err).Msg("Failed to update PaasConfig status")
 			return true, nil
 		}
@@ -186,7 +186,7 @@ func (pcr *PaasConfigReconciler) finalize(
 		if ok := controllerutil.RemoveFinalizer(cfg, paasconfigFinalizer); !ok {
 			return true, errors.New("failed to add finalizer")
 		}
-		if err := pcr.Update(ctx, cfg); err != nil {
+		if err = pcr.Update(ctx, cfg); err != nil {
 			logger.Err(err).Msg("error updating PaasConfig")
 			return true, nil
 		}

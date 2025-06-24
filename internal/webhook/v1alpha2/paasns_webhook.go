@@ -196,9 +196,9 @@ func validatePaasNsName(
 }
 
 func validatePaasNsGroups(
-	ctx context.Context,
-	k8sClient client.Client,
-	conf v1alpha2.PaasConfig,
+	_ context.Context,
+	_ client.Client,
+	_ v1alpha2.PaasConfig,
 	paas v1alpha2.Paas,
 	paasns v1alpha2.PaasNS,
 ) ([]*field.Error, error) {

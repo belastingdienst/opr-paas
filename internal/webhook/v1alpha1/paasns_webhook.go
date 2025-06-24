@@ -77,18 +77,6 @@ func nssFromNs(ctx context.Context, c client.Client, ns string) (map[string]int,
 
 // nssFromPaas accepts a Paas and returns a list of all namespaces managed by this Paas
 // nssFromPaas uses nssFromNs which is recursive.
-func nssFromPaas(ctx context.Context, c client.Client, paas *v1alpha1.Paas) (map[string]int, error) {
-	finalNss := map[string]int{}
-	finalNss[paas.Name] = 1
-	nss, err := nssFromNs(ctx, c, paas.Name)
-	if err != nil {
-		return nil, err
-	}
-	for key, value := range nss {
-		finalNss[key] += value
-	}
-	return finalNss, nil
-}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
 func (v *PaasNSCustomValidator) ValidateCreate(

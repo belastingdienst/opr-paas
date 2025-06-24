@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
@@ -36,16 +35,14 @@ func ensureNamespace(
 ) error {
 	// See if namespace exists and create if it doesn't
 	found := &corev1.Namespace{}
-	err := r.Get(ctx, types.NamespacedName{
-		Name: ns.Name,
-	}, found)
+	err := r.Get(ctx, client.ObjectKeyFromObject(ns), found)
 	if err != nil && errors.IsNotFound(err) {
 		return r.Create(ctx, ns)
 	} else if err != nil {
 		// Error that isn't due to the namespace not existing
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
-		if err := controllerutil.SetControllerReference(paas, found, scheme); err != nil {
+		if err = controllerutil.SetControllerReference(paas, found, scheme); err != nil {
 			return err
 		}
 	}
@@ -62,7 +59,7 @@ func ensureNamespace(
 	return nil
 }
 
-// backendNamespace is a code for Creating Namespace
+// backendNamespace is a code for defining Namespaces
 func backendNamespace(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
@@ -86,10 +83,6 @@ func backendNamespace(
 	}
 
 	ns := &corev1.Namespace{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Namespace",
-			APIVersion: "v1",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
 			Labels: labels,

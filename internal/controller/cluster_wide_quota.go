@@ -12,6 +12,8 @@ import (
 	"fmt"
 	"strings"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v2/internal/config"
 	paasquota "github.com/belastingdienst/opr-paas/v2/internal/quota"
@@ -25,7 +27,7 @@ import (
 )
 
 const (
-	cwqPrefix string = "paas-"
+	cwqPrefix string = "paas"
 )
 
 func (r *PaasReconciler) fetchAllPaasCapabilityResources(
@@ -99,12 +101,7 @@ func backendClusterWideQuota(
 	quotaName string,
 	hardQuotas map[corev1.ResourceName]resourcev1.Quantity,
 ) *quotav1.ClusterResourceQuota {
-	// matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}
 	quota := &quotav1.ClusterResourceQuota{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ClusterResourceQuota",
-			APIVersion: "quota.openshift.io/v1",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: quotaName,
 		},
@@ -125,12 +122,12 @@ func backendClusterWideQuota(
 }
 
 func clusterWideQuotaName(capabilityName string) string {
-	return fmt.Sprintf("%s%s", cwqPrefix, capabilityName)
+	return join(cwqPrefix, capabilityName)
 }
 
 func clusterWideCapabilityName(quotaName string) (capabilityName string, err error) {
 	var found bool
-	if capabilityName, found = strings.CutPrefix(quotaName, cwqPrefix); !found {
+	if capabilityName, found = strings.CutPrefix(quotaName, cwqPrefix+"-"); !found {
 		err = errors.New("failed to remove prefix")
 	}
 	return capabilityName, err
@@ -185,18 +182,18 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 	quota = backendClusterWideQuota(quotaName,
 		paasConfigSpec.QuotaSettings.MinQuotas)
 
-	err := r.Get(ctx, types.NamespacedName{Name: quotaName}, quota)
+	err := r.Get(ctx, client.ObjectKeyFromObject(quota), quota)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 	exists = err == nil
 
 	if !paas.AmIOwner(quota.OwnerReferences) {
-		if err := controllerutil.SetOwnerReference(paas, quota, r.Scheme); err != nil {
+		if err = controllerutil.SetOwnerReference(paas, quota, r.Scheme); err != nil {
 			return err
 		}
 	}
-	if err := r.updateClusterWideQuotaResources(ctx, quota); err != nil {
+	if err = r.updateClusterWideQuotaResources(ctx, quota); err != nil {
 		return err
 	}
 	if exists {
@@ -222,9 +219,7 @@ func (r *PaasReconciler) removeFromClusterWideQuota(
 	}
 	quota = backendClusterWideQuota(quotaName,
 		capConfig.QuotaSettings.MinQuotas)
-	err := r.Get(ctx, types.NamespacedName{
-		Name: quotaName,
-	}, quota)
+	err := r.Get(ctx, client.ObjectKeyFromObject(quota), quota)
 	if err != nil && k8serrors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
@@ -238,7 +233,7 @@ func (r *PaasReconciler) removeFromClusterWideQuota(
 	if len(quota.OwnerReferences) < 1 {
 		return r.Delete(ctx, quota)
 	}
-	if err := r.updateClusterWideQuotaResources(ctx, quota); err != nil {
+	if err = r.updateClusterWideQuotaResources(ctx, quota); err != nil {
 		return err
 	} else if err = r.Update(ctx, quota); err != nil {
 		return err

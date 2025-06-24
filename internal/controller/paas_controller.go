@@ -137,7 +137,7 @@ func (r *PaasReconciler) getPaasFromRequest(
 			logger.Err(err).Msg("failed to add finalizer")
 			return nil, errors.New("failed to add finalizer")
 		}
-		if err := r.Update(ctx, paas); err != nil {
+		if err = r.Update(ctx, paas); err != nil {
 			logger.Err(err).Msg("error updating Paas")
 			return nil, err
 		}

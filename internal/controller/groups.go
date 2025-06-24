@@ -21,7 +21,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -44,9 +43,7 @@ func (r *PaasReconciler) ensureGroup(
 	logger := log.Ctx(ctx)
 	// See if group already exists and create if it doesn't
 	found := &userv1.Group{}
-	err := r.Get(ctx, types.NamespacedName{
-		Name: group.Name,
-	}, found)
+	err := r.Get(ctx, client.ObjectKeyFromObject(group), found)
 	if err != nil && errors.IsNotFound(err) {
 		logger.Info().Msg("creating group " + groupName)
 		// Create the group
@@ -62,7 +59,7 @@ func (r *PaasReconciler) ensureGroup(
 	}
 	if !paas.AmIOwner(found.OwnerReferences) {
 		logger.Info().Msg("setting owner reference on group " + groupName)
-		if err := controllerutil.SetOwnerReference(paas, found, r.Scheme); err != nil {
+		if err = controllerutil.SetOwnerReference(paas, found, r.Scheme); err != nil {
 			logger.Err(err).Msg("error while setting owner reference on group " + groupName)
 			return err
 		}
@@ -133,7 +130,8 @@ func (r *PaasReconciler) backendGroups(
 	paas *v1alpha2.Paas,
 ) (groups []*userv1.Group, err error) {
 	for key, group := range paas.Spec.Groups {
-		beGroup, err := r.backendGroup(ctx, paas, key, group)
+		var beGroup *userv1.Group
+		beGroup, err = r.backendGroup(ctx, paas, key, group)
 		if err != nil {
 			return nil, err
 		}
@@ -154,7 +152,7 @@ func (r *PaasReconciler) finalizeGroups(
 	if err != nil {
 		return err
 	}
-	err = r.deleteObsoleteGroups(ctx, paas, []*userv1.Group{}, existingGroups)
+	err = r.deleteObsoleteGroups(ctx, []*userv1.Group{}, existingGroups)
 	if err != nil {
 		return err
 	}
@@ -175,12 +173,12 @@ func (r *PaasReconciler) reconcileGroups(
 	if err != nil {
 		return err
 	}
-	err = r.deleteObsoleteGroups(ctx, paas, desiredGroups, existingGroups)
+	err = r.deleteObsoleteGroups(ctx, desiredGroups, existingGroups)
 	if err != nil {
 		return err
 	}
 	for _, group := range desiredGroups {
-		if err := r.ensureGroup(ctx, paas, group); err != nil {
+		if err = r.ensureGroup(ctx, paas, group); err != nil {
 			logger.Err(err).Msgf("failure while reconciling group %s", group.Name)
 			return err
 		}
@@ -193,7 +191,6 @@ func (r *PaasReconciler) reconcileGroups(
 // the LDAP query is added to a list of to be removedLdapGroups.
 func (r *PaasReconciler) deleteObsoleteGroups(
 	ctx context.Context,
-	paas *v1alpha2.Paas,
 	desiredGroups []*userv1.Group,
 	existingGroups []*userv1.Group,
 ) error {
