@@ -74,7 +74,7 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
 func (v *PaasCustomValidator) ValidateUpdate(
 	ctx context.Context,
-	oldObj, newObj runtime.Object,
+	_, newObj runtime.Object,
 ) (admission.Warnings, error) {
 	paas, ok := newObj.(*v1alpha1.Paas)
 	if !ok {
@@ -162,7 +162,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 
 // validateCaps returns an error if any of the passed capabilities is not configured.
 func validateCaps(
-	ctx context.Context,
+	_ context.Context,
 	_ client.Client,
 	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,
@@ -184,7 +184,7 @@ func validateCaps(
 
 // validatePaasName returns an error if the name of the paas does not meet validations.
 func validatePaasName(
-	ctx context.Context,
+	_ context.Context,
 	_ client.Client,
 	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,
@@ -208,7 +208,7 @@ func validatePaasName(
 
 // validatePaasNamespaceNames returns an error for every namespace that does not meet validations.
 func validatePaasNamespaceNames(
-	ctx context.Context,
+	_ context.Context,
 	_ client.Client,
 	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,
@@ -239,7 +239,7 @@ func validatePaasNamespaceNames(
 
 // validatePaasRequestor returns an error if The requestor field in a Paas does not meet with validation RE
 func validatePaasRequestor(
-	ctx context.Context,
+	_ context.Context,
 	_ client.Client,
 	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,
@@ -263,7 +263,7 @@ func validatePaasRequestor(
 
 // validateGroupNames returns an error for every group name that does not meet validations RE
 func validateGroupNames(
-	ctx context.Context,
+	_ context.Context,
 	_ client.Client,
 	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,
@@ -327,7 +327,7 @@ func validateSecrets(
 //
 // Returns an internal error if the validation regexp cannot be compiled.
 func validateCustomFields(
-	ctx context.Context,
+	_ context.Context,
 	_ client.Client,
 	conf v1alpha1.PaasConfig,
 	paas *v1alpha1.Paas,

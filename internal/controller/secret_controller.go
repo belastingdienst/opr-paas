@@ -31,12 +31,8 @@ func (r *PaasReconciler) ensureSecret(
 	secret *corev1.Secret,
 ) error {
 	// See if secret exists and create if it doesn't
-	namespacedName := types.NamespacedName{
-		Name:      secret.Name,
-		Namespace: secret.Namespace,
-	}
 	found := &corev1.Secret{}
-	err := r.Get(ctx, namespacedName, found)
+	err := r.Get(ctx, client.ObjectKeyFromObject(secret), found)
 	if err != nil && errors.IsNotFound(err) {
 		// Create the secret
 		return r.Create(ctx, secret)
@@ -80,10 +76,6 @@ func (r *PaasReconciler) backendSecret(
 	logger.Info().Msg("defining Secret")
 
 	s := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "v1",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      namespacedName.Name,
 			Namespace: namespacedName.Namespace,
@@ -132,17 +124,19 @@ func (r *PaasReconciler) backendSecrets(
 	for url, encryptedSecretData := range encryptedSecrets {
 		namespacedName := types.NamespacedName{
 			Namespace: namespace,
-			Name:      fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(url)[:8])),
+			Name:      join("paas-ssh", strings.ToLower(hashData(url)[:8])),
 		}
-		secret, err := r.backendSecret(ctx, paas, paasns, namespacedName, url)
+		var secret *corev1.Secret
+		secret, err = r.backendSecret(ctx, paas, paasns, namespacedName, url)
 		if err != nil {
 			return nil, err
 		}
-		decrypted, err := rsa.Decrypt(encryptedSecretData)
+		var decryptedSecretData []byte
+		decryptedSecretData, err = rsa.Decrypt(encryptedSecretData)
 		if err != nil {
 			return nil, fmt.Errorf("failed to decrypt secret %s: %s", secret.Name, err.Error())
 		}
-		secret.Data["sshPrivateKey"] = decrypted
+		secret.Data["sshPrivateKey"] = decryptedSecretData
 		secrets.Items = append(secrets.Items, *secret)
 	}
 	return secrets, nil
@@ -228,13 +222,13 @@ func (r *PaasReconciler) reconcileNamespaceSecrets(
 	}
 	if existingSecrets != nil {
 		logger.Debug().Int("count", len(existingSecrets.Items)).Msg("existing secrets count")
-		if err := r.deleteObsoleteSecrets(ctx, existingSecrets, desiredSecrets); err != nil {
+		if err = r.deleteObsoleteSecrets(ctx, existingSecrets, desiredSecrets); err != nil {
 			return err
 		}
 	}
 
 	for _, secret := range desiredSecrets.Items {
-		if err := r.ensureSecret(ctx, &secret); err != nil {
+		if err = r.ensureSecret(ctx, &secret); err != nil {
 			logger.Err(err).Str("secret", secret.Name).Msg("failure while reconciling secret")
 			return err
 		}

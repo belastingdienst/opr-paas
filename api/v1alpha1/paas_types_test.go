@@ -540,7 +540,7 @@ func Test_Paas_AmIOwner(t *testing.T) {
 		allOwners[3],
 	}
 
-	empty := []metav1.OwnerReference{}
+	var empty []metav1.OwnerReference
 
 	assert.True(t, paas.AmIOwner(allOwners))
 	assert.True(t, paas.AmIOwner(someOwners))
@@ -571,7 +571,7 @@ func Test_Paas_WithoutMe(t *testing.T) {
 		allOwners[3],
 	}
 
-	empty := []metav1.OwnerReference{}
+	var empty []metav1.OwnerReference
 
 	assert.NotContains(t, paas.WithoutMe(allOwners), allOwners[0])
 	assert.Contains(t, paas.WithoutMe(allOwners), allOwners[1])

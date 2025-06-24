@@ -24,14 +24,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const crbNameFormat string = "paas-%s"
+const crbNamePrefix string = "paas"
 
 func getClusterRoleBinding(
 	ctx context.Context,
 	r client.Client,
 	role string,
 ) (crb *rbac.ClusterRoleBinding, err error) {
-	crbName := fmt.Sprintf(crbNameFormat, role)
+	crbName := join(crbNamePrefix, role)
 	found := &rbac.ClusterRoleBinding{}
 	err = r.Get(ctx, types.NamespacedName{Name: crbName}, found)
 	if err != nil && errors.IsNotFound(err) {
@@ -64,12 +64,8 @@ func updateClusterRoleBinding(
 func backendClusterRoleBinding(
 	role string,
 ) *rbac.ClusterRoleBinding {
-	crbName := fmt.Sprintf(crbNameFormat, role)
+	crbName := join(crbNamePrefix, role)
 	rb := &rbac.ClusterRoleBinding{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ClusterRoleBinding",
-			APIVersion: "rbac.authorization.k8s.io/v1",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: crbName,
 			// TODO are these labels still correct?
@@ -175,7 +171,7 @@ func (r *PaasReconciler) reconcileClusterRoleBinding(
 			return err
 		}
 		if addOrUpdateCrb(ctx, crb, nsName, sas) {
-			if err := updateClusterRoleBinding(ctx, r.Client, crb); err != nil {
+			if err = updateClusterRoleBinding(ctx, r.Client, crb); err != nil {
 				return err
 			}
 		}
@@ -241,7 +237,10 @@ func (r *PaasReconciler) finalizeCapClusterRoleBindings(ctx context.Context, paa
 			roles = append(roles, extraRoles...)
 		}
 		for _, role := range roles {
-			r.finalizeClusterRoleBinding(ctx, role, *nsRE)
+			err := r.finalizeClusterRoleBinding(ctx, role, *nsRE)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -258,7 +257,7 @@ func (r *PaasReconciler) finalizePaasClusterRoleBindings(
 	}
 	for _, role := range capRoles {
 		re := regexp.MustCompile(fmt.Sprintf("^%s-", paas.Name))
-		err := r.finalizeClusterRoleBinding(ctx, role, *re)
+		err = r.finalizeClusterRoleBinding(ctx, role, *re)
 		if err != nil {
 			return err
 		}

@@ -22,7 +22,6 @@ const (
 	groupWithQueryName       = "aug-cet-groupquery" //nolint:gosec
 	groupQuery               = "CN=aug-cet-groupquery,OU=paas,DC=test,DC=acme,DC=org"
 	group2Query              = "CN=aug-cet-queryviewrole,OU=paas,DC=test,DC=acme,DC=org"
-	updatedGroup2Query       = "CN=aug-cet-second-queryviewrole,OU=paas,DC=test,DC=acme,DC=org"
 )
 
 func TestGroupQuery(t *testing.T) {
