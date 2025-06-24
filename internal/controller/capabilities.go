@@ -10,7 +10,7 @@ package controller
 import (
 	"context"
 	"errors"
-	"strings"
+	"fmt"
 
 	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v2/internal/config"
@@ -43,14 +43,6 @@ func getListGen(generators []appv1.ApplicationSetGenerator) *appv1.ApplicationSe
 	return nil
 }
 
-func splitToService(paasName string) (string, string) {
-	parts := strings.SplitN(paasName, "-", 3)
-	if len(parts) < 2 {
-		return paasName, ""
-	}
-	return parts[0], parts[1]
-}
-
 // ensureAppSetCap ensures a list entry in the AppSet for each capability
 func (r *PaasReconciler) ensureAppSetCaps(
 	ctx context.Context,
@@ -69,6 +61,40 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	return nil
 }
 
+func capElementsFromPaas(
+	paas *v1alpha2.Paas,
+	capName string,
+) (elements fields.Elements, err error) {
+	myConfig := config.GetConfig()
+	templater := templating.NewTemplater(*paas, myConfig)
+	capConfig := myConfig.Spec.Capabilities[capName]
+	templatedElements, err := applyCustomFieldTemplates(capConfig.CustomFields, templater)
+	if err != nil {
+		return nil, err
+	}
+
+	capability := paas.Spec.Capabilities[capName]
+
+	capElements, err := capability.CapExtraFields(myConfig.Spec.Capabilities[capName].CustomFields)
+	if err != nil {
+		return nil, err
+	}
+	elements = templatedElements.AsFieldElements().Merge(capElements)
+
+	for name, tpl := range myConfig.Spec.Templating.GenericCapabilityFields {
+		result, templateErr := templater.TemplateToMap(name, tpl)
+		if templateErr != nil {
+			return nil, fmt.Errorf("failed to run template %s", tpl)
+		}
+		for key, value := range result {
+			elements[key] = value
+		}
+	}
+
+	elements["paas"] = paas.Name
+	return elements, nil
+}
+
 // ensureAppSetCap ensures a list entry in the AppSet for the capability
 func (r *PaasReconciler) ensureAppSetCap(
 	ctx context.Context,
@@ -76,9 +102,11 @@ func (r *PaasReconciler) ensureAppSetCap(
 	capName string,
 ) error {
 	var err error
-	var elements fields.Elements
 	// See if AppSet exists raise error if it doesn't
-	namespacedName := config.GetConfig().Spec.CapabilityK8sName(capName)
+	ctx, logger := logging.GetLogComponent(ctx, "appset")
+	logger.Info().Msgf("reconciling %s Applicationset", capName)
+	myConfig := config.GetConfig()
+	namespacedName := myConfig.Spec.CapabilityK8sName(capName)
 	appSet := &appv1.ApplicationSet{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Applicationset",
@@ -89,8 +117,6 @@ func (r *PaasReconciler) ensureAppSetCap(
 			Namespace: namespacedName.Namespace,
 		},
 	}
-	ctx, logger := logging.GetLogComponent(ctx, "appset")
-	logger.Info().Msgf("reconciling %s Applicationset", capName)
 	err = r.Get(ctx, namespacedName, appSet)
 	var entries fields.Entries
 	var listGen *appv1.ApplicationSetGenerator
@@ -99,32 +125,10 @@ func (r *PaasReconciler) ensureAppSetCap(
 		return err
 	}
 
-	myConfig := config.GetConfig()
-	templater := templating.NewTemplater(*paas, myConfig)
-	spec := myConfig.GetSpec()
-	capConfig := spec.Capabilities[capName]
-	templatedElements, err := applyCustomFieldTemplates(capConfig.CustomFields, templater)
+	elements, err := capElementsFromPaas(paas, capName)
 	if err != nil {
 		return err
 	}
-
-	capability := paas.Spec.Capabilities[capName]
-
-	cfs := make(map[string]v1alpha2.ConfigCustomField, len(myConfig.Spec.Capabilities[capName].CustomFields))
-	for key, val := range myConfig.Spec.Capabilities[capName].CustomFields {
-		cfs[key] = val
-	}
-
-	capElements, err := capability.CapExtraFields(cfs)
-	if err != nil {
-		return err
-	}
-	elements = templatedElements.AsFieldElements().Merge(capElements)
-	service, subService := splitToService(paas.Name)
-	elements["requestor"] = paas.Spec.Requestor
-	elements["paas"] = paas.Name
-	elements["service"] = service
-	elements["subservice"] = subService
 	patch := client.MergeFrom(appSet.DeepCopy())
 	if listGen = getListGen(appSet.Spec.Generators); listGen == nil {
 		// create the list

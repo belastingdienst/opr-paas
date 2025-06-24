@@ -85,6 +85,13 @@ var _ = Describe("Namespace", Ordered, func() {
 				ManagedBySuffix: manBySuffix,
 				RequestorLabel:  reqLbl,
 				QuotaLabel:      qtaLbl,
+				Templating: v1alpha2.ConfigTemplatingItems{
+					NamespaceLabels: v1alpha2.ConfigTemplatingItem{
+						//revive:disable-next-line
+						"":       "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" + kubeInstLabel + "\" }}{{$key}}: {{$value}}\n{{end}}{{end}}",
+						manByLbl: "{{ .Paas.Spec.ManagedByPaas }}-" + manBySuffix,
+					},
+				},
 			},
 		}
 		config.SetConfig(myConfig)

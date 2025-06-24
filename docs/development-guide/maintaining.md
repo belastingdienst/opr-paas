@@ -37,13 +37,50 @@ With:
 Methods used
 ------------
 
-### Creating a release
+### Creating a Release
 
 We release from `main`. All changes to `main` are made through PRs. Merging a PR
-will trigger the release drafter action to create a draft release.
+triggers the release drafter action to create a draft release.
 
-The process to create a release is mostly automated, to start it:
+The process to create a release is mostly automated. To start it:
 
-- Merge one or more PRs to `main`;
-- Ensure completeness;
-- Edit the draft release and publish it;
+* Merge one or more PRs to `main`;
+* Ensure completeness;
+* Edit the draft release and publish it.
+
+#### Important: No Backports Policy
+
+We do not support backports to previous release versions.
+Fixes are only provided for the **current main release series**. For example, if
+version 2.x.x is the active release series, no fixes will be made or backported
+to the 1.x.x line.
+
+We follow a **roll-forward support model**:
+
+* All users are expected to upgrade to the latest available release to receive fixes.
+* Fix releases (patch versions) are provided for the current main release series only.
+* Users remaining on older versions do so at their own risk, as we do not provide
+  maintenance or security updates for them.
+
+This approach allows us to focus our efforts on improving the latest version without
+fragmenting support across multiple release lines.
+
+---
+
+### Creating a Hotfix Release
+
+Hotfix releases are created from the relevant tag. The process is similar to
+creating a regular release.
+
+The process is as follows:
+
+* Create a new branch based on the **latest release tag of the current main release series**
+  that needs the fix;
+* Merge one or more PRs to this branch;
+* Ensure completeness;
+* Edit the draft release and publish it;
+  Ensure the release only contains the hotfix!
+* Merge the hotfix branch back into `main` to keep `main` up to date.
+
+> **Note:** Hotfix releases are only supported for the actively maintained release
+  series. We do not create hotfixes for previous major versions.

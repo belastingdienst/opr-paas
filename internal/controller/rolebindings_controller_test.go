@@ -91,6 +91,12 @@ var _ = Describe("Rolebinding", Ordered, func() {
 				RoleMappings: v1alpha2.ConfigRoleMappings{
 					funcRoleName: []string{tecRole1, tecRole2},
 				},
+				Templating: v1alpha2.ConfigTemplatingItems{
+					RoleBindingLabels: v1alpha2.ConfigTemplatingItem{
+						//revive:disable-next-line
+						"": "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" + kubeInstLabel + "\" }}{{$key}}: {{$value}}\n{{end}}{{end}}",
+					},
+				},
 			},
 		}
 		config.SetConfig(myConfig)
