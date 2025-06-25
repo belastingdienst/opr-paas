@@ -17,6 +17,11 @@ linters:
     govet:
       enable:
         - shadow
+      settings:
+        shadow:
+          # Whether to be strict about shadowing; can be noisy.
+          # Default: false
+          strict: true
     revive:
       rules:
         - name: add-constant
