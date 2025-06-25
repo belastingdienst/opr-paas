@@ -10,8 +10,8 @@ date: 2025-01-21
 ## Groups and Users
 
 For every Paas it is possible to define which k8s groups have permissions on resources
-belonging to the Paas. It is possible to manage group membership externally, with an ldap sync solution based on `oc adm group sync`.
-It also possible to have group membership managed by the Paas operator, by specifying users. However, we are working towards getting rid of user management through Paas, relying only externally managed groups.
+belonging to the Paas. It is possible to manage group membership externally, with an LDAP sync solution based on `oc adm group sync`.
+It is also possible to have group membership managed by the Paas operator, by specifying users. However, we are working towards getting rid of user management through Paas, relying only on externally managed groups.
 
 For more information on authorization, please see [Core Concepts - Authorization](../overview/core_concepts/authorization.md).
 

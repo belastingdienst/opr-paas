@@ -375,7 +375,7 @@ To enable any capability, `spec.clusterwide_argocd_namespace` needs to be set to
 And for a new capability (e.a. `new-capability`), there should be an ApplicationSet to manage resources for this new capability.
 This ApplicationSet should be created in `paas-capabilities-argocd`, and it's name (e.a. `new-capability`) should be configured in PaasConfig (`spec.capabilities["new-capability"].ApplicationSet`).
 After setting this configuration, for every Paas with the capability `new-capability` enabled, the Paas operator will
-`GET` the ApplicationSet `paas-capabilities-argocd.new-capability`, add the Paas to the list generator and update the ApplicationSet definition..
+`GET` the ApplicationSet `paas-capabilities-argocd.new-capability`, add the Paas to the list generator and update the ApplicationSet definition.
 This in turn will create a new Application for the capability for this Paas, and ArgoCD will create and manage the resources.
 
 ### Example ApplicationSet

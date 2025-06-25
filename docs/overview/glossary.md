@@ -78,7 +78,7 @@ This could be an ITIL group, Service desk name, email address or any random stri
 ## SSH Secrets
 
 You can add SSH keys, which are a type of secret, to your Paas for ArgoCD to use
-so it can access a git repository. For example on a self-hosted Github or BitBucket
+so it can access a git repository. For example on a self-hosted GitHub or BitBucket
 instance.
 
 The SSH secrets must be encrypted with the public key corresponding to the

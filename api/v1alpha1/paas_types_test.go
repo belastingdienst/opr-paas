@@ -313,8 +313,8 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 	var elements fields.Element
 	var err error
 
-	// argocd specific fields can come from old and new options
-	// new options over old options
+	// argocd specific fields can come from old and new options.
+	// new options take precedence over old options
 	// validation success works as expected
 	// key not being set which is not required defaults to config.Default
 	pc = PaasCapability{

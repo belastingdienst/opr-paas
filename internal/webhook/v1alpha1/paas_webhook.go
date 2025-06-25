@@ -4,7 +4,7 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-// Package v1alpha1 contains all webhook code for the v1alpha admission and conversion webhooks
+// Package v1alpha1 contains all webhook code for the v1alpha1 admission and conversion webhooks
 package v1alpha1
 
 import (
