@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"maps"
 
+	"github.com/belastingdienst/opr-paas/v2/internal/logging"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+
 	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v2/internal/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -78,13 +83,35 @@ func (r *PaasReconciler) paasNSsFromNs(ctx context.Context, ns string) map[strin
 		panic(err)
 	}
 	for _, pns := range pnsList.Items {
-		nsName := pns.NamespaceName()
+		nameFromPaasNs, err := r.getPaasNameFromPaasNs(ctx, &pns)
+		if err != nil {
+			return nil
+		}
+		nsName := nameFromPaasNs + "-" + pns.Name
 		nss[nsName] = pns
 		for key, value := range r.paasNSsFromNs(ctx, nsName) {
 			nss[key] = value
 		}
 	}
 	return nss
+}
+
+func (r *PaasReconciler) getPaasNameFromPaasNs(ctx context.Context, paasNsObj client.Object) (string, error) {
+	var ns corev1.Namespace
+	_, logger := logging.GetLogComponent(ctx, "namespace")
+	logger.Info().Msg("defining quota")
+	if err := r.Get(ctx, types.NamespacedName{Name: paasNsObj.GetNamespace()}, &ns); err != nil {
+		logger.Error().Err(err).Msg("unable to get namespace where paasns resides")
+		return "", err
+	}
+
+	paasName, err := paasFromNs(ns)
+	if err != nil {
+		logger.Error().Err(err).Msgf("finding paas for paasns without owner reference in ns %s", ns.Name)
+		return "", err
+	}
+
+	return paasName, nil
 }
 
 func (r *PaasReconciler) nsDefsFromPaasNamespaces(
