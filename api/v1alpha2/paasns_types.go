@@ -9,9 +9,6 @@ See LICENSE.md for details.
 package v1alpha2
 
 import (
-	"errors"
-	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,20 +27,19 @@ const (
 
 // PaasNSSpec defines the desired state of PaasNS
 type PaasNSSpec struct {
-	// Deprecated: not required once paas controller is managing the PaasNS resources.
-	// The `metadata.name` of the Paas which created the namespace in which this PaasNS is applied
+	// Deprecated: this has no function anymore and will be deleted in the next version.
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
-	Paas string `json:"paas"`
+	// +kubebuilder:validation:Optional
+	Paas string `json:"paas,omitempty"`
 	// Keys of the groups, as defined in the related `paas`, which should get access to
 	// the namespace created by this PaasNS. When not set, all groups as defined in the related
 	// `paas` get access to the namespace created by this PaasNS.
 	// +kubebuilder:validation:Optional
-	Groups []string `json:"groups"`
+	Groups []string `json:"groups,omitempty"`
 	// Secrets which should exist in the namespace created through this PaasNS,
 	// the values are the encrypted secrets through Crypt
 	// +kubebuilder:validation:Optional
-	Secrets map[string]string `json:"secrets"`
+	Secrets map[string]string `json:"secrets,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -81,12 +77,4 @@ func (pns PaasNS) ClonedLabels() map[string]string {
 		}
 	}
 	return labels
-}
-
-func (pns PaasNS) NamespaceName() string {
-	if pns.Spec.Paas == "" || pns.Name == "" {
-		panic(errors.New("invalid paas or paasns name (empty)"))
-	}
-
-	return fmt.Sprintf("%s-%s", pns.Spec.Paas, pns.Name)
 }

@@ -346,20 +346,9 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Watches(
 			&v1alpha2.PaasNS{},
 			handler.EnqueueRequestsFromMapFunc(
-				func(_ context.Context, paasNsObj client.Object) []reconcile.Request {
-					var ns corev1.Namespace
-					logger := mgr.GetLogger()
-					if err := mgr.GetClient().Get(
-						context.Background(),
-						types.NamespacedName{Name: paasNsObj.GetNamespace()},
-						&ns,
-					); err != nil {
-						logger.Error(err, "unable to get namespace where paasns resides")
-						return nil
-					}
-					paasName, err := paasFromNs(ns)
+				func(ctx context.Context, paasNsObj client.Object) []reconcile.Request {
+					paasName, err := r.getPaasNameFromPaasNs(ctx, paasNsObj)
 					if err != nil {
-						logger.Error(err, "finding paas for paasns without owner reference", "ns", ns)
 						return nil
 					}
 					return []reconcile.Request{{

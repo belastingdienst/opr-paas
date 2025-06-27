@@ -12,6 +12,7 @@ patches:
 # patches here are for enabling the conversion webhook for each CRD
   - path: patches/webhook_in_paas.yaml
   - path: patches/webhook_in_paasconfig.yaml
+  - path: patches/webhook_in_paasns.yaml
 # +kubebuilder:scaffold:crdkustomizewebhookpatch
 
 # [CERTMANAGER] To enable cert-manager, uncomment all the sections with [CERTMANAGER] prefix.
