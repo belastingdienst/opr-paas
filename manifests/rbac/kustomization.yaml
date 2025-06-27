@@ -5,6 +5,9 @@ kind: Kustomization
 resources:
   - leader_election_role.yaml
   - leader_election_role_binding.yaml
+  - metrics_auth_role.yaml
+  - metrics_auth_role_binding.yaml
+  - metrics_reader_role.yaml
   - role.yaml
   - role_binding.yaml
   - service_account.yaml
