@@ -167,9 +167,8 @@ spec:
                   type: string
                 type: array
               paas:
-                description: |-
-                  Deprecated: not required once paas controller is managing the PaasNS resources.
-                  The `metadata.name` of the Paas which created the namespace in which this PaasNS is applied
+                description: 'Deprecated: this has no function anymore and will be
+                  deleted in the next version.'
                 minLength: 1
                 type: string
               secrets:
@@ -179,8 +178,6 @@ spec:
                   Secrets which should exist in the namespace created through this PaasNS,
                   the values are the encrypted secrets through Crypt
                 type: object
-            required:
-            - paas
             type: object
         type: object
     served: true
