@@ -44,7 +44,7 @@ func (en Entries) String() string {
 
 // AsJSON can be used to convert Entries into JSON data
 func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
-	list := []apiextensionsv1.JSON{}
+	var list []apiextensionsv1.JSON
 	keys := make([]string, 0, len(en))
 	for k := range en {
 		keys = append(keys, k)

@@ -153,7 +153,7 @@ func Test_version(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]string
-	err := json.Unmarshal([]byte(w.Body.Bytes()), &response)
+	err := json.Unmarshal(w.Body.Bytes(), &response)
 	value, exists := response["version"]
 
 	require.NoError(t, err)
@@ -174,7 +174,7 @@ func Test_healthz(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]string
-	err := json.Unmarshal([]byte(w.Body.Bytes()), &response)
+	err := json.Unmarshal(w.Body.Bytes(), &response)
 	value, exists := response["message"]
 
 	require.NoError(t, err)
@@ -195,7 +195,7 @@ func Test_readyz(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]string
-	err := json.Unmarshal([]byte(w.Body.Bytes()), &response)
+	err := json.Unmarshal(w.Body.Bytes(), &response)
 	value, exists := response["message"]
 
 	require.NoError(t, err)

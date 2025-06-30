@@ -52,7 +52,7 @@ As an example, assuming a Paas called `my-paas` with:
 To add user namespaces, the following options are available:
 
 - In this Paas, the `spec.namespaces` field could have a list of namespaces.
-  If this would be set to (just as an example) `[ ns1, ns2, ns3 ]`, the Paas
+  If this was set to (just as an example) `[ ns1, ns2, ns3 ]`, the Paas
   controller would create three PaasNs resources in a namespace called `my-paas`.
 
   The PaasNs controller would process them as being part of `my-paas` and create
@@ -83,7 +83,7 @@ To add user namespaces, the following options are available:
   PaasNs resource could be in a namespace which is the product of a PaasNs
   resources in a namespace, which...
 
-  As as the top namespace is the product of a PaasNs resource in the namespace
+  As the top namespace is the product of a PaasNs resource in the namespace
   called after the Paas, all child PaasNs's are assumed to be part of the same Paas.
 
 !!! Note

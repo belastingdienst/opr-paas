@@ -32,14 +32,3 @@ type RestCheckPaasResult struct {
 	Decrypted bool   `json:"decrypted"`
 	Error     string `json:"error"`
 }
-
-// RestGenerateInput is returned by the API for generate requests
-type RestGenerateInput struct {
-	APIKey string `json:"apiKey"`
-}
-
-// RestGenerateResult is returned by the API for generate requests
-type RestGenerateResult struct {
-	Private string `json:"private"`
-	Public  string `json:"public"`
-}

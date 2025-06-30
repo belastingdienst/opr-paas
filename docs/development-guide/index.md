@@ -30,7 +30,7 @@ development workflow, with some customizations:
 
 - the [Continuous Delivery](https://en.wikipedia.org/wiki/Continuous_delivery)
   branch is called `main` and is protected;
-- Github is configured for linear development (no merge commits);
+- GitHub is configured for linear development (no merge commits);
 - development happens in separate branches created from the `main` branch and
   called "*dev/ISSUE_ID*";
 - once completed, developers must submit a pull request;
@@ -59,7 +59,7 @@ TODO:
 Your development environment for Paas
 -------------------------------------
 
-In order to write even the simplest patch for Paas you must have setup your
+In order to write even the simplest patch for Paas you must have set up your
 workstation to build and locally test the version of the operator you are developing.
 
 Submit a pull request

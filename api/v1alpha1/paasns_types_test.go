@@ -141,7 +141,7 @@ func TestPaasNS_AmIOwner(t *testing.T) {
 		allOwners[3],
 	}
 
-	empty := []metav1.OwnerReference{}
+	var empty []metav1.OwnerReference
 
 	assert.True(t, pns.AmIOwner(allOwners))
 	assert.True(t, pns.AmIOwner(someOwners))

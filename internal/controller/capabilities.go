@@ -12,13 +12,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v2/internal/config"
 	"github.com/belastingdienst/opr-paas/v2/internal/fields"
 	"github.com/belastingdienst/opr-paas/v2/internal/logging"
 	appv1 "github.com/belastingdienst/opr-paas/v2/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v2/internal/templating"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -107,16 +108,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	logger.Info().Msgf("reconciling %s Applicationset", capName)
 	myConfig := config.GetConfig()
 	namespacedName := myConfig.Spec.CapabilityK8sName(capName)
-	appSet := &appv1.ApplicationSet{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Applicationset",
-			APIVersion: "argoproj.io/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      namespacedName.Name,
-			Namespace: namespacedName.Namespace,
-		},
-	}
+	appSet := &appv1.ApplicationSet{}
 	err = r.Get(ctx, namespacedName, appSet)
 	var entries fields.Entries
 	var listGen *appv1.ApplicationSetGenerator

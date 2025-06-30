@@ -78,7 +78,7 @@ func SetComponentDebug(components []string) {
 	}
 }
 
-// GetLogComponent gets the logger for a component fro a context.
+// GetLogComponent gets the logger for a component from a context.
 func GetLogComponent(ctx context.Context, name string) (context.Context, *zerolog.Logger) {
 	logger := log.Ctx(ctx)
 	level := zerolog.InfoLevel

@@ -3,7 +3,7 @@
 SshSecrets is implemented to enable bootstrapping a project 100% 'as code'.
 
 The idea is that people can create a Paas to bootstrap an application front to
-back, including required namespaces, quotas, a application specific ArgoCD and a
+back, including required namespaces, quotas, an application specific ArgoCD and a
 running application, in one go.
 
 However, when using private repositories, ArgoCD needs to be provided with an SSH

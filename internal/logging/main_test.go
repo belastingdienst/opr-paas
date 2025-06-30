@@ -38,10 +38,6 @@ func (l *logSink) Index(i int) string {
 	return ""
 }
 
-func (l *logSink) Count(i int) int {
-	return len(l.logs)
-}
-
 func TestSetControllerLogger(t *testing.T) {
 	ctx := context.TODO()
 	obj := &v1alpha1.Paas{

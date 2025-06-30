@@ -48,7 +48,7 @@ var (
 	cfg           *rest.Config
 	k8sClient     client.Client
 	testEnv       *envtest.Environment
-	pubkey        *rsa.PublicKey
+	_             *rsa.PublicKey
 	genericConfig = v1alpha2.PaasConfig{
 		Spec: v1alpha2.PaasConfigSpec{
 			DecryptKeysSecret: v1alpha2.NamespacedName{
@@ -97,7 +97,7 @@ func setupPaasSys() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Save public key so we can encrypt things within tests
-	pubkey = &privkey.PublicKey
+	_ = &privkey.PublicKey
 }
 
 var _ = BeforeSuite(func() {

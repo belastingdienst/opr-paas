@@ -313,8 +313,8 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 	var elements fields.Element
 	var err error
 
-	// argocd specific fields can come from old and new options
-	// new options over old options
+	// argocd specific fields can come from old and new options.
+	// new options take precedence over old options
 	// validation success works as expected
 	// key not being set which is not required defaults to config.Default
 	pc = PaasCapability{
@@ -540,7 +540,7 @@ func Test_Paas_AmIOwner(t *testing.T) {
 		allOwners[3],
 	}
 
-	empty := []metav1.OwnerReference{}
+	var empty []metav1.OwnerReference
 
 	assert.True(t, paas.AmIOwner(allOwners))
 	assert.True(t, paas.AmIOwner(someOwners))
@@ -571,7 +571,7 @@ func Test_Paas_WithoutMe(t *testing.T) {
 		allOwners[3],
 	}
 
-	empty := []metav1.OwnerReference{}
+	var empty []metav1.OwnerReference
 
 	assert.NotContains(t, paas.WithoutMe(allOwners), allOwners[0])
 	assert.Contains(t, paas.WithoutMe(allOwners), allOwners[1])

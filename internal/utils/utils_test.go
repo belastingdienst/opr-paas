@@ -53,10 +53,10 @@ func TestPathHappyFlow(t *testing.T) {
 
 	files, err := PathToFileList(paths)
 
-	// Check if files are prefixed with "/private", meaning we're on MacOS
+	// Check if files are prefixed with "/private", meaning we're on macOS
 	for _, file := range files {
 		if strings.HasPrefix(file, "/private") {
-			// Update expectedFiles to include the correct path prefix for MacOS
+			// Update expectedFiles to include the correct path prefix for macOS
 			expectedFiles = []string{
 				filepath.Join("/private", tempDir, "path1", "file1"),
 				filepath.Join("/private", tempDir, "path2", "file2"),

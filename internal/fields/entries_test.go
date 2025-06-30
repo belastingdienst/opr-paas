@@ -17,7 +17,7 @@ const (
 	paas1Value4 = "p1v4"
 	paas2Name   = "paas2"
 	paas2Value1 = "p2v1"
-	paas2Value2 = 3
+
 	paas2Value3 = "p2v3"
 )
 
@@ -144,7 +144,6 @@ func TestEntriesAsJSON(t *testing.T) {
 
 func TestEntriesFromJSON(t *testing.T) {
 	const (
-		paas3Name   = "paas3"
 		paas3Value1 = "p3v1"
 		paas3Value2 = 2.0
 		paas3Value4 = "p3v4"

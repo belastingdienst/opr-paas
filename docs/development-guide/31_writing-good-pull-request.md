@@ -69,7 +69,7 @@ Description:
 
 The shorter the PR, the easier to review. Reviewing a PR requires the reviewer to understand how the system behavior is being changed. With bigger PRs, this becomes harder to understand, especially with the diff based nature of the review tools.
 
-Keep your PRs as short as possible. A good rule of thumb is that if you PR ends up touching more than 500 lines, you should considering breaking it up into smaller PRs.
+Keep your PRs as short as possible. A good rule of thumb is that if you PR ends up touching more than 500 lines, you should consider breaking it up into smaller PRs.
 
 If there are refactorings that you've decided to do along the way, move them to a separate PR so that real changes aren't mingled with no-brainer refactoring changes.
 

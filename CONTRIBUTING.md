@@ -7,14 +7,14 @@ our project that we need help with, including:
 
 * Problems found while setting up the development environment;
 * Gaps in our documentation;
-* Bugs in our Github actions;
+* Bugs in our GitHub actions;
 * Promotion of PostgreSQL on Kubernetes with our operator;
 
 First, though, it is important that you read the Code of Conduct.
 
 The guidelines below are a starting point. We don't want to limit your creativity,
 passion, and initiative. If you think there's a better way, please feel free to
-bring it up in a Github discussion, or open a pull request. We're certain there
+bring it up in a GitHub discussion, or open a pull request. We're certain there
 are always better ways to do things, we just need to start some constructive
 dialogue!
 
