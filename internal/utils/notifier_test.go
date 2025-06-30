@@ -91,7 +91,7 @@ func Test_LinkChanged(t *testing.T) {
 	filePath := filepath.Join(tmpDir, "extra")
 	writeFile(t, filePath, "initial file data")
 	symlinkPath := filepath.Join(tmpDir, "symlink")
-	if err := os.Symlink(filePath, symlinkPath); err != nil {
+	if err = os.Symlink(filePath, symlinkPath); err != nil {
 		panic(fmt.Errorf("unable to create symlink: %w", err))
 	}
 
@@ -105,7 +105,7 @@ func Test_LinkChanged(t *testing.T) {
 
 	os.Remove(symlinkPath)
 	time.Sleep(timeout)
-	if err := os.Symlink(filePath, symlinkPath); err != nil {
+	if err = os.Symlink(filePath, symlinkPath); err != nil {
 		panic(fmt.Errorf("unable to create symlink: %w", err))
 	}
 	time.Sleep(timeout)

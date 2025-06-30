@@ -186,7 +186,7 @@ func (r *PaasReconciler) reconcileQuotas(
 	}
 	for _, q := range quotas {
 		logger.Info().Msg("creating quota " + q.Name + " for PAAS object ")
-		if err := r.ensureQuota(ctx, q); err != nil {
+		if err = r.ensureQuota(ctx, q); err != nil {
 			logger.Err(err).Msgf("failure while creating quota %s", q.Name)
 			return err
 		}
@@ -194,7 +194,7 @@ func (r *PaasReconciler) reconcileQuotas(
 
 	for _, name := range r.backendUnneededQuotas(paas) {
 		logger.Info().Msg("cleaning quota " + name + " for PAAS object ")
-		if err := r.finalizeClusterQuota(ctx, name); err != nil {
+		if err = r.finalizeClusterQuota(ctx, name); err != nil {
 			logger.Err(err).Msgf("failure while finalizing quota %s", name)
 			return err
 		}

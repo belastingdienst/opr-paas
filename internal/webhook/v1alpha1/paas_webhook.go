@@ -136,10 +136,11 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 		validateGroupNames,
 		validatePaasNamespaceNames,
 	} {
-		if errs, err := val(ctx, v.client, conf, paas); err != nil {
+		var fieldErrs []*field.Error
+		if fieldErrs, err = val(ctx, v.client, conf, paas); err != nil {
 			return nil, apierrors.NewInternalError(err)
-		} else if errs != nil {
-			allErrs = append(allErrs, errs...)
+		} else if fieldErrs != nil {
+			allErrs = append(allErrs, fieldErrs...)
 		}
 	}
 

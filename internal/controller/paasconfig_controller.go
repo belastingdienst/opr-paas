@@ -138,7 +138,7 @@ func (pcr *PaasConfigReconciler) addFinalizer(ctx context.Context, cfg *v1alpha2
 		if ok := controllerutil.AddFinalizer(cfg, paasconfigFinalizer); !ok {
 			return true, errors.New("failed to add finalizer")
 		}
-		if err := pcr.Update(ctx, cfg); err != nil {
+		if err = pcr.Update(ctx, cfg); err != nil {
 			logger.Err(err).Msg("error updating PaasConfig")
 			return true, nil
 		}

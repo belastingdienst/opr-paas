@@ -90,7 +90,8 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 		validatePaasNsGroups,
 		validatePaasNsSecrets,
 	} {
-		fieldErrs, err := validator(ctx, v.client, myConfig, *paas, *paasns)
+		var fieldErrs []*field.Error
+		fieldErrs, err = validator(ctx, v.client, myConfig, *paas, *paasns)
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +145,8 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 		validatePaasNsSecrets,
 	} {
 		myConfig := config.GetConfig()
-		fieldErrs, err := validator(ctx, v.client, myConfig, *paas, *newPaasns)
+		var fieldErrs []*field.Error
+		fieldErrs, err = validator(ctx, v.client, myConfig, *paas, *newPaasns)
 		if err != nil {
 			return nil, err
 		}

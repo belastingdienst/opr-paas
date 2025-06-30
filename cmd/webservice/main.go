@@ -92,7 +92,8 @@ func v1Encrypt(c *gin.Context) {
 	}
 	secret := []byte(input.Secret)
 	if _, err := ssh.ParsePrivateKey(secret); err == nil {
-		encrypted, err := getRsa(input.PaasName).Encrypt(secret)
+		var encrypted string
+		encrypted, err = getRsa(input.PaasName).Encrypt(secret)
 		if err != nil {
 			return
 		}

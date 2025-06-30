@@ -301,7 +301,7 @@ func (ccp ConfigCapPerm) AsConfigRolesSas(add bool) ConfigRolesSas {
 				cr[sa] = add
 				crs[role] = cr
 			} else {
-				cr := make(map[string]bool)
+				cr = make(map[string]bool)
 				cr[sa] = add
 				crs[role] = cr
 			}
