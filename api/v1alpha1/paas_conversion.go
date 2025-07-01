@@ -8,6 +8,7 @@ package v1alpha1
 
 import (
 	"fmt"
+
 	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 	"github.com/rs/zerolog/log"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -92,9 +93,7 @@ func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Status.Conditions = p.Status.Conditions
 	dst.Spec.Requestor = p.Spec.Requestor
 	dst.Spec.Quota = p.Spec.Quota.DeepCopy()
-	dst.Spec.Capabilities = make(v1alpha2.PaasCapabilities)
-	dst.Spec.Groups = make(v1alpha2.PaasGroups)
-	dst.Spec.Namespaces = make(v1alpha2.PaasNamespaces)
+	dst.Spec.Capabilities = make(v1alpha2.PaasCapabilities, len(p.Spec.Capabilities))
 	dst.Spec.Secrets = p.Spec.SSHSecrets
 	dst.Spec.ManagedByPaas = p.Spec.ManagedByPaas
 
@@ -123,6 +122,7 @@ func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 		}
 	}
 
+	dst.Spec.Groups = make(v1alpha2.PaasGroups, len(p.Spec.Groups))
 	for name, group := range p.Spec.Groups {
 		dst.Spec.Groups[name] = v1alpha2.PaasGroup{
 			Query: group.Query,
@@ -131,6 +131,7 @@ func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 		}
 	}
 
+	dst.Spec.Namespaces = make(v1alpha2.PaasNamespaces, len(p.Spec.Namespaces))
 	for _, name := range p.Spec.Namespaces {
 		dst.Spec.Namespaces[name] = v1alpha2.PaasNamespace{}
 	}
