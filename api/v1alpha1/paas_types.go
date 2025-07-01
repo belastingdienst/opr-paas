@@ -353,8 +353,10 @@ func (pc *PaasCapability) CapExtraFields(
 		}
 	}
 	for key, fieldConf := range fieldConfig {
-		if value, err := elements.TryGetElementAsString(key); err == nil {
-			if matched, err := regexp.Match(fieldConf.Validation, []byte(value)); err != nil {
+		var value string
+		if value, err = elements.TryGetElementAsString(key); err == nil {
+			var matched bool
+			if matched, err = regexp.Match(fieldConf.Validation, []byte(value)); err != nil {
 				issues = append(issues, fmt.Errorf("could not validate value %s: %w", value, err))
 			} else if !matched {
 				issues = append(issues,

@@ -480,7 +480,8 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			entries := make(fields.Entries)
 			for _, generator := range a.Spec.Generators {
-				generatorEntries, err := fields.EntriesFromJSON(generator.List.Elements)
+				var generatorEntries fields.Entries
+				generatorEntries, err = fields.EntriesFromJSON(generator.List.Elements)
 				Expect(err).NotTo(HaveOccurred())
 				entries = entries.Merge(generatorEntries)
 			}
@@ -505,7 +506,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		})
 
 		It("should not create an appset entry", func() {
-			appSet := &argocd.ApplicationSet{}
+			appSet = &argocd.ApplicationSet{}
 			appSetName := types.NamespacedName{
 				Name:      capAppSetName,
 				Namespace: capAppSetNamespace,
@@ -514,7 +515,8 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			entries := make(fields.Entries)
 			for _, generator := range appSet.Spec.Generators {
-				generatorEntries, err := fields.EntriesFromJSON(generator.List.Elements)
+				var generatorEntries fields.Entries
+				generatorEntries, err = fields.EntriesFromJSON(generator.List.Elements)
 				Expect(err).NotTo(HaveOccurred())
 				entries = entries.Merge(generatorEntries)
 			}

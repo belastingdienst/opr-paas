@@ -64,14 +64,14 @@ func (tmr TemplateResult) AsFieldElements() (result fields.Elements) {
 
 func yamlToMap(data []byte) (result TemplateMapResult, err error) {
 	result = make(TemplateMapResult)
-	if err := yaml.Unmarshal(data, &result); err != nil {
+	if err = yaml.Unmarshal(data, &result); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
 func yamlToList(data []byte) (result TemplateListResult, err error) {
-	if err := yaml.Unmarshal(data, &result); err != nil {
+	if err = yaml.Unmarshal(data, &result); err != nil {
 		return nil, err
 	}
 	return result, nil

@@ -73,7 +73,7 @@ func (vs validatedSecrets) compareSecrets(
 				Field:  field.NewPath("spec").Child("sshSecrets").Key(secretName).String(),
 				Detail: fmt.Errorf("failed to get crypt: %w", err).Error(),
 			})
-		} else if _, err := cryptObj.Decrypt(secret); err != nil {
+		} else if _, err = cryptObj.Decrypt(secret); err != nil {
 			errs = append(errs, &field.Error{
 				Type:     field.ErrorTypeInvalid,
 				Field:    field.NewPath("spec").Child("sshSecrets").Key(secretName).String(),

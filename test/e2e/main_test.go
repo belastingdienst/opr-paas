@@ -226,7 +226,7 @@ func TestMain(m *testing.M) {
 					return obj.(*v1alpha2.PaasConfig).Name == paasconfig.Name
 				})
 
-			if err := waitForDefaultOpts(ctx, waitUntilPaasConfigExists); err != nil {
+			if err = waitForDefaultOpts(ctx, waitUntilPaasConfigExists); err != nil {
 				return ctx, err
 			}
 
