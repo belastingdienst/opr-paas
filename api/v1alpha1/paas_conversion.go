@@ -8,8 +8,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	"sort"
-
 	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
 	"github.com/rs/zerolog/log"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -73,7 +71,6 @@ func (p *Paas) ConvertFrom(srcRaw conversion.Hub) error {
 	for name := range src.Spec.Namespaces {
 		p.Spec.Namespaces = append(p.Spec.Namespaces, name)
 	}
-	sort.Strings(p.Spec.Namespaces)
 
 	return nil
 }
