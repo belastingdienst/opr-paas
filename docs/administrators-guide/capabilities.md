@@ -127,7 +127,7 @@ Some examples include:
 
 For this reason we have introduced options for setting custom fields in the capability configuration in PaasConfig.
 Each custom field belongs to a capability (e.a. `capability_name`), has a field name (e.a. `custom_field_name`) and configuration.
-A custom field can be defined in PaasConfig in `PaasConfig.spec.capabilities[capability].customfields`).
+A custom field can be defined in PaasConfig in `PaasConfig.spec.capabilities[capability].customfields`.
 
 The following configuration can be set:
 
@@ -184,6 +184,8 @@ requiring users to explicitly specify these values in their Paas. This provides 
 the Paas, the PaasConfig, or a combination of both. The template support Go templating syntax, in which all values from the Paas 
 and PaasConfig can be referenced, more examples below. In addition to the default Go template functions, we've added support for
 [all Sprout](https://docs.atom.codes/sprout/groups/all) Go template functions.
+
+For more info on templating, see [api-guide on using templating in paas configuration](../administrators-guide/go-templating.md)
 
 #### Notes:
 - **Precedence**: When a custom field is configured with a template, it will take precedence over other settings like default, 
