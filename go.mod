@@ -1,6 +1,6 @@
 module github.com/belastingdienst/opr-paas/v2
 
-go 1.24.0
+go 1.24
 
 require (
 	github.com/go-logr/logr v1.4.2 // indirect
