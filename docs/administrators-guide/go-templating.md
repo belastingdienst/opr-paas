@@ -53,7 +53,7 @@ This feature can be used to:
 - use specific fields in the Paas (or PaasConfig) to define extra labels
 
 !!!! Note
-     This feature replaces certain hardcoded implementations that where previously implemented.
+     This feature replaces certain hardcoded implementations that were previously implemented.
      If you want to keep the behavior, please add the following to your PaasConfig:
 
     ```yml
