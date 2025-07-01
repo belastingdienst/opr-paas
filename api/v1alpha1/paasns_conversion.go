@@ -9,7 +9,7 @@ package v1alpha1
 import (
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/rs/zerolog/log"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )

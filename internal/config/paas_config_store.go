@@ -11,8 +11,8 @@ package config
 import (
 	"sync"
 
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 )
 
 // PaasConfigStore is a thread-safe store for the current PaasConfig
