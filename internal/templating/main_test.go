@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v2/internal/templating"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

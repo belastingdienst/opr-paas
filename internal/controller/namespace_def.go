@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"maps"
 
-	"github.com/belastingdienst/opr-paas/v2/internal/logging"
+	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v2/internal/config"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

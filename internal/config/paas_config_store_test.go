@@ -9,7 +9,7 @@ package config
 import (
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/stretchr/testify/assert"
 )
 

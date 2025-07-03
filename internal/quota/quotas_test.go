@@ -5,7 +5,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	paasquota "github.com/belastingdienst/opr-paas/v2/internal/quota"
+	paasquota "github.com/belastingdienst/opr-paas/v3/internal/quota"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/api/resource"
 )

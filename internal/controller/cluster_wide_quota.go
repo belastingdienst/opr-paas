@@ -14,9 +14,9 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v2/internal/config"
-	paasquota "github.com/belastingdienst/opr-paas/v2/internal/quota"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	paasquota "github.com/belastingdienst/opr-paas/v3/internal/quota"
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"

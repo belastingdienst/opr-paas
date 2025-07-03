@@ -11,7 +11,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/v2/internal/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

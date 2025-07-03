@@ -14,10 +14,10 @@ import (
 	"sort"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v2/internal/config"
-	"github.com/belastingdienst/opr-paas/v2/internal/logging"
-	"github.com/belastingdienst/opr-paas/v2/internal/quota"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	"github.com/belastingdienst/opr-paas/v3/internal/logging"
+	"github.com/belastingdienst/opr-paas/v3/internal/quota"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -418,7 +418,8 @@ func validateExtraPerm(conf v1alpha1.PaasConfig, paas *v1alpha1.Paas) (warnings 
 	return warnings
 }
 
-// validateListSorted returns a warning when the list is not sorted.
+// validateListSorted returns a warning when the list is not sorted in which case the get would return something else
+// (without capability) then create
 func validateListSorted(
 	list []string,
 ) (warnings []string) {
@@ -431,7 +432,8 @@ func validateListSorted(
 	return warnings
 }
 
-// validateDisabledCapabilities .......
+// validateDisabledCapabilities returns a warning when one or more capabilities have enabled set to false
+// in which case the get would return something else (without capability) then create
 func validateDisabledCapabilities(
 	capabilities v1alpha1.PaasCapabilities,
 ) (warnings []string) {
