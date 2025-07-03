@@ -48,7 +48,7 @@ endif
 
 # Set the Operator SDK version to use. By default, what is installed on the system is used.
 # This is useful for CI or a project to utilize a specific version of the operator-sdk toolkit.
-OPERATOR_SDK_VERSION ?= v1.36.1
+OPERATOR_SDK_VERSION ?= v1.40.0
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 
@@ -352,7 +352,7 @@ setup-local-e2e:
 local-e2e: refresh-kind setup-local-e2e manifests kustomize
 	# Install certManager for generating certs to easily test webhooks
 	# TODO(portly-halicore-76) define version of certmanager externally
-	$(KUBECTL) apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml
+	$(KUBECTL) apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.18.2/cert-manager.yaml
 	# Wait for certmanager to be ready else deploying Paas will fail
 	$(KUBECTL) wait --for=condition=Available deployment/cert-manager-webhook -n cert-manager --timeout=120s
 ifeq ($(CONTAINER_TOOL),podman)
