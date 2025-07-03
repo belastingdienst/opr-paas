@@ -84,7 +84,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		It("Should allow creation of a valid Paas", func() {
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
-					Capabilities: v1alpha1.PaasCapabilities{"cap5": v1alpha1.PaasCapability{}},
+					Capabilities: v1alpha1.PaasCapabilities{"cap5": v1alpha1.PaasCapability{Enabled: true}},
 				},
 			}
 
@@ -102,7 +102,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					Name: "this-is-invalid",
 				},
 				Spec: v1alpha1.PaasSpec{
-					Capabilities: v1alpha1.PaasCapabilities{"foo": v1alpha1.PaasCapability{}},
+					Capabilities: v1alpha1.PaasCapabilities{"foo": v1alpha1.PaasCapability{Enabled: true}},
 				},
 			}
 
@@ -155,10 +155,25 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				}
 			}
 		})
+		It("Should warn when namespaces are not ordered properly", func() {
+			obj.Spec.Namespaces = []string{"ns2", "ns1"}
+			warn, _ := validator.ValidateCreate(ctx, obj)
+			Expect(warn).To(ContainElement(orderedListWarning))
+		})
+		It("Should warn when capabilities are defined but not enabled", func() {
+			const disabledCap = "disabledCapability"
+			obj.Spec.Capabilities = v1alpha1.PaasCapabilities{
+				disabledCap: v1alpha1.PaasCapability{
+					Enabled: false,
+				},
+			}
+			warn, _ := validator.ValidateCreate(ctx, obj)
+			Expect(warn).To(ContainElement(fmt.Sprintf(disabledCapWarning, disabledCap)))
+		})
 		It("Should deny creation when a capability is set that is not configured", func() {
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
-					Capabilities: v1alpha1.PaasCapabilities{"foo": v1alpha1.PaasCapability{}},
+					Capabilities: v1alpha1.PaasCapabilities{"foo": v1alpha1.PaasCapability{Enabled: true}},
 				},
 			}
 
@@ -172,8 +187,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				obj = &v1alpha1.Paas{
 					Spec: v1alpha1.PaasSpec{
 						Capabilities: v1alpha1.PaasCapabilities{
-							"foo": v1alpha1.PaasCapability{},
-							"bar": v1alpha1.PaasCapability{},
+							"foo": v1alpha1.PaasCapability{Enabled: true},
+							"bar": v1alpha1.PaasCapability{Enabled: true},
 						},
 					},
 				}
@@ -238,6 +253,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				Spec: v1alpha1.PaasSpec{
 					Capabilities: v1alpha1.PaasCapabilities{
 						"foo": v1alpha1.PaasCapability{
+							Enabled: true,
 							CustomFields: map[string]string{
 								"bar": "baz",
 								"baz": "qux",
@@ -277,7 +293,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
 					Capabilities: v1alpha1.PaasCapabilities{
-						"foo": v1alpha1.PaasCapability{},
+						"foo": v1alpha1.PaasCapability{Enabled: true},
 					},
 				},
 			}
@@ -313,6 +329,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				Spec: v1alpha1.PaasSpec{
 					Capabilities: v1alpha1.PaasCapabilities{
 						"foo": v1alpha1.PaasCapability{
+							Enabled: true,
 							CustomFields: map[string]string{
 								"bar": "notinteger123",
 								"baz": "word",
@@ -416,6 +433,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				Spec: v1alpha1.PaasSpec{
 					Capabilities: v1alpha1.PaasCapabilities{
 						"foo": v1alpha1.PaasCapability{
+							Enabled: true,
 							Quota: quota.Quota{
 								corev1.ResourceLimitsCPU:      resource.MustParse("2"),
 								corev1.ResourceRequestsCPU:    resource.MustParse("2"),
@@ -458,8 +476,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
 					Capabilities: v1alpha1.PaasCapabilities{
-						"foo": v1alpha1.PaasCapability{ExtraPermissions: true},
-						"bar": v1alpha1.PaasCapability{ExtraPermissions: true},
+						"foo": v1alpha1.PaasCapability{Enabled: true, ExtraPermissions: true},
+						"bar": v1alpha1.PaasCapability{Enabled: true, ExtraPermissions: true},
 					},
 				},
 			}
@@ -475,7 +493,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 	Context("When updating a Paas under Validating Webhook", func() {
 		It("Should deny creation when a capability is set that is not configured", func() {
 			obj = &v1alpha1.Paas{Spec: v1alpha1.PaasSpec{
-				Capabilities: v1alpha1.PaasCapabilities{"foo": v1alpha1.PaasCapability{}},
+				Capabilities: v1alpha1.PaasCapabilities{"foo": v1alpha1.PaasCapability{Enabled: true}},
 			}}
 
 			Expect(validator.ValidateUpdate(ctx, nil, obj)).Error().
