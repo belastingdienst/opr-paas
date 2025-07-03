@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"

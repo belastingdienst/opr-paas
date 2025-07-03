@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/belastingdienst/opr-paas/v2/internal/fields"
-	"github.com/belastingdienst/opr-paas/v2/internal/paasresource"
-	argo "github.com/belastingdienst/opr-paas/v2/internal/stubs/argoproj/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/paasresource"
+	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

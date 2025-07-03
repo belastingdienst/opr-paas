@@ -9,8 +9,8 @@ package controller
 import (
 	"context"
 
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v2/internal/config"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	userv1 "github.com/openshift/api/user/v1"

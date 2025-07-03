@@ -6,7 +6,7 @@ See LICENSE.md for details.
 
 package main
 
-import "github.com/belastingdienst/opr-paas/v2/api/v1alpha1"
+import "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 
 // RestEncryptInput can be delivered to the API for encryption requests
 type RestEncryptInput struct {

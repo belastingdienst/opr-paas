@@ -6,7 +6,7 @@ import (
 	"context"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/v2/api/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"

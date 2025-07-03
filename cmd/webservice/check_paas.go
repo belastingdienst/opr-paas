@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/sirupsen/logrus"

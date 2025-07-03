@@ -12,13 +12,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/v2/internal/config"
-	"github.com/belastingdienst/opr-paas/v2/internal/fields"
-	"github.com/belastingdienst/opr-paas/v2/internal/logging"
-	appv1 "github.com/belastingdienst/opr-paas/v2/internal/stubs/argoproj/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v2/internal/templating"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/logging"
+	appv1 "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 
-	"github.com/belastingdienst/opr-paas/v2/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

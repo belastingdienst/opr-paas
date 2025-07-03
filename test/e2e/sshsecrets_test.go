@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/v2/internal/quota"
+	"github.com/belastingdienst/opr-paas/v3/internal/quota"
 	k8sv1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	api "github.com/belastingdienst/opr-paas/v2/api/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
