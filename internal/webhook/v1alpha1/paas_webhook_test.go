@@ -155,23 +155,21 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				}
 			}
 		})
-		/*
-			It("Should warn when namespaces are not ordered properly", func() {
-				obj.Spec.Namespaces = []string{"ns2", "ns1"}
-				warn, _ := validator.ValidateCreate(ctx, obj)
-				Expect(warn).To(ContainElement(orderedListWarning))
-			})
-			It("Should warn when capabilities are defined but not enabled", func() {
-				const disabledCap = "disabledCapability"
-				obj.Spec.Capabilities = v1alpha1.PaasCapabilities{
-					disabledCap: v1alpha1.PaasCapability{
-						Enabled: false,
-					},
-				}
-				warn, _ := validator.ValidateCreate(ctx, obj)
-				Expect(warn).To(ContainSubstring(fmt.Sprintf(disabledCapWarning, disabledCap)))
-			})
-		*/
+		It("Should warn when namespaces are not ordered properly", func() {
+			obj.Spec.Namespaces = []string{"ns2", "ns1"}
+			warn, _ := validator.ValidateCreate(ctx, obj)
+			Expect(warn).To(ContainElement(orderedListWarning))
+		})
+		It("Should warn when capabilities are defined but not enabled", func() {
+			const disabledCap = "disabledCapability"
+			obj.Spec.Capabilities = v1alpha1.PaasCapabilities{
+				disabledCap: v1alpha1.PaasCapability{
+					Enabled: false,
+				},
+			}
+			warn, _ := validator.ValidateCreate(ctx, obj)
+			Expect(warn).To(ContainElement(fmt.Sprintf(disabledCapWarning, disabledCap)))
+		})
 		It("Should deny creation when a capability is set that is not configured", func() {
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
