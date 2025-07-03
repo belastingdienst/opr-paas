@@ -14,7 +14,9 @@ spec:
     singular: paasns
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - deprecated: true
+    deprecationWarning: please upgrade to v1alpha2
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: PaasNS is the Schema for the PaasNS API

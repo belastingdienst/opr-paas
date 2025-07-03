@@ -14,7 +14,9 @@ spec:
     singular: paas
   scope: Cluster
   versions:
-  - name: v1alpha1
+  - deprecated: true
+    deprecationWarning: please upgrade to v1alpha2
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Paas is the Schema for the paas API
