@@ -34,7 +34,6 @@ type PaasSpec struct {
 	// Deprecated, the requestor implementation will be replaced by an annotation and Go Template functionality
 	// and will be removed in v1alpha3
 	// Requestor is an informational field which decides on the requestor (also application responsible)
-	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Optional
 	Requestor string `json:"requestor,omitempty"`
 
