@@ -33,9 +33,10 @@ const (
 type PaasSpec struct {
 	// Deprecated, the requestor implementation will be replaced by an annotation and go template functionality
 	// Requestor is an informational field which decides on the requestor (also application responsible)
+	// Deprecated: this field will be removed in v1alpha3 as this information can be replaced by a label or annotation
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
-	Requestor string `json:"requestor"`
+	// +kubebuilder:validation:Optional
+	Requestor string `json:"requestor,omitempty"`
 
 	// Quota defines the quotas which should be set on the cluster resource quota as used by this Paas project
 	// +kubebuilder:validation:Required
