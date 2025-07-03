@@ -418,7 +418,7 @@ func validateExtraPerm(conf v1alpha1.PaasConfig, paas *v1alpha1.Paas) (warnings 
 	return warnings
 }
 
-// validatePaasNamespaceListSorted returns an error when list is not sorted.
+// validateListSorted returns a warning when the list is not sorted.
 func validateListSorted(
 	list []string,
 ) (warnings []string) {
