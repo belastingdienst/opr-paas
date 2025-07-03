@@ -432,7 +432,7 @@ func validateListSorted(
 	return warnings
 }
 
-// validatePaasNamespaceListSorted returns an error when list is not sorted.
+// validateDisabledCapabilities .......
 func validateDisabledCapabilities(
 	capabilities v1alpha1.PaasCapabilities,
 ) (warnings []string) {
