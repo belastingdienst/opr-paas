@@ -433,7 +433,7 @@ func validateListSorted(
 }
 
 // validatePaasNamespaceListSorted returns an error when list is not sorted.
-func validateDIsabledCapabilities(
+func validateDisabledCapabilities(
 	capabilities v1alpha1.PaasCapabilities,
 ) (warnings []string) {
 	for capName, capConfig := range capabilities {
