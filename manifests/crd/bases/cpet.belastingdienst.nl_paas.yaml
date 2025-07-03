@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.2
+    controller-gen.kubebuilder.io/version: v0.18.0
   name: paas.cpet.belastingdienst.nl
 spec:
   group: cpet.belastingdienst.nl
@@ -374,9 +374,9 @@ spec:
                 type: object
               requestor:
                 description: |-
-                  Deprecated, the requestor implementation will be replaced by an annotation and go template functionality
+                  Deprecated, the requestor implementation will be replaced by an annotation and Go Template functionality
+                  and will be removed in v1alpha3
                   Requestor is an informational field which decides on the requestor (also application responsible)
-                minLength: 1
                 type: string
               secrets:
                 additionalProperties:
@@ -386,7 +386,6 @@ spec:
                 type: object
             required:
             - quota
-            - requestor
             type: object
           status:
             description: PaasStatus defines the observed state of Paas
