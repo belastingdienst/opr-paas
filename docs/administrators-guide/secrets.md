@@ -10,7 +10,7 @@ date: 2025-01-20
 
 The Paas operator includes features to manage secrets in namespaces of a Paas.
 The main use case is to create ssh secrets in the ArgoCD namespace so that it can
-read private repositories, which is where the name sshSecrets came from in the first
+read private repositories, which is where the name secrets came from in the first
 place. However, they can be used with other capabilities, and/or application namespaces too.
 
 SshSecrets are encrypted using asymmetric encryption and therefore require a public
@@ -86,7 +86,7 @@ k8s changes the mount and the webservice automatically picks up the file changes
 ### Reencryption
 
 A proper encryption product also has options to cycle the encrypted data.
-With the sshSecrets implementation in the operator, this is implemented with the
+With the secrets implementation in the operator, this is implemented with the
 crypttool.
 
 Steps are:

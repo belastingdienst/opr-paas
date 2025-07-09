@@ -27,9 +27,6 @@ Configuring authorization is done by:
     every applicable technical role, and adds the groups that should have the
     required permissions;
 
-  Additionally, the PaasConfig can have additional `argopermissions` to
-  be handed to additional groups (e.a. cluster admins).
-
 ## Config examples
 
 ### PaasConfig
@@ -39,16 +36,11 @@ The PaasConfig (managed by cluster admins) can be configured as follows:
 !!! example
 
     ```yaml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
     spec:
-      argopermissions:
-        resource_name: argo-service
-        role: admin
-        header: |
-          g, system:cluster-admins, role:admin
       rolemappings:
         # All groups defined in a Paas without any roles will have the `default`
         # functional role which maps to the OpenShift ClusterRole called view
@@ -86,7 +78,6 @@ The PaasConfig (managed by cluster admins) can be configured as follows:
             ratio: 0
       decryptKeyPaths:
         - /path/to/decrypt/key
-      exclude_appset_name: placeholder-appset-name
     ```
 
 !!! note
@@ -102,7 +93,7 @@ Devops engineers could create a Paas with the following definition:
 
     ```yaml
     ---
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: my-paas
@@ -135,8 +126,7 @@ Devops engineers could create a Paas with the following definition:
       capabilities:
         # For all capability namespaces (e.a. my-paas-argocd), there will be RoleBindings
         # for `admin`, `edit`, `alert-routing-edit`, and `monitoring-edit`
-        argocd:
-          enabled: true
+        argocd: {}
       # For all user namespaces (my-paas-cicd, my-paas-test, and my-paas-prod), there
       # will be RoleBindings for `admin`, `edit`, `alert-routing-edit`, and `monitoring-edit`
       namespaces:
@@ -154,10 +144,6 @@ With this example (combined with the operator config example), the following wou
 - For all namespaces (`my-paas-cicd`, `my-paas-test`, `my-paas-prod` and `my-paas-argocd`),
   there will be RoleBindings for `view`. They will all contain the groups `my-paas-us`, and `my-paas-them`;
 
-!!! Note
-In case of a Query value, no groups are created. But this data provides the possibility to integrate with options to manage users with a federated solution.
-For more information, see [ldap integration with groupsynclist](groupsynclist.md).
-
 ### PaasNS
 
 DevOps engineers could additionally create a PaasNS with the following definition:
@@ -166,7 +152,7 @@ DevOps engineers could additionally create a PaasNS with the following definitio
 
     ```yaml
     ---
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasNS
     metadata:
       # The name of the resulting namespace would be my-paas-adminonly ([paas name]-[paasns name])

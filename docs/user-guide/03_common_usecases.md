@@ -35,26 +35,20 @@ Let's first define the Paas:
 !!! example
 
     ```yaml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: my-kewl-app
     spec:
       capabilities:
-        forgejo:
-          enabled: true
-        tekton:
-          enabled: true
-        vault:
-          enabled: true
-        harbor:
-          enabled: true
-        argocd:
-          enabled: true
-        grafana:
-          enabled: true
+        forgejo: {}
+        tekton: {}
+        vault: {}
+        harbor: {}
+        argocd: {}
+        grafana: {}
       namespaces:
-      - prod
+        prod: {}
       quota:
         limits.cpu: '42'
         limits.memory: 11Gi

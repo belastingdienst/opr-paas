@@ -23,7 +23,7 @@ For more information on authorization, please see [Core Concepts - Authorization
 !!! example
 
     ```yaml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: tst-tst
