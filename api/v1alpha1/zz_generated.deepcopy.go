@@ -11,10 +11,10 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
-	"github.com/belastingdienst/opr-paas/v3/internal/quota"
+	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
