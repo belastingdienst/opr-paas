@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	orderedListWarning = "deprecation: list is not ordered properly and will be ordered when reading back"
+	orderedListWarning = "deprecation: list %s is not ordered properly and will be ordered when reading back"
 	disabledCapWarning = "deprecation: capability %s is disabled and will not be present when calling back the paas"
 )
 
@@ -153,7 +153,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	warnings = append(warnings, validateGroups(paas.Spec.Groups)...)
 	warnings = append(warnings, validateQuota(paas)...)
 	warnings = append(warnings, validateExtraPerm(conf, paas)...)
-	warnings = append(warnings, validateListSorted(paas.Spec.Namespaces)...)
+	warnings = append(warnings, validateListSorted(paas.Spec.Namespaces, "spec.namespaces")...)
 	warnings = append(warnings, validateDisabledCapabilities(paas.Spec.Capabilities)...)
 
 	if len(allErrs) == 0 && len(warnings) == 0 {
@@ -422,11 +422,12 @@ func validateExtraPerm(conf v1alpha1.PaasConfig, paas *v1alpha1.Paas) (warnings 
 // (without capability) then create
 func validateListSorted(
 	list []string,
+	label string,
 ) (warnings []string) {
 	if !sort.SliceIsSorted(list, func(i, j int) bool {
 		return list[i] < list[j]
 	}) {
-		warnings = append(warnings, orderedListWarning)
+		warnings = append(warnings, fmt.Sprintf(orderedListWarning, label))
 	}
 
 	return warnings

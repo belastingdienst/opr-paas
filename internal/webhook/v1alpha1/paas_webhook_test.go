@@ -156,9 +156,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 		})
 		It("Should warn when namespaces are not ordered properly", func() {
+			unorderedList := "spec.namespaces"
 			obj.Spec.Namespaces = []string{"ns2", "ns1"}
 			warn, _ := validator.ValidateCreate(ctx, obj)
-			Expect(warn).To(ContainElement(orderedListWarning))
+			Expect(warn).To(ContainElement(fmt.Sprintf(orderedListWarning, unorderedList)))
 		})
 		It("Should warn when capabilities are defined but not enabled", func() {
 			const disabledCap = "disabledCapability"
