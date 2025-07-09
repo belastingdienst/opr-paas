@@ -6,7 +6,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	"github.com/belastingdienst/opr-paas/v3/internal/quota"
+	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	quotav1 "github.com/openshift/api/quota/v1"
