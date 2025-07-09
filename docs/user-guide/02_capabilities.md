@@ -19,16 +19,14 @@ Read more about Paas capabilities in our [core concepts](../overview/core_concep
 !!! example
 
     ```yaml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: tst-tst
     spec:
       capabilities:
-        grafana:
-          enabled: true
+        grafana: {}
         sso:
-          enabled: true
           quota:
             limits.cpu: '5'
             limits.memory: 8Gi
@@ -36,7 +34,6 @@ Read more about Paas capabilities in our [core concepts](../overview/core_concep
             requests.memory: 2Gi
             requests.storage: 100Gi
         tekton:
-          enabled: true
           quota:
             limits.cpu: '32'
             limits.memory: 32Gi

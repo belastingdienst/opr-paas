@@ -28,7 +28,7 @@ the Paas Operator in production environments.
 - [Capabilities](capabilities/)  
   Modular, plugin‑style features like ArgoCD, Tekton, Grafana, and Keycloak.
 
-- [SSH Secrets](sshSecrets/)  
+- [SSH Secrets](secrets/)  
   Secure management of SSH credentials within the operator.
 
 - [Security](security/)  

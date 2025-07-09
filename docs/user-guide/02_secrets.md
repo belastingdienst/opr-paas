@@ -1,28 +1,28 @@
 ---
-title: Managing ssh Secrets
-summary: How ssh secrets can be leveraged to create secrets in paas namespaces in a secure manner.
+title: Managing secrets
+summary: How secrets can be leveraged to create secrets in paas namespaces in a secure manner.
 authors:
   - hikarukin
   - devotional-phoenix-97
 date: 2025-01-20
 ---
 
-# SSH Secrets
+# Secrets
 
 It is possible to define secrets to be created in a namespace for a specific capability,
-or in every namespace generically. The main use case is to create ssh secrets in the
+or in every namespace generically. The main use case is to create secrets in the
 ArgoCD namespace so that it can read private repositories, which is where the name
-sshSecrets came from in the first place. However, they can be used with other capabilities,
+secrets came from in the first place. However, they can be used with other capabilities,
 and/or application namespaces as well.
 
-More info can be found in [Core Concepts documentation on ssh Secrets](../overview/core_concepts/sshsecrets.md).
+More info can be found in [Core Concepts documentation on Secrets](../overview/core_concepts/secrets.md).
 
 ## Prerequisites
 
-SshSecrets are encrypted using asymmetric encryption and therefore require a public
+Secrets are encrypted using asymmetric encryption and therefore require a public
 and private keypair. Keypairs must be generated and managed by administrators and can
-provide the public key to Users for encrypting sshSecrets. For more info, please see
-the [Admin guide on configuring ssh secret encryption](../administrators-guide/sshSecrets.md).
+provide the public key to Users for encrypting secrets. For more info, please see
+the [Admin guide on configuring secret encryption](../administrators-guide/secrets.md).
 
 ## Encrypting secrets
 
@@ -62,24 +62,24 @@ Once downloaded, the crypttool has two options for encrypting content:
 
 Options are endless. Be creative...
 
-## defining sshSecrets
+## defining secrets
 
-Encrypted SSH Secrets can be specified in multiple places.
+Encrypted Secrets can be specified in multiple places.
 
-By defining the secret in the Paas spec directly (`Paas.spec.sshSecrets`) the
+By defining the secret in the Paas spec directly (`Paas.spec.secrets`) the
 secret will be created in all namespaces belonging to the paas.
 
 !!! example
 
-    Setting an sshSecret for all namespaces
+    Setting an secret for all namespaces
 
     ```yaml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: tst-tst
     spec:
-      sshSecrets:
+      secrets:
         'ssh://git@my-git-host/my-git-repo.git': >-
           2wkeKe...g==
     ```
@@ -89,10 +89,10 @@ be deployed in the namespace belonging to the capability specifically.
 
 !!! example
 
-    Setting an sshSecret for a specific capability
+    Setting an secret for a specific capability
 
     ```yaml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: tst-tst
@@ -100,7 +100,7 @@ be deployed in the namespace belonging to the capability specifically.
       capabilities:
         argocd:
           ...
-          sshSecrets:
+          secrets:
             'ssh://git@my-git-host/my-git-repo.git': >-
               2wkeKe...g==
     ```
@@ -112,19 +112,18 @@ corresponding namespace only.
 
     ```yaml
     ---
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: tst-tst
     spec:
       capabilities:
         # The argocd capability enabled
-        argocd:
-          enabled: true
+        argocd: {}
       requestor: my-team
       quota:
         limits.cpu: "40"
-      sshSecrets:
+      secrets:
         'ssh://git@my-git-host/my-git-repo.git': >-
           2wkeKe...g==
     ```

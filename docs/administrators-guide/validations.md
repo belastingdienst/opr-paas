@@ -16,7 +16,7 @@ Below snippet shows how validations can be configured for the complete set of va
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
