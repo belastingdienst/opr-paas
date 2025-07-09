@@ -16,7 +16,7 @@ import (
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	"github.com/belastingdienst/opr-paas/v3/internal/quota"
+	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/resource"
