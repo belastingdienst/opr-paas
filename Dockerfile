@@ -7,14 +7,9 @@ ARG TARGETARCH
 ARG VERSION=v0.0.0-devel
 
 WORKDIR /workspace
-# Copy the Go Modules manifests
-COPY go.mod go.mod
-COPY go.sum go.sum
 
 # Copy the go source
-COPY cmd/ cmd/
-COPY api/ api/
-COPY internal/ internal/
+COPY . .
 
 # Build
 # the GOARCH has not a default value to allow the binary be built according to the host where the command
