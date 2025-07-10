@@ -9,7 +9,7 @@ ARG VERSION=v0.0.0-devel
 WORKDIR /workspace
 
 # Copy the go source
-COPY . /
+COPY . .
 
 # Build
 # the GOARCH has not a default value to allow the binary be built according to the host where the command
