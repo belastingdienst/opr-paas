@@ -7,7 +7,7 @@ import (
 
 	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/internal/controller"
-	"github.com/belastingdienst/opr-paas/v3/internal/quota"
+	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
 	userv1 "github.com/openshift/api/user/v1"
 	"github.com/stretchr/testify/assert"
