@@ -31,8 +31,8 @@ import (
 )
 
 const (
-	orderedListWarning = "deprecation: list %s is not ordered properly and will be ordered when reading back"
-	disabledCapWarning = "deprecation: capability %s is disabled and will not be present when calling back the paas"
+	orderedListWarning = "deprecation: list %s is not alphabetically sorted. When retrieving the list, the order may differ from the order in which it was created"
+	disabledCapWarning = "deprecation: capability %s is disabled and will not be present when retrieving the Paas resource"
 )
 
 // SetupPaasWebhookWithManager registers the webhook for Paas in the manager.
