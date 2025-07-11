@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
+// revive:disable:line-length-limit
 const (
 	orderedListWarning = "deprecation: list %s is not alphabetically sorted. When retrieving the list, the order may differ from the order in which it was created"
 	disabledCapWarning = "deprecation: capability %s is disabled and will not be present when retrieving the Paas resource"
@@ -42,7 +43,6 @@ func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// revive:disable:line-length-limit
 // revive:disable:unused-parameter
 
 // NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
