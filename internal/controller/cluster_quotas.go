@@ -14,8 +14,8 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	paasquota "github.com/belastingdienst/opr-paas/v3/internal/quota"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
+	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	quotav1 "github.com/openshift/api/quota/v1"

@@ -3,7 +3,7 @@ package quota_test
 import (
 	"testing"
 
-	paasquota "github.com/belastingdienst/opr-paas/v3/internal/quota"
+	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"

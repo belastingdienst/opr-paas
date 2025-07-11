@@ -34,7 +34,8 @@ Depending on the result of the Go Template, one of three things can happen:
   - The value of the resulting item is derived from the exact returned string
 
 !!! Note
-If you need to return a map or list as a single string value in a field, you have the following options:
+
+    If you need to return a map or list as a single string value in a field, you have the following options:
     - convert the map to a string representation using toYaml or toJson, and add quoting to make sure it is parsed as one string 
     - create a map with one key/value pair and set the resulting string as the value
 
@@ -52,9 +53,10 @@ This feature can be used to:
 - copy labels (or annotations) from the Paas, (or PaasConfig) to labels on the specific resource
 - use specific fields in the Paas (or PaasConfig) to define extra labels
 
-!!!! Note
-     This feature replaces certain hardcoded implementations that were previously implemented.
-     If you want to keep the behavior, please add the following to your PaasConfig:
+!!! Note
+
+    This feature replaces certain hardcoded implementations that were previously implemented.
+    If you want to keep the behavior, please add the following to your PaasConfig:
 
     ```yml
     apiVersion: cpet.belastingdienst.nl/v1alpha2
@@ -91,9 +93,9 @@ There are two main differences:
 1. These custom fields cannot be overruled by a custom field for a specific Paas
 2. These custom fields are generically applied to all capabilities.
 
-!!!! Note
-     This feature replaces certain hardcoded implementations that were previously implemented.
-     If you want to keep the behavior, please add the following to your PaasConfig:
+!!! Note
+    This feature replaces certain hardcoded implementations that were previously implemented.
+    If you want to keep the behavior, please add the following to your PaasConfig:
 
     ```yml
     apiVersion: cpet.belastingdienst.nl/v1alpha2

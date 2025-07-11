@@ -46,6 +46,8 @@ override:
     threshold: 65
   - path: ^internal/config$
     threshold: 23
+  - path: pkg/quota/quota.go
+    threshold: 68
   - path: api/v1alpha1/paasconfig_types.go
     threshold: 10
   - path: api/v1alpha2/paas_types.go
