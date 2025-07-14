@@ -41,5 +41,6 @@ Below snippet shows how validations can be configured for the complete set of va
     ```
 
 !!! note
-If only one of `PaasConfig.spec.validations.paas.namespaceName`, and `PaasConfig.validations.paasNs.name` is set,
-both PaasNs names and Paas.Spec.Namespaces are validated with the same validation rule.
+
+    If only one of `PaasConfig.spec.validations.paas.namespaceName`, and `PaasConfig.validations.paasNs.name` is set,
+    both PaasNs names and Paas.Spec.Namespaces are validated with the same validation rule.

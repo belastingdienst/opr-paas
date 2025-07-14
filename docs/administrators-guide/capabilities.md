@@ -137,7 +137,8 @@ The following configuration can be set:
 - template: When set to a valid go template, the template is processed against the current Paas
   and PaasConfig end results are added as one or more custom fields in the applicationset.
 
-!!! Note
+!!! note
+
     `required` and `default` are mutually exclusive.
 
 When set, a Paas can set these custom_fields, which brings them to the generators field in the Application created by the ApplicationSet for this specific Paas.
@@ -227,7 +228,8 @@ You can now generate an argocd policy by ranging over the groups in the paas:
               limits.cpu: "8"
     ```
 
-!!! Note
+!!! note
+
     In the above example, you see the first line and the range on line 1, and the templated lines and end block on line 2.
     This causes that for every line a \n and after that a new row is inserted.
     This in turn leaves out the ending \n, which is unwanted.

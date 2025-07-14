@@ -19,7 +19,8 @@ Encryption is based on RSA where a public key (shared with everyone) is used to
 encrypt, and a private key (deployed with the Paas operator) is used to decrypt.
 Which that everyone can encrypt, but only the Paas operator can decrypt.
 
-!!! Note
+!!! note
+
     Note that we implemented `sshSecrets` for this use case, but they are implemented
     generically, and can also be used to seed secrets into other namespaces (capability
     and user namespaces)...
@@ -33,7 +34,8 @@ comes with additional tooling:
 
   You can find the crypt tool at [https://github.com/belastingdienst/opr-paas-crypttool](https://github.com/belastingdienst/opr-paas-crypttool)
 
-!!! Note
+!!! note
+
     Note that the crypt tool is not part of the operator anymore, but can be used
     separately. It was moved into a separate repository after the release of version
     v1.12.0 of the operator.
@@ -83,7 +85,8 @@ in the PaasNs. Additionally, `sshSecret`s can also be created in a Paas.
 The Paas controller only manages PaasNs's created by the controller as defined
 by the Paas.
 
-!!! Note
+!!! note
+
     PaasNs resources which are not created by the Paas controller require `sshSecrets`
     to be configured as part of the PaasNs definition.
 

@@ -86,6 +86,7 @@ To add user namespaces, the following options are available:
   As the top namespace is the product of a PaasNs resource in the namespace
   called after the Paas, all child PaasNs's are assumed to be part of the same Paas.
 
-!!! Note
-Note that besides creating the namespaces, the PaasNs controller also properly
-sets up the namespace with the proper quota and the proper [authorization](authorization.yaml).
+!!! note
+
+    Note that besides creating the namespaces, the PaasNs controller also properly
+    sets up the namespace with the proper quota and the proper [authorization](authorization.yaml).
