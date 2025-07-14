@@ -33,7 +33,7 @@ Depending on the result of the Go Template, one of three things can happen:
   - The key of the resulting item (label or custom field) is derived from the name of the template
   - The value of the resulting item is derived from the exact returned string
 
-!!! Note
+!!! note
 
     If you need to return a map or list as a single string value in a field, you have the following options:
     - convert the map to a string representation using toYaml or toJson, and add quoting to make sure it is parsed as one string
@@ -54,7 +54,7 @@ This feature can be used to:
 - copy labels (or annotations) from the Paas, (or PaasConfig) to labels on the specific resource
 - use specific fields in the Paas (or PaasConfig) to define extra labels
 
-!!! Note
+!!! note
 
     This feature replaces certain hardcoded implementations that were previously implemented.
     If you want to keep the behavior, please add the following to your PaasConfig:
@@ -94,7 +94,8 @@ There are two main differences:
 1. These custom fields cannot be overruled by a custom field for a specific Paas
 2. These custom fields are generically applied to all capabilities.
 
-!!! Note
+!!! note
+
     This feature replaces certain hardcoded implementations that were previously implemented.
     If you want to keep the behavior, please add the following to your PaasConfig:
 

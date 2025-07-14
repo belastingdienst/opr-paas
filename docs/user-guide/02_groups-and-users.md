@@ -15,7 +15,7 @@ It is also possible to have group membership managed by the Paas operator, by sp
 
 For more information on authorization, please see [Core Concepts - Authorization](../overview/core_concepts/authorization.md).
 
-!!! Note
+!!! note
 
     When both an LDAP query and a list of users is defined, the LDAP query takes precedence
     above the users. The paas operator will, in that case, no create a group, relying on the `oc adm group sync` to manage it.

@@ -6,7 +6,8 @@ authors:
 date: 2024-09-23
 ---
 
-!!! Note
+!!! note
+
     The following text was shamelessly copied in full from the Istio project.
     The original lives at: [https://github.com/istio/istio/wiki/Writing-Good-Pull-Requests](https://github.com/istio/istio/wiki/Writing-Good-Pull-Requests)
 

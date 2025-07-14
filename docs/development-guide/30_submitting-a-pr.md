@@ -11,7 +11,8 @@ date: 2024-09-23
 > welcome at any hour of the day or night, weekdays, weekends, and holidays.
 > Please do not ever hesitate to ask a question or send a PR.
 
-!!! Tip
+!!! tip
+
     Before you submit a pull request, please read this document from the Istio
     documentation which contains very good insights and best practices:
     ["Writing Good Pull Requests"](31_writing-good-pull-request.md).
@@ -47,6 +48,7 @@ Please read [https://developercertificate.org](https://developercertificate.org)
 If you can certify it, then just add a line to every git commit message:
 
 !!! example
+
     ```
       Signed-off-by: Random J Developer <random@developer.example.org>
     ```

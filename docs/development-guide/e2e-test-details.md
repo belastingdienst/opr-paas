@@ -95,7 +95,8 @@ Post scenarios: reset environment to clean slate.
 
 What we test: CRQ CRUD
 
-!!! Note
+!!! note
+
     The `spec.quota` does not fall under not cluster wide quotas, hence a separate
     set of test scenarios.
 
@@ -167,6 +168,7 @@ Scenarios:
    **when** said `Paas` is removed,<br/>
 
 !!! note
+
     _There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation._
     
     _Determine what that baseline currently is._
@@ -208,6 +210,7 @@ Scenarios:
    **when** said `Paas` is removed,<br/>
 
 !!! note
+
     _There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation._
     
     _Determine what that baseline currently is._

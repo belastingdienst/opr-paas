@@ -89,9 +89,10 @@ The PaasConfig (managed by cluster admins) can be configured as follows:
       exclude_appset_name: placeholder-appset-name
     ```
 
-!!! Note
-Groups that only have view defined will have the same permissions as groups
-without any functional roles.
+!!! note
+
+    Groups that only have view defined will have the same permissions as groups
+    without any functional roles.
 
 ### Paas
 

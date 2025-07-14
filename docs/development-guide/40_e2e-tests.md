@@ -18,6 +18,7 @@ Ensure you have a vanilla Kubernetes or OpenShift cluster running. We can hearti
 recommend using [kind](https://kind.sigs.k8s.io).
 
 !!! example
+
     ```kind create cluster``` 
 
 ## Running the tests

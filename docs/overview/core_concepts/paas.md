@@ -62,7 +62,8 @@ Additionally, the following optional settings can also be defined:
             limits.memory: "2Gi"
     ```
 
-!!! Notes
+!!! notes
+
     Labels defined on Paas resources are copied to child resources such as PaasNs,
     quotas, groups, ArgoApps, ArgoProjects, etc.
       
