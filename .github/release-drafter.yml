@@ -91,6 +91,9 @@ autolabeler:
   - label: 'test'
     title:
       - '/^test(\(.*\))?!?:/i'
+  - label: 'minor'
+    files:
+      - 'manifests/**/*'
 template: |
   ## Changes
 
