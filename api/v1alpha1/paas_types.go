@@ -433,6 +433,7 @@ func (ps *PaasStatus) GetMessages() []string {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:deprecatedversion:warning="please upgrade to v1alpha2"
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=paas,scope=Cluster
 
