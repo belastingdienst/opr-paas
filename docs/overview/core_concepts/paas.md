@@ -27,8 +27,8 @@ Additionally, the following optional settings can also be defined:
 - `capabilities`, which can be used to enable Paas extensions such as an ArgoCD to
   manage all Paas namespaces, Grafana to monitor Paas namespaces, etc. More information
   can be found in our [capabilities](capabilities.yaml) documentation.
-- `spec.sshSecrets`, which can be used to seed secrets that ArgoCD requires for
-  accessing repositories. See [sshSecrets](sshsecrets.yaml) for more information.
+- `spec.secrets`, which can be used to seed secrets that ArgoCD requires for
+  accessing repositories. See [secrets](secrets.yaml) for more information.
 - `spec.groups`, which can be used to configure authorization. See [authorization](authorization.yaml)
   for more information.
 - `spec.namespaces`, which can be used to define namespaces as part of the Paas.
@@ -39,30 +39,30 @@ Additionally, the following optional settings can also be defined:
 !!! example
 
     ```yaml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: my-paas
     spec:
       capabilities:
-        # Enable argocd
+        # Define argocd
         argocd:
-          enabled: true
-          # Bootstrap application to point to the root folder
-          gitPath: .
-          # Bootstrap application to point to the main branch
-          gitRevision: main
-          # Bootstrap application to point to this repo
-          gitUrl: "ssh://git@github.com/belastingdienst/my-paas-repo.git"
-        # enable grafana
+          custom_fields:
+            # Bootstrap application to point to the root folder
+            gitPath: .
+            # Bootstrap application to point to the main branch
+            gitRevision: main
+            # Bootstrap application to point to this repo
+            gitUrl: "ssh://git@github.com/belastingdienst/my-paas-repo.git"
+        # Define grafana
         grafana:
-          enabled: true
           quota:
             limits.cpu: "5"
             limits.memory: "2Gi"
     ```
 
-!!! Notes
+!!! notes
+
     Labels defined on Paas resources are copied to child resources such as PaasNs,
     quotas, groups, ArgoApps, ArgoProjects, etc.
       

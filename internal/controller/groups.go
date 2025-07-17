@@ -187,8 +187,6 @@ func (r *PaasReconciler) reconcileGroups(
 }
 
 // deleteObsoleteGroups delete groups which are no longer desired from a Paas desired state.
-// If a Group is marked as an LDAP group, and there is no Paas referencing it,
-// the LDAP query is added to a list of to be removedLdapGroups.
 func (r *PaasReconciler) deleteObsoleteGroups(
 	ctx context.Context,
 	desiredGroups []*userv1.Group,

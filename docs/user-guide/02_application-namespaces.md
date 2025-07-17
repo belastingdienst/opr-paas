@@ -22,7 +22,7 @@ and has a value defined as a [k8s Resource Quantity](https://kubernetes.io/docs/
 This setting is applied to a Cluster Resource Quota which is applied to all application
 namespaces created for this Paas.
 
-!!! Note
+!!! note
 
     Capabilities have their own separate quotas which can be set from the capability block of a Paas.
     Capability quotas do not need to be included in the application quota.
@@ -30,7 +30,7 @@ namespaces created for this Paas.
 !!! example
 
     ```yaml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: tst-tst
@@ -54,17 +54,17 @@ These namespaces count towards the global quota requested by the Paas.
 !!! example
 
     ```yaml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: tst-tst
     spec:
       namespaces:
-        - mark
-        - tst
-        - acceptance
-        - prod
-        - joel
+          mark: {}
+          tst: {}
+          acceptance: {}
+          prod: {}
+          joel: {}
     ```
 
 ## Adding PaasNs resources
@@ -76,7 +76,7 @@ Read more about this feature in [the PaasNS documentation](../overview/core_conc
 
     ```yaml
     ---
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasNS
     metadata:
       name: my-ns

@@ -20,7 +20,7 @@ Configuring capabilities does not require code changes / building new images. It
 
 1. configuration for the Paas operator via `PaasConfig`
 2. an ApplicationSet in the namespace of the cluster-wide ArgoCD
-3. a git repository for the cluster-wide ArgoCD to be used for deploying the capability for a Paas which has the capability enabled
+3. a git repository for the cluster-wide ArgoCD to be used for deploying the capability for a Paas with the capability enabled
 
 ## Configuring capabilities in the PaasConfig
 
@@ -36,7 +36,7 @@ Below example shows all configuration required to configure a capability.
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
@@ -137,7 +137,8 @@ The following configuration can be set:
 - template: When set to a valid go template, the template is processed against the current Paas
   and PaasConfig end results are added as one or more custom fields in the applicationset.
 
-!!! Note
+!!! note
+
     `required` and `default` are mutually exclusive.
 
 When set, a Paas can set these custom_fields, which brings them to the generators field in the Application created by the ApplicationSet for this specific Paas.
@@ -153,7 +154,7 @@ Image than on a cluster with
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: my-paas
@@ -205,7 +206,7 @@ You can now generate an argocd policy by ranging over the groups in the paas:
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
@@ -227,7 +228,8 @@ You can now generate an argocd policy by ranging over the groups in the paas:
               limits.cpu: "8"
     ```
 
-!!! Note
+!!! note
+
     In the above example, you see the first line and the range on line 1, and the templated lines and end block on line 2.
     This causes that for every line a \n and after that a new row is inserted.
     This in turn leaves out the ending \n, which is unwanted.
@@ -240,7 +242,7 @@ You can reference values from the PaasConfig as well by referencing `.Config`:
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
@@ -268,7 +270,7 @@ This would create 2 keys:
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
@@ -281,7 +283,7 @@ This would create 2 keys:
             "paas_config":
               template: |
                 debug: {{ .Config.Spec.Debug }}
-                argo: {{ .Config.Spec.ArgoEnabled }}
+                argo_enabled: false
             my-custom-revision:
               validation: '^(main|develop|feature-.*)$'
               default: main
@@ -305,7 +307,7 @@ Which results in the following applicationSet entries:
         - list:
             elements:
               - paas_config_debug: true
-                paas_config_argo: false
+                paas_config_argo_enabled: false
       ...
     ```
 
@@ -316,7 +318,7 @@ This would create 3 keys:
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
@@ -376,7 +378,7 @@ It is deployed in the namespace `paas-capabilities-argocd`.
 To enable any capability, `spec.clusterwide_argocd_namespace` needs to be set to `paas-capabilities-argocd`, so that the Paas operator will locate ApplicationSets for capabilities in this namespace.
 And for a new capability (e.a. `new-capability`), there should be an ApplicationSet to manage resources for this new capability.
 This ApplicationSet should be created in `paas-capabilities-argocd`, and it's name (e.a. `new-capability`) should be configured in PaasConfig (`spec.capabilities["new-capability"].ApplicationSet`).
-After setting this configuration, for every Paas with the capability `new-capability` enabled, the Paas operator will
+After setting this configuration, for every Paas with the capability `new-capability` defined, the Paas operator will
 `GET` the ApplicationSet `paas-capabilities-argocd.new-capability`, add the Paas to the list generator and update the ApplicationSet definition.
 This in turn will create a new Application for the capability for this Paas, and ArgoCD will create and manage the resources.
 

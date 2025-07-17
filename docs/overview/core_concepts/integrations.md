@@ -38,5 +38,5 @@ is that there is a cluster wide ArgoCD deployment available, and for each capabi
 there is an additional ApplicationSet to manage Paas capabilities.
 
 The Paas operator integrates through these capabilities by managing a list generator
-in the ApplicationSet, which in turn creates an ArgoApplication for every enabled
-capability in every enabled Paas.
+in the ApplicationSet, which in turn creates an ArgoApplication for every Paas with 
+the capability enabled.

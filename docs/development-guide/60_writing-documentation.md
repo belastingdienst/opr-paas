@@ -74,6 +74,7 @@ Provide code snippets or command-line examples where applicable to illustrate
 your points.
 
 !!! tip
+
     Use call-outs like this to highlight important information.
     You can use "note", "abstract", "info", "tip", "success", "question", "warning",
     "failure", "danger", "bug", "example" and "quote".
