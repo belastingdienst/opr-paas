@@ -19,6 +19,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: PaasConfig is a k8s resource to hold all operator config
         properties:
           apiVersion:
             description: |-
@@ -38,6 +39,7 @@ spec:
           metadata:
             type: object
           spec:
+            description: PaasConfigSpec defines a spec block for a PaasConfig
             properties:
               argoenabled:
                 default: true
@@ -52,24 +54,24 @@ spec:
                 properties:
                   default_policy:
                     description: |-
-                      Deprecated: ArgoCD specific code will be removed from the operator
+                      DefaultPolicy is Deprecated: ArgoCD specific code will be removed from the operator
                       The optional default policy which is set in the ArgoCD instance
                     type: string
                   header:
                     description: |-
-                      Deprecated: ArgoCD specific code will be removed from the operator
+                      Header is Deprecated: ArgoCD specific code will be removed from the operator
                       The header value to set in ArgoPermissions
                     minLength: 1
                     type: string
                   resource_name:
                     description: |-
-                      Deprecated: ArgoCD specific code will be removed from the operator
+                      ResourceName is Deprecated: ArgoCD specific code will be removed from the operator
                       The name of the ArgoCD instance to apply ArgoPermissions to
                     minLength: 1
                     type: string
                   role:
                     description: |-
-                      Deprecated: ArgoCD specific code will be removed from the operator
+                      Role is Deprecated: ArgoCD specific code will be removed from the operator
                       The name of the role to add to Groups set in ArgoPermissions
                     minLength: 1
                     type: string
@@ -80,6 +82,7 @@ spec:
                 type: object
               capabilities:
                 additionalProperties:
+                  description: ConfigCapability defines the config for a Paas Capability
                   properties:
                     applicationset:
                       description: Name of the ArgoCD ApplicationSet which manages
@@ -88,6 +91,8 @@ spec:
                       type: string
                     custom_fields:
                       additionalProperties:
+                        description: ConfigCustomField defines a custom field for
+                          a capability
                         properties:
                           default:
                             description: |-
@@ -290,6 +295,7 @@ spec:
             - groupsynclist
             type: object
           status:
+            description: PaasConfigStatus defines the status block of a PaasConfig
             properties:
               conditions:
                 description: Conditions of this resource
@@ -357,6 +363,7 @@ spec:
   - name: v1alpha2
     schema:
       openAPIV3Schema:
+        description: PaasConfig is a k8s resource to hold all operator config
         properties:
           apiVersion:
             description: |-
@@ -376,17 +383,22 @@ spec:
           metadata:
             type: object
           spec:
+            description: PaasConfigSpec defines a spec block for a PaasConfig
             properties:
               capabilities:
                 additionalProperties:
+                  description: ConfigCapability defines the config of a capability
+                    as managed by this operator
                   properties:
                     applicationset:
-                      description: Name of the ArgoCD ApplicationSet which manages
-                        this capability
+                      description: AppSet should hold the name of the ArgoCD ApplicationSet
+                        which manages this capability
                       minLength: 1
                       type: string
                     custom_fields:
                       additionalProperties:
+                        description: ConfigCustomField defines a go template to generate
+                          one or more custom fields on a capability
                         properties:
                           default:
                             description: |-
@@ -416,17 +428,17 @@ spec:
                         items:
                           type: string
                         type: array
-                      description: Default permissions set for this capability
+                      description: DefaultPermissions set for this capability
                       type: object
                     extra_permissions:
                       additionalProperties:
                         items:
                           type: string
                         type: array
-                      description: Extra permissions set for this capability
+                      description: ExtraPermissions set for this capability
                       type: object
                     quotas:
-                      description: Quota settings for this capability
+                      description: QuotaSettings for this capability
                       properties:
                         clusterwide:
                           default: false
@@ -475,17 +487,18 @@ spec:
                   - applicationset
                   - quotas
                   type: object
-                description: A map with zero or more ConfigCapability
+                description: Capabilities is a map with config for capabilities
                 type: object
               clusterwide_argocd_namespace:
                 description: |-
-                  Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
+                  ClusterWideArgoCDNamespace defines the namespace where the clusterwide ArgoCD is installed.
+                  The cluster-wide ArgoCD will be used for managing capabilities and appProjects
                   Deprecated: ArgoCD specific code will be removed from the operator
                 minLength: 1
                 type: string
               debug:
                 default: false
-                description: Enable debug information generation or not
+                description: Debug enables extra logging for debugging purposes
                 type: boolean
               decryptKeySecret:
                 description: DecryptKeysSecret is a reference to the secret containing
@@ -504,23 +517,26 @@ spec:
               managed_by_label:
                 default: argocd.argoproj.io/managed-by
                 description: |-
+                  ManagedByLabel defines the label to add for setting the `managed by` option
                   Deprecated: ManagedByLabel is replaced by go template functionality
                   Name of the label used to define by whom the resource is managed.
                 type: string
               managed_by_suffix:
                 default: argocd
                 description: |-
+                  ManagedBySuffix defines the suffix to add in the ManagedBy label
                   Deprecated: ManagedBySuffix is replaced by go template functionality
                   once available
                   Suffix to be appended to the managed-by-label
                 type: string
               quota_label:
                 default: clusterquotagroup
-                description: Label which is added to clusterquotas
+                description: QuotaLabel defined the label which is added to clusterQuotas
                 type: string
               requestor_label:
                 default: requestor
                 description: |-
+                  RequestorLabel defines the name of the label to add with the requestor field as it's value.
                   Deprecated: RequestorLabel is replaced by go template functionality
                   Name of the label used to define who is the contact for this resource
                 type: string
@@ -529,11 +545,11 @@ spec:
                   items:
                     type: string
                   type: array
-                description: Grant permissions to all groups according to config in
-                  configmap and role selected per group in paas.
+                description: RoleMappings defines physical roles to be applied to
+                  groups with logical roles (as defined in a Paas).
                 type: object
               templating:
-                description: With templating Administrators can define labels and
+                description: Templating allows Administrators to define labels and
                   generic custom fields to be applied on sub resources
                 properties:
                   clusterQuotaLabels:
@@ -570,14 +586,15 @@ spec:
                     PaasConfigTypeValidations can have custom validations for a specific CRD (e.a. paas, paasConfig or PaasNs).
                     Refer to https://belastingdienst.github.io/opr-paas/latest/administrators-guide/validations/ for more info.
                   type: object
-                description: Set regular expressions to have the webhooks validate
-                  the fields
+                description: Validations set regular expressions to have the webhooks
+                  validate the fields
                 type: object
             required:
             - clusterwide_argocd_namespace
             - decryptKeySecret
             type: object
           status:
+            description: PaasConfigStatus defines the status block of a PaasConfig
             properties:
               conditions:
                 description: Conditions of this resource

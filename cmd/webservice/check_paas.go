@@ -42,7 +42,7 @@ func CheckPaas(cryptObj *crypt.Crypt, paas *v1alpha1.Paas) error {
 
 	for capName, capability := range paas.Spec.Capabilities {
 		logrus.Debugf("capability name: %s", capName)
-		for key, secret := range capability.GetSSHSecrets() {
+		for key, secret := range capability.GetSecrets() {
 			decrypted, err := cryptObj.Decrypt(secret)
 			if err != nil {
 				errMessage := fmt.Errorf(

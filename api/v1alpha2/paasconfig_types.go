@@ -4,8 +4,6 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-//revive:disable:exported
-
 package v1alpha2
 
 import (
@@ -35,6 +33,7 @@ const (
 	TypeDegradedPaasConfig = "Degraded"
 )
 
+// PaasConfig is a k8s resource to hold all operator config
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
@@ -48,55 +47,58 @@ type PaasConfig struct {
 	Status PaasConfigStatus `json:"status,omitempty"`
 }
 
-func (pc PaasConfig) GetConditions() []metav1.Condition {
-	return pc.Status.Conditions
-}
-
+// GetSpec returns the spec
 func (pc PaasConfig) GetSpec() PaasConfigSpec {
 	return pc.Spec
 }
 
+// GetCapabilities returns the config of the capabilities
 func (pcs PaasConfigSpec) GetCapabilities() api.ConfigCapabilities {
 	return pcs.Capabilities
 }
 
+// PaasConfigSpec defines a spec block for a PaasConfig
 type PaasConfigSpec struct {
 	// DecryptKeysSecret is a reference to the secret containing the DecryptKeys
 	// +kubebuilder:validation:Required
 	DecryptKeysSecret NamespacedName `json:"decryptKeySecret"`
 
-	// Enable debug information generation or not
+	// Debug enables extra logging for debugging purposes
 	// +kubebuilder:default:=false
 	// +kubebuilder:validation:Optional
 	Debug bool `json:"debug"`
 
-	// A map with zero or more ConfigCapability
+	// Capabilities is a map with config for capabilities
 	// +kubebuilder:validation:Optional
 	Capabilities ConfigCapabilities `json:"capabilities"`
 
-	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
+	// ClusterWideArgoCDNamespace defines the namespace where the clusterwide ArgoCD is installed.
+	// The cluster-wide ArgoCD will be used for managing capabilities and appProjects
 	// Deprecated: ArgoCD specific code will be removed from the operator
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	ClusterWideArgoCDNamespace string `json:"clusterwide_argocd_namespace"`
 
-	// Label which is added to clusterquotas
+	// QuotaLabel defined the label which is added to clusterQuotas
 	// +kubebuilder:default:=clusterquotagroup
 	// +kubebuilder:validation:Optional
 	QuotaLabel string `json:"quota_label"`
 
+	// RequestorLabel defines the name of the label to add with the requestor field as it's value.
 	// Deprecated: RequestorLabel is replaced by go template functionality
 	// Name of the label used to define who is the contact for this resource
 	// +kubebuilder:default:=requestor
 	// +kubebuilder:validation:Optional
 	RequestorLabel string `json:"requestor_label"`
 
+	// ManagedByLabel defines the label to add for setting the `managed by` option
 	// Deprecated: ManagedByLabel is replaced by go template functionality
 	// Name of the label used to define by whom the resource is managed.
 	// +kubebuilder:default:=argocd.argoproj.io/managed-by
 	// +kubebuilder:validation:Optional
 	ManagedByLabel string `json:"managed_by_label"`
 
+	// ManagedBySuffix defines the suffix to add in the ManagedBy label
 	// Deprecated: ManagedBySuffix is replaced by go template functionality
 	// once available
 	// Suffix to be appended to the managed-by-label
@@ -104,21 +106,23 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	ManagedBySuffix string `json:"managed_by_suffix"`
 
-	// Grant permissions to all groups according to config in configmap and role selected per group in paas.
+	// RoleMappings defines physical roles to be applied to groups with logical roles (as defined in a Paas).
 	// +kubebuilder:validation:Optional
 	RoleMappings ConfigRoleMappings `json:"rolemappings"`
 
-	// Set regular expressions to have the webhooks validate the fields
+	// Validations set regular expressions to have the webhooks validate the fields
 	// +kubebuilder:validation:Optional
 	Validations PaasConfigValidations `json:"validations"`
 
-	// With templating Administrators can define labels and generic custom fields to be applied on sub resources
+	// Templating allows Administrators to define labels and generic custom fields to be applied on sub resources
 	// +kubebuilder:validation:Optional
 	Templating ConfigTemplatingItems `json:"templating,omitempty"`
 }
 
+// ConfigRoleMappings can be used to define mappings between functional and technical roles
 type ConfigRoleMappings map[string][]string
 
+// Roles returns a list of all technical roles as granted to functional roles
 func (crm ConfigRoleMappings) Roles(roleMaps []string) []string {
 	if len(roleMaps) == 0 {
 		roleMaps = []string{"default"}
@@ -132,6 +136,7 @@ func (crm ConfigRoleMappings) Roles(roleMaps []string) []string {
 	return mappedRoles
 }
 
+// ConfigLdap can be used to define ldap endpoints
 type ConfigLdap struct {
 	// LDAP server hostname
 	// +kubebuilder:validation:MinLength=1
@@ -144,23 +149,25 @@ type ConfigLdap struct {
 	Port int32 `json:"port"`
 }
 
+// ConfigCapabilities defines the config of capabilities as managed by this operator
 type ConfigCapabilities map[string]ConfigCapability
 
+// ConfigCapability defines the config of a capability as managed by this operator
 type ConfigCapability struct {
-	// Name of the ArgoCD ApplicationSet which manages this capability
+	// AppSet should hold the name of the ArgoCD ApplicationSet which manages this capability
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	AppSet string `json:"applicationset"`
 
-	// Quota settings for this capability
+	// QuotaSettings for this capability
 	// +kubebuilder:validation:Required
 	QuotaSettings ConfigQuotaSettings `json:"quotas"`
 
-	// Extra permissions set for this capability
+	// ExtraPermissions set for this capability
 	// +kubebuilder:validation:Optional
 	ExtraPermissions ConfigCapPerm `json:"extra_permissions"`
 
-	// Default permissions set for this capability
+	// DefaultPermissions set for this capability
 	// +kubebuilder:validation:Optional
 	DefaultPermissions ConfigCapPerm `json:"default_permissions"`
 
@@ -168,7 +175,7 @@ type ConfigCapability struct {
 	CustomFields map[string]ConfigCustomField `json:"custom_fields,omitempty"`
 }
 
-// For each resource type go templating can be used to derive the labels to be set on the resource when created
+// ConfigTemplatingItems defines the templates to use for generating labels to be set on the resource type when created
 type ConfigTemplatingItems struct {
 
 	// Templates to add fields to all capabilities
@@ -192,9 +199,10 @@ type ConfigTemplatingItems struct {
 	RoleBindingLabels ConfigTemplatingItem `json:"roleBindingLabels,omitempty"`
 }
 
-// go templating can be used to derive the labels to be set on the resource when created
+// ConfigTemplatingItem defines go templating to derive the labels to be set on the resource when created
 type ConfigTemplatingItem map[string]string
 
+// ConfigCustomField defines a go template to generate one or more custom fields on a capability
 type ConfigCustomField struct {
 	// Regular expression for validating input, defaults to '', which means no validation.
 	// +kubebuilder:validation:Optional
@@ -213,6 +221,7 @@ type ConfigCustomField struct {
 	Required bool `json:"required"`
 }
 
+// ConfigQuotaSettings defines quota config for a capability
 type ConfigQuotaSettings struct {
 	// Is this a clusterwide quota or not
 	// +kubebuilder:default:=false
@@ -240,9 +249,9 @@ type ConfigQuotaSettings struct {
 }
 
 // This is an insoudeout representation of ConfigCapPerm, closer to rb representation
-type ConfigRolesSas map[string]map[string]bool
+type configRolesSas map[string]map[string]bool
 
-func (crs ConfigRolesSas) Merge(other ConfigRolesSas) ConfigRolesSas {
+func (crs configRolesSas) Merge(other configRolesSas) configRolesSas {
 	var role map[string]bool
 	var exists bool
 	for rolename, sas := range other {
@@ -257,10 +266,12 @@ func (crs ConfigRolesSas) Merge(other ConfigRolesSas) ConfigRolesSas {
 	return crs
 }
 
+// ConfigCapPerm can be used to define default / extra permissions on a capability
 type ConfigCapPerm map[string][]string
 
-func (ccp ConfigCapPerm) AsConfigRolesSas(add bool) ConfigRolesSas {
-	crs := make(ConfigRolesSas)
+// AsConfigRolesSas is a convenience function to return a ConfigCapPerm as a ConfigCapPerm map[string]map[string]bool
+func (ccp ConfigCapPerm) AsConfigRolesSas(add bool) configRolesSas {
+	crs := make(configRolesSas)
 	for sa, roles := range ccp {
 		for _, role := range roles {
 			if cr, exists := crs[role]; exists {
@@ -276,6 +287,7 @@ func (ccp ConfigCapPerm) AsConfigRolesSas(add bool) ConfigRolesSas {
 	return crs
 }
 
+// Roles returns a list of all roles that are granted for this capability
 func (ccp ConfigCapPerm) Roles() []string {
 	var roles []string
 	for _, rolenames := range ccp {
@@ -284,6 +296,7 @@ func (ccp ConfigCapPerm) Roles() []string {
 	return roles
 }
 
+// ServiceAccounts returns a list of all service accounts that have default / extra permissions for this capability
 func (ccp ConfigCapPerm) ServiceAccounts() []string {
 	var sas []string
 	for sa := range ccp {
@@ -292,6 +305,7 @@ func (ccp ConfigCapPerm) ServiceAccounts() []string {
 	return sas
 }
 
+// CapabilityK8sName returns the NamespacedName for a capabilities namespace
 // TODO(hikarukin): we probably need to properly determine the namespace name,
 // depends on argocd code removal
 func (pcs PaasConfigSpec) CapabilityK8sName(capName string) (as types.NamespacedName) {
@@ -307,6 +321,7 @@ func (pcs PaasConfigSpec) CapabilityK8sName(capName string) (as types.Namespaced
 
 // revive:disable:line-length-limit
 
+// PaasConfigStatus defines the status block of a PaasConfig
 type PaasConfigStatus struct {
 	// Conditions of this resource
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
@@ -314,8 +329,8 @@ type PaasConfigStatus struct {
 
 // revive:enable:line-length-limit
 
-// +kubebuilder:object:root=true
 // PaasConfigList contains a list of PaasConfig
+// +kubebuilder:object:root=true
 type PaasConfigList struct {
 	metav1.TypeMeta `json:""`
 	metav1.ListMeta `json:"metadata,omitempty"`

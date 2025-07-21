@@ -63,37 +63,9 @@ func TestPaasConfig_IsActive(t *testing.T) {
 			p := PaasConfig{
 				Status: tt.fields.Status,
 			}
-			assert.Equalf(t, tt.want, p.IsActive(), "IsActive()")
+			assert.Equalf(t, tt.want, p.isActive(), "IsActive()")
 		})
 	}
-}
-
-func TestConfigRoleMappings_Roles(t *testing.T) {
-	crm := ConfigRoleMappings{
-		"admin":   {"read", "write", "delete"},
-		"user":    {"read"},
-		"default": {"guest"},
-	}
-
-	t.Run("Single known roleMap", func(t *testing.T) {
-		result := crm.Roles([]string{"admin"})
-		assert.Equal(t, []string{"read", "write", "delete"}, result)
-	})
-
-	t.Run("Unknown roleMap", func(t *testing.T) {
-		result := crm.Roles([]string{"unknown"})
-		assert.Empty(t, result)
-	})
-
-	t.Run("Empty input uses default", func(t *testing.T) {
-		result := crm.Roles([]string{})
-		assert.Equal(t, []string{"guest"}, result)
-	})
-
-	t.Run("Multiple roleMaps", func(t *testing.T) {
-		result := crm.Roles([]string{"admin", "user"})
-		assert.Equal(t, []string{"read", "write", "delete", "read"}, result)
-	})
 }
 
 func TestConfigCapPerm_Roles(t *testing.T) {
@@ -158,16 +130,16 @@ func TestConfigCapPerm_ServiceAccounts(t *testing.T) {
 
 func TestConfigRolesSas_Merge(t *testing.T) {
 	t.Run("Merge non-overlapping roles", func(t *testing.T) {
-		base := ConfigRolesSas{
+		base := configRolesSas{
 			"reader": {"sa1": true},
 		}
-		other := ConfigRolesSas{
+		other := configRolesSas{
 			"writer": {"sa2": true},
 		}
 
 		result := base.Merge(other)
 
-		expected := ConfigRolesSas{
+		expected := configRolesSas{
 			"reader": {"sa1": true},
 			"writer": {"sa2": true},
 		}
@@ -175,16 +147,16 @@ func TestConfigRolesSas_Merge(t *testing.T) {
 	})
 
 	t.Run("Merge overlapping roles, additive", func(t *testing.T) {
-		base := ConfigRolesSas{
+		base := configRolesSas{
 			"admin": {"sa1": true},
 		}
-		other := ConfigRolesSas{
+		other := configRolesSas{
 			"admin": {"sa2": true},
 		}
 
 		result := base.Merge(other)
 
-		expected := ConfigRolesSas{
+		expected := configRolesSas{
 			"admin": {
 				"sa1": true,
 				"sa2": true,
@@ -194,68 +166,17 @@ func TestConfigRolesSas_Merge(t *testing.T) {
 	})
 
 	t.Run("Merge overwrites values for existing SAs", func(t *testing.T) {
-		base := ConfigRolesSas{
+		base := configRolesSas{
 			"admin": {"sa1": true},
 		}
-		other := ConfigRolesSas{
+		other := configRolesSas{
 			"admin": {"sa1": false},
 		}
 
 		result := base.Merge(other)
 
-		expected := ConfigRolesSas{
+		expected := configRolesSas{
 			"admin": {"sa1": false},
-		}
-		assert.Equal(t, expected, result)
-	})
-}
-
-func TestConfigCapPerm_AsConfigRolesSas(t *testing.T) {
-	t.Run("Empty input returns empty result", func(t *testing.T) {
-		ccp := ConfigCapPerm{}
-		result := ccp.AsConfigRolesSas(true)
-		assert.Empty(t, result)
-	})
-
-	t.Run("Single SA, single role", func(t *testing.T) {
-		ccp := ConfigCapPerm{
-			"sa-1": {"reader"},
-		}
-		result := ccp.AsConfigRolesSas(true)
-		expected := ConfigRolesSas{
-			"reader": {
-				"sa-1": true,
-			},
-		}
-		assert.Equal(t, expected, result)
-	})
-
-	t.Run("Single SA, multiple roles", func(t *testing.T) {
-		ccp := ConfigCapPerm{
-			"sa-2": {"reader", "writer"},
-		}
-		result := ccp.AsConfigRolesSas(true)
-		expected := ConfigRolesSas{
-			"reader": {"sa-2": true},
-			"writer": {"sa-2": true},
-		}
-		assert.Equal(t, expected, result)
-	})
-
-	t.Run("Multiple SAs, overlapping roles", func(t *testing.T) {
-		ccp := ConfigCapPerm{
-			"sa-1": {"reader", "writer"},
-			"sa-2": {"writer"},
-		}
-		result := ccp.AsConfigRolesSas(false)
-		expected := ConfigRolesSas{
-			"reader": {
-				"sa-1": false,
-			},
-			"writer": {
-				"sa-1": false,
-				"sa-2": false,
-			},
 		}
 		assert.Equal(t, expected, result)
 	})

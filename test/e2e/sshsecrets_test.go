@@ -114,9 +114,9 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 
 	paas := getPaas(ctx, paasName, t, cfg)
 	paas.Spec.SSHSecrets = map[string]string{"ssh://git@scm/some-repo.git": encrypted}
-	if err = paas.Spec.Capabilities.ResetCapSSHSecret(paasCap1); err != nil {
+	if err = paas.Spec.Capabilities.ResetCapSecret(paasCap1); err != nil {
 		t.Fatal(err)
-	} else if err = paas.Spec.Capabilities.AddCapSSHSecret(
+	} else if err = paas.Spec.Capabilities.AddCapSecret(
 		paasCap1,
 		"ssh://git@scm/some-other-repo.git",
 		encrypted,
@@ -174,9 +174,9 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 
 	paas := getPaas(ctx, paasName, t, cfg)
 	paas.Spec.SSHSecrets = map[string]string{"ssh://git@scm/some-second-repo.git": encrypted}
-	if err = paas.Spec.Capabilities.ResetCapSSHSecret(paasCap1); err != nil {
+	if err = paas.Spec.Capabilities.ResetCapSecret(paasCap1); err != nil {
 		t.Fatal(err)
-	} else if err = paas.Spec.Capabilities.AddCapSSHSecret(
+	} else if err = paas.Spec.Capabilities.AddCapSecret(
 		paasCap1,
 		"ssh://git@scm/some-other-second-repo.git",
 		encrypted,
@@ -223,7 +223,7 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 func assertSecretRemovedAfterRemovingFromPaas(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasName, t, cfg)
 	paas.Spec.SSHSecrets = nil
-	if err := paas.Spec.Capabilities.ResetCapSSHSecret(paasCap1); err != nil {
+	if err := paas.Spec.Capabilities.ResetCapSecret(paasCap1); err != nil {
 		t.Fatal(err)
 	}
 

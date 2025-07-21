@@ -7,7 +7,6 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
-	"fmt"
 	"sort"
 	"testing"
 
@@ -401,14 +400,14 @@ func TestPaasCapability_SetDefaults(t *testing.T) {
 		GitPath:     "",
 	}
 
-	pa.SetDefaults()
+	pa.setDefaults()
 	assert.Equal(t, ".", pa.GitPath)
 	assert.Equal(t, "master", pa.GitRevision)
 
 	pa.GitPath = "/test"
 	pa.GitRevision = "main"
 
-	pa.SetDefaults()
+	pa.setDefaults()
 	assert.Equal(t, "/test", pa.GitPath)
 	assert.Equal(t, "main", pa.GitRevision)
 }
@@ -437,46 +436,6 @@ func TestPaasStatus_Truncate(t *testing.T) {
 
 // Paas
 
-func Test_Paas_ClonedAnnotations(t *testing.T) {
-	paas := Paas{}
-	paas.Annotations = make(map[string]string)
-	for i := 0; i < 3; i++ {
-		paas.Annotations[fmt.Sprintf("key %d", i)] = fmt.Sprintf("value %d", i)
-	}
-
-	output := paas.ClonedAnnotations()
-
-	assert.NotNil(t, output)
-	assert.IsType(t, map[string]string{}, output)
-	assert.Len(t, output, 3)
-	for i := 0; i < 3; i++ {
-		assert.Contains(t, output, fmt.Sprintf("key %d", i))
-		assert.Equal(t, fmt.Sprintf("value %d", i), output[fmt.Sprintf("key %d", i)])
-	}
-}
-
-func Test_Paas_ClonedLabels(t *testing.T) {
-	paas := Paas{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels: map[string]string{
-				"key 1":                      "value 1",
-				"app.kubernetes.io/instance": "value 2",
-				"key 3":                      "value 3",
-			},
-		},
-	}
-
-	output := paas.ClonedLabels()
-
-	assert.NotNil(t, output)
-	assert.IsType(t, map[string]string{}, output)
-	assert.Len(t, output, 2)
-	assert.Contains(t, output, "key 1")
-	assert.NotContains(t, output, "app.kubernetes.io/instance")
-	assert.Contains(t, output, "key 3")
-	assert.Equal(t, "value 1", output["key 1"])
-}
-
 func generateReferences() (refs []metav1.OwnerReference) {
 	for _, kind := range []string{myKind, otherKind} {
 		for _, version := range []string{myVersion, otherVersion} {
@@ -491,95 +450,6 @@ func generateReferences() (refs []metav1.OwnerReference) {
 		}
 	}
 	return refs
-}
-
-func Test_Paas_IsItMe(t *testing.T) {
-	allOwners := generateReferences()
-	firstOwner := allOwners[0]
-
-	paas := Paas{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       firstOwner.Kind,
-			APIVersion: firstOwner.APIVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: firstOwner.Name,
-		},
-	}
-
-	for _, ref := range allOwners {
-		if ref == firstOwner {
-			assert.True(t, paas.IsItMe(ref))
-		} else {
-			assert.False(t, paas.IsItMe(ref))
-		}
-	}
-	assert.False(t, paas.IsItMe(metav1.OwnerReference{}))
-}
-
-func Test_Paas_AmIOwner(t *testing.T) {
-	allOwners := generateReferences()
-	firstOwner := allOwners[0]
-
-	paas := Paas{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       firstOwner.Kind,
-			APIVersion: firstOwner.APIVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: firstOwner.Name,
-		},
-	}
-
-	someOwners := []metav1.OwnerReference{
-		allOwners[0],
-		allOwners[1],
-	}
-	noOwners := []metav1.OwnerReference{
-		allOwners[2],
-		allOwners[3],
-	}
-
-	var empty []metav1.OwnerReference
-
-	assert.True(t, paas.AmIOwner(allOwners))
-	assert.True(t, paas.AmIOwner(someOwners))
-	assert.False(t, paas.AmIOwner(noOwners))
-	assert.False(t, paas.AmIOwner(empty))
-}
-
-func Test_Paas_WithoutMe(t *testing.T) {
-	allOwners := generateReferences()
-	firstOwner := allOwners[0]
-
-	paas := Paas{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       firstOwner.Kind,
-			APIVersion: firstOwner.APIVersion,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: firstOwner.Name,
-		},
-	}
-
-	someOwners := []metav1.OwnerReference{
-		allOwners[0],
-		allOwners[1],
-	}
-	noOwners := []metav1.OwnerReference{
-		allOwners[2],
-		allOwners[3],
-	}
-
-	var empty []metav1.OwnerReference
-
-	assert.NotContains(t, paas.WithoutMe(allOwners), allOwners[0])
-	assert.Contains(t, paas.WithoutMe(allOwners), allOwners[1])
-	assert.NotContains(t, paas.WithoutMe(someOwners), allOwners[0])
-	assert.Contains(t, paas.WithoutMe(someOwners), allOwners[1])
-	assert.NotContains(t, paas.WithoutMe(noOwners), allOwners[0])
-	assert.Contains(t, paas.WithoutMe(noOwners), allOwners[2])
-	assert.Empty(t, paas.WithoutMe(empty))
 }
 
 // compound tests

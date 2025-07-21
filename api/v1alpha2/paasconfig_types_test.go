@@ -158,16 +158,16 @@ func TestConfigCapPerm_ServiceAccounts(t *testing.T) {
 
 func TestConfigRolesSas_Merge(t *testing.T) {
 	t.Run("Merge non-overlapping roles", func(t *testing.T) {
-		base := ConfigRolesSas{
+		base := configRolesSas{
 			"reader": {"sa1": true},
 		}
-		other := ConfigRolesSas{
+		other := configRolesSas{
 			"writer": {"sa2": true},
 		}
 
 		result := base.Merge(other)
 
-		expected := ConfigRolesSas{
+		expected := configRolesSas{
 			"reader": {"sa1": true},
 			"writer": {"sa2": true},
 		}
@@ -175,16 +175,16 @@ func TestConfigRolesSas_Merge(t *testing.T) {
 	})
 
 	t.Run("Merge overlapping roles, additive", func(t *testing.T) {
-		base := ConfigRolesSas{
+		base := configRolesSas{
 			"admin": {"sa1": true},
 		}
-		other := ConfigRolesSas{
+		other := configRolesSas{
 			"admin": {"sa2": true},
 		}
 
 		result := base.Merge(other)
 
-		expected := ConfigRolesSas{
+		expected := configRolesSas{
 			"admin": {
 				"sa1": true,
 				"sa2": true,
@@ -194,16 +194,16 @@ func TestConfigRolesSas_Merge(t *testing.T) {
 	})
 
 	t.Run("Merge overwrites values for existing SAs", func(t *testing.T) {
-		base := ConfigRolesSas{
+		base := configRolesSas{
 			"admin": {"sa1": true},
 		}
-		other := ConfigRolesSas{
+		other := configRolesSas{
 			"admin": {"sa1": false},
 		}
 
 		result := base.Merge(other)
 
-		expected := ConfigRolesSas{
+		expected := configRolesSas{
 			"admin": {"sa1": false},
 		}
 		assert.Equal(t, expected, result)
@@ -222,7 +222,7 @@ func TestConfigCapPerm_AsConfigRolesSas(t *testing.T) {
 			"sa-1": {"reader"},
 		}
 		result := ccp.AsConfigRolesSas(true)
-		expected := ConfigRolesSas{
+		expected := configRolesSas{
 			"reader": {
 				"sa-1": true,
 			},
@@ -235,7 +235,7 @@ func TestConfigCapPerm_AsConfigRolesSas(t *testing.T) {
 			"sa-2": {"reader", "writer"},
 		}
 		result := ccp.AsConfigRolesSas(true)
-		expected := ConfigRolesSas{
+		expected := configRolesSas{
 			"reader": {"sa-2": true},
 			"writer": {"sa-2": true},
 		}
@@ -248,7 +248,7 @@ func TestConfigCapPerm_AsConfigRolesSas(t *testing.T) {
 			"sa-2": {"writer"},
 		}
 		result := ccp.AsConfigRolesSas(false)
-		expected := ConfigRolesSas{
+		expected := configRolesSas{
 			"reader": {
 				"sa-1": false,
 			},

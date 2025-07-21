@@ -4,8 +4,6 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-//revive:disable:exported
-
 package v1alpha2
 
 import (
@@ -69,6 +67,8 @@ func init() {
 	SchemeBuilder.Register(&PaasNS{}, &PaasNSList{})
 }
 
+// ClonedLabels returns a map of labels hat can be cloned to sub resources (namespace).
+// Deprecated: ClonedLabels is replaced by go templating
 func (pns PaasNS) ClonedLabels() map[string]string {
 	labels := make(map[string]string)
 	for key, value := range pns.Labels {
