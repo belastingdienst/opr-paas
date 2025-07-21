@@ -501,6 +501,14 @@ spec:
                 - name
                 - namespace
                 type: object
+              feature_flags:
+                description: Enable, disable, and tune operator features
+                properties:
+                  group_user_management:
+                    description: Should the operator manage group users
+                    pattern: ^(|allow|warn|block)$
+                    type: string
+                type: object
               managed_by_label:
                 default: argocd.argoproj.io/managed-by
                 description: |-

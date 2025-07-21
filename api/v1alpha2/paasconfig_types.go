@@ -5,6 +5,7 @@ See LICENSE.md for details.
 */
 
 //revive:disable:exported
+//revive:disable:max-public-structs
 
 package v1alpha2
 
@@ -108,6 +109,10 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	RoleMappings ConfigRoleMappings `json:"rolemappings"`
 
+	// Enable, disable, and tune operator features
+	// +kubebuilder:validation:Optional
+	FeatureFlags ConfigFeatureFlags `json:"feature_flags"`
+
 	// Set regular expressions to have the webhooks validate the fields
 	// +kubebuilder:validation:Optional
 	Validations PaasConfigValidations `json:"validations"`
@@ -142,6 +147,13 @@ type ConfigLdap struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Required
 	Port int32 `json:"port"`
+}
+
+type ConfigFeatureFlags struct {
+	// Should the operator manage group users
+	// +kubebuilder:validation:Pattern=^(|allow|warn|block)$
+	// +kubebuilder:validation:Optional
+	GroupUserManagement string `json:"group_user_management"`
 }
 
 type ConfigCapabilities map[string]ConfigCapability
