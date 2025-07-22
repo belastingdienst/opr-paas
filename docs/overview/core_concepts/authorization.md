@@ -21,7 +21,6 @@ Configuring authorization is done by:
   - When a group spec holds the `users` spec and no `query` value, the OpenShift group gets prefix by
     the paas-name to make groups unique and prevent unforeseen access to other Paas'es.
   - When a group spec holds a `query` value, this takes precedence over the optional `users` spec.
-    This is done to prevent issues related to the groupsync managing the OpenShift group.
   - For every functional role the technical roles are derived from the PaasConfig;
   - For every PaasNs namespace the PaasNs controller creates a role binding for
     every applicable technical role, and adds the groups that should have the

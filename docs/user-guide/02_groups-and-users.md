@@ -18,7 +18,7 @@ For more information on authorization, please see [Core Concepts - Authorization
 !!! note
 
     When both an LDAP query and a list of users is defined, the LDAP query takes precedence
-    above the users. The paas operator will, in that case, no create a group, relying on the `oc adm group sync` to manage it.
+    above the users. The paas operator will, in that case, not create a group, relying on the `oc adm group sync` to manage it.
 
 !!! example
 

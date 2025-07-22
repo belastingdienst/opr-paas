@@ -170,7 +170,6 @@ This would result in:
   - `my-paas-argocd` has default quotas as specified in the configuration;
      (`limits.cpu: "7"`, `requests.cpu: "3"`)
   - `my-paas-grafana` has `limits.cpu` overridden to "5", `requests.cpu` defaulting to "1" and `limits.memory` set to '2Gi';
-- a `my-paas` namespace with a `argocd` PaasNs and a `grafana` PaasNs;
 - a namespace called `my-paas-argocd` linked to the `my-paas-argocd` `ClusterResourceQuota`;
 - a namespace called `my-paas-grafana` linked to the `my-paas-grafana` `ClusterResourceQuota`;
   The `applicationset` has an extra entry for the namespace so that the cluster-wide

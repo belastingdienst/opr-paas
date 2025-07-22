@@ -1,21 +1,18 @@
 ---
-title: Configuring ssh Secret encryption
-summary: A detailed description of requirements for setting up the ssh Secret encryption feature
+title: Configuring Secret encryption
+summary: A detailed description of requirements for setting up the Secret encryption feature
 authors:
   - Devotional Phoenix
 date: 2025-01-20
 ---
 
-# Ssh secret encryption
+# Secret encryption
 
 The Paas operator includes features to manage secrets in namespaces of a Paas.
-The main use case is to create ssh secrets in the ArgoCD namespace so that it can
-read private repositories, which is where the name secrets came from in the first
-place. However, they can be used with other capabilities, and/or application namespaces too.
 
-SshSecrets are encrypted using asymmetric encryption and therefore require a public
+Secrets are encrypted using asymmetric encryption and therefore require a public
 and private keypair. Keypairs must be generated, after which the Private Keys must
-be added to the secret configured in the `PaasConfig.spec.privateKeySecret`, and
+be added to the k8s secret configured in the `PaasConfig.spec.privateKeySecret`, and
 the public key must be provided to Users for encrypting the ssh Secrets (either directly,
 or through the web service).
 
@@ -47,13 +44,13 @@ Once generated, the private key should be added to the secret configured in the 
 For the next Paas reconciliation, the change is detected, and the new private key
 will (also) be tried for decryption.
 
-## Supplying new public key
+## Supplying a new public key
 
 ### Directly
 
 Once generated, the public key should be supplied to users that encrypt secrets.
 They can be supplied directly, so that users can use the crypttool for encryption.
-For more info, please refer to [user docs on ssh Secrets](../user-guide/02_ssh-secrets.md).
+For more info, please refer to [user docs on Secrets](../user-guide/02_secrets.md).
 
 ### Running the webservice
 
@@ -71,7 +68,7 @@ Another option is to run the webservice. To enable the webservice enable the web
     kustomize build . | kubectl apply -f -
     ```
 
-After that you can replace the publicKey data in the paas-sshsecrets-publickey ConfigMap,
+After that you can replace the publicKey data in the paas-secrets-publickey ConfigMap,
 k8s changes the mount and the webservice automatically picks up the file changes and uses the new key.
 
 !!! warning "Warning: starting v1.4.0"

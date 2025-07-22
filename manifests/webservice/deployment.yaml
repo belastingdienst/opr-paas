@@ -58,5 +58,5 @@ spec:
       volumes:
         - name: paas-public-key
           configMap:
-            name: paas-sshsecrets-publickey
+            name: paas-secrets-publickey
             defaultMode: 420

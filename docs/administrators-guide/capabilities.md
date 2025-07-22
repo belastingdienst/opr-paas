@@ -12,7 +12,7 @@ The Paas Operator can deliver capabilities to enable Paas deployments with CI an
 Some examples of capabilities include:
 
 - enabling ArgoCD for Continuous Delivery on your Paas namespaces
-- enabling tekton for Continuous Integration of your application components
+- enabling Tekton for Continuous Integration of your application components
 - observing your Paas resources with Grafana
 - configuring federated Authentication and Authorization with keycloak
 
@@ -20,7 +20,7 @@ Configuring capabilities does not require code changes / building new images. It
 
 1. configuration for the Paas operator via `PaasConfig`
 2. an ApplicationSet in the namespace of the cluster-wide ArgoCD
-3. a git repository for the cluster-wide ArgoCD to be used for deploying the capability for a Paas with the capability enabled
+3. a git repository for the cluster-wide ArgoCD to be used for deploying the capability for a Paas with the capability defined
 
 ## Configuring capabilities in the PaasConfig
 
@@ -44,7 +44,7 @@ Below example shows all configuration required to configure a capability.
       clusterwide_argocd_namespace: paas-capabilities-argocd
       capabilities:
         mycap:
-          ApplicationSet: mycap-as
+          applicationset: mycap-as
           default_permissions:
             my-service-account:
               - my-cluster-role
@@ -110,7 +110,7 @@ There are two options:
 
 #### More info
 
-For more information on Default permissions and Extra permissions please revert to:
+For more information on Default permissions and Extra permissions please refer to:
 
 - [Example PaasConfig with a capability](#example-paasconfig-with-a-capability)
 - [api-guide on capability configuration in the PaasConfig](../development-guide/00_api.md#configcapability)
@@ -122,7 +122,7 @@ Capabilities might require options to be set in a Paas. The fields to be set wou
 Some examples include:
 
 - setting a git url, revision and path for a ArgoCD bootstrap application
-- setting a version for the keycloak capability
+- setting a version for the Keycloak capability
 - deploying multiple streams of a capability and allowing some DevOps teams to run a `latest` while others run a `stable` stream
 
 For this reason we have introduced options for setting custom fields in the capability configuration in PaasConfig.
@@ -135,7 +135,7 @@ The following configuration can be set:
 - required: When set to true, an error is returned when the custom field is not defined in a Paas
 - default: When set, a Paas without the custom field set will use this default instead.
 - template: When set to a valid go template, the template is processed against the current Paas
-  and PaasConfig end results are added as one or more custom fields in the applicationset.
+  and PaasConfig end results are added as one or more custom fields in the ApplicationSet.
 
 !!! note
 
@@ -145,7 +145,7 @@ When set, a Paas can set these custom_fields, which brings them to the generator
 
 #### Example of how a custom field operates
 
-Image than on a cluster with
+Imagine that on a cluster with
 
 - a PaasConfig as defined in [Example PaasConfig with a capability](#example-paasconfig-with-a-capability), and
 - an ApplicationSet as defined in [Example capability ApplicationSet](#example-ApplicationSet),
@@ -172,8 +172,8 @@ The following would happen:
   - my-custom-key: key_123
   - my-custom-revision main
 - The Paas operator would create an entry in the list generator in the ApplicationSet, with custom fields set as elements
-- The cluster-wide ArgoCD ApplicationSet controller would create a new application for my-paas-capability-mycap
-- the new application would have the following set in `spec.source.kustomize.commonLabels`:
+- The cluster-wide ArgoCD ApplicationSet controller would create a new Application for my-paas-capability-mycap
+- the Application would have the following set in `spec.source.kustomize.commonLabels`:
   - key: key_123
   - revision: main
 - From here, Kustomize could use these values to be set on all resources create by the cluster-wide ArgoCD for this capability for this Paas

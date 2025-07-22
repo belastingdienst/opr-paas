@@ -15,11 +15,11 @@ The concept works as follows:
 
 ![paasns architecture](./paasns.png)
 
-The operator creates a overview of all namespaces that should be there.
-These namepaces could be required by:
-- an enabled capability
-- a definition in the paas.Spec.Namespaces block
-- a paasns
+The operator creates an overview of all namespaces that should be there.
+These namespaces could be required by:
+- a capability
+- an entry in the paas.Spec.Namespaces block
+- a PaasNs
 
 As an example, assuming a Paas called `my-paas` with:
 
@@ -33,7 +33,6 @@ As an example, assuming a Paas called `my-paas` with:
       name: my-paas
     spec:
       capabilities:
-        # The argocd capability defined
         argocd: {}
       requestor: my-team
       quota:
