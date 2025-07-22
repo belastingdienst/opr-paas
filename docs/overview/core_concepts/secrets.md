@@ -19,13 +19,13 @@ key (as a secret) for ArgoCD to gain access to the git repository. These ssh sec
 need to be provided before ArgoCD can start acting on repo contents, which is why
 providing these secrets is part of the Paas solution.
 
-Another consideration was that we want `secrets` to be defined in a Paas, and
-since Paas can be readable to the world, and we naturally don't want the secrets
-to be open, which is why we implemented encryption.
+Another consideration was that we want secrets to be defined in a Paas, and
+since a Paas can be public, we naturally don't want the secrets
+to be plain-text, which is why we implemented encryption.
 
 Encryption is based on RSA where a public key (shared with everyone) is used to
 encrypt, and a private key (deployed with the Paas operator) is used to decrypt.
-Which that everyone can encrypt, but only the Paas operator can decrypt.
+In this way everyone can encrypt, but only the Paas operator can decrypt.
 
 For ease of use, and to enable extra management capabilities, the Paas operator
 comes with additional tooling:
@@ -83,17 +83,17 @@ blockdiag {
 }
 ```
 
-## Defining a `secret`
+## Defining a secret
 
-`secret`s are processed by the PaasNs controller and as such need to be defined
+secrets are processed by the PaasNs controller and as such need to be defined
 in the PaasNs. Additionally, `secret`s can also be created in a Paas.
 
-### Defining `secret`s in a Paas
+### Defining secrets in a Paas
 
 The Paas controller only manages secrets in Paas namespaces which can be defined as part of a Paas (generic, capability 
 or namespace), or a PaasNS.
 
-`secret`s can be defined in a Paas on 3 levels:
+secrets can be defined in a Paas on three levels:
 
 - as part of the spec, in which case the Paas controller will add the `secret`
   to every namespace created by the Paas controller
@@ -132,7 +132,7 @@ or namespace), or a PaasNS.
         limits.cpu: "40"
     ```
 
-### Defining `secret`s in a PaasNs
+### Defining secrets in a PaasNs
 
 The PaasNs controller is the one to manage the secrets in the Paas namespaces a
 defined in the PaasNs (either manually created or managed by the Paas controller).
