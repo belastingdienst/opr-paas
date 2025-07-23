@@ -33,7 +33,8 @@ When specifying `allow` (or leave empty), the operator reports no errors / warni
 
 ### Warn
 
-The option `warn` can be used to have the WebHook warn about users being set, without declining the request.
+The option `warn` can be used to have the WebHook warn about users being set, without declining the request,
+and have the controller log warnings to console and the Paas Status block.
 
 !!! example
 
@@ -49,7 +50,9 @@ The option `warn` can be used to have the WebHook warn about users being set, wi
 
 ### Block
 
-The option `block` can be set to decline requests with users being set in the Groups block.
+The option `block` can be set to decline requests with users being set in the Groups block,
+have the controller log warnings to console and the Paas Status block, 
+and have the controller remove groups that have previously been defined.
 
 !!! example
 
