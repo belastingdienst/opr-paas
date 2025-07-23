@@ -68,7 +68,8 @@ func init() {
 }
 
 // ClonedLabels returns a map of labels hat can be cloned to sub resources (namespace).
-// Deprecated: ClonedLabels is replaced by go templating
+//
+// Deprecated: ClonedLabels will be replaced by `go templated labels`
 func (pns PaasNS) ClonedLabels() map[string]string {
 	labels := make(map[string]string)
 	for key, value := range pns.Labels {

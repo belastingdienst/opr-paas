@@ -72,9 +72,8 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	Capabilities ConfigCapabilities `json:"capabilities"`
 
-	// ClusterWideArgoCDNamespace defines the namespace where the clusterwide ArgoCD is installed.
+	// Deprecated: ClusterWideArgoCDNamespace defines the namespace where the clusterwide ArgoCD is installed.
 	// The cluster-wide ArgoCD will be used for managing capabilities and appProjects
-	// Deprecated: ArgoCD specific code will be removed from the operator
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	ClusterWideArgoCDNamespace string `json:"clusterwide_argocd_namespace"`
@@ -84,22 +83,19 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	QuotaLabel string `json:"quota_label"`
 
-	// RequestorLabel defines the name of the label to add with the requestor field as it's value.
-	// Deprecated: RequestorLabel is replaced by go template functionality
+	// Deprecated: RequestorLabel defines the name of the label to add with the requestor field as it's value.
 	// Name of the label used to define who is the contact for this resource
 	// +kubebuilder:default:=requestor
 	// +kubebuilder:validation:Optional
 	RequestorLabel string `json:"requestor_label"`
 
-	// ManagedByLabel defines the label to add for setting the `managed by` option
-	// Deprecated: ManagedByLabel is replaced by go template functionality
+	// Deprecated: ManagedByLabel defines the label to add for setting the `managed by` option
 	// Name of the label used to define by whom the resource is managed.
 	// +kubebuilder:default:=argocd.argoproj.io/managed-by
 	// +kubebuilder:validation:Optional
 	ManagedByLabel string `json:"managed_by_label"`
 
-	// ManagedBySuffix defines the suffix to add in the ManagedBy label
-	// Deprecated: ManagedBySuffix is replaced by go template functionality
+	// Deprecated: ManagedBySuffix defines the suffix to add in the ManagedBy label
 	// once available
 	// Suffix to be appended to the managed-by-label
 	// +kubebuilder:default:=argocd
