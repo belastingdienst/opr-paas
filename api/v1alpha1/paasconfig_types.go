@@ -4,8 +4,6 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-//revive:disable:exported
-
 package v1alpha1
 
 import (
@@ -34,6 +32,7 @@ const (
 	TypeDegradedPaasConfig = "Degraded"
 )
 
+// PaasConfig is a k8s resource to hold all operator config
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:deprecatedversion:warning="please upgrade to v1alpha2"
@@ -56,10 +55,12 @@ func (pc PaasConfig) GetGeneration() int64 {
 	return pc.Generation
 }
 
+// GetSpec returns the spec
 func (pc PaasConfig) GetSpec() PaasConfigSpec {
 	return pc.Spec
 }
 
+// PaasConfigSpec defines a spec block for a PaasConfig
 type PaasConfigSpec struct {
 	// DecryptKeysSecret is a reference to the secret containing the DecryptKeys
 	// +kubebuilder:validation:Required
@@ -142,6 +143,7 @@ type PaasConfigSpec struct {
 	Validations PaasConfigValidations `json:"validations"`
 }
 
+// NamespacedName is a helper type to define names of namespaced objects.
 type NamespacedName struct {
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
@@ -151,47 +153,36 @@ type NamespacedName struct {
 	Namespace string `json:"namespace"`
 }
 
+// ConfigRoleMappings can be used to define mappings between functional and technical roles
 type ConfigRoleMappings map[string][]string
 
-func (crm ConfigRoleMappings) Roles(roleMaps []string) []string {
-	if len(roleMaps) == 0 {
-		roleMaps = []string{"default"}
-	}
-	var mappedRoles []string
-	for _, roleMap := range roleMaps {
-		if roles, exists := crm[roleMap]; exists {
-			mappedRoles = append(mappedRoles, roles...)
-		}
-	}
-	return mappedRoles
-}
-
-// Deprecated: ArgoCD specific code will be removed from the operator
+// ConfigArgoPermissions is Deprecated: ArgoCD specific code will be removed from the operator
 type ConfigArgoPermissions struct {
-	// Deprecated: ArgoCD specific code will be removed from the operator
+	// DefaultPolicy is Deprecated: ArgoCD specific code will be removed from the operator
 	// The optional default policy which is set in the ArgoCD instance
 	// +kubebuilder:validation:Optional
 	DefaultPolicy string `json:"default_policy"`
 
-	// Deprecated: ArgoCD specific code will be removed from the operator
+	// ResourceName is Deprecated: ArgoCD specific code will be removed from the operator
 	// The name of the ArgoCD instance to apply ArgoPermissions to
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	ResourceName string `json:"resource_name"`
 
-	// Deprecated: ArgoCD specific code will be removed from the operator
+	// Role is Deprecated: ArgoCD specific code will be removed from the operator
 	// The name of the role to add to Groups set in ArgoPermissions
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Role string `json:"role"`
 
-	// Deprecated: ArgoCD specific code will be removed from the operator
+	// Header is Deprecated: ArgoCD specific code will be removed from the operator
 	// The header value to set in ArgoPermissions
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Required
 	Header string `json:"header"`
 }
 
+// ConfigLdap can be used to define ldap endpoints
 type ConfigLdap struct {
 	// LDAP server hostname
 	// +kubebuilder:validation:MinLength=1
@@ -204,8 +195,10 @@ type ConfigLdap struct {
 	Port int32 `json:"port"`
 }
 
+// ConfigCapabilities defines the config for Paas Capabilities
 type ConfigCapabilities map[string]ConfigCapability
 
+// ConfigCapability defines the config for a Paas Capability
 type ConfigCapability struct {
 	// Name of the ArgoCD ApplicationSet which manages this capability
 	// +kubebuilder:validation:MinLength=1
@@ -230,6 +223,7 @@ type ConfigCapability struct {
 
 // TODO: When we move to PaasConfig, we can probably combine Required and Default fields
 
+// ConfigCustomField defines a custom field for a capability
 type ConfigCustomField struct {
 	// Regular expression for validating input, defaults to '', which means no validation.
 	// +kubebuilder:validation:Optional
@@ -248,6 +242,7 @@ type ConfigCustomField struct {
 	Required bool `json:"required"`
 }
 
+// ConfigQuotaSettings defines settings for a capability
 type ConfigQuotaSettings struct {
 	// Is this a clusterwide quota or not
 	// +kubebuilder:default:=false
@@ -274,10 +269,10 @@ type ConfigQuotaSettings struct {
 	MaxQuotas map[corev1.ResourceName]resourcev1.Quantity `json:"max"`
 }
 
-// This is an insoudeout representation of ConfigCapPerm, closer to rb representation
-type ConfigRolesSas map[string]map[string]bool
+// ConfigRolesSas is an insideout representation of ConfigCapPerm, closer to rb representation
+type configRolesSas map[string]map[string]bool
 
-func (crs ConfigRolesSas) Merge(other ConfigRolesSas) ConfigRolesSas {
+func (crs configRolesSas) Merge(other configRolesSas) configRolesSas {
 	var role map[string]bool
 	var exists bool
 	for rolename, sas := range other {
@@ -292,25 +287,10 @@ func (crs ConfigRolesSas) Merge(other ConfigRolesSas) ConfigRolesSas {
 	return crs
 }
 
+// ConfigCapPerm can be used to define default / extra permissions on a capability
 type ConfigCapPerm map[string][]string
 
-func (ccp ConfigCapPerm) AsConfigRolesSas(add bool) ConfigRolesSas {
-	crs := make(ConfigRolesSas)
-	for sa, roles := range ccp {
-		for _, role := range roles {
-			if cr, exists := crs[role]; exists {
-				cr[sa] = add
-				crs[role] = cr
-			} else {
-				cr = make(map[string]bool)
-				cr[sa] = add
-				crs[role] = cr
-			}
-		}
-	}
-	return crs
-}
-
+// Roles returns a list of all roles that are granted for this capability
 func (ccp ConfigCapPerm) Roles() []string {
 	var roles []string
 	for _, rolenames := range ccp {
@@ -319,6 +299,7 @@ func (ccp ConfigCapPerm) Roles() []string {
 	return roles
 }
 
+// ServiceAccounts returns a list of all service accounts that have default / extra permissions for this capability
 func (ccp ConfigCapPerm) ServiceAccounts() []string {
 	var sas []string
 	for sa := range ccp {
@@ -327,6 +308,7 @@ func (ccp ConfigCapPerm) ServiceAccounts() []string {
 	return sas
 }
 
+// CapabilityK8sName returns the NamespacedName for a capabilities namespace
 func (config PaasConfigSpec) CapabilityK8sName(capName string) (as types.NamespacedName) {
 	as.Namespace = config.ClusterWideArgoCDNamespace
 	if capability, exists := config.Capabilities[capName]; exists {
@@ -341,6 +323,7 @@ func (config PaasConfigSpec) CapabilityK8sName(capName string) (as types.Namespa
 
 // revive:disable:line-length-limit
 
+// PaasConfigStatus defines the status block of a PaasConfig
 type PaasConfigStatus struct {
 	// Conditions of this resource
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
@@ -348,8 +331,8 @@ type PaasConfigStatus struct {
 
 // revive:enable:line-length-limit
 
-// +kubebuilder:object:root=true
 // PaasConfigList contains a list of PaasConfig
+// +kubebuilder:object:root=true
 type PaasConfigList struct {
 	metav1.TypeMeta `json:""`
 	metav1.ListMeta `json:"metadata,omitempty"`
@@ -414,7 +397,7 @@ func ActivePaasConfigUpdated() predicate.Predicate {
 	}
 }
 
-func (pc PaasConfig) IsActive() bool {
+func (pc PaasConfig) isActive() bool {
 	return meta.IsStatusConditionPresentAndEqual(
 		pc.Status.Conditions,
 		TypeActivePaasConfig,

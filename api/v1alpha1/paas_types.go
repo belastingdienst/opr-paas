@@ -4,8 +4,6 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-//revive:disable:exported
-
 package v1alpha1
 
 import (
@@ -93,7 +91,7 @@ func (p Paas) GetNsSSHSecrets(ns string) (secrets map[string]string) {
 		secrets[key] = value
 	}
 	if capability, exists := p.Spec.Capabilities[ns]; exists {
-		for key, value := range capability.GetSSHSecrets() {
+		for key, value := range capability.GetSecrets() {
 			secrets[key] = value
 		}
 	}
@@ -103,7 +101,7 @@ func (p Paas) GetNsSSHSecrets(ns string) (secrets map[string]string) {
 func (p Paas) enabledCapNamespaces() (ns map[string]bool) {
 	ns = map[string]bool{}
 	for name, cap := range p.Spec.Capabilities {
-		if cap.IsEnabled() {
+		if cap.isEnabled() {
 			ns[name] = true
 		}
 	}
@@ -212,7 +210,7 @@ func (p Paas) GroupKey2GroupName(groupKey string) string {
 	return fmt.Sprintf("%s-%s", p.Name, groupKey)
 }
 
-// GroupNames
+// GroupNames return a list of all group names as defined in Spec.Groups
 func (p Paas) GroupNames() (groupNames []string) {
 	for groupKey := range p.Spec.Groups {
 		groupNames = append(groupNames, p.GroupKey2GroupName(groupKey))
@@ -263,7 +261,7 @@ func (pcs PaasCapabilities) AsPrefixedMap(prefix string) PaasCapabilities {
 
 // IsCap will return true if `name` is a capability which exists and is enabled
 func (pcs PaasCapabilities) IsCap(name string) bool {
-	if capability, exists := pcs[name]; !exists || !capability.IsEnabled() {
+	if capability, exists := pcs[name]; !exists || !capability.isEnabled() {
 		return false
 	}
 
@@ -278,8 +276,8 @@ func (pcs PaasCapabilities) getCapability(capabilityName string) (PaasCapability
 	return capability, nil
 }
 
-// AddSSHSecret
-func (pcs PaasCapabilities) AddCapSSHSecret(capabilityName string, key string, value string) (err error) {
+// AddCapSecret is used by e2e testsyy
+func (pcs PaasCapabilities) AddCapSecret(capabilityName string, key string, value string) (err error) {
 	capability, err := pcs.getCapability(capabilityName)
 	if err != nil {
 		return err
@@ -293,7 +291,8 @@ func (pcs PaasCapabilities) AddCapSSHSecret(capabilityName string, key string, v
 	return nil
 }
 
-func (pcs PaasCapabilities) ResetCapSSHSecret(capabilityName string) (err error) {
+// ResetCapSecret is used by e2e testsyy
+func (pcs PaasCapabilities) ResetCapSecret(capabilityName string) (err error) {
 	capability, err := pcs.getCapability(capabilityName)
 	if err != nil {
 		return err
@@ -375,17 +374,18 @@ func (pc *PaasCapability) CapExtraFields(
 	return elements, nil
 }
 
-// WithExtraPermissions
+// WithExtraPermissions returns true if this capabilities has extraPermissions enabled
 func (pc *PaasCapability) WithExtraPermissions() bool {
 	return pc.Enabled && pc.ExtraPermissions
 }
 
-// Deprecated: pc.Enabled will be removed
-func (pc *PaasCapability) IsEnabled() bool {
+// isEnabled return true if this capability is enabled
+// (Deprecated, removed in v1alpha2)
+func (pc *PaasCapability) isEnabled() bool {
 	return pc.Enabled
 }
 
-func (pc *PaasCapability) SetDefaults() {
+func (pc *PaasCapability) setDefaults() {
 	if pc.GitPath == "" {
 		pc.GitPath = "."
 	}
@@ -394,15 +394,16 @@ func (pc *PaasCapability) SetDefaults() {
 	}
 }
 
-func (pc PaasCapability) Quotas() (pq paasquota.Quota) {
+func (pc PaasCapability) quotas() (pq paasquota.Quota) {
 	return pc.Quota
 }
 
-func (pc PaasCapability) GetSSHSecrets() map[string]string {
+// GetSecrets is used by webservice
+func (pc PaasCapability) GetSecrets() map[string]string {
 	return pc.SSHSecrets
 }
 
-func (pc *PaasCapability) SetSSHSecret(key string, value string) {
+func (pc *PaasCapability) setSecret(key string, value string) {
 	pc.SSHSecrets[key] = value
 }
 
@@ -422,12 +423,12 @@ type PaasStatus struct {
 
 // revive:enable:line-length-limit
 
-// Deprecated: use paas.status.conditions instead
+// Truncate is Deprecated: use paas.status.conditions instead
 func (ps *PaasStatus) Truncate() {
 	ps.Messages = []string{}
 }
 
-// Deprecated: use paasns.status.conditions instead
+// GetMessages is Deprecated: use paasns.status.conditions instead
 func (ps *PaasStatus) GetMessages() []string {
 	return ps.Messages
 }
@@ -446,7 +447,7 @@ type Paas struct {
 	Status PaasStatus `json:"status,omitempty"`
 }
 
-func (p Paas) ClonedAnnotations() map[string]string {
+func (p Paas) clonedAnnotations() map[string]string {
 	annotations := make(map[string]string)
 	for key, value := range p.Annotations {
 		annotations[key] = value
@@ -454,7 +455,7 @@ func (p Paas) ClonedAnnotations() map[string]string {
 	return annotations
 }
 
-func (p Paas) ClonedLabels() map[string]string {
+func (p Paas) clonedLabels() map[string]string {
 	labels := make(map[string]string)
 	for key, value := range p.Labels {
 		if key != "app.kubernetes.io/instance" {
@@ -462,34 +463,6 @@ func (p Paas) ClonedLabels() map[string]string {
 		}
 	}
 	return labels
-}
-
-func (p Paas) IsItMe(reference metav1.OwnerReference) bool {
-	if reference.APIVersion != paasAPIVersion ||
-		reference.Kind != "Paas" ||
-		reference.Name != p.Name {
-		return false
-	}
-
-	return true
-}
-
-func (p Paas) AmIOwner(references []metav1.OwnerReference) bool {
-	for _, reference := range references {
-		if p.IsItMe(reference) {
-			return true
-		}
-	}
-	return false
-}
-
-func (p Paas) WithoutMe(references []metav1.OwnerReference) (withoutMe []metav1.OwnerReference) {
-	for _, reference := range references {
-		if !p.IsItMe(reference) {
-			withoutMe = append(withoutMe, reference)
-		}
-	}
-	return withoutMe
 }
 
 // GetConditions is required for Paas to be used as v1alpha1.Resource

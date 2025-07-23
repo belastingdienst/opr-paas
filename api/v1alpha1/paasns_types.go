@@ -4,8 +4,6 @@ Licensed under the EUPL 1.2.
 See LICENSE.md for details.
 */
 
-//revive:disable:exported
-
 package v1alpha1
 
 import (
@@ -58,51 +56,13 @@ type PaasNS struct {
 	Status PaasNsStatus `json:"status,omitempty"`
 }
 
+// NamespaceName can be used to get the name of the namespace that this PaasNS represents
 func (pns PaasNS) NamespaceName() string {
 	if pns.Spec.Paas == "" || pns.Name == "" {
 		panic(errors.New("invalid paas or paasns name (empty)"))
 	}
 
 	return fmt.Sprintf("%s-%s", pns.Spec.Paas, pns.Name)
-}
-
-func (pns PaasNS) ClonedLabels() map[string]string {
-	labels := make(map[string]string)
-	for key, value := range pns.Labels {
-		if key != "app.kubernetes.io/instance" {
-			labels[key] = value
-		}
-	}
-	return labels
-}
-
-func (pns PaasNS) IsItMe(reference metav1.OwnerReference) bool {
-	if pns.APIVersion != reference.APIVersion {
-		return false
-	} else if pns.Kind != reference.Kind {
-		return false
-	} else if pns.Name != reference.Name {
-		return false
-	}
-	return true
-}
-
-func (pns PaasNS) AmIOwner(references []metav1.OwnerReference) bool {
-	for _, reference := range references {
-		if pns.IsItMe(reference) {
-			return true
-		}
-	}
-	return false
-}
-
-func (pns *PaasNS) GetConditions() *[]metav1.Condition {
-	return &pns.Status.Conditions
-}
-
-// GetGeneration is required for Paas to be used as v1alpha1.Resource
-func (pns PaasNS) GetGeneration() int64 {
-	return pns.Generation
 }
 
 // +kubebuilder:object:root=true
@@ -131,12 +91,7 @@ type PaasNsStatus struct {
 
 // revive:enable:line-length-limit
 
-// Deprecated: use paasns.status.conditions instead
-func (ps *PaasNsStatus) Truncate() {
+// Truncate is Deprecated: use paasns.status.conditions instead
+func (ps *PaasNsStatus) truncate() {
 	ps.Messages = []string{}
-}
-
-// Deprecated: use paasns.status.conditions instead
-func (ps *PaasNsStatus) GetMessages() []string {
-	return ps.Messages
 }
