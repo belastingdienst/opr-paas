@@ -154,7 +154,7 @@ type ConfigFeatureFlags struct {
 	// +kubebuilder:default:=allow
 	// +kubebuilder:validation:Enum=allow;warn;block
 	// +kubebuilder:validation:Optional
-	GroupUserManagement string `json:"group_user_management"`
+	GroupUserManagement string `json:"group_user_management,omitempty"`
 }
 
 type ConfigCapabilities map[string]ConfigCapability
