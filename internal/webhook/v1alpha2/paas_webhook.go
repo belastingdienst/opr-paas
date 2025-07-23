@@ -133,7 +133,9 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		}
 	}
 
-	warnings = append(warnings, v.validateGroups(paas.Spec.Groups)...)
+	groupWarnings, groupErrors := v.validateGroups(paas.Spec.Groups)
+	warnings = append(warnings, groupWarnings...)
+	allErrs = append(allErrs, groupErrors...)
 	warnings = append(warnings, v.validateQuota(paas)...)
 	warnings = append(warnings, v.validateExtraPerm(conf, paas)...)
 
@@ -360,7 +362,8 @@ func validateCustomFields(
 }
 
 // validateGroups returns a warning for any of the passed groups which contain both users and a query.
-func (*PaasCustomValidator) validateGroups(groups v1alpha2.PaasGroups) (warnings []string) {
+func (*PaasCustomValidator) validateGroups(groups v1alpha2.PaasGroups) (warnings []string, errs []*field.Error) {
+	groupUserFeatureFlag := config.GetConfig().Spec.FeatureFlags.GroupUserManagement
 	for key, grp := range groups {
 		if len(grp.Query) > 0 && len(grp.Users) > 0 {
 			warnings = append(warnings, fmt.Sprintf(
@@ -368,9 +371,24 @@ func (*PaasCustomValidator) validateGroups(groups v1alpha2.PaasGroups) (warnings
 				field.NewPath("spec").Child("groups").Key(key),
 			))
 		}
+		if len(grp.Users) > 0 {
+			switch groupUserFeatureFlag {
+			case "warn":
+				warnings = append(warnings, fmt.Sprintf(
+					"group %s has users which is discouraged",
+					field.NewPath("spec").Child("groups").Key(key).Child("users"),
+				))
+			case "block":
+				errs = append(errs, field.Invalid(
+					field.NewPath("spec").Child("groups").Key(key).Child("users"),
+					grp.Users,
+					"groups with users is a disabled feature",
+				))
+			}
+		}
 	}
 
-	return warnings
+	return warnings, errs
 }
 
 // validateQuota returns a warning when higher limits are configured than requests for the Paas / capability quotas.

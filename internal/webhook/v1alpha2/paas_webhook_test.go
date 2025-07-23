@@ -91,7 +91,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(warn, err).Error().NotTo(HaveOccurred())
 			Expect(err).Error().NotTo(HaveOccurred())
 		})
-		It("Should validation paas name", func() {
+		It("Should validate paas name", func() {
 			const paasNameValidation = "^([a-z0-9]{3})-([a-z0-9]{3})$"
 			conf.Spec.Validations = v1alpha2.PaasConfigValidations{"paas": {"name": paasNameValidation}}
 
@@ -511,6 +511,41 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				Equal("spec.capabilities[bar].extra_permissions capability " +
 					"does not have extra permissions configured"),
 			)
+		})
+		It("Should handle user feature flag properly", func() {
+			for setting, expects := range map[string]struct {
+				warn string
+				err  string
+			}{
+				"":      {},
+				"allow": {},
+				"warn":  {warn: "group spec.groups[foo].users has users which is discouraged"},
+				"block": {err: "groups with users is a disabled feature"},
+			} {
+				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %s: %s", setting, expects)
+				conf.Spec.FeatureFlags.GroupUserManagement = setting
+				config.SetConfig(conf)
+				obj = &v1alpha2.Paas{
+					Spec: v1alpha2.PaasSpec{
+						Groups: map[string]v1alpha2.PaasGroup{
+							"foo": {
+								Users: []string{"bar"},
+							},
+						},
+					},
+				}
+				warnings, err := validator.ValidateCreate(ctx, obj)
+				if expects.warn == "" {
+					Expect(warnings).To(BeEmpty())
+				} else {
+					Expect(warnings).To(ContainElement(expects.warn))
+				}
+				if expects.err == "" {
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(err).To(MatchError(SatisfyAll(ContainSubstring(expects.err))))
+				}
+			}
 		})
 	})
 
