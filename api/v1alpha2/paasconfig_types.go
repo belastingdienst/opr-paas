@@ -151,7 +151,8 @@ type ConfigLdap struct {
 
 type ConfigFeatureFlags struct {
 	// Should the operator manage group users
-	// +kubebuilder:validation:Pattern=^(|allow|warn|block)$
+	// +kubebuilder:default:=allow
+	// +kubebuilder:validation:Enum=allow;warn;block
 	// +kubebuilder:validation:Optional
 	GroupUserManagement string `json:"group_user_management"`
 }
