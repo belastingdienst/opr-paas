@@ -12,7 +12,7 @@ The Paas Operator can deliver capabilities to enable Paas deployments with CI an
 Some examples of capabilities include:
 
 - enabling ArgoCD for Continuous Delivery on your Paas namespaces
-- enabling tekton for Continuous Integration of your application components
+- enabling Tekton for Continuous Integration of your application components
 - observing your Paas resources with Grafana
 - configuring federated Authentication and Authorization with keycloak
 
@@ -20,7 +20,7 @@ Configuring capabilities does not require code changes / building new images. It
 
 1. configuration for the Paas operator via `PaasConfig`
 2. an ApplicationSet in the namespace of the cluster-wide ArgoCD
-3. a git repository for the cluster-wide ArgoCD to be used for deploying the capability for a Paas which has the capability enabled
+3. a git repository for the cluster-wide ArgoCD to be used for deploying the capability for a Paas with the capability defined
 
 ## Configuring capabilities in the PaasConfig
 
@@ -36,7 +36,7 @@ Below example shows all configuration required to configure a capability.
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
@@ -44,7 +44,7 @@ Below example shows all configuration required to configure a capability.
       clusterwide_argocd_namespace: paas-capabilities-argocd
       capabilities:
         mycap:
-          ApplicationSet: mycap-as
+          applicationset: mycap-as
           default_permissions:
             my-service-account:
               - my-cluster-role
@@ -110,7 +110,7 @@ There are two options:
 
 #### More info
 
-For more information on Default permissions and Extra permissions please revert to:
+For more information on Default permissions and Extra permissions please refer to:
 
 - [Example PaasConfig with a capability](#example-paasconfig-with-a-capability)
 - [api-guide on capability configuration in the PaasConfig](../development-guide/00_api.md#configcapability)
@@ -122,7 +122,7 @@ Capabilities might require options to be set in a Paas. The fields to be set wou
 Some examples include:
 
 - setting a git url, revision and path for a ArgoCD bootstrap application
-- setting a version for the keycloak capability
+- setting a version for the Keycloak capability
 - deploying multiple streams of a capability and allowing some DevOps teams to run a `latest` while others run a `stable` stream
 
 For this reason we have introduced options for setting custom fields in the capability configuration in PaasConfig.
@@ -135,16 +135,17 @@ The following configuration can be set:
 - required: When set to true, an error is returned when the custom field is not defined in a Paas
 - default: When set, a Paas without the custom field set will use this default instead.
 - template: When set to a valid go template, the template is processed against the current Paas
-  and PaasConfig end results are added as one or more custom fields in the applicationset.
+  and PaasConfig end results are added as one or more custom fields in the ApplicationSet.
 
-!!! Note
+!!! note
+
     `required` and `default` are mutually exclusive.
 
 When set, a Paas can set these custom_fields, which brings them to the generators field in the Application created by the ApplicationSet for this specific Paas.
 
 #### Example of how a custom field operates
 
-Image than on a cluster with
+Imagine that on a cluster with
 
 - a PaasConfig as defined in [Example PaasConfig with a capability](#example-paasconfig-with-a-capability), and
 - an ApplicationSet as defined in [Example capability ApplicationSet](#example-ApplicationSet),
@@ -153,7 +154,7 @@ Image than on a cluster with
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: my-paas
@@ -171,8 +172,8 @@ The following would happen:
   - my-custom-key: key_123
   - my-custom-revision main
 - The Paas operator would create an entry in the list generator in the ApplicationSet, with custom fields set as elements
-- The cluster-wide ArgoCD ApplicationSet controller would create a new application for my-paas-capability-mycap
-- the new application would have the following set in `spec.source.kustomize.commonLabels`:
+- The cluster-wide ArgoCD ApplicationSet controller would create a new Application for my-paas-capability-mycap
+- the Application would have the following set in `spec.source.kustomize.commonLabels`:
   - key: key_123
   - revision: main
 - From here, Kustomize could use these values to be set on all resources create by the cluster-wide ArgoCD for this capability for this Paas
@@ -205,7 +206,7 @@ You can now generate an argocd policy by ranging over the groups in the paas:
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
@@ -227,7 +228,8 @@ You can now generate an argocd policy by ranging over the groups in the paas:
               limits.cpu: "8"
     ```
 
-!!! Note
+!!! note
+
     In the above example, you see the first line and the range on line 1, and the templated lines and end block on line 2.
     This causes that for every line a \n and after that a new row is inserted.
     This in turn leaves out the ending \n, which is unwanted.
@@ -240,7 +242,7 @@ You can reference values from the PaasConfig as well by referencing `.Config`:
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
@@ -268,7 +270,7 @@ This would create 2 keys:
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
@@ -281,7 +283,7 @@ This would create 2 keys:
             "paas_config":
               template: |
                 debug: {{ .Config.Spec.Debug }}
-                argo: {{ .Config.Spec.ArgoEnabled }}
+                argo_enabled: false
             my-custom-revision:
               validation: '^(main|develop|feature-.*)$'
               default: main
@@ -305,7 +307,7 @@ Which results in the following applicationSet entries:
         - list:
             elements:
               - paas_config_debug: true
-                paas_config_argo: false
+                paas_config_argo_enabled: false
       ...
     ```
 
@@ -316,7 +318,7 @@ This would create 3 keys:
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
@@ -376,7 +378,7 @@ It is deployed in the namespace `paas-capabilities-argocd`.
 To enable any capability, `spec.clusterwide_argocd_namespace` needs to be set to `paas-capabilities-argocd`, so that the Paas operator will locate ApplicationSets for capabilities in this namespace.
 And for a new capability (e.a. `new-capability`), there should be an ApplicationSet to manage resources for this new capability.
 This ApplicationSet should be created in `paas-capabilities-argocd`, and it's name (e.a. `new-capability`) should be configured in PaasConfig (`spec.capabilities["new-capability"].ApplicationSet`).
-After setting this configuration, for every Paas with the capability `new-capability` enabled, the Paas operator will
+After setting this configuration, for every Paas with the capability `new-capability` defined, the Paas operator will
 `GET` the ApplicationSet `paas-capabilities-argocd.new-capability`, add the Paas to the list generator and update the ApplicationSet definition.
 This in turn will create a new Application for the capability for this Paas, and ArgoCD will create and manage the resources.
 

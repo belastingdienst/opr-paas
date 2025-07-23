@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: paas-sshsecrets-publickey
+  name: paas-secrets-publickey
   namespace: paas
 data:
   publicKey: |

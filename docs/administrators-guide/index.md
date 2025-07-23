@@ -28,14 +28,17 @@ the Paas Operator in production environments.
 - [Capabilities](capabilities/)  
   Modular, plugin‑style features like ArgoCD, Tekton, Grafana, and Keycloak.
 
-- [SSH Secrets](sshSecrets/)  
-  Secure management of SSH credentials within the operator.
+- [Secrets](secrets/)  
+  Secure management of secrets within the operator.
 
 - [Security](security/)  
   Best practices and hardening guidelines for production deployments.
 
 - [Validations](validations/)  
   Built‑in checks to ensure correct configurations and prevent misconfigurations.
+
+- [API Version migration](v1alph1-conversion/)
+  Docs regarding migrating v1alpha1 resources to v1alpha2
 
 _For development workflows, release procedures, and contributor guidelines, see the [Developer’s Guide](../development-guide/index.md)._
 

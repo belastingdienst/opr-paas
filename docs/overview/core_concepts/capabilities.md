@@ -14,7 +14,7 @@ Examples of such capabilities are:
 
 However, the list could be longer in the future.
 
-Every Paas could have one or more of such capabilities enabled, which means they
+Every Paas could have one or more of such capabilities defined, which means they
 get these capabilities with the required permissions. The DevOps team requires no
 specific knowledge or permissions to use these capabilities.
 
@@ -32,8 +32,8 @@ Therefore, it is designed a follows:
     - the default quota to be used when no quota is set in the Paas
     - if the cluster wide quota feature should be enabled for this capability
     - the ApplicationSet that can be reconfigured (new entry in the list generator)
-      for each Paas with the capability enabled
-- For every Paas where the capability is enabled, the Paas controller will create:
+      for each Paas with the capability defined
+- For every Paas where the capability is defined, the Paas controller will create:
     - a [PaasNs](PaasNs.yaml)
     - an entry in the ApplicationSet List Generator which in creates a new Application,
       which in turn makes a cluster wide ArgoCD deployment read from the configured git
@@ -52,7 +52,7 @@ In the PaasConfig the following could be configured:
       capabilities:
         # Config for the argocd capability
         argocd:
-          # For every Paas with this capability enabled, the list generator in the
+          # For every Paas with this capability defined, the list generator in the
           # paas-argocd ApplicationSet should be extended
           applicationset: paas-argocd
           # Quotas can be set in the Paas, but for these quotas there are defaults to
@@ -65,7 +65,7 @@ In the PaasConfig the following could be configured:
             min: {}
             max: {}
             ratio: 0
-          # For all Paas's with the argocd capability enabled, by default also set
+          # For all Paas's with the argocd capability defined, by default also set
           # these permissions for the specified service account
           default_permissions:
             argocd-argocd-application-controller:
@@ -74,7 +74,7 @@ In the PaasConfig the following could be configured:
           extra_permissions: {}
         # Config for the grafana capability
         grafana:
-          # For every Paas with this capability enabled, the list generator in the
+          # For every Paas with this capability defined, the list generator in the
           # paas-grafana ApplicationSet should be extended
           applicationset: paas-grafana
           # Quotas can be set in the Paas, but for these quotas there are defaults to
@@ -102,7 +102,7 @@ The ArgoCD Applicationset could look like this:
     kind: ApplicationSet
     metadata:
       # name of the applicationset, this can be used for Paas instances with the
-      # argocd capability enabled
+      # argocd capability defined
       name: paas-argocd
       # Specify the namespace of a cluster wide ArgoCD. On OpenShift the openshift-gitops
       # namespace is meant to have the only cluster wide ArgoCD.
@@ -144,22 +144,21 @@ This would mean that someone could create a Paas with a block like this:
 !!! example
 
     ```yaml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: my-paas
     spec:
       capabilities:
         argocd:
-          enabled: true
-          # Bootstrap application to point to the root folder
-          gitPath: .
-          # Bootstrap application to point to the main branch
-          gitRevision: main
-          # Bootstrap application to point to this repo
-          gitUrl: "ssh://git@github.com/belastingdienst/my-paas-repo.git"
+          custom_fields:
+            # Bootstrap application to point to the root folder
+            gitPath: .
+            # Bootstrap application to point to the main branch
+            gitRevision: main
+            # Bootstrap application to point to this repo
+            gitUrl: "ssh://git@github.com/belastingdienst/my-paas-repo.git"
         grafana:
-          enabled: true
           quota:
             limits.cpu: "5"
             limits.memory: "2Gi"
@@ -171,7 +170,6 @@ This would result in:
   - `my-paas-argocd` has default quotas as specified in the configuration;
      (`limits.cpu: "7"`, `requests.cpu: "3"`)
   - `my-paas-grafana` has `limits.cpu` overridden to "5", `requests.cpu` defaulting to "1" and `limits.memory` set to '2Gi';
-- a `my-paas` namespace with a `argocd` PaasNs and a `grafana` PaasNs;
 - a namespace called `my-paas-argocd` linked to the `my-paas-argocd` `ClusterResourceQuota`;
 - a namespace called `my-paas-grafana` linked to the `my-paas-grafana` `ClusterResourceQuota`;
   The `applicationset` has an extra entry for the namespace so that the cluster-wide

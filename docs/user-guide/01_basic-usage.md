@@ -11,7 +11,7 @@ date: 2024-07-04
 ## Minimal Paas managed by another Paas
 
 Creating a configuration file to define a Paas is fairly straight forward. The
-configuration file should use the current API version `cpet.belastingdienst.nl/v1alpha1`
+configuration file should use the current API version `cpet.belastingdienst.nl/v1alpha2`
 and define a `kind: Paas`.
 
 The most minimal configuration requires at least a `name` in the `metadata` section
@@ -26,7 +26,7 @@ Example Paas definition being managed by another Paas:
 
     ```yaml
     ---
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: tst-tst
@@ -42,14 +42,13 @@ Example Paas definition, using its own ArgoCD:
 
     ```yaml
     ---
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: tst-tst
     spec:
       capabilities:
         argocd:
-          enabled: true
           custom_fields:
             gitPath: environments/production
             gitRevision: main

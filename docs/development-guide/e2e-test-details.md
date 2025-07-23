@@ -95,7 +95,8 @@ Post scenarios: reset environment to clean slate.
 
 What we test: CRQ CRUD
 
-!!! Note
+!!! note
+
     The `spec.quota` does not fall under not cluster wide quotas, hence a separate
     set of test scenarios.
 
@@ -145,9 +146,7 @@ Scenarios:
    **and** the user is a member of said group,<br/>
    **and** the correct labels were placed on the group,<br/>
    **and** the Owner Reference for the Group points to the correct Paas,<br/>
-   **and** there are were no changes to the GroupSyncList,<br/>
    **and** the rolebinding on the namespace points to the group to the default role,<br/>
-   **and** the rolebinding was not applied to the default `Paas` namespace (name of the `Paas`)
 
 2. Updating the `Paas`, adding a group with a role other than default.<br/><br/>
    **Given** an existing, minimal `Paas` with a single namespace,<br/>
@@ -158,18 +157,11 @@ Scenarios:
    **and** the user is a member of said group,<br/>
    **and** the correct labels were placed on the group,<br/>
    **and** the Owner Reference for the Group points to the correct Paas,<br/>
-   **and** there are were no changes to the GroupSyncList,<br/>
    **and** the rolebinding on the namespace points to the group to the default role,<br/>
-   **and** the rolebinding was not applied to the default `Paas` namespace (name of the `Paas`)
 
 3. Removing the `Paas`.<br/><br/>
    **Given** an existing `Paas` with a single group,<br/>
    **when** said `Paas` is removed,<br/>
-
-!!! note
-    _There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation._
-    
-    _Determine what that baseline currently is._
 
 Post scenarios: reset environment to clean slate.
 
@@ -184,44 +176,24 @@ Scenarios:
    **Given** no existing `Paas`,<br/>
    **when** a minimal `Paas` is created with a single namespace,<br/>
    **and** a `Group` with a `Query`, but without a `Role`,<br/>
-   **then** a `Group` with the correct name should have been created,<br/>
+   **then** the `Group` should not have been created,<br/>
    **and** there should be no users in said `Group`,<br/>
    **and** the correct labels were added onto the `Group`,<br/>
-   **and** the Owner Reference for the Group points to the correct Paas,<br/>
-   **and** the query was added to the groupsynclist,<br/>
    **and** the rolebinding on the namespace points to the group, to the specified role,<br/>
-   **and** the rolebinding was not applied to the default `Paas` namespace (name of the `Paas`).
 2. Updating the `Paas`, adding a group with a role other than default.<br/><br/>
    **Given** an existing, minimal `Paas` with a single namespace,<br/>
    **when** another query is added to said `Paas` (compared to step scenario 1),<br/>
    **and** said group has a specific role, other than default (see test_config),<br/>
-   **then** a `Group` was created with the correct name,<br/>
+   **then** the `Group` should not have been created,<br/>
    **and** there are no users in said group,<br/>
    **and** the correct labels were placed on the group, (no ldap things)<br/>
-   **and** the Owner Reference for the Group points to the correct Paas,<br/>
-   **and** there were changes made to the GroupSyncList,<br/>
    **and** the rolebinding on the namespace points to the group to the specified role,<br/>
-   **and** the rolebinding was not applied to the default `Paas` namespace (name of the `Paas`)
 
 3. Removing the `Paas`.<br/><br/>
    **Given** an existing `Paas` with a single group,<br/>
    **when** said `Paas` is removed,<br/>
 
-!!! note
-    _There are known issues on groups, updating / removing does not go perfectly. Goal here is to test the baseline in the current situation._
-    
-    _Determine what that baseline currently is._
-
 Post scenarios: reset environment to clean slate.
-
-!!! note
-    TODO, there a known issue regarding groups. Good regression test to model the
-    following steps:
-    1. Create `Paas` with query;
-    2. Update `Paas` from step 1, remove query and add users to the group;
-    3. Group is not removed from groupsynclist;
-    4. Sync fails because the required `ldap.uid` doesn't match the groupname.
-    (We don't fully test sync.)
 
 ## Secrets
 

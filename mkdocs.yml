@@ -65,6 +65,7 @@ plugins:
   - social
   - tags
   - privacy
+  - kroki
   - literate-nav:
       nav_file: README.md
       implicit_index: true

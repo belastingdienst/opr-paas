@@ -35,26 +35,20 @@ Let's first define the Paas:
 !!! example
 
     ```yaml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: Paas
     metadata:
       name: my-kewl-app
     spec:
       capabilities:
-        forgejo:
-          enabled: true
-        tekton:
-          enabled: true
-        vault:
-          enabled: true
-        harbor:
-          enabled: true
-        argocd:
-          enabled: true
-        grafana:
-          enabled: true
+        forgejo: {}
+        tekton: {}
+        vault: {}
+        harbor: {}
+        argocd: {}
+        grafana: {}
       namespaces:
-      - prod
+        prod: {}
       quota:
         limits.cpu: '42'
         limits.memory: 11Gi
@@ -65,11 +59,11 @@ Let's first define the Paas:
 
 Once the Paas has been applied, the Paas operator takes over and the following happens:
 
-- The following namespaces are created: my-kewl-app, my-kewl-app-forgejo, my-kewl-app-tekton,
+- The following namespaces are created: my-kewl-app-forgejo, my-kewl-app-tekton,
   my-kewl-app-vault, my-kewl-app-harbor, my-kewl-app-argocd, my-kewl-app-grafana, my-kewl-app-prod;
 - The following ClusterResourceQuotas are created: my-kewl-app, my-kewl-app-forgejo,
   my-kewl-app-tekton, my-kewl-app-vault, my-kewl-app-harbor, my-kewl-app-argocd, my-kewl-app-grafana;
-    - Namespaces my-kewl-app and my-kewl-app-prod are linked to ClusterResourceQuota my-kewl-app;
+    - Namespaces my-kewl-app-prod are linked to ClusterResourceQuota my-kewl-app;
     - all other namespaces are linked to their own ClusterResourceQuotas named exactly like the namespace;
 - In a namespace with a cluster-wide ArgoCD the list generator in the ApplicationSets
   belonging to the enabled capabilities are extended with an extra item for this Paas,

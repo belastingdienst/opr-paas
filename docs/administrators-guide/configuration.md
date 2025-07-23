@@ -35,7 +35,7 @@ Example PaasConfig
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config
@@ -44,26 +44,12 @@ Example PaasConfig
         paas:
           groupNames: "^[a-z0-9-]*$"
       debug: false
-      groupsynclist:
-        namespace: prod-cronjobs
-        name: groupsynclist
-      ldap:
-        host: ${PROD_LDAP_HOST}
-        port: 636
-      argopermissions:
-        resource_name: argo-service
-        role: admin
-        header: |
-          g, system:cluster-admins, role:admin
-          g, something_clusteradmin, role:admin
-          g, something, role:admin
       managed_by_label: argocd.argoproj.io/managed-by
       requestor_label: level-one-support
       decryptKeySecret:
         namespace: paas-system
         name: example-keys
       clusterwide_argocd_namespace: prod-argocd
-      exclude_appset_name: something-to-be-excluded
       quota_label: clusterquotagroup
       rolemappings:
         default:
