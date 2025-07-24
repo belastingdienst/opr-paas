@@ -11,7 +11,7 @@ date: 2025-06-18
 ## Template
 
 The template feature allows administrators to dynamically generate values from information in Paas and/or PaasConfig.
-This provides flexibility for other organisations using the Paas operator with other business logic.
+This provides flexibility for other organizations using the Paas operator with other business logic.
 
 ## Syntax
 
