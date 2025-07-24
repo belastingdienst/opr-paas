@@ -35,9 +35,6 @@ var _ = Describe("Group controller", Ordered, func() {
 		reconciler *PaasReconciler
 	)
 
-	BeforeAll(func() {
-	})
-
 	BeforeEach(func() {
 		ctx = context.Background()
 		reconciler = &PaasReconciler{
