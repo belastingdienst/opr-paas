@@ -13,8 +13,9 @@ paginate~=0.5
 regex>=2022.4
 requests~=2.32
 
+mkdocs-kroki-plugin
+mkdocs-literate-nav
 mkdocs-material
 mkdocs-material[recommended]
 mkdocs-material[imaging]
-mkdocs-literate-nav
 mkdocs-redirects
