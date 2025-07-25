@@ -13,10 +13,35 @@ For this exact reason, we have introduced the concept of PaasNs.
 
 The concept works as follows:
 
-![paasns architecture](./paasns.png)
+```kroki-blockdiag
+blockdiag {
+  "decrypted" -> crypttool -> Paas -> operator;
+  "Public key" -> crypttool;
+  "Private key" -> operator;
+  operator -> namespace -> secret;
+  "decrypted" [color = "greenyellow", shape = flowchart.input, stacked];
+  "secret" [color = "greenyellow", stacked];
+  "Public key" [color = "pink", shape = flowchart.input];
+  "Private key" [color = "pink", shape = flowchart.input];
+  "crypttool" [color = "lightblue"];
+  "operator" [color = "lightblue"];
+  group {
+      color = "#FF0000";
+      shape = line;
+      style = dashed;
+      orientation = portrait
+      "decrypted", crypttool, Paas, "Public key";
+   }
+  group {
+      orientation = portrait
+      operator, namespace, secret, "Private key";
+   }
+}
+```
 
 The operator creates an overview of all namespaces that should be there.
 These namespaces could be required by:
+
 - a capability
 - an entry in the paas.Spec.Namespaces block
 - a PaasNs
