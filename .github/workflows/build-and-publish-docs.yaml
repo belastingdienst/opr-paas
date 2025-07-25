@@ -58,6 +58,7 @@ jobs:
                                      mkdocs-redirects \
                                      mkdocs-material[recommended] \
                                      mkdocs-material[imaging] \
+                                     mkdocs-kroki-plugin \
                                      mike
 
       - name: Configure Git user
