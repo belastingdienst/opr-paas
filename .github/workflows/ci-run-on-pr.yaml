@@ -24,7 +24,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend_any_changed || steps.filter.outputs.ci_any_changed }}
     steps:
-      - uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f # v4.0.0
+      - uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.0.0
       - uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
         id: filter
         with:
@@ -48,7 +48,7 @@ jobs:
       - codechanges
     steps:
       - name: Checkout code
-        uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f # v4.0.0
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.0.0
       - name: Setup Golang
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
@@ -72,7 +72,7 @@ jobs:
       pull-requests: read # for golangci/golangci-lint-action to fetch pull requests
     steps:
       - name: Checkout code
-        uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f # v4.0.0
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.0.0
       - name: Setup Golang
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
@@ -91,7 +91,7 @@ jobs:
       - codechanges
     steps:
       - name: Checkout code
-        uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f # v4.0.0
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.0.0
       - name: Check for changes in generated code
         run: |
           make manifests
@@ -108,7 +108,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f # v4.0.0
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.0.0
       - name: Setup Golang
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
@@ -169,7 +169,7 @@ jobs:
       - codechanges
     steps:
       - name: Checkout code
-        uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f # v4.0.0
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.0.0
       - name: Setup Golang
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
@@ -225,7 +225,7 @@ jobs:
       - codechanges
     steps:
       - name: Checkout code
-        uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f # v4.0.0
+        uses: actions/checkout@8edcb1bdb4e267140fa742c62e395cd74f332709 # v4.0.0
       - name: Get unit test code coverage
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
