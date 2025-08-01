@@ -90,7 +90,7 @@ The following has changed between v1alpha1.Paas and v1alpha2.Paas:
 
 The following has changed between v1alpha1 and v1alpha2 PaasNS:
 
-- sshSecrets: Rename to `secrets`
+- `sshSecrets`: Rename to `secrets`
 
 !!! example
 
