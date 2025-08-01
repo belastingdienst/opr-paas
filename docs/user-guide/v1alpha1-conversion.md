@@ -18,7 +18,7 @@ The following has changed between v1alpha1.Paas and v1alpha2.Paas:
 
 - The following fields are removed from the Paas Capabilities (Paas.Spec.Capabilities):
 
-    - `enabled` (remove field when enabled for remove Capability when disabled)
+    - `enabled`: Remove field if set to true, or remove Capability when set to false
     - `gitPath`, `gitRevision`, `gitUrl`: Rewrite to custom fields
     - `sshSecrets`: Rename to `secrets`
     - `namespaces`: Rewrite from a list to a map
