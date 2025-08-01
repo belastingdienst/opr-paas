@@ -15,11 +15,13 @@ With release v2 we also released a new api v1alpha2 which has a slightly changed
 ### Paas
 
 The following has changed between v1alpha1.Paas and v1alpha2.Paas:
+
 - The following fields are removed from the Paas Capabilities (Paas.Spec.Capabilities):
-  - enabled (remove field when enabled for remove Capability when disabled)
-  - gitPath, gitRevision, gitUrl: Rewrite to custom fields
-  - sshSecrets: Rename to `secrets`
-  - namespaces: Rewrite from a list to a map
+
+    - `enabled` (remove field when enabled for remove Capability when disabled)
+    - `gitPath`, `gitRevision`, `gitUrl`: Rewrite to custom fields
+    - `sshSecrets`: Rename to `secrets`
+    - `namespaces`: Rewrite from a list to a map
 
 !!! example
 
@@ -87,8 +89,8 @@ The following has changed between v1alpha1.Paas and v1alpha2.Paas:
 ### PaasNS
 
 The following has changed between v1alpha1 and v1alpha2 PaasNS:
-- sshSecrets: Rename to `secrets`
 
+- sshSecrets: Rename to `secrets`
 
 !!! example
 
