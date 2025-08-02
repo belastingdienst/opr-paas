@@ -7,7 +7,6 @@ See LICENSE.md for details.
 package fields_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
@@ -25,12 +24,6 @@ var (
 	elements = fields.Elements{
 		key1: value1,
 		key2: value2,
-	}
-	properJSON    = []byte(fmt.Sprintf(`{"%s":"%s","%s":%f}`, key1, value1, key2, value2))
-	improperJSONs = [][]byte{
-		[]byte(fmt.Sprintf(`"%s":"%s",%f:%s}`, key1, value1, value2, key2)),
-		[]byte(fmt.Sprintf(`{"%s","%s"}`, key1, key2)),
-		[]byte(fmt.Sprintf(`["%s","%s"]`, key1, key2)),
 	}
 )
 
@@ -69,39 +62,4 @@ func TestGetElementAsString(t *testing.T) {
 			assert.Empty(t, elements.GetElementAsString(key))
 		}
 	}
-}
-
-func TestElementsFromProperJSON(t *testing.T) {
-	e, err := fields.ElementsFromJSON(properJSON)
-	assert.NoError(t, err)
-	assert.NotNil(t, e)
-	assert.Contains(t, e, key1)
-	assert.Equal(t, e[key1], value1)
-	assert.Contains(t, e, key2)
-	assert.Equal(t, e[key2], value2)
-}
-
-func TestElementsFromImproperJSON(t *testing.T) {
-	for _, JSON := range improperJSONs {
-		e, err := fields.ElementsFromJSON(JSON)
-		assert.Error(t, err)
-		assert.Nil(t, e)
-	}
-}
-
-func TestElementsAsString(t *testing.T) {
-	expected := `{ 'a': 'b', 'c': '6' }`
-	require.NotNil(t, elements)
-	assert.Equal(t, expected, elements.String())
-}
-
-func TestKey(t *testing.T) {
-	const paasName = "my-paas"
-	assert.Empty(t, elements.Key())
-	elements2 := fields.Elements{
-		key1:   value1,
-		key2:   value2,
-		"paas": paasName,
-	}
-	assert.Equal(t, paasName, elements2.Key())
 }

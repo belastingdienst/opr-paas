@@ -5,12 +5,10 @@ import (
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
@@ -47,7 +45,6 @@ func TestCapabilitySSO(t *testing.T) {
 func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapabilitySSO, t, cfg)
 	namespace := getOrFail(ctx, paasSSO, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
-	applicationSet := getOrFail(ctx, ssoApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
 	ssoQuota := getOrFail(ctx, paasSSO, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
 	// ClusterResource is created with the same name as the Paas
@@ -58,18 +55,6 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 
 	// SSO should be enabled
 	assert.Contains(t, paas.Spec.Capabilities, "sso")
-
-	// ApplicationSet exist
-	assert.NotEmpty(t, applicationSet)
-
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
-
-	// List entries should not be empty
-	require.NoError(t, appSetListEntriesError)
-	assert.Len(t, applicationSetListEntries, 1)
-
-	// At least one JSON object should have "paas": "paasnaam"
-	assert.Contains(t, applicationSetListEntries, paasWithCapabilitySSO)
 
 	// Check whether the LabelSelector is specific to the paasnaam-sso namespace
 	labelSelector := ssoQuota.Spec.Selector.LabelSelector
@@ -107,14 +92,6 @@ func assertCapSSODeleted(ctx context.Context, t *testing.T, cfg *envconf.Config)
 
 	// Namespace list not contains paas
 	assert.NotContains(t, namespaceList.Items, paasWithCapabilitySSO)
-
-	// ApplicationSet is deleted
-	applicationSet := getOrFail(ctx, ssoApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
-
-	// List Entries should be empty
-	require.NoError(t, appSetListEntriesError)
-	assert.Empty(t, applicationSetListEntries)
 
 	return ctx
 }

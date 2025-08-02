@@ -69,9 +69,8 @@ type PaasConfigSpec struct {
 	Capabilities ConfigCapabilities `json:"capabilities"`
 
 	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities
-	// If not set, AppSets list generator will not be managed by the operator
 	//
-	// Deprecated: ArgoCD specific code will be removed from the operator
+	// Deprecated: one must use the ArgoCD plugin generator instead
 	// +kubebuilder:validation:Optional
 	ClusterWideArgoCDNamespace string `json:"clusterwide_argocd_namespace,omitempty"`
 
@@ -143,9 +142,8 @@ type ConfigCapabilities map[string]ConfigCapability
 
 type ConfigCapability struct {
 	// Name of the ArgoCD ApplicationSet which manages this capability
-	// The AppSet is only managed when `clusterwide_argocd_namespace` is set as well.
-	// If not set, AppSets list generator will not be managed by the operator
-	// Deprecated: will be replaced by ArgoCD plugin generator
+	//
+	// Deprecated: one must use the ArgoCD plugin generator instead
 	// +kubebuilder:validation:Optional
 	AppSet string `json:"applicationset,omitempty"`
 
@@ -287,22 +285,6 @@ func (ccp ConfigCapPerm) ServiceAccounts() []string {
 		sas = append(sas, sa)
 	}
 	return sas
-}
-
-// TODO(hikarukin): we probably need to properly determine the namespace name,
-// depends on argocd code removal
-func (pcs PaasConfigSpec) CapabilityK8sName(capName string) types.NamespacedName {
-	capability, exists := pcs.Capabilities[capName]
-	if !exists {
-		return types.NamespacedName{}
-	}
-	if pcs.ClusterWideArgoCDNamespace != "" && capability.AppSet != "" {
-		return types.NamespacedName{
-			Name:      capability.AppSet,
-			Namespace: pcs.ClusterWideArgoCDNamespace,
-		}
-	}
-	return types.NamespacedName{}
 }
 
 // revive:disable:line-length-limit

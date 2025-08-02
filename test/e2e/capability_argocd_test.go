@@ -4,8 +4,7 @@ import (
 	"context"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -61,22 +60,6 @@ func TestCapabilityArgoCD(t *testing.T) {
 }
 
 func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
-	entries, _ := getApplicationSetListEntries(argoAppSet)
-
-	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
-	assert.Contains(t, entries, paasWithArgo)
-	assert.Equal(t, map[string]string{
-		"git_path":     paasArgoGitPath,
-		"git_revision": paasArgoGitRevision,
-		"git_url":      paasArgoGitURL,
-		// when no groups are set, field is left out
-		"paas":       paasWithArgo,
-		"requestor":  paasRequestor,
-		"service":    "paas",
-		"subservice": "capability",
-	}, entries[paasWithArgo].GetElementsAsStringMap())
-
 	assert.NotNil(
 		t,
 		getOrFail(ctx, paasArgoNs, corev1.NamespaceAll, &corev1.Namespace{}, t, cfg),
@@ -132,27 +115,9 @@ func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config
 		},
 	}
 
-	// As only the Paas spec is updated via the above change, we wait for that and
-	// know that no reconciliation of PaasNs takes place so no need to wait for that.
-	// check #185 for more details
 	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
-	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
-	entries, _ := getApplicationSetListEntries(argoAppSet)
-
-	// For now this still applies, later we move the git_.. properties to the appSet as well
-	// Assert AppSet entry updated accordingly
-	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
-	assert.Equal(t, map[string]string{
-		"git_path":     paasArgoGitPath,
-		"git_revision": updatedRevision,
-		"git_url":      paasArgoGitURL,
-		"paas":         paasWithArgo,
-		"requestor":    paasRequestor,
-		"service":      "paas",
-		"subservice":   "capability",
-	}, entries[paasWithArgo].GetElementsAsStringMap(), "ApplicationSet List generator contains the correct parameters")
 
 	assert.NotNil(
 		t,

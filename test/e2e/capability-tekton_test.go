@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -22,8 +21,6 @@ const (
 	paasWithCapabilityTekton = "tpaas"
 	paasTektonNs             = "tpaas-tekton"
 	paasTektonCRQ            = "paas-tekton"
-	TektonApplicationSet     = "tektonas"
-	asTektonNamespace        = "asns"
 	tektonCapName            = "tekton"
 )
 
@@ -58,7 +55,6 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 
 	_ = getOrFail(ctx, fmt.Sprintf("%s-%s", paasWithCapabilityTekton, "tekton"),
 		cfg.Namespace(), &corev1.Namespace{}, t, cfg)
-	applicationSet := getOrFail(ctx, TektonApplicationSet, asTektonNamespace, &argo.ApplicationSet{}, t, cfg)
 	tektonQuota := getOrFail(ctx, paasTektonCRQ, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
 	// ClusterResource is created with the same name as the Paas
@@ -66,18 +62,6 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 
 	// Tekton should be enabled
 	assert.Contains(t, paas.Spec.Capabilities, tektonCapName)
-
-	// ApplicationSet exist
-	assert.NotEmpty(t, applicationSet)
-
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
-
-	// List entries should not be empty
-	require.NoError(t, appSetListEntriesError)
-	assert.Len(t, applicationSetListEntries, 1)
-
-	// At least one JSON object should have "paas": "paasnaam"
-	assert.Contains(t, applicationSetListEntries, paasWithCapabilityTekton)
 
 	// Check whether the LabelSelector is specific to the paasnaam-Tekton namespace
 	labelSelector := tektonQuota.Spec.Selector.LabelSelector
@@ -111,14 +95,6 @@ func assertCapTektonDeleted(ctx context.Context, t *testing.T, cfg *envconf.Conf
 
 	// Namespace list not contains paas
 	assert.NotContains(t, namespaceList.Items, paasWithCapabilityTekton)
-
-	// ApplicationSet is deleted
-	applicationSet := getOrFail(ctx, TektonApplicationSet, asTektonNamespace, &argo.ApplicationSet{}, t, cfg)
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
-
-	// List Entries should be empty
-	require.NoError(t, appSetListEntriesError)
-	assert.Empty(t, applicationSetListEntries)
 
 	return ctx
 }

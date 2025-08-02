@@ -18,15 +18,6 @@ rules:
   - update
   - watch
 - apiGroups:
-  - argoproj.io
-  resources:
-  - applicationsets
-  verbs:
-  - get
-  - list
-  - patch
-  - watch
-- apiGroups:
   - cpet.belastingdienst.nl
   resources:
   - paas

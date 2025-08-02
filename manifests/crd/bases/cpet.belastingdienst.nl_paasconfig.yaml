@@ -180,10 +180,9 @@ spec:
                 type: object
               clusterwide_argocd_namespace:
                 description: |-
-                  Namespace in which a clusterwide ArgoCD can be found for managing capabilities
-                  If not set, AppSets list generator will not be managed by the operator
-
+                  Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
                   Deprecated: ArgoCD specific code will be removed from the operator
+                minLength: 1
                 type: string
               components_debug:
                 additionalProperties:
@@ -291,6 +290,7 @@ spec:
                   the fields
                 type: object
             required:
+            - clusterwide_argocd_namespace
             - decryptKeySecret
             - groupsynclist
             type: object
@@ -388,9 +388,8 @@ spec:
                     applicationset:
                       description: |-
                         Name of the ArgoCD ApplicationSet which manages this capability
-                        The AppSet is only managed when `clusterwide_argocd_namespace` is set as well.
-                        If not set, AppSets list generator will not be managed by the operator
-                        Deprecated: will be replaced by ArgoCD plugin generator
+                        Deprecated: one must use the ArgoCD plugin generator instead
+                      minLength: 1
                       type: string
                     custom_fields:
                       additionalProperties:
@@ -485,10 +484,9 @@ spec:
                 type: object
               clusterwide_argocd_namespace:
                 description: |-
-                  Namespace in which a clusterwide ArgoCD can be found for managing capabilities
-                  If not set, AppSets list generator will not be managed by the operator
-
-                  Deprecated: ArgoCD specific code will be removed from the operator
+                  Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
+                  Deprecated: one must use the ArgoCD plugin generator instead
+                minLength: 1
                 type: string
               components_debug:
                 additionalProperties:
@@ -598,6 +596,7 @@ spec:
                   the fields
                 type: object
             required:
+            - clusterwide_argocd_namespace
             - decryptKeySecret
             type: object
           status:
