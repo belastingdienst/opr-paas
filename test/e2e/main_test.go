@@ -12,7 +12,6 @@ import (
 	"os"
 	"testing"
 
-	argoprojv1alpha1 "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -273,7 +272,6 @@ func registerSchemes(cfg *envconf.Config) error {
 		v1alpha2.AddToScheme,
 		quotav1.Install,
 		userv1.Install,
-		argoprojv1alpha1.AddToScheme,
 	} {
 		install(scheme)
 	}
