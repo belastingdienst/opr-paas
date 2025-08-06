@@ -65,7 +65,8 @@ plugins:
   - social
   - tags
   - privacy
-  - kroki
+  - kroki:
+      HttpMethod: POST
   - literate-nav:
       nav_file: README.md
       implicit_index: true
