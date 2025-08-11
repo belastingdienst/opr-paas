@@ -50,15 +50,18 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	paas *v1alpha2.Paas,
 ) error {
 	paasConfigSpec := config.GetConfig().Spec
-	for capName := range paas.Spec.Capabilities {
-		if _, exists := paasConfigSpec.Capabilities[capName]; !exists {
-			return errors.New("capability not configured")
-		}
+	if paasConfigSpec.ClusterWideArgoCDNamespace != "" {
+		for capName := range paas.Spec.Capabilities {
+			if _, exists := paasConfigSpec.Capabilities[capName]; !exists {
+				return errors.New("capability not configured")
+			}
 
-		if err := r.ensureAppSetCap(ctx, paas, capName); err != nil {
-			return err
+			if err := r.ensureAppSetCap(ctx, paas, capName); err != nil {
+				return err
+			}
 		}
 	}
+
 	return nil
 }
 
@@ -103,11 +106,14 @@ func (r *PaasReconciler) ensureAppSetCap(
 	capName string,
 ) error {
 	var err error
-	// See if AppSet exists raise error if it doesn't
 	ctx, logger := logging.GetLogComponent(ctx, "appset")
 	logger.Info().Msgf("reconciling %s Applicationset", capName)
 	myConfig := config.GetConfig()
-	namespacedName := myConfig.Spec.CapabilityK8sName(capName)
+	namespacedName, err := myConfig.Spec.CapabilityK8sName(capName)
+	// According to config, we don't manage ListGenerators, therefore we don't return an error
+	if err != nil {
+		return nil
+	}
 	appSet := &appv1.ApplicationSet{}
 	err = r.Get(ctx, namespacedName, appSet)
 	var entries fields.Entries
@@ -172,10 +178,13 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	paasName string,
 	capName string,
 ) error {
-	// See if AppSet exists raise error if it doesn't
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := config.GetConfig().Spec.CapabilityK8sName(capName)
-	err := r.Get(ctx, asNamespacedName, as)
+	asNamespacedName, err := config.GetConfig().Spec.CapabilityK8sName(capName)
+	// According to config, we don't manage ListGenerators, therefore we don't return an error
+	if err != nil {
+		return nil
+	}
+	err = r.Get(ctx, asNamespacedName, as)
 	var entries fields.Entries
 	var listGen *appv1.ApplicationSetGenerator
 	if err != nil {

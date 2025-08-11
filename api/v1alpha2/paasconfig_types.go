@@ -10,7 +10,7 @@ See LICENSE.md for details.
 package v1alpha2
 
 import (
-	"fmt"
+	"errors"
 	"reflect"
 
 	"github.com/belastingdienst/opr-paas/v3/api"
@@ -75,11 +75,12 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	Capabilities ConfigCapabilities `json:"capabilities"`
 
-	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
-	// Deprecated: one must use the ArgoCD plugin generator instead
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
-	ClusterWideArgoCDNamespace string `json:"clusterwide_argocd_namespace"`
+	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities
+	// If not set, AppSets list generator will not be managed by the operator
+	//
+	// Deprecated: ArgoCD specific code will be removed from the operator
+	// +kubebuilder:validation:Optional
+	ClusterWideArgoCDNamespace string `json:"clusterwide_argocd_namespace,omitempty"`
 
 	// Label which is added to clusterquotas
 	// +kubebuilder:default:=clusterquotagroup
@@ -161,9 +162,10 @@ type ConfigCapabilities map[string]ConfigCapability
 
 type ConfigCapability struct {
 	// Name of the ArgoCD ApplicationSet which manages this capability
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
-	AppSet string `json:"applicationset"`
+	// The AppSet is only managed when `clusterwide_argocd_namespace` is set as well.
+	// If not set, AppSets list generator will not be managed by the operator
+	// +kubebuilder:validation:Optional
+	AppSet string `json:"applicationset,omitempty"`
 
 	// Quota settings for this capability
 	// +kubebuilder:validation:Required
@@ -307,15 +309,24 @@ func (ccp ConfigCapPerm) ServiceAccounts() []string {
 
 // TODO(hikarukin): we probably need to properly determine the namespace name,
 // depends on argocd code removal
-func (pcs PaasConfigSpec) CapabilityK8sName(capName string) (as types.NamespacedName) {
-	if capability, exists := pcs.Capabilities[capName]; exists {
-		as.Name = capability.AppSet
-	} else {
-		as.Name = fmt.Sprintf("paas-%s", capName)
+func (pcs PaasConfigSpec) CapabilityK8sName(capName string) (types.NamespacedName, error) {
+	if pcs.ClusterWideArgoCDNamespace == "" {
+		return types.NamespacedName{}, errors.New("clusterWide ArgoCD Namespace not set")
 	}
-	as.Namespace = pcs.ClusterWideArgoCDNamespace
 
-	return as
+	capability, exists := pcs.Capabilities[capName]
+	if !exists {
+		return types.NamespacedName{}, errors.New("capability not configured")
+	}
+
+	if capability.AppSet == "" {
+		return types.NamespacedName{}, errors.New("capability AppSet not set")
+	}
+
+	return types.NamespacedName{
+		Name:      capability.AppSet,
+		Namespace: pcs.ClusterWideArgoCDNamespace,
+	}, nil
 }
 
 // revive:disable:line-length-limit
