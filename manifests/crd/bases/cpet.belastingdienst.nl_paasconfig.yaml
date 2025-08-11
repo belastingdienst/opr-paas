@@ -480,7 +480,7 @@ spec:
               clusterwide_argocd_namespace:
                 description: |-
                   Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
-                  Deprecated: ArgoCD specific code will be removed from the operator
+                  Deprecated: one must use the ArgoCD plugin generator instead
                 minLength: 1
                 type: string
               debug:

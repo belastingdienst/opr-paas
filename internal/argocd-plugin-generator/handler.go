@@ -70,12 +70,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input struct {
-		ApplicationSetName string `json:"applicationSetName"`
-		Input              struct {
-			Parameters map[string]interface{} `json:"parameters"`
-		} `json:"input"`
-	}
+	var input PluginInput
 	if err = json.Unmarshal(body, &input); err != nil {
 		http.Error(w, fmt.Sprintf("invalid json: %v", err), http.StatusBadRequest)
 		return
@@ -87,11 +82,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := map[string]interface{}{
-		"output": map[string]interface{}{
-			"parameters": result,
-		},
+	if result == nil {
+		result = []map[string]interface{}{}
 	}
+
+	response := PluginResponse{}
+	response.Output.Parameters = result
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
@@ -107,7 +105,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 type PluginInput struct {
 	ApplicationSetName string `json:"applicationSetName"`
 	Input              struct {
-		Parameters map[string]string `json:"parameters"`
+		Parameters map[string]interface{} `json:"parameters"`
 	} `json:"input"`
 }
 
@@ -117,6 +115,6 @@ type PluginInput struct {
 // key-value pairs representing generated parameters for the ApplicationSet.
 type PluginResponse struct {
 	Output struct {
-		Parameters []map[string]string `json:"parameters"`
+		Parameters []map[string]interface{} `json:"parameters"`
 	} `json:"output"`
 }
