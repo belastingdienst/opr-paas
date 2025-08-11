@@ -58,7 +58,7 @@ var _ = Describe("PluginGenerator", func() {
 			_ = os.Setenv("ARGOCD_GENERATOR_TOKEN", "test-token")
 			defer os.Unsetenv("ARGOCD_GENERATOR_TOKEN")
 
-			pg = New(fakeClient)
+			pg = New(fakeClient, ":4355")
 
 			Expect(pg).ToNot(BeNil())
 			Expect(pg.service).ToNot(BeNil())
