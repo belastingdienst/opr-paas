@@ -13,6 +13,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const tokenEnvVar = "ARGOCD_GENERATOR_TOKEN"
+
 // GeneratorServerInterface defines the contract for a plug-in generator server.
 //
 // Any server implementation must be able to start serving requests
@@ -43,15 +45,15 @@ type PluginGenerator struct {
 //
 // The client is passed to the Service for interacting with Kubernetes
 // objects, and the server will be configured internally to use this service.
-func New(kclient client.Client) *PluginGenerator {
+func New(kclient client.Client, bindAddr string) *PluginGenerator {
 	generatorService := NewService(kclient)
 
-	token := os.Getenv("ARGOCD_GENERATOR_TOKEN")
+	token := os.Getenv(tokenEnvVar)
 	handler := NewHandler(generatorService, token)
 
 	server := NewServer(serverOptions{
-		Addr:        ":4355",
-		TokenEnvVar: "ARGOCD_GENERATOR_TOKEN",
+		Addr:        bindAddr,
+		TokenEnvVar: tokenEnvVar,
 	}, handler)
 
 	return &PluginGenerator{

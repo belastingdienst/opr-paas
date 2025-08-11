@@ -202,7 +202,7 @@ func configureManager(f *flags) ctrl.Manager {
 
 func setupPluginGenerator(f *flags, manager ctrl.Manager) {
 	if f.argocdPluginGenAddr != "0" {
-		pluginGenerator := argocdplugingenerator.New(manager.GetClient())
+		pluginGenerator := argocdplugingenerator.New(manager.GetClient(), f.argocdPluginGenAddr)
 		if err := manager.Add(pluginGenerator); err != nil {
 			log.Fatal().Msgf("failed to add plugin generator: %v", err)
 		}
