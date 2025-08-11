@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	argocdplugingenerator "github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -30,7 +31,6 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/controller"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	argoresources "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/internal/version"
 	webhookv1alpha1 "github.com/belastingdienst/opr-paas/v3/internal/webhook/v1alpha1"
 	webhookv1alpha2 "github.com/belastingdienst/opr-paas/v3/internal/webhook/v1alpha2"
@@ -64,13 +64,13 @@ type flags struct {
 	splitLogOutput                                   bool
 	metricsCertPath, metricsCertName, metricsCertKey string
 	webhookCertPath, webhookCertName, webhookCertKey string
+	argocdPluginGenAddr                              string
 }
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(quotav1.AddToScheme(scheme))
 	utilruntime.Must(userv1.AddToScheme(scheme))
-	utilruntime.Must(argoresources.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
@@ -113,6 +113,7 @@ func configureFlags() *flags {
 	flag.StringVar(&f.metricsCertName, "metrics-cert-name", "tls.crt",
 		"The name of the metrics server certificate file.")
 	flag.StringVar(&f.metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
+	flag.StringVar(&f.argocdPluginGenAddr, "argocd-plugin-generator-bind-address", "0", "The address the argocd plugin generator endpoint binds to. Use :4355 for HTTP, or leave as 0 to disable the argocd plugin generator service.") // nolint:revive
 	flag.BoolVar(&f.enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	flag.BoolVar(&f.pretty, "pretty", false, "Pretty-print logging output")
@@ -187,14 +188,23 @@ func configureManager(f *flags) ctrl.Manager {
 	tlsOpts := configureTLSOptions(f)
 	metricsCertWatcher, metricsServerOptions := setupMetricsTLS(f, tlsOpts)
 	webhookCertWatcher, webhookTLSOpts := setupWebhookTLS(f, tlsOpts)
-
 	mgr := createManager(f, metricsServerOptions, webhookTLSOpts)
 	addCertWatchers(mgr, metricsCertWatcher, webhookCertWatcher)
+	setupPluginGenerator(f, mgr)
 	setupControllers(mgr)
 	setupWebhooks(mgr)
 	setupHealthChecks(mgr)
 
 	return mgr
+}
+
+func setupPluginGenerator(f *flags, manager ctrl.Manager) {
+	if f.argocdPluginGenAddr != "0" {
+		pluginGenerator := argocdplugingenerator.New(manager.GetClient())
+		if err := manager.Add(pluginGenerator); err != nil {
+			log.Fatal().Msgf("failed to add plugin generator: %v", err)
+		}
+	}
 }
 
 func configureTLSOptions(f *flags) []func(*tls.Config) {

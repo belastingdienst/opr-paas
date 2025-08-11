@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/groups"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

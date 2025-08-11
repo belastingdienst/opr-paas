@@ -1,10 +1,16 @@
+/*
+Copyright 2023, Tax Administration of The Netherlands.
+Licensed under the EUPL 1.2.
+See LICENSE.md for details.
+*/
+
 package fields_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,24 +33,6 @@ var (
 		[]byte(fmt.Sprintf(`["%s","%s"]`, key1, key2)),
 	}
 )
-
-func TestElementsFromProperJSON(t *testing.T) {
-	e, err := fields.ElementsFromJSON(properJSON)
-	assert.NoError(t, err)
-	assert.NotNil(t, e)
-	assert.Contains(t, e, key1)
-	assert.Equal(t, e[key1], value1)
-	assert.Contains(t, e, key2)
-	assert.Equal(t, e[key2], value2)
-}
-
-func TestElementsFromImproperJSON(t *testing.T) {
-	for _, JSON := range improperJSONs {
-		e, err := fields.ElementsFromJSON(JSON)
-		assert.Error(t, err)
-		assert.Nil(t, e)
-	}
-}
 
 func TestAsStringMap(t *testing.T) {
 	assert.Equal(
@@ -72,12 +60,6 @@ func TestTryGetElementAsString(t *testing.T) {
 	assert.Equal(t, "6", c)
 }
 
-func TestElementsAsString(t *testing.T) {
-	expected := `{ 'a': 'b', 'c': '6' }`
-	require.NotNil(t, elements)
-	assert.Equal(t, expected, elements.String())
-}
-
 func TestGetElementAsString(t *testing.T) {
 	require.NotNil(t, elements)
 	for _, key := range []string{key1, key2, key3, key4} {
@@ -87,6 +69,30 @@ func TestGetElementAsString(t *testing.T) {
 			assert.Empty(t, elements.GetElementAsString(key))
 		}
 	}
+}
+
+func TestElementsFromProperJSON(t *testing.T) {
+	e, err := fields.ElementsFromJSON(properJSON)
+	assert.NoError(t, err)
+	assert.NotNil(t, e)
+	assert.Contains(t, e, key1)
+	assert.Equal(t, e[key1], value1)
+	assert.Contains(t, e, key2)
+	assert.Equal(t, e[key2], value2)
+}
+
+func TestElementsFromImproperJSON(t *testing.T) {
+	for _, JSON := range improperJSONs {
+		e, err := fields.ElementsFromJSON(JSON)
+		assert.Error(t, err)
+		assert.Nil(t, e)
+	}
+}
+
+func TestElementsAsString(t *testing.T) {
+	expected := `{ 'a': 'b', 'c': '6' }`
+	require.NotNil(t, elements)
+	assert.Equal(t, expected, elements.String())
 }
 
 func TestKey(t *testing.T) {

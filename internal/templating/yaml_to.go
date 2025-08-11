@@ -3,7 +3,7 @@ package templating
 import (
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
 	"gopkg.in/yaml.v3"
 )
 
