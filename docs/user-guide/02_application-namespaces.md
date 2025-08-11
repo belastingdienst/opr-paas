@@ -81,6 +81,4 @@ Read more about this feature in [the PaasNS documentation](../overview/core_conc
     metadata:
       name: my-ns
       namespace: my-paas-argocd
-    spec:
-      paas: tst-tst
     ```
