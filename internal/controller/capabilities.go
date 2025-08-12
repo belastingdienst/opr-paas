@@ -11,12 +11,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	appv1 "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 
@@ -109,48 +111,49 @@ func (r *PaasReconciler) ensureAppSetCap(
 	ctx, logger := logging.GetLogComponent(ctx, "appset")
 	logger.Info().Msgf("reconciling %s Applicationset", capName)
 	myConfig := config.GetConfig()
-	namespacedName, err := myConfig.Spec.CapabilityK8sName(capName)
+	namespacedName := myConfig.Spec.CapabilityK8sName(capName)
+	if !reflect.DeepEqual(namespacedName, types.NamespacedName{}) {
+		appSet := &appv1.ApplicationSet{}
+		err = r.Get(ctx, namespacedName, appSet)
+		var entries fields.Entries
+		var listGen *appv1.ApplicationSetGenerator
+		if err != nil {
+			// Applicationset does not exist
+			return err
+		}
+
+		elements, err := capElementsFromPaas(paas, capName)
+		if err != nil {
+			return err
+		}
+		patch := client.MergeFrom(appSet.DeepCopy())
+		if listGen = getListGen(appSet.Spec.Generators); listGen == nil {
+			// create the list
+			listGen = &appv1.ApplicationSetGenerator{
+				List: &appv1.ListGenerator{},
+			}
+			appSet.Spec.Generators = append(appSet.Spec.Generators, *listGen)
+			entries = fields.Entries{
+				paas.Name: elements,
+			}
+		} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
+			return err
+		} else {
+			entry := elements
+			entries[entry.Key()] = entry
+		}
+		jsonentries, err := entries.AsJSON()
+		if err != nil {
+			return err
+		}
+		listGen.List.Elements = jsonentries
+
+		appSet.Spec.Generators = clearGenerators(appSet.Spec.Generators)
+		return r.Patch(ctx, appSet, patch)
+	}
+
 	// According to config, we don't manage ListGenerators, therefore we don't return an error
-	if err != nil {
-		return nil
-	}
-	appSet := &appv1.ApplicationSet{}
-	err = r.Get(ctx, namespacedName, appSet)
-	var entries fields.Entries
-	var listGen *appv1.ApplicationSetGenerator
-	if err != nil {
-		// Applicationset does not exist
-		return err
-	}
-
-	elements, err := capElementsFromPaas(paas, capName)
-	if err != nil {
-		return err
-	}
-	patch := client.MergeFrom(appSet.DeepCopy())
-	if listGen = getListGen(appSet.Spec.Generators); listGen == nil {
-		// create the list
-		listGen = &appv1.ApplicationSetGenerator{
-			List: &appv1.ListGenerator{},
-		}
-		appSet.Spec.Generators = append(appSet.Spec.Generators, *listGen)
-		entries = fields.Entries{
-			paas.Name: elements,
-		}
-	} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
-		return err
-	} else {
-		entry := elements
-		entries[entry.Key()] = entry
-	}
-	jsonentries, err := entries.AsJSON()
-	if err != nil {
-		return err
-	}
-	listGen.List.Elements = jsonentries
-
-	appSet.Spec.Generators = clearGenerators(appSet.Spec.Generators)
-	return r.Patch(ctx, appSet, patch)
+	return nil
 }
 
 func applyCustomFieldTemplates(
@@ -179,32 +182,32 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	capName string,
 ) error {
 	as := &appv1.ApplicationSet{}
-	asNamespacedName, err := config.GetConfig().Spec.CapabilityK8sName(capName)
+	asNamespacedName := config.GetConfig().Spec.CapabilityK8sName(capName)
+	if !reflect.DeepEqual(asNamespacedName, types.NamespacedName{}) {
+		err := r.Get(ctx, asNamespacedName, as)
+		var entries fields.Entries
+		var listGen *appv1.ApplicationSetGenerator
+		if err != nil {
+			// Applicationset does not exist
+			return nil
+		}
+		patch := client.MergeFrom(as.DeepCopy())
+		if listGen = getListGen(as.Spec.Generators); listGen == nil {
+			// no need to create the list
+			return nil
+		} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
+			return err
+		}
+		delete(entries, paasName)
+		jsonentries, err := entries.AsJSON()
+		if err != nil {
+			return err
+		}
+		listGen.List.Elements = jsonentries
+		return r.Patch(ctx, as, patch)
+	}
 	// According to config, we don't manage ListGenerators, therefore we don't return an error
-	if err != nil {
-		return nil
-	}
-	err = r.Get(ctx, asNamespacedName, as)
-	var entries fields.Entries
-	var listGen *appv1.ApplicationSetGenerator
-	if err != nil {
-		// Applicationset does not exist
-		return nil
-	}
-	patch := client.MergeFrom(as.DeepCopy())
-	if listGen = getListGen(as.Spec.Generators); listGen == nil {
-		// no need to create the list
-		return nil
-	} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
-		return err
-	}
-	delete(entries, paasName)
-	jsonentries, err := entries.AsJSON()
-	if err != nil {
-		return err
-	}
-	listGen.List.Elements = jsonentries
-	return r.Patch(ctx, as, patch)
+	return nil
 }
 
 // finalizeAllAppSetCaps removes this paas from all capability appsets

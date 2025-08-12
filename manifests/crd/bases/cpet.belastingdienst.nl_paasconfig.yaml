@@ -385,6 +385,7 @@ spec:
                         Name of the ArgoCD ApplicationSet which manages this capability
                         The AppSet is only managed when `clusterwide_argocd_namespace` is set as well.
                         If not set, AppSets list generator will not be managed by the operator
+                        Deprecated: will be replaced by ArgoCD plugin generator
                       type: string
                     custom_fields:
                       additionalProperties:
