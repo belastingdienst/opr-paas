@@ -20,19 +20,19 @@ import (
 
 var _ = Describe("GeneratorServer", func() {
 	var (
-		server      *GeneratorServer
-		opts        ServerOptions
-		handler     http.Handler
-		ctx         context.Context
-		cancel      context.CancelFunc
-		addr        string
-		tokenEnvVar string
-		tokenValue  string
+		server          *GeneratorServer
+		opts            ServerOptions
+		handler         http.Handler
+		ctx             context.Context
+		cancel          context.CancelFunc
+		addr            string
+		testTokenEnvVar string
+		tokenValue      string
 	)
 
 	BeforeEach(func() {
 		addr = "127.0.0.1:0" // let OS choose a free port
-		tokenEnvVar = "GENERATOR_TOKEN"
+		testTokenEnvVar = "GENERATOR_TOKEN"
 		tokenValue = "supersecrettoken"
 
 		handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +42,7 @@ var _ = Describe("GeneratorServer", func() {
 
 		opts = ServerOptions{
 			Addr:        addr,
-			TokenEnvVar: tokenEnvVar,
+			TokenEnvVar: testTokenEnvVar,
 		}
 
 		ctx, cancel = context.WithCancel(context.Background())
@@ -50,17 +50,17 @@ var _ = Describe("GeneratorServer", func() {
 
 	AfterEach(func() {
 		cancel()
-		os.Unsetenv(tokenEnvVar)
+		os.Unsetenv(testTokenEnvVar)
 	})
 
 	It("returns an error if the token environment variable is not set", func() {
 		server = NewServer(opts, handler)
 		err := server.Start(ctx)
-		Expect(err).To(MatchError(fmt.Sprintf("environment variable %s not set", tokenEnvVar)))
+		Expect(err).To(MatchError(fmt.Sprintf("environment variable %s not set", testTokenEnvVar)))
 	})
 
 	It("starts the server successfully when the token is set", func() {
-		os.Setenv(tokenEnvVar, tokenValue)
+		os.Setenv(testTokenEnvVar, tokenValue)
 		server = NewServer(opts, handler)
 
 		go func() {
@@ -74,7 +74,7 @@ var _ = Describe("GeneratorServer", func() {
 	})
 
 	It("shuts down the server when context is cancelled", func() {
-		os.Setenv(tokenEnvVar, tokenValue)
+		os.Setenv(testTokenEnvVar, tokenValue)
 		server = NewServer(opts, handler)
 
 		done := make(chan error)
@@ -97,7 +97,7 @@ var _ = Describe("GeneratorServer", func() {
 	})
 
 	It("returns an error if net.Listen fails (address already in use)", func() {
-		os.Setenv(tokenEnvVar, tokenValue)
+		os.Setenv(testTokenEnvVar, tokenValue)
 
 		// First listener to occupy the port
 		ln, err := net.Listen("tcp", "127.0.0.1:0")

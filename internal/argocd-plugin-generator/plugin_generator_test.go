@@ -21,16 +21,11 @@ import (
 type mockGeneratorServer struct {
 	startCalled bool
 	startErr    error
-	needLeader  bool
 }
 
 func (m *mockGeneratorServer) Start(ctx context.Context) error {
 	m.startCalled = true
 	return m.startErr
-}
-
-func (m *mockGeneratorServer) NeedLeaderElection() bool {
-	return m.needLeader
 }
 
 var _ = Describe("PluginGenerator", func() {
@@ -87,16 +82,6 @@ var _ = Describe("PluginGenerator", func() {
 			err := pg.Start(ctx)
 			Expect(err).To(MatchError("start failed"))
 			Expect(mockServer.startCalled).To(BeTrue())
-		})
-	})
-
-	Context("NeedLeaderElection", func() {
-		It("should return the server's NeedLeaderElection value", func() {
-			mockServer.needLeader = true
-			Expect(pg.NeedLeaderElection()).To(BeTrue())
-
-			mockServer.needLeader = false
-			Expect(pg.NeedLeaderElection()).To(BeFalse())
 		})
 	})
 })
