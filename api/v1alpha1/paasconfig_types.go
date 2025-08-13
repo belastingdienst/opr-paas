@@ -100,11 +100,12 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	ArgoEnabled bool `json:"argoenabled"`
 
-	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
+	// Namespace in which a clusterwide ArgoCD can be found for managing capabilities
+	// If not set, AppSets list generator will not be managed by the operator
+	//
 	// Deprecated: ArgoCD specific code will be removed from the operator
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
-	ClusterWideArgoCDNamespace string `json:"clusterwide_argocd_namespace"`
+	// +kubebuilder:validation:Optional
+	ClusterWideArgoCDNamespace string `json:"clusterwide_argocd_namespace,omitempty"`
 
 	// Label which is added to clusterquotas
 	// +kubebuilder:default:=clusterquotagroup
