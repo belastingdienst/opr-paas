@@ -14,8 +14,8 @@ import (
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	argocd "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"

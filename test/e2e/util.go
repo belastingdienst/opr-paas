@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/paasresource"
 	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 
