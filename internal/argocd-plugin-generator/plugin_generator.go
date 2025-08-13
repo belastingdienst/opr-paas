@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 )
 
 const tokenEnvVar = "ARGOCD_GENERATOR_TOKEN"
@@ -23,6 +24,10 @@ type GeneratorServerInterface interface {
 	// Start launches the server and begins handling incoming requests
 	// until the given context is canceled or an error occurs.
 	Start(ctx context.Context) error
+
+	// StartedChecker returns a healthz.Checker which is healthy after the
+	// server has been started.
+	StartedChecker() healthz.Checker
 }
 
 // PluginGenerator ties together the plug-in generator's HTTP server
@@ -66,4 +71,9 @@ func (pg *PluginGenerator) Start(ctx context.Context) error {
 // NeedLeaderElection satisfies LeaderElectionRunnable
 func (pg *PluginGenerator) NeedLeaderElection() bool {
 	return false
+}
+
+// StartedChecker return a health checker
+func (pg *PluginGenerator) StartedChecker() healthz.Checker {
+	return pg.server.StartedChecker()
 }

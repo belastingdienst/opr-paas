@@ -8,11 +8,14 @@ package argocd_plugin_generator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
 	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 )
 
 const pluginServerTimeout = 10 * time.Second
@@ -45,6 +48,7 @@ type GeneratorServer struct {
 	opts    ServerOptions
 	handler http.Handler
 	server  *http.Server
+	started bool
 }
 
 // NewServer returns a new GeneratorServer based on the ServerOptions and the http.Handler
@@ -73,6 +77,7 @@ func (s *GeneratorServer) Start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	s.started = true
 
 	go func() {
 		<-ctx.Done()
@@ -82,4 +87,23 @@ func (s *GeneratorServer) Start(ctx context.Context) error {
 	}()
 
 	return s.server.Serve(ln)
+}
+
+// StartedChecker returns a healthz.Checker which reports healthy after the
+// server has been started and is reachable over TCP.
+func (s *GeneratorServer) StartedChecker() healthz.Checker {
+	return func(_ *http.Request) error {
+		if !s.started {
+			return errors.New("argoCD plugin generator server has not been started yet")
+		}
+
+		d := &net.Dialer{Timeout: pluginServerTimeout}
+		conn, err := d.Dial("tcp", s.opts.Addr)
+		if err != nil {
+			return fmt.Errorf("argoCD plugin generator server is not reachable: %w", err)
+		}
+		_ = conn.Close()
+
+		return nil
+	}
 }
