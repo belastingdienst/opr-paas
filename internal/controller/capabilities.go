@@ -120,8 +120,8 @@ func (r *PaasReconciler) ensureAppSetCap(
 			return err
 		}
 
-		elements, err := capElementsFromPaas(paas, capName)
-		if err != nil {
+		elements, err2 := capElementsFromPaas(paas, capName)
+		if err2 != nil {
 			return err
 		}
 		patch := client.MergeFrom(appSet.DeepCopy())
@@ -140,8 +140,8 @@ func (r *PaasReconciler) ensureAppSetCap(
 			entry := elements
 			entries[entry.Key()] = entry
 		}
-		jsonentries, err := entries.AsJSON()
-		if err != nil {
+		jsonentries, err3 := entries.AsJSON()
+		if err3 != nil {
 			return err
 		}
 		listGen.List.Elements = jsonentries
