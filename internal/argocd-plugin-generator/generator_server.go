@@ -83,33 +83,3 @@ func (s *GeneratorServer) Start(ctx context.Context) error {
 
 	return s.server.Serve(ln)
 }
-
-// StartedChecker returns a healthz.Checker which is healthy after the
-// server has been started.
-// func (s *GeneratorServer) StartedChecker() healthz.Checker {
-//	config := &tls.Config{
-//		InsecureSkipVerify: true,
-//	}
-//	return func(req *http.Request) error {
-//
-//		if !s.started {
-//			return fmt.Errorf("webhook server has not been started yet")
-//		}
-//
-//		d := &net.Dialer{Timeout: 10 * time.Second}
-//		conn, err := tls.DialWithDialer(d, "tcp", s.opts.Addr, config)
-//		if err != nil {
-//			return fmt.Errorf("webhook server is not reachable: %w", err)
-//		}
-//
-//		if err := conn.Close(); err != nil {
-//			return fmt.Errorf("webhook server is not reachable: closing connection: %w", err)
-//		}
-//
-//		return nil
-//	}
-// }
-
-func (s *GeneratorServer) NeedLeaderElection() bool {
-	return false
-}

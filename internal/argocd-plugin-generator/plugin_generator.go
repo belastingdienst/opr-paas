@@ -23,10 +23,6 @@ type GeneratorServerInterface interface {
 	// Start launches the server and begins handling incoming requests
 	// until the given context is canceled or an error occurs.
 	Start(ctx context.Context) error
-
-	// NeedLeaderElection returns true if the server should only run
-	// on the leader instance in an HA deployment.
-	NeedLeaderElection() bool
 }
 
 // PluginGenerator ties together the plug-in generator's HTTP server
@@ -69,5 +65,5 @@ func (pg *PluginGenerator) Start(ctx context.Context) error {
 
 // NeedLeaderElection satisfies LeaderElectionRunnable
 func (pg *PluginGenerator) NeedLeaderElection() bool {
-	return pg.server.NeedLeaderElection()
+	return false
 }
