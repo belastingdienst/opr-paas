@@ -52,15 +52,13 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	paas *v1alpha2.Paas,
 ) error {
 	paasConfigSpec := config.GetConfig().Spec
-	if paasConfigSpec.ClusterWideArgoCDNamespace != "" {
-		for capName := range paas.Spec.Capabilities {
-			if _, exists := paasConfigSpec.Capabilities[capName]; !exists {
-				return errors.New("capability not configured")
-			}
+	for capName := range paas.Spec.Capabilities {
+		if _, exists := paasConfigSpec.Capabilities[capName]; !exists {
+			return errors.New("capability not configured")
+		}
 
-			if err := r.ensureAppSetCap(ctx, paas, capName); err != nil {
-				return err
-			}
+		if err := r.ensureAppSetCap(ctx, paas, capName); err != nil {
+			return err
 		}
 	}
 
