@@ -34,7 +34,7 @@ var (
 
 func TestArgoCDPluginGenerator(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "generatorServer Suite")
+	RunSpecs(t, "GeneratorServer Suite")
 }
 
 var _ = BeforeSuite(func() {

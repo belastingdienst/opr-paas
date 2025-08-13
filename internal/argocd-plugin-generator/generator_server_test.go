@@ -18,10 +18,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("generatorServer", func() {
+var _ = Describe("GeneratorServer", func() {
 	var (
-		server      *generatorServer
-		opts        serverOptions
+		server      *GeneratorServer
+		opts        ServerOptions
 		handler     http.Handler
 		ctx         context.Context
 		cancel      context.CancelFunc
@@ -40,7 +40,7 @@ var _ = Describe("generatorServer", func() {
 			w.Write([]byte("hello"))
 		})
 
-		opts = serverOptions{
+		opts = ServerOptions{
 			Addr:        addr,
 			TokenEnvVar: tokenEnvVar,
 		}

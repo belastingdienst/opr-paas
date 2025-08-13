@@ -17,27 +17,46 @@ import (
 
 const pluginServerTimeout = 10 * time.Second
 
-type serverOptions struct {
+// ServerOptions contains configuration values for starting the plug-in generator HTTP server.
+//
+// Addr specifies the TCP address for the server to listen on.
+// For example, ":4355" will bind on all interfaces at port 4355.
+// Use "0" to disable the server entirely.
+//
+// TokenEnvVar specifies the name of the environment variable from which
+// the bearer token will be read. This token is required for authenticating
+// incoming requests from ArgoCD.
+type ServerOptions struct {
 	Addr        string
 	TokenEnvVar string
 }
 
-type generatorServer struct {
-	opts    serverOptions
+// GeneratorServer represents the HTTP server that exposes the ArgoCD plug-in generator endpoint.
+//
+// It is responsible for starting, stopping, and serving HTTP requests
+// using the provided handler. The server is typically added to a
+// controller-runtime Manager so it can run alongside the main operator.
+//
+// Fields:
+//   - opts: Holds the server configuration (address, token environment variable).
+//   - handler: The HTTP handler that processes incoming plug-in generator requests.
+//   - server: The underlying *http.Server used for network communication.
+type GeneratorServer struct {
+	opts    ServerOptions
 	handler http.Handler
 	server  *http.Server
 }
 
-// NewServer returns a new generatorServer based on the serverOptions and the http.Handler
-func NewServer(opts serverOptions, handler http.Handler) *generatorServer {
-	return &generatorServer{
+// NewServer returns a new GeneratorServer based on the ServerOptions and the http.Handler
+func NewServer(opts ServerOptions, handler http.Handler) *GeneratorServer {
+	return &GeneratorServer{
 		opts:    opts,
 		handler: handler,
 	}
 }
 
-// Start starts the generatorServer. If it fails, it returns an error.
-func (s *generatorServer) Start(ctx context.Context) error {
+// Start starts the GeneratorServer. If it fails, it returns an error.
+func (s *GeneratorServer) Start(ctx context.Context) error {
 	token := os.Getenv(s.opts.TokenEnvVar)
 	if token == "" {
 		return fmt.Errorf("environment variable %s not set", s.opts.TokenEnvVar)
@@ -67,7 +86,7 @@ func (s *generatorServer) Start(ctx context.Context) error {
 
 // StartedChecker returns a healthz.Checker which is healthy after the
 // server has been started.
-// func (s *generatorServer) StartedChecker() healthz.Checker {
+// func (s *GeneratorServer) StartedChecker() healthz.Checker {
 //	config := &tls.Config{
 //		InsecureSkipVerify: true,
 //	}
@@ -91,6 +110,6 @@ func (s *generatorServer) Start(ctx context.Context) error {
 //	}
 // }
 
-func (s *generatorServer) NeedLeaderElection() bool {
+func (s *GeneratorServer) NeedLeaderElection() bool {
 	return false
 }
