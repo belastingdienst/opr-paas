@@ -30,8 +30,10 @@ var _ = Describe("GeneratorServer", func() {
 		tokenValue      string
 	)
 
+	const randomAddress = "127.0.0.1:0"
+
 	BeforeEach(func() {
-		addr = "127.0.0.1:0" // let OS choose a free port
+		addr = randomAddress // let OS choose a free port
 		testTokenEnvVar = "GENERATOR_TOKEN"
 		tokenValue = "supersecrettoken"
 
@@ -100,7 +102,7 @@ var _ = Describe("GeneratorServer", func() {
 		os.Setenv(testTokenEnvVar, tokenValue)
 
 		// First listener to occupy the port
-		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		ln, err := net.Listen("tcp", randomAddress)
 		Expect(err).ToNot(HaveOccurred())
 		defer ln.Close()
 
@@ -120,12 +122,12 @@ var _ = Describe("GeneratorServer", func() {
 		os.Setenv(testTokenEnvVar, tokenValue)
 
 		// Create a listener to get a free port
-		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		ln, err := net.Listen("tcp", randomAddress)
 		Expect(err).ToNot(HaveOccurred())
-		addr := ln.Addr().String()
+		addrInUse := ln.Addr().String()
 		_ = ln.Close() // release the port so the server can bind to it
 
-		opts.Addr = addr
+		opts.Addr = addrInUse
 		server = NewServer(opts, handler)
 
 		done := make(chan error)
