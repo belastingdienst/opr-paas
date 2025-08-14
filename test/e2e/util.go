@@ -6,10 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/paasresource"
-	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachinerywait "k8s.io/apimachinery/pkg/util/wait"
@@ -83,27 +80,6 @@ func listOrFail[L k8s.ObjectList](ctx context.Context, namespace string, obj L, 
 	}
 
 	return obj
-}
-
-// getApplicationSetListEntries returns the parsed elements of all list generators
-// (https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-List/)
-// which are present in the passed ApplicationSet.
-func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) (allEntries fields.Entries, err error) {
-	var generatorEntries fields.Entries
-	allEntries = make(fields.Entries)
-	for _, generator := range applicationSet.Spec.Generators {
-		if generator.List != nil {
-			generatorEntries, err = fields.EntriesFromJSON(generator.List.Elements)
-			if err != nil {
-				return nil, err
-			}
-			for key, entry := range generatorEntries {
-				allEntries[key] = entry
-			}
-		}
-	}
-
-	return allEntries, nil
 }
 
 // waitForStatus accepts a k8s object with a `.status.conditions` block, and waits until the resource has been updated

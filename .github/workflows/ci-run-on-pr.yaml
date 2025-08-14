@@ -189,7 +189,6 @@ jobs:
         run: kind load docker-image controller:latest
       - name: Setup-e2e mocks in KinD
         run: |
-          kustomize build test/e2e/manifests/gitops-operator | kubectl create -f -
           kustomize build test/e2e/manifests/openshift | kubectl apply -f -
           # Wait a bit as the paas-context files rely on the previous deployed mocks
           sleep 10s
