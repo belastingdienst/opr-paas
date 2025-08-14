@@ -30,8 +30,10 @@ var _ = Describe("GeneratorServer", func() {
 		tokenValue      string
 	)
 
+	const randomAddress = "127.0.0.1:0"
+
 	BeforeEach(func() {
-		addr = "127.0.0.1:0" // let OS choose a free port
+		addr = randomAddress // let OS choose a free port
 		testTokenEnvVar = "GENERATOR_TOKEN"
 		tokenValue = "supersecrettoken"
 
@@ -100,7 +102,7 @@ var _ = Describe("GeneratorServer", func() {
 		os.Setenv(testTokenEnvVar, tokenValue)
 
 		// First listener to occupy the port
-		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		ln, err := net.Listen("tcp", randomAddress)
 		Expect(err).ToNot(HaveOccurred())
 		defer ln.Close()
 
@@ -114,5 +116,35 @@ var _ = Describe("GeneratorServer", func() {
 		err = server.Start(ctx)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("address already in use"))
+	})
+
+	It("StartedChecker returns no error after server has started", func() {
+		os.Setenv(testTokenEnvVar, tokenValue)
+
+		// Create a listener to get a free port
+		ln, err := net.Listen("tcp", randomAddress)
+		Expect(err).ToNot(HaveOccurred())
+		addrInUse := ln.Addr().String()
+		_ = ln.Close() // release the port so the server can bind to it
+
+		opts.Addr = addrInUse
+		server = NewServer(opts, handler)
+
+		done := make(chan error)
+		go func() {
+			done <- server.Start(ctx)
+		}()
+
+		time.Sleep(200 * time.Millisecond) // give server time to start
+
+		checker := server.StartedChecker()
+		req := &http.Request{} // dummy request
+
+		Eventually(func() error {
+			return checker(req)
+		}, 2*time.Second, 100*time.Millisecond).Should(Succeed())
+
+		cancel()
+		<-done
 	})
 })
