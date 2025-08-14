@@ -115,4 +115,34 @@ var _ = Describe("GeneratorServer", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("address already in use"))
 	})
+
+	It("StartedChecker returns no error after server has started", func() {
+		os.Setenv(testTokenEnvVar, tokenValue)
+
+		// Create a listener to get a free port
+		ln, err := net.Listen("tcp", "127.0.0.1:0")
+		Expect(err).ToNot(HaveOccurred())
+		addr := ln.Addr().String()
+		_ = ln.Close() // release the port so the server can bind to it
+
+		opts.Addr = addr
+		server = NewServer(opts, handler)
+
+		done := make(chan error)
+		go func() {
+			done <- server.Start(ctx)
+		}()
+
+		time.Sleep(200 * time.Millisecond) // give server time to start
+
+		checker := server.StartedChecker()
+		req := &http.Request{} // dummy request
+
+		Eventually(func() error {
+			return checker(req)
+		}, 2*time.Second, 100*time.Millisecond).Should(Succeed())
+
+		cancel()
+		<-done
+	})
 })
