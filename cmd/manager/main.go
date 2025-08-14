@@ -207,7 +207,7 @@ func setupPluginGenerator(f *flags, manager ctrl.Manager) {
 			log.Fatal().Msgf("failed to add plugin generator: %v", err)
 		}
 		if err := manager.AddReadyzCheck("argocd plugin generator", pluginGenerator.StartedChecker()); err != nil {
-			log.Fatal().Msgf("failed to add ArgoCD plugin generator health check: %v", err)
+			log.Fatal().Msgf("failed to add ArgoCD plugin generator readiness check: %v", err)
 		}
 		if err := manager.AddHealthzCheck("argocd plugin generator", pluginGenerator.StartedChecker()); err != nil {
 			log.Fatal().Msgf("failed to add ArgoCD plugin generator health check: %v", err)
