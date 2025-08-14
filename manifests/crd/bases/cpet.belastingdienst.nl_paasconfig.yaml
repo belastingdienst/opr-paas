@@ -180,9 +180,10 @@ spec:
                 type: object
               clusterwide_argocd_namespace:
                 description: |-
-                  Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
+                  Namespace in which a clusterwide ArgoCD can be found for managing capabilities
+                  If not set, AppSets list generator will not be managed by the operator
+
                   Deprecated: ArgoCD specific code will be removed from the operator
-                minLength: 1
                 type: string
               debug:
                 default: false
@@ -285,7 +286,6 @@ spec:
                   the fields
                 type: object
             required:
-            - clusterwide_argocd_namespace
             - decryptKeySecret
             - groupsynclist
             type: object
@@ -381,9 +381,11 @@ spec:
                 additionalProperties:
                   properties:
                     applicationset:
-                      description: Name of the ArgoCD ApplicationSet which manages
-                        this capability
-                      minLength: 1
+                      description: |-
+                        Name of the ArgoCD ApplicationSet which manages this capability
+                        The AppSet is only managed when `clusterwide_argocd_namespace` is set as well.
+                        If not set, AppSets list generator will not be managed by the operator
+                        Deprecated: will be replaced by ArgoCD plugin generator
                       type: string
                     custom_fields:
                       additionalProperties:
@@ -472,16 +474,16 @@ spec:
                       - defaults
                       type: object
                   required:
-                  - applicationset
                   - quotas
                   type: object
                 description: A map with zero or more ConfigCapability
                 type: object
               clusterwide_argocd_namespace:
                 description: |-
-                  Namespace in which a clusterwide ArgoCD can be found for managing capabilities and appProjects
+                  Namespace in which a clusterwide ArgoCD can be found for managing capabilities
+                  If not set, AppSets list generator will not be managed by the operator
+
                   Deprecated: ArgoCD specific code will be removed from the operator
-                minLength: 1
                 type: string
               debug:
                 default: false
@@ -586,7 +588,6 @@ spec:
                   the fields
                 type: object
             required:
-            - clusterwide_argocd_namespace
             - decryptKeySecret
             type: object
           status:
