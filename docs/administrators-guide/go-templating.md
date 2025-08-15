@@ -17,7 +17,7 @@ This provides flexibility for other organizations using the Paas operator with o
 
 Template options support standard Go Template syntax, allowing all values from the Paas and PaasConfig to be referenced. See more examples below.
 In addition to the default Go Template functions, we've added support for
-[all Sprout](https://docs.atom.codes/sprout/groups/all) Go Template functions.
+[all Sprout](https://docs.atom.codes/sprout/registries/list-of-all-registries) Go Template functions.
 
 ## Behavior of multivalued and single valued results
 
