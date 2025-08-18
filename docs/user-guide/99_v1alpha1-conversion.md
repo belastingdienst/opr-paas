@@ -20,6 +20,9 @@ The following has changed between v1alpha1.Paas and v1alpha2.Paas:
 
     - `enabled`: Remove field if set to true, or remove Capability when set to false
     - `gitPath`, `gitRevision`, `gitUrl`: Rewrite to custom fields
+      (**note** that in our examples in the [config](../administrators-guide/configuration.md) and 
+      [conversion](../administrators-guide/v1alpha1-conversion.md) administrator guides we also change 
+      from camelCase to snake_case)
     - `sshSecrets`: Rename to `secrets`
     - `namespaces`: Rewrite from a list to a map
 
@@ -46,6 +49,8 @@ The following has changed between v1alpha1.Paas and v1alpha2.Paas:
           sshSecrets:
             'ssh://git@my-git-host/my-git-repo.git': >-
               2wkeKe...g==
+        # `grafana` is enabled and should stay but with empty definition
+        grafana: {}
         # `tekton` is disabled and should be removed
         tekton:
           enabled: false
@@ -75,9 +80,9 @@ The following has changed between v1alpha1.Paas and v1alpha2.Paas:
             'ssh://git@my-git-host/my-git-repo.git': >-
               2wkeKe...g==
           custom_fields:
-            gitPath: .
-            gitRevision: main
-            gitUrl: https://www.github.com/my-org/my-repo/
+            git_path: .
+            git_revision: main
+            git_url: https://www.github.com/my-org/my-repo/
       secrets:
         'ssh://git@my-git-host/my-git-repo.git': >-
           2wkeKe...g==
