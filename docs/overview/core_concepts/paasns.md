@@ -15,27 +15,32 @@ The concept works as follows:
 
 ```kroki-blockdiag
 blockdiag {
-  "decrypted" -> crypttool -> Paas -> operator;
-  "Public key" -> crypttool;
-  "Private key" -> operator;
-  operator -> namespace -> secret;
-  "decrypted" [color = "greenyellow", shape = flowchart.input, stacked];
-  "secret" [color = "greenyellow", stacked];
-  "Public key" [color = "pink", shape = flowchart.input];
-  "Private key" [color = "pink", shape = flowchart.input];
-  "crypttool" [color = "lightblue"];
-  "operator" [color = "lightblue"];
-  group {
+  cap_argocd -> ns_argocd;
+  cap_tekton -> ns_tekton;
+  p_ns_test -> ns_test;
+  p_ns_prod -> ns_prod;
+  ns_argocd -> pns_feat_1;
+  ns_tekton -> pns_feat_2;
+  pns_feat_1 -> ns_feat_1;
+  pns_feat_2 -> ns_feat_2;
+  group capabilities {
       color = "#FF0000";
       shape = line;
       style = dashed;
-      orientation = portrait
-      "decrypted", crypttool, Paas, "Public key";
-   }
-  group {
-      orientation = portrait
-      operator, namespace, secret, "Private key";
-   }
+      cap_argocd, cap_tekton;
+  }
+  group p_ns {
+      color = "#FF0000";
+      shape = line;
+      style = dashed;
+      p_ns_test, p_ns_prod;
+  }
+  group ns {
+      color = "#FF0000";
+      shape = line;
+      style = dashed;
+      ns_test, ns_prod, ns_feat_1, ns_feat_2 ;
+  }
 }
 ```
 
