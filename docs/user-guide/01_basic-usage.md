@@ -50,8 +50,8 @@ Example Paas definition, using its own ArgoCD:
       capabilities:
         argocd:
           custom_fields:
-            gitPath: environments/production
-            gitRevision: main
-            gitUrl: >-
+            git_path: environments/production
+            git_revision: main
+            git_url: >-
               ssh://git@git.example.nl/example/example-repo.git
     ```
