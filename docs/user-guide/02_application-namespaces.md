@@ -60,11 +60,11 @@ These namespaces count towards the global quota requested by the Paas.
       name: tst-tst
     spec:
       namespaces:
-          mark: {}
-          tst: {}
-          acceptance: {}
-          prod: {}
-          joel: {}
+        mark: {}
+        tst: {}
+        acceptance: {}
+        prod: {}
+        joel: {}
     ```
 
 ## Adding PaasNs resources
