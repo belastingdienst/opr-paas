@@ -9,9 +9,14 @@ date: 2025-01-21
 
 ## Groups and Users
 
-For every Paas it is possible to define which k8s groups have permissions on resources
-belonging to the Paas. It is possible to manage group membership externally, with an LDAP sync solution based on `oc adm group sync`.
-It is also possible to have group membership managed by the Paas operator, by specifying users. However, we are working towards getting rid of user management through Paas, relying only on externally managed groups.
+For every Paas it is possible to define which k8s groups have permissions on resources belonging to the Paas.
+Additionally, Administrators can define [rolemappings](../overview/core_concepts/authorization.md#paasconfig),
+and groups in a Paas can have these functional roles applied.
+
+It is possible to manage group membership externally, with an LDAP sync solution based on `oc adm group sync`.
+
+for now, it is also possible to have group membership managed by the Paas operator, by specifying users.
+But, we are working towards getting rid of user management through Paas, relying only on externally managed groups.
 
 For more information on authorization, please see [Core Concepts - Authorization](../overview/core_concepts/authorization.md).
 
@@ -32,7 +37,13 @@ For more information on authorization, please see [Core Concepts - Authorization
         example_group:
           query: >-
             CN=example_group,OU=example,OU=UID,DC=example,DC=nl
+          # Apply edit permissions for users in this group ; see PaasConfig rolemappings for more info
+          roles:
+            - edit
         second_example_group:
           users:
             - jdsmith
+          # Apply admin permissions for users in this group ; see PaasConfig rolemappings for more info
+          roles:
+            - admin
     ```
