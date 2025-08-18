@@ -45,7 +45,6 @@ Set:
 
 - `paasconfig.spec.capabilities['tekton'].quotas.clusterwide` to `true`
 - `paasconfig.spec.capabilities['tekton'].quotas.default` to `1`
-- `paasconfig.spec.capabilities['tekton'].quotas.default` to `1`
 - `paasconfig.spec.capabilities['tekton'].quotas.min` to `3`
 - `paasconfig.spec.capabilities['tekton'].quotas.max` to `10`
 - `paasconfig.spec.capabilities['tekton'].quotas.ratio` to `0.1` (10%)
