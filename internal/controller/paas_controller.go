@@ -14,7 +14,7 @@ import (
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
-	v1 "k8s.io/api/rbac/v1"
+	"k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	corev1 "k8s.io/api/core/v1"
