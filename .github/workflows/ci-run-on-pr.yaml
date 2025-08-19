@@ -13,14 +13,14 @@ permissions:
 jobs:
   fail_if_pull_request_is_draft:
     if: ${{ github.event.pull_request.draft == true }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Fails in order to indicate that pull request needs to be marked as ready to review and other checks needs to pass.
         run: exit 1
 
   codechanges:
     if: ${{ github.event.pull_request.draft == false }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     outputs:
       backend: ${{ steps.filter.outputs.backend_any_changed || steps.filter.outputs.ci_any_changed }}
     steps:
@@ -42,7 +42,7 @@ jobs:
 
   check-go:
     name: Ensure Go modules synchronicity
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
       - codechanges
@@ -63,7 +63,7 @@ jobs:
 
   lint-go:
     name: Lint Go code
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
       - codechanges
@@ -85,7 +85,7 @@ jobs:
 
   code-gen:
     name: Check generated code
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
       - codechanges
@@ -100,7 +100,7 @@ jobs:
 
   unit-test:
     name: Run unit tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
       - codechanges
@@ -163,7 +163,7 @@ jobs:
 
   e2e-test:
     name: Run e2e tests against deployed image
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
     needs:
       - codechanges
@@ -219,7 +219,7 @@ jobs:
   test-coverage:
     name: Report test coverage
     if: ${{ needs.codechanges.outputs.backend == 'true' && github.event.pull_request.draft == false}}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     needs:
       - unit-test
       - codechanges
