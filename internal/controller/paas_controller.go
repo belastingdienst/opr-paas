@@ -14,7 +14,7 @@ import (
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
-	v1 "k8s.io/api/rbac/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	corev1 "k8s.io/api/core/v1"
@@ -350,8 +350,8 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&userv1.Group{}).
 		Owns(&corev1.Secret{}).
 		Owns(&corev1.Namespace{}).
-		Owns(&v1.RoleBinding{}).
-		Owns(&v1.ClusterRoleBinding{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Owns(&rbacv1.ClusterRoleBinding{}).
 		// TODO(portly-halicore-76):We don't own PaasNS objects correctly yet
 		// Owns(&v1alpha2.PaasNS{}).
 		// TODO(portly-halicore-76): We don't own Rolebinding objects correctly yet
