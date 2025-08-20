@@ -12,6 +12,9 @@ import (
 	"fmt"
 	"strings"
 
+	quotav1 "github.com/openshift/api/quota/v1"
+	userv1 "github.com/openshift/api/user/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	corev1 "k8s.io/api/core/v1"
@@ -342,7 +345,17 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				// Labels updated
 				predicate.LabelChangedPredicate{},
 			))).
-		Owns(&v1alpha2.PaasNS{}).
+		// Reconcile on owned resources changes
+		Owns(&quotav1.ClusterResourceQuota{}).
+		Owns(&userv1.Group{}).
+		Owns(&corev1.Secret{}).
+		Owns(&corev1.Namespace{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Owns(&rbacv1.ClusterRoleBinding{}).
+		// TODO(portly-halicore-76):We don't own PaasNS objects correctly yet
+		// Owns(&v1alpha2.PaasNS{}).
+		// TODO(portly-halicore-76): We don't own Rolebinding objects correctly yet
+		// Owns(&rbac.RoleBinding{}).
 		Watches(
 			&v1alpha2.PaasNS{},
 			handler.EnqueueRequestsFromMapFunc(
