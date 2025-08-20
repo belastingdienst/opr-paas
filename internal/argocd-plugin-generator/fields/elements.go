@@ -1,27 +1,25 @@
+/*
+Copyright 2023, Tax Administration of The Netherlands.
+Licensed under the EUPL 1.2.
+See LICENSE.md for details.
+*/
+
 package fields
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
-	"strings"
 )
+
+// Entries represents all entries in response of the plugin generator
+// This is a map so that values are unique, the key is the paas entry
+type Entries map[string]Elements
 
 // Element represents a value for one entry in the list of the listgenerator
 type Element any
 
 // Elements represents all key, value pairs for one entry in the list of the listgenerator
 type Elements map[string]Element
-
-// ElementsFromJSON can be used to import key, value pairs from JSON
-func ElementsFromJSON(raw []byte) (Elements, error) {
-	newElements := make(Elements)
-	if err := json.Unmarshal(raw, &newElements); err != nil {
-		return nil, err
-	}
-	return newElements, nil
-}
 
 // GetElementsAsStringMap gets a value and returns as string
 // This should be a method on Element, but a method cannot exist on interface datatypes
@@ -63,37 +61,4 @@ func (es Elements) Merge(added Elements) Elements {
 		es[key] = value
 	}
 	return es
-}
-
-func (es Elements) String() string {
-	var l []string
-	keys := make([]string, 0, len(es))
-	for k := range es {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		value := es.GetElementAsString(key)
-		key = strings.ReplaceAll(key, "'", "\\'")
-		value = strings.ReplaceAll(value, "'", "\\'")
-		l = append(l, fmt.Sprintf("'%s': '%s'", key, value))
-	}
-	return fmt.Sprintf("{ %s }", strings.Join(l, ", "))
-}
-
-// AsJSON can be used to export all elements as JSON
-func (es Elements) AsJSON() ([]byte, error) {
-	return json.Marshal(es)
-}
-
-// Key returns the name of the Paas (as derived from the element with name "paas").
-// Elements have key, value pairs, and the "paas" value usually exists and has the name of the Paas.
-func (es Elements) Key() string {
-	if key, exists := es["paas"]; exists {
-		paasKey, valid := key.(string)
-		if valid {
-			return paasKey
-		}
-	}
-	return ""
 }
