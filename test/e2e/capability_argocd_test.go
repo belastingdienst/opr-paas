@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
@@ -38,12 +38,11 @@ func TestCapabilityArgoCD(t *testing.T) {
 		Capabilities: api.PaasCapabilities{
 			argoCapName: api.PaasCapability{
 				CustomFields: map[string]string{
+					"git_path":     paasArgoGitPath,
 					"git_revision": paasArgoGitRevision,
+					"git_url":      paasArgoGitURL,
 				},
-				Enabled:          true,
-				SSHSecrets:       map[string]string{paasArgoGitURL: paasArgoSecret},
-				GitURL:           paasArgoGitURL,
-				GitPath:          paasArgoGitPath,
+				Secrets:          map[string]string{paasArgoGitURL: paasArgoSecret},
 				ExtraPermissions: true,
 			},
 		},
@@ -117,12 +116,13 @@ func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config
 	paas := getPaas(ctx, paasWithArgo, t, cfg)
 	paas.Spec.Capabilities = api.PaasCapabilities{
 		argoCapName: api.PaasCapability{
-			Enabled:          true,
-			SSHSecrets:       map[string]string{paasArgoGitURL: paasArgoSecret},
-			GitURL:           paasArgoGitURL,
-			GitPath:          paasArgoGitPath,
-			GitRevision:      updatedRevision,
+			Secrets:          map[string]string{paasArgoGitURL: paasArgoSecret},
 			ExtraPermissions: true,
+			CustomFields: map[string]string{
+				"git_path":     paasArgoGitPath,
+				"git_revision": updatedRevision,
+				"git_url":      paasArgoGitURL,
+			},
 		},
 	}
 	paas.Spec.Groups = api.PaasGroups{

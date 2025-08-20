@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	"github.com/stretchr/testify/assert"
@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
+	"sigs.k8s.io/e2e-framework/pkg/types"
 )
 
 const (
@@ -20,11 +21,26 @@ const (
 	paasV1alpha2Secret = "M9rkiqfVqvE5kjMkaZLt8jokIIAuVLfTS8dXFQa3drmOyIFWSzHJym1PKyzkwnK07vcJkxbfEkO22IbpkziXxrF1OflpNMzIcFFALMw472sczeeJDPvl1u6/F14agq4avc/Osk0zreRLRPS2jkhXE8VnbNsi+//PuRssCbp/ink8mpMg7mVKL9BfQXBu37KppvXEfOA+M6C4ZkNIVqrl7HcRW/e296GpCFkbQ7qa6JWwmgR22j64hcFJDorWhALAuGj7lZ/Wsm0ZzuFFD9tRKuFnxMFRlfDPMm26+NyXTUPNEZuqfeswaa8TLv/ldjr4Y78e+F3q5G0IGFj2sdTp08SMkLDfa8eYfxqa83EWQjiJcxggrPUs2eZZ0hN/IjxDjRh/nwSrKfugk/SQL61jC7slB8Beh8xurfpw/YEOwwooItkjp+1kliDLepUgixm9iY6Mrk4oNfOl2Ul2xggnijd4q2mQ8sPXf++R7ntV5zdcvKW411b93d9CTLgf+I2+2dqYK2TqPZmzVOPqigx1bIGCpbsD6xQH/QcuOPSOnvluDTJKFx3jENwzQ41wXr06Uv45WIUcdgUKwQkRFJ/dBeaQyBiB+oBXu3PcTsXi6MziHbPdxH0Xnv1SPkVnd0oFbxqwzhtabvKnc/opuaTosaDCWMjdRoJFh01rs4MdELQ="
 )
 
+func createAlpha1PaasWithCondFn(name string, paasSpec api.PaasSpec, readyCondition string) types.StepFunc {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		paas := &api.Paas{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+			Spec:       paasSpec,
+		}
+
+		if err := createSync(ctx, cfg, paas, readyCondition); err != nil {
+			t.Fatal(err)
+		}
+
+		return ctx
+	}
+}
+
 func TestPaasConversion(t *testing.T) {
-	v1Spec := v1alpha1.PaasSpec{
+	v1Spec := api.PaasSpec{
 		Requestor: "paas-user",
 		Quota:     make(quota.Quota),
-		Capabilities: v1alpha1.PaasCapabilities{
+		Capabilities: api.PaasCapabilities{
 			"argocd": {
 				Enabled:     true,
 				GitURL:      "ssh://git@scm/repo.git",
@@ -47,7 +63,7 @@ func TestPaasConversion(t *testing.T) {
 	testenv.Test(
 		t,
 		features.New("Conversion between Paas versions").
-			Setup(createPaasFn(paasWithArgo, v1Spec)).
+			Setup(createAlpha1PaasWithCondFn(paasWithArgo, v1Spec, api.TypeReadyPaas)).
 			Assess("converted to v1alpha2 when requested", assertV2Conversion).
 			Assess("v1alpha2 can be created", assertV2Created).
 			Assess("v1alpha2 retrieved as v1alpha1", assertV1Conversion).
@@ -127,7 +143,7 @@ func assertV2Created(ctx context.Context, t *testing.T, cfg *envconf.Config) con
 }
 
 func assertV1Conversion(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	paas := v1alpha1.Paas{}
+	paas := api.Paas{}
 	require.NoError(t, cfg.Client().Resources().Get(ctx, paasv2Name, cfg.Namespace(), &paas))
 
 	assert.Len(t, paas.Spec.Capabilities, 3)

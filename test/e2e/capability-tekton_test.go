@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
@@ -32,9 +32,7 @@ func TestCapabilityTekton(t *testing.T) {
 		Requestor: "paas-user",
 		Quota:     make(quota.Quota),
 		Capabilities: api.PaasCapabilities{
-			tektonCapName: api.PaasCapability{
-				Enabled: true,
-			},
+			tektonCapName: api.PaasCapability{},
 		},
 	}
 
@@ -67,7 +65,7 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	assert.Equal(t, paasWithCapabilityTekton, paas.Name)
 
 	// Tekton should be enabled
-	assert.True(t, paas.Spec.Capabilities.IsCap(tektonCapName))
+	assert.Contains(t, paas.Spec.Capabilities, tektonCapName)
 
 	// ApplicationSet exist
 	assert.NotEmpty(t, applicationSet)
