@@ -11,6 +11,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
@@ -21,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 var _ = Describe("Creating a PaasConfig", Ordered, func() {
@@ -37,7 +37,6 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 		obj = &v1alpha1.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{Name: "newPaasConfig"},
 			Spec: v1alpha1.PaasConfigSpec{
-				ExcludeAppSetName: "Something something",
 				DecryptKeysSecret: v1alpha1.NamespacedName{
 					Name:      paasConfigPkSecret,
 					Namespace: paasConfigSystem,
@@ -56,7 +55,6 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					Name:      "keys",
 					Namespace: "paas-system-config",
 				},
-				ExcludeAppSetName: "Another something",
 				Validations: v1alpha1.PaasConfigValidations{
 					"paas": {
 						"groupNames": "[0-9A-Za-z-]{1,128}",
@@ -90,6 +88,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 		})
 		Context("with deprecated fields", func() {
 			It("should raise an error", func() {
+				obj.Spec.ExcludeAppSetName = "something something"
 				obj.Spec.ArgoPermissions = v1alpha1.ConfigArgoPermissions{
 					Header: "something",
 				}
@@ -127,6 +126,59 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					Equal(`PaasConfig.cpet.belastingdienst.nl "newPaasConfig" is invalid: spec: Forbidden: another PaasConfig resource already exists`))
 			})
 		})
+		Context("quota name validation", func() {
+			var (
+				validResourceKeys = []string{
+					// "limits.cpu",
+					"limits.memory",
+					"requests.cpu",
+					"requests.memory",
+					"requests.storage",
+					"thin.storageclass.storage.k8s.io/persistentvolumeclaims",
+				}
+				validQuotas = map[corev1.ResourceName]resourcev1.Quantity{
+					"limits.memory":    resourcev1.MustParse("100M"),
+					"requests.cpu":     resourcev1.MustParse("1.1"),
+					"requests.memory":  resourcev1.MustParse("100M"),
+					"requests.storage": resourcev1.MustParse("10G"),
+					"thin.storageclass.storage.k8s.io/persistentvolumeclaims": resourcev1.MustParse("10G"),
+				}
+				validation    = fmt.Sprintf("(%s)", strings.Join(validResourceKeys, "|"))
+				invalidQuotas = map[corev1.ResourceName]resourcev1.Quantity{
+					"limits.cpu": resourcev1.MustParse("1.1"),
+				}
+			)
+			It("should allow names that meet re", func() {
+				obj.Spec.Validations["paas"]["quotaNames"] = validation
+				obj.Spec.Capabilities = v1alpha1.ConfigCapabilities{
+					"quota": v1alpha1.ConfigCapability{
+						QuotaSettings: v1alpha1.ConfigQuotaSettings{
+							DefQuota:  validQuotas,
+							MinQuotas: validQuotas,
+							MaxQuotas: validQuotas,
+						},
+					},
+				}
+				warn, err := validator.ValidateCreate(ctx, obj)
+				Expect(warn, err).Error().NotTo(HaveOccurred())
+			})
+			It("should deny names that do not meet re", func() {
+				obj.Spec.Validations["paas"]["quotaNames"] = validation
+				for _, test := range []v1alpha1.ConfigQuotaSettings{
+					{DefQuota: invalidQuotas},
+					{MinQuotas: invalidQuotas},
+					{MaxQuotas: invalidQuotas},
+				} {
+					obj.Spec.Capabilities = v1alpha1.ConfigCapabilities{
+						"quota": v1alpha1.ConfigCapability{
+							QuotaSettings: test,
+						},
+					}
+					warn, err := validator.ValidateCreate(ctx, obj)
+					Expect(warn, err).Error().To(HaveOccurred())
+				}
+			})
+		})
 	})
 
 	When("creating a new PaasConfig", func() {
@@ -152,7 +204,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(err).Error().To(Not(HaveOccurred()))
-				Expect(warn).To(Equal(admission.Warnings{"spec.excludeappsetname: deprecated"}))
+				Expect(warn).To(BeEmpty())
 			})
 		})
 		Context("having a capability defined with a custom_field", func() {
