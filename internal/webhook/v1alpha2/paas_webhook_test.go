@@ -547,6 +547,78 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				}
 			}
 		})
+		Context("quota name validation", func() {
+			var (
+				validResourceKeys = []string{
+					// "limits.cpu",
+					"limits.memory",
+					"requests.cpu",
+					"requests.memory",
+					"requests.storage",
+					"thin.storageclass.storage.k8s.io/persistentvolumeclaims",
+				}
+				validQuotas = quota.Quota{
+					"limits.memory":    resource.MustParse("100M"),
+					"requests.cpu":     resource.MustParse("1.1"),
+					"requests.memory":  resource.MustParse("100M"),
+					"requests.storage": resource.MustParse("10G"),
+					"thin.storageclass.storage.k8s.io/persistentvolumeclaims": resource.MustParse("10G"),
+				}
+				validation       = fmt.Sprintf("(%s)", strings.Join(validResourceKeys, "|"))
+				validationConfig = v1alpha2.PaasConfigValidations{
+					"paas": v1alpha2.PaasConfigTypeValidations{"quotaNames": validation},
+				}
+				invalidQuotas = map[corev1.ResourceName]resource.Quantity{
+					"limits.cpu": resource.MustParse("1.1"),
+				}
+			)
+			It("should allow cap quota names that meet re", func() {
+				conf.Spec.Validations = validationConfig
+				config.SetConfig(conf)
+				obj = &v1alpha2.Paas{
+					Spec: v1alpha2.PaasSpec{
+						Capabilities: v1alpha2.PaasCapabilities{
+							"cap5": v1alpha2.PaasCapability{
+								Quota: validQuotas,
+							},
+						},
+					},
+				}
+				warn, err := validator.ValidateCreate(ctx, obj)
+				Expect(warn, err).Error().NotTo(HaveOccurred())
+				Expect(err).Error().NotTo(HaveOccurred())
+			})
+			It("should deny cap quota names that do not meet re", func() {
+				conf.Spec.Validations = validationConfig
+				config.SetConfig(conf)
+				obj = &v1alpha2.Paas{
+					Spec: v1alpha2.PaasSpec{
+						Capabilities: v1alpha2.PaasCapabilities{
+							"cap5": v1alpha2.PaasCapability{
+								Quota: invalidQuotas,
+							},
+						},
+					},
+				}
+				warn, err := validator.ValidateCreate(ctx, obj)
+				Expect(warn, err).Error().To(HaveOccurred())
+			})
+			It("should allow paas quota names that meet re", func() {
+				conf.Spec.Validations = validationConfig
+				config.SetConfig(conf)
+				obj = &v1alpha2.Paas{Spec: v1alpha2.PaasSpec{Quota: validQuotas}}
+				warn, err := validator.ValidateCreate(ctx, obj)
+				Expect(warn, err).Error().NotTo(HaveOccurred())
+				Expect(err).Error().NotTo(HaveOccurred())
+			})
+			It("should deny cap quota names that do not meet re", func() {
+				conf.Spec.Validations = validationConfig
+				config.SetConfig(conf)
+				obj = &v1alpha2.Paas{Spec: v1alpha2.PaasSpec{Quota: invalidQuotas}}
+				warn, err := validator.ValidateCreate(ctx, obj)
+				Expect(warn, err).Error().To(HaveOccurred())
+			})
+		})
 	})
 
 	Context("When updating a Paas under Validating Webhook", func() {
