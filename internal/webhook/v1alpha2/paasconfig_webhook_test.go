@@ -11,6 +11,7 @@ package v1alpha2
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	. "github.com/onsi/ginkgo/v2"
@@ -277,6 +278,59 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 							))
 						}
 					}
+				}
+			})
+		})
+		Context("quota name validation", func() {
+			var (
+				validResourceKeys = []string{
+					// "limits.cpu",
+					"limits.memory",
+					"requests.cpu",
+					"requests.memory",
+					"requests.storage",
+					"thin.storageclass.storage.k8s.io/persistentvolumeclaims",
+				}
+				validQuotas = map[corev1.ResourceName]resourcev1.Quantity{
+					"limits.memory":    resourcev1.MustParse("100M"),
+					"requests.cpu":     resourcev1.MustParse("1.1"),
+					"requests.memory":  resourcev1.MustParse("100M"),
+					"requests.storage": resourcev1.MustParse("10G"),
+					"thin.storageclass.storage.k8s.io/persistentvolumeclaims": resourcev1.MustParse("10G"),
+				}
+				validation    = fmt.Sprintf("(%s)", strings.Join(validResourceKeys, "|"))
+				invalidQuotas = map[corev1.ResourceName]resourcev1.Quantity{
+					"limits.cpu": resourcev1.MustParse("1.1"),
+				}
+			)
+			It("should allow names that meet re", func() {
+				obj.Spec.Validations["paas"]["quotaNames"] = validation
+				obj.Spec.Capabilities = v1alpha2.ConfigCapabilities{
+					"quota": v1alpha2.ConfigCapability{
+						QuotaSettings: v1alpha2.ConfigQuotaSettings{
+							DefQuota:  validQuotas,
+							MinQuotas: validQuotas,
+							MaxQuotas: validQuotas,
+						},
+					},
+				}
+				warn, err := validator.ValidateCreate(ctx, obj)
+				Expect(warn, err).Error().NotTo(HaveOccurred())
+			})
+			It("should deny names that do not meet re", func() {
+				obj.Spec.Validations["paas"]["quotaNames"] = validation
+				for _, test := range []v1alpha2.ConfigQuotaSettings{
+					{DefQuota: invalidQuotas},
+					{MinQuotas: invalidQuotas},
+					{MaxQuotas: invalidQuotas},
+				} {
+					obj.Spec.Capabilities = v1alpha2.ConfigCapabilities{
+						"quota": v1alpha2.ConfigCapability{
+							QuotaSettings: test,
+						},
+					}
+					warn, err := validator.ValidateCreate(ctx, obj)
+					Expect(warn, err).Error().To(HaveOccurred())
 				}
 			})
 		})
