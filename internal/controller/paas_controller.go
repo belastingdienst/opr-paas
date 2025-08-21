@@ -334,28 +334,32 @@ func allPaases(mgr ctrl.Manager) []reconcile.Request {
 	return reqs
 }
 
+// specOrLabelsChangedPredicate returns a reusable predicate for spec or label changes
+func specOrLabelsChangedPredicate() predicate.Predicate {
+	return predicate.Or(
+		// Spec updated
+		predicate.GenerationChangedPredicate{},
+		// Labels updated
+		predicate.LabelChangedPredicate{},
+	)
+}
+
 // SetupWithManager sets up the controller with the Manager.
 // SetupWithManager is not unit-tested ATM. Mostly covered by e2e-tests.
 func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha2.Paas{}, builder.WithPredicates(
-			predicate.Or(
-				// Spec updated
-				predicate.GenerationChangedPredicate{},
-				// Labels updated
-				predicate.LabelChangedPredicate{},
-			))).
+		For(&v1alpha2.Paas{}, builder.WithPredicates(specOrLabelsChangedPredicate())).
 		// Reconcile on owned resources changes
-		Owns(&quotav1.ClusterResourceQuota{}).
-		Owns(&userv1.Group{}).
-		Owns(&corev1.Secret{}).
-		Owns(&corev1.Namespace{}).
-		Owns(&rbacv1.RoleBinding{}).
-		Owns(&rbacv1.ClusterRoleBinding{}).
+		Owns(&quotav1.ClusterResourceQuota{}, builder.WithPredicates(specOrLabelsChangedPredicate())).
+		Owns(&userv1.Group{}, builder.WithPredicates(specOrLabelsChangedPredicate())).
+		Owns(&corev1.Secret{}, builder.WithPredicates(specOrLabelsChangedPredicate())).
+		Owns(&corev1.Namespace{}, builder.WithPredicates(specOrLabelsChangedPredicate())).
+		Owns(&rbacv1.RoleBinding{}, builder.WithPredicates(specOrLabelsChangedPredicate())).
+		Owns(&rbacv1.ClusterRoleBinding{}, builder.WithPredicates(specOrLabelsChangedPredicate())).
 		// TODO(portly-halicore-76):We don't own PaasNS objects correctly yet
-		// Owns(&v1alpha2.PaasNS{}).
+		// Owns(&v1alpha2.PaasNS{}, builder.WithPredicates(specOrLabelsChangedPredicate())).
 		// TODO(portly-halicore-76): We don't own Rolebinding objects correctly yet
-		// Owns(&rbac.RoleBinding{}).
+		// Owns(&rbac.RoleBinding{}, builder.WithPredicates(specOrLabelsChangedPredicate())).
 		Watches(
 			&v1alpha2.PaasNS{},
 			handler.EnqueueRequestsFromMapFunc(
@@ -368,13 +372,7 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 						NamespacedName: types.NamespacedName{Name: paasName},
 					}}
 				},
-			), builder.WithPredicates(
-				predicate.Or(
-					// Spec updated
-					predicate.GenerationChangedPredicate{},
-					// Labels updated
-					predicate.LabelChangedPredicate{},
-				))).
+			), builder.WithPredicates(specOrLabelsChangedPredicate())).
 		Watches(
 			&v1alpha2.PaasConfig{},
 			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, _ client.Object) []reconcile.Request {
