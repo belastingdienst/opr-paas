@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/controller"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
@@ -29,7 +29,7 @@ func TestGroupUsers(t *testing.T) {
 	groups := api.PaasGroups{groupKey: api.PaasGroup{Users: []string{"foo"}}}
 	paasSpec := api.PaasSpec{
 		Requestor:  paasRequestor,
-		Namespaces: []string{paasNamespace},
+		Namespaces: api.PaasNamespaces{paasNamespace: api.PaasNamespace{}},
 		Quota:      make(quota.Quota),
 		Groups:     groups,
 	}
