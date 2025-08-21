@@ -17,6 +17,7 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/internal/validate"
 	k8sv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -184,7 +185,7 @@ func validatePaasConfigSpec(
 	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, k8sClient, spec.DecryptKeysSecret, childPath)...)
 	allErrs = append(allErrs, validateValidationFields(spec.Validations, childPath)...)
 	allErrs = append(allErrs, validateConfigCapabilityNames(spec, childPath)...)
-	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, childPath)...)
+	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, spec.Validations, childPath)...)
 	allErrs = append(allErrs, validateTemplatingFields(spec.Templating, childPath)...)
 
 	if len(allErrs) > 0 {
@@ -197,13 +198,17 @@ func validatePaasConfigSpec(
 	return warn, allErrs
 }
 
-func validateConfigCapabilities(capabilities v1alpha2.ConfigCapabilities, rootPath *field.Path) field.ErrorList {
+func validateConfigCapabilities(
+	capabilities v1alpha2.ConfigCapabilities,
+	validations v1alpha2.PaasConfigValidations,
+	rootPath *field.Path,
+) field.ErrorList {
 	childPath := rootPath.Child("capabilities")
 
 	var allErrs field.ErrorList
 
 	for name, capability := range capabilities {
-		allErrs = append(allErrs, validateConfigCapability(name, capability, childPath)...)
+		allErrs = append(allErrs, validateConfigCapability(name, capability, validations, childPath)...)
 	}
 
 	return allErrs
@@ -233,17 +238,24 @@ func validateConfigCapabilityNames(spec v1alpha2.PaasConfigSpec, rootPath *field
 	return allErrs
 }
 
-func validateConfigCapability(name string, capability v1alpha2.ConfigCapability, rootPath *field.Path) field.ErrorList {
+func validateConfigCapability(name string, capability v1alpha2.ConfigCapability,
+	validations v1alpha2.PaasConfigValidations,
+	rootPath *field.Path,
+) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Key(name)
 
+	allErrs = append(allErrs, validateQuotaNames(capability.QuotaSettings, validations, childPath)...)
 	allErrs = append(allErrs, validateConfigQuotaSettings(capability.QuotaSettings, childPath)...)
 	allErrs = append(allErrs, validateConfigCustomFields(capability.CustomFields, childPath)...)
 
 	return allErrs
 }
 
-func validateConfigQuotaSettings(qs v1alpha2.ConfigQuotaSettings, rootPath *field.Path) field.ErrorList {
+func validateConfigQuotaSettings(
+	qs v1alpha2.ConfigQuotaSettings,
+	rootPath *field.Path,
+) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Child("quotasettings")
 
@@ -268,6 +280,39 @@ func validateConfigQuotaSettings(qs v1alpha2.ConfigQuotaSettings, rootPath *fiel
 			childPath.Child("maxquotas"),
 			qs.MaxQuotas,
 			"empty MaxQuotas map is invalid"))
+	}
+
+	return allErrs
+}
+
+func validateQuotaNames(
+	qs v1alpha2.ConfigQuotaSettings,
+	validations v1alpha2.PaasConfigValidations,
+	childPath *field.Path,
+) field.ErrorList {
+	var allErrs field.ErrorList
+	childPath = childPath.Child("quotas")
+	// We use same value for paas.spec.namespaces and paasns.metadata.name validation.
+	// Unless both are set.
+	nameValidationRE := validations.GetValidationRE("paas", "quotaNames")
+	if nameValidationRE == nil {
+		return nil
+	}
+	for kind, quotas := range map[string]map[k8sv1.ResourceName]resourcev1.Quantity{
+		"defaults": qs.DefQuota,
+		"min":      qs.MinQuotas,
+		"max":      qs.MaxQuotas,
+	} {
+		for quotaKey := range quotas {
+			if !nameValidationRE.Match([]byte(quotaKey)) {
+				allErrs = append(allErrs, field.Invalid(
+					childPath.Child(kind),
+					quotaKey,
+
+					fmt.Sprintf("quota key does not match configured validation regex `%s`", nameValidationRE.String()),
+				))
+			}
+		}
 	}
 
 	return allErrs
