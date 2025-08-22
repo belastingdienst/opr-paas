@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
@@ -28,7 +28,7 @@ func TestCapabilityCap5(t *testing.T) {
 		Requestor: "paas-user",
 		Quota:     make(quota.Quota),
 		Capabilities: api.PaasCapabilities{
-			"cap5": api.PaasCapability{Enabled: true},
+			"cap5": api.PaasCapability{},
 		},
 	}
 
@@ -56,7 +56,7 @@ func assertCap5Created(ctx context.Context, t *testing.T, cfg *envconf.Config) c
 	assert.Equal(t, paasCap5Ns, namespace.Name)
 
 	// cap5 should be enabled
-	assert.True(t, paas.Spec.Capabilities.IsCap("cap5"))
+	assert.Contains(t, paas.Spec.Capabilities, "cap5")
 
 	// ApplicationSet exist
 	assert.NotEmpty(t, applicationSet)

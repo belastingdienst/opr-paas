@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
@@ -29,7 +29,7 @@ func TestCapabilitySSO(t *testing.T) {
 		Requestor: "paas-user",
 		Quota:     make(quota.Quota),
 		Capabilities: api.PaasCapabilities{
-			"sso": api.PaasCapability{Enabled: true},
+			"sso": api.PaasCapability{},
 		},
 	}
 
@@ -57,7 +57,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.Equal(t, paasSSO, namespace.Name)
 
 	// SSO should be enabled
-	assert.True(t, paas.Spec.Capabilities.IsCap("sso"))
+	assert.Contains(t, paas.Spec.Capabilities, "sso")
 
 	// ApplicationSet exist
 	assert.NotEmpty(t, applicationSet)

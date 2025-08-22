@@ -9,7 +9,7 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	k8sv1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +29,28 @@ const (
 	unencrypted     = "updated"
 )
 
+func AddCapSSHSecret(t *testing.T, spec *api.PaasSpec, capabilityName string, key string, value string) {
+	capability, exists := spec.Capabilities[capabilityName]
+	if !exists {
+		t.Fatalf("%s should exist but is not defined", paasCap1)
+	}
+	if capability.Secrets == nil {
+		capability.Secrets = map[string]string{key: value}
+	} else {
+		capability.Secrets[key] = value
+	}
+	spec.Capabilities[capabilityName] = capability
+}
+
+func ResetCapSSHSecret(t *testing.T, spec *api.PaasSpec, capabilityName string) {
+	capability, exists := spec.Capabilities[capabilityName]
+	if !exists {
+		t.Fatalf("%s should exist but is not defined", paasCap1)
+	}
+	capability.Secrets = nil
+	spec.Capabilities[capabilityName] = capability
+}
+
 func TestSecrets(t *testing.T) {
 	privateKeys, err := crypt.NewPrivateKeysFromFiles([]string{})
 	if err != nil {
@@ -43,15 +65,14 @@ func TestSecrets(t *testing.T) {
 	require.NoError(t, err)
 
 	toBeDecryptedPaas := api.PaasSpec{
-		Requestor:  "paas-user",
-		Quota:      make(quota.Quota),
-		SSHSecrets: map[string]string{"ssh://git@scm/some-repo.git": encrypted},
+		Requestor: "paas-user",
+		Quota:     make(quota.Quota),
+		Secrets:   map[string]string{"ssh://git@scm/some-repo.git": encrypted},
 		Capabilities: api.PaasCapabilities{
 			paasCap1: api.PaasCapability{
-				Enabled:    true,
-				SSHSecrets: map[string]string{"ssh://git@scm/some-other-repo.git": encrypted},
+				Secrets: map[string]string{"ssh://git@scm/some-other-repo.git": encrypted},
 			},
-			paasCap2: api.PaasCapability{Enabled: true, SSHSecrets: map[string]string{}},
+			paasCap2: api.PaasCapability{Secrets: map[string]string{}},
 		},
 	}
 
@@ -113,16 +134,9 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 	require.NoError(t, err)
 
 	paas := getPaas(ctx, paasName, t, cfg)
-	paas.Spec.SSHSecrets = map[string]string{"ssh://git@scm/some-repo.git": encrypted}
-	if err = paas.Spec.Capabilities.ResetCapSSHSecret(paasCap1); err != nil {
-		t.Fatal(err)
-	} else if err = paas.Spec.Capabilities.AddCapSSHSecret(
-		paasCap1,
-		"ssh://git@scm/some-other-repo.git",
-		encrypted,
-	); err != nil {
-		t.Fatal(err)
-	}
+	paas.Spec.Secrets = map[string]string{"ssh://git@scm/some-repo.git": encrypted}
+	ResetCapSSHSecret(t, &paas.Spec, paasCap1)
+	AddCapSSHSecret(t, &paas.Spec, paasCap1, "ssh://git@scm/some-other-repo.git", encrypted)
 
 	if err = updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
@@ -173,16 +187,9 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	require.NoError(t, err)
 
 	paas := getPaas(ctx, paasName, t, cfg)
-	paas.Spec.SSHSecrets = map[string]string{"ssh://git@scm/some-second-repo.git": encrypted}
-	if err = paas.Spec.Capabilities.ResetCapSSHSecret(paasCap1); err != nil {
-		t.Fatal(err)
-	} else if err = paas.Spec.Capabilities.AddCapSSHSecret(
-		paasCap1,
-		"ssh://git@scm/some-other-second-repo.git",
-		encrypted,
-	); err != nil {
-		t.Fatal(err)
-	}
+	paas.Spec.Secrets = map[string]string{"ssh://git@scm/some-second-repo.git": encrypted}
+	ResetCapSSHSecret(t, &paas.Spec, paasCap1)
+	AddCapSSHSecret(t, &paas.Spec, paasCap1, "ssh://git@scm/some-other-second-repo.git", encrypted)
 
 	if err = updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
@@ -222,10 +229,13 @@ func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 
 func assertSecretRemovedAfterRemovingFromPaas(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasName, t, cfg)
-	paas.Spec.SSHSecrets = nil
-	if err := paas.Spec.Capabilities.ResetCapSSHSecret(paasCap1); err != nil {
-		t.Fatal(err)
+	paas.Spec.Secrets = nil
+	cap1, exists := paas.Spec.Capabilities[paasCap1]
+	if !exists {
+		t.Fatalf("%s should exist but is not defined", paasCap1)
 	}
+	cap1.Secrets = nil
+	paas.Spec.Capabilities[paasCap1] = cap1
 
 	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
