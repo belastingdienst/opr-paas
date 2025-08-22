@@ -171,7 +171,8 @@ func (r *PaasReconciler) reconcileClusterWideQuota(ctx context.Context, paas *v1
 }
 
 // needsUpdate compares the current and desired ClusterResourceQuota
-func (r *PaasReconciler) needsUpdate(current, desired *quotav1.ClusterResourceQuota, paas *v1alpha2.Paas) (bool, error) {
+func (r *PaasReconciler) needsUpdate(current, desired *quotav1.ClusterResourceQuota,
+	paas *v1alpha2.Paas) (bool, error) {
 	changed := false
 
 	// Owner reference
@@ -236,6 +237,9 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 	// Found → check if anything changed
 	var changed bool
 	changed, err = r.needsUpdate(current, desired, paas)
+	if err != nil {
+		return err
+	}
 
 	// Update if changed
 	if changed {
