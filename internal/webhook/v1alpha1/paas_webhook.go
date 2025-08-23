@@ -243,7 +243,7 @@ func validatePaasallowedQuotas(
 				errs = append(errs, field.Invalid(
 					f,
 					quotaKey,
-					fmt.Sprintf("quota key does not match configured validation regex `%s`", nameValidationRE.String()),
+					fmt.Sprintf("quota is not allowed (allowed quotas: %s)", nameValidationRE.String()),
 				))
 			}
 		}

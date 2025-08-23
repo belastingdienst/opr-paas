@@ -292,8 +292,6 @@ func validateAllowedQuotas(
 ) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath = childPath.Child("quotas")
-	// We use same value for paas.spec.namespaces and paasns.metadata.name validation.
-	// Unless both are set.
 	nameValidationRE := validations.GetValidationRE("paas", "allowedQuotas")
 	if nameValidationRE == nil {
 		return nil
@@ -308,8 +306,7 @@ func validateAllowedQuotas(
 				allErrs = append(allErrs, field.Invalid(
 					childPath.Child(kind),
 					quotaKey,
-
-					fmt.Sprintf("quota key does not match configured validation regex `%s`", nameValidationRE.String()),
+					fmt.Sprintf("quota is not allowed (allowed quotas: %s)", nameValidationRE.String()),
 				))
 			}
 		}
