@@ -120,7 +120,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		validatePaasName,
 		validatePaasRequestor,
 		validateCaps,
-		validatePaasQuotaNames,
+		validatePaasallowedQuotas,
 		validatePaasSecrets,
 		validateCustomFields,
 		validateGroupNames,
@@ -211,15 +211,15 @@ func validatePaasName(
 	return errs, nil
 }
 
-// validatePaasQuotaNames returns errors if there are quota's with keys that do not meet validations
-func validatePaasQuotaNames(
+// validatePaasallowedQuotas returns errors if there are quota's with keys that do not meet validations
+func validatePaasallowedQuotas(
 	_ context.Context,
 	_ client.Client,
 	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
-	nameValidationRE := conf.Spec.Validations.GetValidationRE("paas", "quotaNames")
+	nameValidationRE := conf.Spec.Validations.GetValidationRE("paas", "allowedQuotas")
 	if nameValidationRE == nil {
 		return nil, nil
 	}

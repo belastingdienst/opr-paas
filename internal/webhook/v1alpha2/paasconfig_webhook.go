@@ -245,7 +245,7 @@ func validateConfigCapability(name string, capability v1alpha2.ConfigCapability,
 	var allErrs field.ErrorList
 	childPath := rootPath.Key(name)
 
-	allErrs = append(allErrs, validateQuotaNames(capability.QuotaSettings, validations, childPath)...)
+	allErrs = append(allErrs, validateAllowedQuotas(capability.QuotaSettings, validations, childPath)...)
 	allErrs = append(allErrs, validateConfigQuotaSettings(capability.QuotaSettings, childPath)...)
 	allErrs = append(allErrs, validateConfigCustomFields(capability.CustomFields, childPath)...)
 
@@ -285,7 +285,7 @@ func validateConfigQuotaSettings(
 	return allErrs
 }
 
-func validateQuotaNames(
+func validateAllowedQuotas(
 	qs v1alpha2.ConfigQuotaSettings,
 	validations v1alpha2.PaasConfigValidations,
 	childPath *field.Path,
@@ -294,7 +294,7 @@ func validateQuotaNames(
 	childPath = childPath.Child("quotas")
 	// We use same value for paas.spec.namespaces and paasns.metadata.name validation.
 	// Unless both are set.
-	nameValidationRE := validations.GetValidationRE("paas", "quotaNames")
+	nameValidationRE := validations.GetValidationRE("paas", "allowedQuotas")
 	if nameValidationRE == nil {
 		return nil
 	}

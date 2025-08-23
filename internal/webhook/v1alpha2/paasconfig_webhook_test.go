@@ -304,7 +304,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 				}
 			)
 			It("should allow names that meet re", func() {
-				obj.Spec.Validations["paas"]["quotaNames"] = validation
+				obj.Spec.Validations["paas"]["allowedQuotas"] = validation
 				obj.Spec.Capabilities = v1alpha2.ConfigCapabilities{
 					"quota": v1alpha2.ConfigCapability{
 						QuotaSettings: v1alpha2.ConfigQuotaSettings{
@@ -318,7 +318,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 				Expect(warn, err).Error().NotTo(HaveOccurred())
 			})
 			It("should deny names that do not meet re", func() {
-				obj.Spec.Validations["paas"]["quotaNames"] = validation
+				obj.Spec.Validations["paas"]["allowedQuotas"] = validation
 				for _, test := range []v1alpha2.ConfigQuotaSettings{
 					{DefQuota: invalidQuotas},
 					{MinQuotas: invalidQuotas},

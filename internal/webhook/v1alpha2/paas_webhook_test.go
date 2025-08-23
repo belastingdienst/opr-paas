@@ -566,7 +566,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				}
 				validation       = fmt.Sprintf("(%s)", strings.Join(validResourceKeys, "|"))
 				validationConfig = v1alpha2.PaasConfigValidations{
-					"paas": v1alpha2.PaasConfigTypeValidations{"quotaNames": validation},
+					"paas": v1alpha2.PaasConfigTypeValidations{"allowedQuotas": validation},
 				}
 				invalidQuotas = map[corev1.ResourceName]resource.Quantity{
 					"limits.cpu": resource.MustParse("1.1"),
