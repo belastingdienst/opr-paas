@@ -3,7 +3,7 @@ module github.com/belastingdienst/opr-paas/v3
 go 1.25
 
 require (
-	github.com/go-logr/logr v1.4.2 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible
 	github.com/stretchr/testify v1.10.0
 	k8s.io/api v0.33.4
@@ -17,7 +17,7 @@ require (
 	github.com/gin-gonic/gin v1.10.1
 	github.com/go-logr/zerologr v1.2.3
 	github.com/go-sprout/sprout v1.0.1
-	github.com/onsi/ginkgo/v2 v2.23.4
+	github.com/onsi/ginkgo/v2 v2.25.1
 	github.com/onsi/gomega v1.38.0
 	github.com/rs/zerolog v1.34.0
 	sigs.k8s.io/e2e-framework v0.6.0
@@ -66,7 +66,7 @@ require (
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/tools v0.35.0 // indirect
+	golang.org/x/tools v0.36.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241209162323-e6fa225c2576 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241209162323-e6fa225c2576 // indirect
 	google.golang.org/grpc v1.68.1 // indirect
@@ -125,7 +125,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/pflag v1.0.6 // indirect
 	golang.org/x/crypto v0.41.0
-	golang.org/x/net v0.42.0 // indirect
+	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/term v0.34.0 // indirect
