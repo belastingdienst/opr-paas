@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -169,38 +170,86 @@ func (r *PaasReconciler) reconcileClusterWideQuota(ctx context.Context, paas *v1
 	return nil
 }
 
+// needsUpdate compares the current and desired ClusterResourceQuota
+func (r *PaasReconciler) needsUpdate(current, desired *quotav1.ClusterResourceQuota,
+	paas *v1alpha2.Paas) (bool, error) {
+	changed := false
+
+	// Owner reference
+	if !paas.AmIOwner(current.OwnerReferences) {
+		if err := controllerutil.SetOwnerReference(paas, current, r.Scheme); err != nil {
+			return false, err
+		}
+		changed = true
+	}
+
+	// Labels
+	if !reflect.DeepEqual(current.Labels, desired.Labels) {
+		current.Labels = desired.Labels
+		changed = true
+	}
+
+	// Selector
+	if !reflect.DeepEqual(current.Spec.Selector, desired.Spec.Selector) {
+		current.Spec.Selector = desired.Spec.Selector
+		changed = true
+	}
+
+	// Quotas
+	if !reflect.DeepEqual(current.Spec.Quota.Hard, desired.Spec.Quota.Hard) {
+		current.Spec.Quota.Hard = desired.Spec.Quota.Hard
+		changed = true
+	}
+
+	return changed, nil
+}
+
 func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alpha2.Paas, capabilityName string) error {
-	var quota *quotav1.ClusterResourceQuota
-	var exists bool
 	quotaName := clusterWideQuotaName(capabilityName)
 	paasConfigSpec, exists := config.GetConfig().Spec.Capabilities[capabilityName]
 	if !exists {
-		return fmt.Errorf("capability %s does not seem to exist in configuration", capabilityName)
-	} else if !paasConfigSpec.QuotaSettings.Clusterwide {
+		return fmt.Errorf("capability %s does not exist in configuration", capabilityName)
+	}
+	if !paasConfigSpec.QuotaSettings.Clusterwide {
 		return nil
 	}
-	quota = backendClusterWideQuota(quotaName,
-		paasConfigSpec.QuotaSettings.MinQuotas)
 
-	err := r.Get(ctx, client.ObjectKeyFromObject(quota), quota)
+	desired := backendClusterWideQuota(quotaName, paasConfigSpec.QuotaSettings.MinQuotas)
+
+	// Try to fetch existing quota
+	current := &quotav1.ClusterResourceQuota{}
+	err := r.Get(ctx, client.ObjectKeyFromObject(desired), current)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
-	exists = err == nil
 
-	if !paas.AmIOwner(quota.OwnerReferences) {
-		if err = controllerutil.SetOwnerReference(paas, quota, r.Scheme); err != nil {
+	// If not found → create it
+	if k8serrors.IsNotFound(err) {
+		if err = controllerutil.SetOwnerReference(paas, desired, r.Scheme); err != nil {
 			return err
 		}
-	}
-	if err = r.updateClusterWideQuotaResources(ctx, quota); err != nil {
-		return err
-	}
-	if exists {
-		return r.Update(ctx, quota)
+		if err = r.updateClusterWideQuotaResources(ctx, desired); err != nil {
+			return err
+		}
+		return r.Create(ctx, desired)
 	}
 
-	return r.Create(ctx, quota)
+	// Found → check if anything changed
+	var changed bool
+	changed, err = r.needsUpdate(current, desired, paas)
+	if err != nil {
+		return err
+	}
+
+	// Update if changed
+	if changed {
+		if err = r.updateClusterWideQuotaResources(ctx, current); err != nil {
+			return err
+		}
+		return r.Update(ctx, current)
+	}
+
+	return nil
 }
 
 func (r *PaasReconciler) removeFromClusterWideQuota(
