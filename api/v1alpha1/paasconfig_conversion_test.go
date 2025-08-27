@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -35,10 +36,12 @@ var paasconfigExV1Alpha1 = &PaasConfig{
 				QuotaSettings: ConfigQuotaSettings{
 					Clusterwide: true,
 					Ratio:       0.75,
-					DefQuota: map[corev1.ResourceName]resource.Quantity{
+					DefQuota: paasquota.Quota{
 						corev1.ResourceCPU:    resource.MustParse("500m"),
 						corev1.ResourceMemory: resource.MustParse("1Gi"),
 					},
+					MinQuotas: paasquota.Quota{},
+					MaxQuotas: paasquota.Quota{},
 				},
 				CustomFields: map[string]ConfigCustomField{
 					"env": {
@@ -88,10 +91,12 @@ var paasconfigExV1Alpha2 = &v1alpha2.PaasConfig{
 				QuotaSettings: v1alpha2.ConfigQuotaSettings{
 					Clusterwide: true,
 					Ratio:       0.75,
-					DefQuota: map[corev1.ResourceName]resource.Quantity{
+					DefQuota: paasquota.Quota{
 						corev1.ResourceCPU:    resource.MustParse("500m"),
 						corev1.ResourceMemory: resource.MustParse("1Gi"),
 					},
+					MinQuotas: paasquota.Quota{},
+					MaxQuotas: paasquota.Quota{},
 				},
 				CustomFields: map[string]v1alpha2.ConfigCustomField{
 					"env": {

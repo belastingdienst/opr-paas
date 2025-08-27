@@ -13,9 +13,8 @@ import (
 	"reflect"
 
 	"github.com/belastingdienst/opr-paas/v3/api"
-	corev1 "k8s.io/api/core/v1"
+	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	"k8s.io/apimachinery/pkg/api/meta"
-	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -243,15 +242,15 @@ type ConfigQuotaSettings struct {
 
 	// The default quota which the enabled capability gets
 	// +kubebuilder:validation:Required
-	DefQuota map[corev1.ResourceName]resourcev1.Quantity `json:"defaults"`
+	DefQuota paasquota.Quota `json:"defaults"`
 
 	// The minimum quota which the enabled capability gets
 	// +kubebuilder:validation:Optional
-	MinQuotas map[corev1.ResourceName]resourcev1.Quantity `json:"min"`
+	MinQuotas paasquota.Quota `json:"min"`
 
 	// The maximum quota which the capability gets
 	// +kubebuilder:validation:Optional
-	MaxQuotas map[corev1.ResourceName]resourcev1.Quantity `json:"max"`
+	MaxQuotas paasquota.Quota `json:"max"`
 }
 
 // This is an insoudeout representation of ConfigCapPerm, closer to rb representation
