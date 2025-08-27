@@ -8,6 +8,7 @@ package logging
 
 import (
 	"context"
+	"maps"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -18,7 +19,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
-var debugComponents map[string]bool
+var (
+	// Commandline args will use this to enable all debug logging
+	staticDebug bool
+	// Commandline args can use this to enable logging for a component
+	staticComponents map[string]bool
+	// PaasConfig can set this to enable all debug logging
+	hotDebug bool
+	// PaasConfig can use this to enable logging for a component
+	allComponents map[string]bool
+)
 
 // SetControllerLogger derives a context with a `zerolog` logger configured for a specific controller.
 // To be called once per reconciler.
@@ -63,18 +73,21 @@ func SetWebhookLogger(ctx context.Context, obj client.Object) (context.Context, 
 	return logger.WithContext(ctx), &logger
 }
 
-// ResetComponentDebug can be used to reset the map of Components that have debugging enabled
-func ResetComponentDebug() {
-	debugComponents = make(map[string]bool)
+// SetStaticLoggingConfig configures which components will log debug messages regardless of global log level.
+func SetStaticLoggingConfig(debug bool, components []string) {
+	staticDebug = debug
+	staticComponents = map[string]bool{}
+	for _, component := range components {
+		staticComponents[component] = true
+	}
 }
 
-// SetComponentDebug configures which components will log debug messages regardless of global log level.
-func SetComponentDebug(components []string) {
-	if debugComponents == nil {
-		ResetComponentDebug()
-	}
-	for _, component := range components {
-		debugComponents[component] = true
+// SetHotLoggingConfig configures which components will log debug messages regardless of global log level.
+func SetHotLoggingConfig(debug bool, components map[string]bool) {
+	hotDebug = debug
+	allComponents = maps.Clone(staticComponents)
+	for component, state := range components {
+		allComponents[component] = state
 	}
 }
 
@@ -83,7 +96,7 @@ func GetLogComponent(ctx context.Context, name string) (context.Context, *zerolo
 	logger := log.Ctx(ctx)
 	level := zerolog.InfoLevel
 
-	if _, enabled := debugComponents[name]; enabled {
+	if enabled := allComponents[name]; enabled || staticDebug || hotDebug {
 		level = zerolog.DebugLevel
 	}
 	if logger.GetLevel() != level {

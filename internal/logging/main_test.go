@@ -108,47 +108,41 @@ func TestSetWebhookLogger(t *testing.T) {
 	assert.Contains(t, logLine, fmt.Sprintf(`"object":{"name":"%s","namespace":""}`, paasName))
 }
 
-func TestSetComponentDebug(t *testing.T) {
-	ResetComponentDebug()
-	dbgCmp := []string{"comp1", "comp2"}
-	defer ResetComponentDebug()
-	SetComponentDebug(dbgCmp)
-	require.Len(t, debugComponents, 2, "there should be 2 components in debug")
-	for _, c := range dbgCmp {
-		_, exists := debugComponents[c]
-		assert.True(t, exists, "%s should be in debugComponents")
+func TestDebuggingBools(t *testing.T) {
+	// static or hot debug is true, everything is debug
+	allComponents = map[string]bool{}
+	for _, test := range []struct {
+		static   bool
+		hot      bool
+		expected zerolog.Level
+	}{
+		{expected: zerolog.InfoLevel},
+		{static: true, expected: zerolog.DebugLevel},
+		{hot: true, expected: zerolog.DebugLevel},
+		{static: true, hot: true, expected: zerolog.DebugLevel},
+	} {
+		ctx := context.TODO()
+		hotDebug = test.hot
+		staticDebug = test.static
+		_, logger := GetLogComponent(ctx, "all")
+		assert.Equal(t, test.expected, logger.GetLevel())
 	}
-	_, exists := debugComponents["comp3"]
-	assert.False(t, exists, "comp3 should not be in debugComponents")
 }
-
-func TestSetLogComponent(t *testing.T) {
-	ResetComponentDebug()
-	obj := &v1alpha1.Paas{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: paasName,
-		},
-		Spec: v1alpha1.PaasSpec{},
-	}
-	obj.SetGroupVersionKind(schema.GroupVersionKind{
-		Kind:    "Paas",
-		Version: "v1alpha1",
-		Group:   "cpet.belastingdienst.nl",
-	})
-
-	debugCmp := "comp1"
-	SetComponentDebug([]string{debugCmp})
-	for _, comp := range []string{"comp1", "comp2"} {
-		ctx := context.Background()
-		output := &logSink{}
-		log.Logger = log.Output(output)
-		ctx, _ = SetWebhookLogger(ctx, obj)
-		_, logger := GetLogComponent(ctx, comp)
-		require.NotNil(t, logger, "GetLogComponent should return a logger")
-		expected := zerolog.InfoLevel
-		if debugCmp == comp {
-			expected = zerolog.DebugLevel
-		}
-		assert.Equal(t, expected, logger.GetLevel(), "component %s should be %d", comp, expected)
+func TestDebuggingComponents(t *testing.T) {
+	ctx := context.TODO()
+	staticComponents = map[string]bool{}
+	allComponents = map[string]bool{}
+	SetStaticLoggingConfig(false, []string{"static", "both", "disabled"})
+	SetHotLoggingConfig(false, map[string]bool{"hot": true, "both": true, "disabled": false})
+	for component, expected := range map[string]zerolog.Level{
+		"none":     zerolog.InfoLevel,
+		"disabled": zerolog.InfoLevel,
+		"static":   zerolog.DebugLevel,
+		"both":     zerolog.DebugLevel,
+		"hot":      zerolog.DebugLevel,
+	} {
+		t.Logf("component: %s", component)
+		_, logger := GetLogComponent(ctx, component)
+		assert.Equal(t, expected, logger.GetLevel())
 	}
 }
