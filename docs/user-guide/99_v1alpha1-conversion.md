@@ -50,10 +50,15 @@ The following has changed between v1alpha1.Paas and v1alpha2.Paas:
             'ssh://git@my-git-host/my-git-repo.git': >-
               2wkeKe...g==
         # `grafana` is enabled and should stay but with empty definition
-        grafana: {}
+        grafana:
+          enabled: true
         # `tekton` is disabled and should be removed
         tekton:
           enabled: false
+          quota:
+            limits.cpu: '32'
+        # `sso` is disabled and should be removed
+        sso: {}
       # `sshSecrets` should be changed to `secrets`
       sshSecrets:
         'ssh://git@my-git-host/my-git-repo.git': >-
@@ -83,6 +88,7 @@ The following has changed between v1alpha1.Paas and v1alpha2.Paas:
             git_path: .
             git_revision: main
             git_url: https://www.github.com/my-org/my-repo/
+        grafana: {}
       secrets:
         'ssh://git@my-git-host/my-git-repo.git': >-
           2wkeKe...g==
