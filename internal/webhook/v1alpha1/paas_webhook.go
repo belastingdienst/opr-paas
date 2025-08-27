@@ -137,6 +137,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 		validatePaasName,
 		validatePaasRequestor,
 		validateCaps,
+		validatePaasallowedQuotas,
 		validateSecrets,
 		validateCustomFields,
 		validateGroupNames,
@@ -212,6 +213,41 @@ func validatePaasName(
 		))
 	}
 
+	return errs, nil
+}
+
+// validatePaasallowedQuotas returns errors if there are quota's with keys that do not meet validations
+func validatePaasallowedQuotas(
+	_ context.Context,
+	_ client.Client,
+	conf v1alpha1.PaasConfig,
+	paas *v1alpha1.Paas,
+) ([]*field.Error, error) {
+	var errs []*field.Error
+	nameValidationRE := conf.Spec.Validations.GetValidationRE("paas", "allowedQuotas")
+	if nameValidationRE == nil {
+		return nil, nil
+	}
+
+	quotas := map[*field.Path]quota.Quota{
+		field.NewPath("spec", "quota"): paas.Spec.Quota,
+	}
+	cf := field.NewPath("spec", "capabilities")
+	for name, c := range paas.Spec.Capabilities {
+		quotas[cf.Key(name).Child("quota")] = c.Quota
+	}
+
+	for f, q := range quotas {
+		for quotaKey := range q {
+			if !nameValidationRE.Match([]byte(quotaKey)) {
+				errs = append(errs, field.Invalid(
+					f,
+					quotaKey,
+					fmt.Sprintf("quota is not allowed (allowed quotas: %s)", nameValidationRE.String()),
+				))
+			}
+		}
+	}
 	return errs, nil
 }
 
