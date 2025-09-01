@@ -23,19 +23,23 @@ Below snippet shows how validations can be configured for the complete set of va
     spec:
       validations:
         paas:
-          # Validate name of Paas
+          # (v1.12) Validate name of Paas
           name: "^[a-z0-9-]*$"
-          # Validate name of groups in paas
+          # (v1.12) Validate name of groups in paas
           groupName: "^[a-z0-9-]*$"
-          # Validate name of namespaces in paas
+          # (v1.12) Validate name of namespaces in paas
           namespaceName: "^[a-z0-9-]*$"
-          # Validate requestor field in paas
+          # (v1.12) Validate requestor field in paas
           requestor: "^[a-z0-9-]*$"
+          # (v3.6) Allow quotas (by default all is allowed, by setting a regular expressions you can limit 
+          # allowed quotas). Below example disallows limits.cpu (a.o.) and only allows the 4 types as stated.
+          # This option has effect on a Paas, but also all quota's in PaasConfig.spec.capabilities[*].quotas.
+          allowedQuotas: "^(limits.memory|requests.cpu|requests.memory|requests.storage)$"
         paasConfig:
-          # Validate name of capability in config
+          # (v1.12) Validate name of capability in config
           capabilityName: "^[a-z0-9-]*$"
         paasNs:
-          # Validate name of paasNs
+          # (v1.12) Validate name of paasNs
           name: "^[a-z0-9-]*$"
     ...
     ```
