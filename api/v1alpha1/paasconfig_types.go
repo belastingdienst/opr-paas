@@ -69,6 +69,10 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	Debug bool `json:"debug"`
 
+	// Switch component debugging on or of for a specific component
+	// +kubebuilder:validation:Optional
+	ComponentsDebug map[string]bool `json:"components_debug"`
+
 	// A map with zero or more ConfigCapability
 	// +kubebuilder:validation:Optional
 	Capabilities ConfigCapabilities `json:"capabilities"`

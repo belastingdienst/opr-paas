@@ -12,6 +12,8 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -108,41 +110,49 @@ func TestSetWebhookLogger(t *testing.T) {
 	assert.Contains(t, logLine, fmt.Sprintf(`"object":{"name":"%s","namespace":""}`, paasName))
 }
 
-func TestDebuggingBools(t *testing.T) {
-	// static or hot debug is true, everything is debug
-	allComponents = map[string]bool{}
-	for _, test := range []struct {
-		static   bool
-		hot      bool
-		expected zerolog.Level
-	}{
-		{expected: zerolog.InfoLevel},
-		{static: true, expected: zerolog.DebugLevel},
-		{hot: true, expected: zerolog.DebugLevel},
-		{static: true, hot: true, expected: zerolog.DebugLevel},
-	} {
-		ctx := context.TODO()
-		hotDebug = test.hot
-		staticDebug = test.static
-		_, logger := GetLogComponent(ctx, "all")
-		assert.Equal(t, test.expected, logger.GetLevel())
-	}
-}
-func TestDebuggingComponents(t *testing.T) {
+func TestDebuggingStatic(t *testing.T) {
+	const comp1 = "component1"
+	config.SetConfig(v1alpha2.PaasConfig{Spec: v1alpha2.PaasConfigSpec{}})
 	ctx := context.TODO()
-	staticComponents = map[string]bool{}
-	allComponents = map[string]bool{}
-	SetStaticLoggingConfig(false, []string{"static", "both", "disabled"})
-	SetHotLoggingConfig(false, map[string]bool{"hot": true, "both": true, "disabled": false})
-	for component, expected := range map[string]zerolog.Level{
-		"none":     zerolog.InfoLevel,
-		"disabled": zerolog.InfoLevel,
-		"static":   zerolog.DebugLevel,
-		"both":     zerolog.DebugLevel,
-		"hot":      zerolog.DebugLevel,
-	} {
-		t.Logf("component: %s", component)
-		_, logger := GetLogComponent(ctx, component)
-		assert.Equal(t, expected, logger.GetLevel())
-	}
+	// debug false
+	SetStaticLoggingConfig(false, nil)
+	_, noDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.InfoLevel, noDebugLogger.GetLevel())
+	// debug true
+	SetStaticLoggingConfig(true, nil)
+	_, allDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.DebugLevel, allDebugLogger.GetLevel())
+	// debug component
+	SetStaticLoggingConfig(false, []string{comp1})
+	_, componentDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.DebugLevel, componentDebugLogger.GetLevel())
+}
+
+func TestDebuggingConfig(t *testing.T) {
+	const comp1 = "component1"
+	SetStaticLoggingConfig(false, nil)
+	ctx := context.TODO()
+	// debug false
+	config.SetConfig(v1alpha2.PaasConfig{Spec: v1alpha2.PaasConfigSpec{}})
+	_, noDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.InfoLevel, noDebugLogger.GetLevel())
+	// debug true
+	config.SetConfig(v1alpha2.PaasConfig{Spec: v1alpha2.PaasConfigSpec{Debug: true}})
+	_, allDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.DebugLevel, allDebugLogger.GetLevel())
+	// debug component on
+	config.SetConfig(v1alpha2.PaasConfig{Spec: v1alpha2.PaasConfigSpec{
+		ComponentsDebug: map[string]bool{comp1: true},
+	}})
+	_, componentDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.DebugLevel, componentDebugLogger.GetLevel())
+
+	// debug component off
+	SetStaticLoggingConfig(true, []string{comp1})
+	config.SetConfig(v1alpha2.PaasConfig{Spec: v1alpha2.PaasConfigSpec{
+		Debug:           true,
+		ComponentsDebug: map[string]bool{comp1: false},
+	}})
+	_, componentNoDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.InfoLevel, componentNoDebugLogger.GetLevel())
 }

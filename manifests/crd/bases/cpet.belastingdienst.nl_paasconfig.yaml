@@ -185,6 +185,11 @@ spec:
 
                   Deprecated: ArgoCD specific code will be removed from the operator
                 type: string
+              components_debug:
+                additionalProperties:
+                  type: boolean
+                description: Switch component debugging on or of for a specific component
+                type: object
               debug:
                 default: false
                 description: Enable debug information generation or not
@@ -485,6 +490,11 @@ spec:
 
                   Deprecated: ArgoCD specific code will be removed from the operator
                 type: string
+              components_debug:
+                additionalProperties:
+                  type: boolean
+                description: Switch component debugging on or of for a specific component
+                type: object
               debug:
                 default: false
                 description: Enable debug information generation or not

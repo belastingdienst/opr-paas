@@ -23,6 +23,10 @@ var paasconfigExV1Alpha1 = &PaasConfig{
 	},
 	Spec: PaasConfigSpec{
 		Debug: true,
+		ComponentsDebug: map[string]bool{
+			"component1": true,
+			"component2": false,
+		},
 		Capabilities: map[string]ConfigCapability{
 			"example": {
 				AppSet: "set",
@@ -78,6 +82,10 @@ var paasconfigExV1Alpha2 = &v1alpha2.PaasConfig{
 	},
 	Spec: v1alpha2.PaasConfigSpec{
 		Debug: true,
+		ComponentsDebug: map[string]bool{
+			"component1": true,
+			"component2": false,
+		},
 		Capabilities: map[string]v1alpha2.ConfigCapability{
 			"example": {
 				AppSet: "set",

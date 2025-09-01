@@ -57,6 +57,7 @@ func (pc *PaasConfig) ConvertFrom(srcRaw conversion.Hub) error {
 	spec.ExcludeAppSetName = ""
 	spec.RoleMappings = convertFromRoleMappings(src.Spec.RoleMappings)
 	spec.Validations = convertFromValidations(src.Spec.Validations)
+	spec.ComponentsDebug = src.Spec.ComponentsDebug
 
 	return nil
 }
@@ -182,6 +183,7 @@ func (pc *PaasConfig) ConvertTo(dstRaw conversion.Hub) error {
 	spec.ManagedBySuffix = pc.Spec.ManagedBySuffix
 	spec.RoleMappings = ConfigRoleMappings{}.convertTo(pc.Spec.RoleMappings)
 	spec.Validations = PaasConfigValidations{}.convertTo(pc.Spec.Validations)
+	spec.ComponentsDebug = pc.Spec.ComponentsDebug
 
 	return nil
 }

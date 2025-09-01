@@ -8,8 +8,8 @@ package logging
 
 import (
 	"context"
-	"maps"
 
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -24,10 +24,6 @@ var (
 	staticDebug bool
 	// Commandline args can use this to enable logging for a component
 	staticComponents map[string]bool
-	// PaasConfig can set this to enable all debug logging
-	hotDebug bool
-	// PaasConfig can use this to enable logging for a component
-	allComponents map[string]bool
 )
 
 // SetControllerLogger derives a context with a `zerolog` logger configured for a specific controller.
@@ -82,23 +78,28 @@ func SetStaticLoggingConfig(debug bool, components []string) {
 	}
 }
 
-// SetHotLoggingConfig configures which components will log debug messages regardless of global log level.
-func SetHotLoggingConfig(debug bool, components map[string]bool) {
-	hotDebug = debug
-	allComponents = maps.Clone(staticComponents)
-	for component, state := range components {
-		allComponents[component] = state
+func getComponentDebugLevel(componentName string) zerolog.Level {
+	paasConfig := config.GetConfig()
+	if enabled, exists := paasConfig.Spec.ComponentsDebug[componentName]; exists {
+		if enabled {
+			return zerolog.DebugLevel
+		}
+		return zerolog.InfoLevel
 	}
+	if staticDebug || paasConfig.Spec.Debug {
+		return zerolog.DebugLevel
+	}
+	if enabled := staticComponents[componentName]; enabled {
+		return zerolog.DebugLevel
+	}
+	return zerolog.InfoLevel
 }
 
 // GetLogComponent gets the logger for a component from a context.
 func GetLogComponent(ctx context.Context, name string) (context.Context, *zerolog.Logger) {
 	logger := log.Ctx(ctx)
-	level := zerolog.InfoLevel
+	level := getComponentDebugLevel(name)
 
-	if enabled := allComponents[name]; enabled || staticDebug || hotDebug {
-		level = zerolog.DebugLevel
-	}
 	if logger.GetLevel() != level {
 		ll := logger.Level(level)
 		logger = &ll
