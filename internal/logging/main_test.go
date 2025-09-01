@@ -12,8 +12,6 @@ import (
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -112,7 +110,7 @@ func TestSetWebhookLogger(t *testing.T) {
 
 func TestDebuggingStatic(t *testing.T) {
 	const comp1 = "component1"
-	config.SetConfig(v1alpha2.PaasConfig{Spec: v1alpha2.PaasConfigSpec{}})
+	SetDynamicLoggingConfig(false, nil)
 	ctx := context.TODO()
 	// debug false
 	SetStaticLoggingConfig(false, nil)
@@ -133,26 +131,21 @@ func TestDebuggingConfig(t *testing.T) {
 	SetStaticLoggingConfig(false, nil)
 	ctx := context.TODO()
 	// debug false
-	config.SetConfig(v1alpha2.PaasConfig{Spec: v1alpha2.PaasConfigSpec{}})
+	SetDynamicLoggingConfig(false, nil)
 	_, noDebugLogger := GetLogComponent(ctx, comp1)
 	assert.Equal(t, zerolog.InfoLevel, noDebugLogger.GetLevel())
 	// debug true
-	config.SetConfig(v1alpha2.PaasConfig{Spec: v1alpha2.PaasConfigSpec{Debug: true}})
+	SetDynamicLoggingConfig(true, nil)
 	_, allDebugLogger := GetLogComponent(ctx, comp1)
 	assert.Equal(t, zerolog.DebugLevel, allDebugLogger.GetLevel())
 	// debug component on
-	config.SetConfig(v1alpha2.PaasConfig{Spec: v1alpha2.PaasConfigSpec{
-		ComponentsDebug: map[string]bool{comp1: true},
-	}})
+	SetDynamicLoggingConfig(false, map[string]bool{comp1: true})
 	_, componentDebugLogger := GetLogComponent(ctx, comp1)
 	assert.Equal(t, zerolog.DebugLevel, componentDebugLogger.GetLevel())
 
 	// debug component off
 	SetStaticLoggingConfig(true, []string{comp1})
-	config.SetConfig(v1alpha2.PaasConfig{Spec: v1alpha2.PaasConfigSpec{
-		Debug:           true,
-		ComponentsDebug: map[string]bool{comp1: false},
-	}})
+	SetDynamicLoggingConfig(true, map[string]bool{comp1: false})
 	_, componentNoDebugLogger := GetLogComponent(ctx, comp1)
 	assert.Equal(t, zerolog.InfoLevel, componentNoDebugLogger.GetLevel())
 }

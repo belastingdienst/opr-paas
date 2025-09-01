@@ -9,7 +9,6 @@ package logging
 import (
 	"context"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -24,6 +23,10 @@ var (
 	staticDebug bool
 	// Commandline args can use this to enable logging for a component
 	staticComponents map[string]bool
+	// Commandline args will use this to enable all debug logging
+	dynamicDebug bool
+	// Commandline args can use this to enable logging for a component
+	dynamicComponents map[string]bool
 )
 
 // SetControllerLogger derives a context with a `zerolog` logger configured for a specific controller.
@@ -69,7 +72,7 @@ func SetWebhookLogger(ctx context.Context, obj client.Object) (context.Context, 
 	return logger.WithContext(ctx), &logger
 }
 
-// SetStaticLoggingConfig configures which components will log debug messages regardless of global log level.
+// SetStaticLoggingConfig configures global debugging and component debugging from commandline argument perspective
 func SetStaticLoggingConfig(debug bool, components []string) {
 	staticDebug = debug
 	staticComponents = map[string]bool{}
@@ -78,15 +81,20 @@ func SetStaticLoggingConfig(debug bool, components []string) {
 	}
 }
 
+// SetDynamicLoggingConfig configures global debugging and component debugging from Paas perspective
+func SetDynamicLoggingConfig(debug bool, components map[string]bool) {
+	dynamicDebug = debug
+	dynamicComponents = components
+}
+
 func getComponentDebugLevel(componentName string) zerolog.Level {
-	paasConfig := config.GetConfig()
-	if enabled, exists := paasConfig.Spec.ComponentsDebug[componentName]; exists {
+	if enabled, exists := dynamicComponents[componentName]; exists {
 		if enabled {
 			return zerolog.DebugLevel
 		}
 		return zerolog.InfoLevel
 	}
-	if staticDebug || paasConfig.Spec.Debug {
+	if staticDebug || dynamicDebug {
 		return zerolog.DebugLevel
 	}
 	if enabled := staticComponents[componentName]; enabled {

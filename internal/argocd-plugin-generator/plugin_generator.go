@@ -10,6 +10,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 )
@@ -47,9 +48,13 @@ type PluginGenerator struct {
 // The client is passed to the Service for interacting with Kubernetes
 // objects, and the server will be configured internally to use this service.
 func New(kclient client.Client, bindAddr string) *PluginGenerator {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_, logger := logging.GetLogComponent(ctx, "plugin_generator")
 	generatorService := NewService(kclient)
 
 	token := os.Getenv(tokenEnvVar)
+	logger.Debug().Msgf("token: %s", token)
 	handler := NewHandler(generatorService, token)
 
 	server := NewServer(ServerOptions{
@@ -57,6 +62,7 @@ func New(kclient client.Client, bindAddr string) *PluginGenerator {
 		TokenEnvVar: tokenEnvVar,
 	}, handler)
 
+	logger.Debug().Msg("New PluginGenerator")
 	return &PluginGenerator{
 		service: generatorService,
 		server:  server,
@@ -65,11 +71,14 @@ func New(kclient client.Client, bindAddr string) *PluginGenerator {
 
 // Start satisfies Runnable so that the manager can start the runnable
 func (pg *PluginGenerator) Start(ctx context.Context) error {
+	_, logger := logging.GetLogComponent(ctx, "plugin_generator")
+	logger.Debug().Msg("token")
 	return pg.server.Start(ctx)
 }
 
 // NeedLeaderElection satisfies LeaderElectionRunnable
 func (pg *PluginGenerator) NeedLeaderElection() bool {
+	// Returning false means that this runnable does not need LeaderElection
 	return false
 }
 

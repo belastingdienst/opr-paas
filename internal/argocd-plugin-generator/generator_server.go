@@ -15,6 +15,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 )
 
@@ -61,8 +62,11 @@ func NewServer(opts ServerOptions, handler http.Handler) *GeneratorServer {
 
 // Start starts the GeneratorServer. If it fails, it returns an error.
 func (s *GeneratorServer) Start(ctx context.Context) error {
+	ctx, componentLogger := logging.GetLogComponent(ctx, "plugin_generator")
+	logger := componentLogger.With().Str("server", s.opts.Addr).Logger()
 	token := os.Getenv(s.opts.TokenEnvVar)
 	if token == "" {
+		logger.Error().Msg("token not set")
 		return fmt.Errorf("environment variable %s not set", s.opts.TokenEnvVar)
 	}
 
@@ -75,6 +79,7 @@ func (s *GeneratorServer) Start(ctx context.Context) error {
 
 	ln, err := net.Listen("tcp", s.opts.Addr)
 	if err != nil {
+		logger.Error().Msgf("Failed to create listener: %v", err)
 		return err
 	}
 	s.started = true
@@ -83,6 +88,9 @@ func (s *GeneratorServer) Start(ctx context.Context) error {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
+		_, shutdownLogger := logging.GetLogComponent(shutdownCtx, "plugin_generator")
+		logger = shutdownLogger.With().Str("server", s.opts.Addr).Logger()
+		logger.Debug().Msg("shutting down")
 		_ = s.server.Shutdown(shutdownCtx)
 	}()
 
@@ -92,14 +100,17 @@ func (s *GeneratorServer) Start(ctx context.Context) error {
 // StartedChecker returns a healthz.Checker which reports healthy after the
 // server has been started and is reachable over TCP.
 func (s *GeneratorServer) StartedChecker() healthz.Checker {
-	return func(_ *http.Request) error {
+	return func(r *http.Request) error {
+		_, logger := logging.GetLogComponent(r.Context(), "plugin_generator")
 		if !s.started {
+			logger.Error().Msg("not yet started")
 			return errors.New("argoCD plugin generator server has not been started yet")
 		}
 
 		d := &net.Dialer{Timeout: pluginServerTimeout}
 		conn, err := d.Dial("tcp", s.opts.Addr)
 		if err != nil {
+			logger.Error().Msg("not yet reachable")
 			return fmt.Errorf("argoCD plugin generator server is not reachable: %w", err)
 		}
 		_ = conn.Close()
