@@ -54,7 +54,7 @@ func New(kclient client.Client, bindAddr string) *PluginGenerator {
 	generatorService := NewService(kclient)
 
 	token := os.Getenv(tokenEnvVar)
-	logger.Debug().Msgf("token: %s", token)
+	logger.Debug().Str("token", token).Msg("token")
 	handler := NewHandler(generatorService, token)
 
 	server := NewServer(ServerOptions{

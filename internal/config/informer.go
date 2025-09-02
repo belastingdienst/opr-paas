@@ -48,7 +48,7 @@ func (w *configInformer) Start(ctx context.Context) error {
 
 	logger.Debug().Msg("setting initial paasConfig definition (empty when no PaasConfig is loaded)")
 	if err := w.setInitialConfig(ctx); err != nil {
-		logger.Error().Msgf("error setting initial config: %e", err)
+		logger.Error().AnErr("error", err).Msg("error setting initial config")
 		return err
 	}
 
@@ -84,7 +84,7 @@ func updateHandler(_, newObj interface{}) {
 	defer cancel()
 	_, logger := logging.GetLogComponent(ctx, "config_watcher")
 	if cfg.IsActive() && !reflect.DeepEqual(cfg.Spec, GetConfig().Spec) {
-		logger.Info().Msg("updating config")
+		logger.Debug().Any("config", cfg).Msg("updating config")
 		SetConfig(*cfg)
 	} else {
 		logger.Debug().Msg("config not changed")
