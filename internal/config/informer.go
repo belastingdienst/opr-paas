@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -22,10 +23,34 @@ func SetupPaasConfigInformer(mgr manager.Manager) error {
 	return mgr.Add(&configInformer{mgr: mgr})
 }
 
+func (w *configInformer) setInitialConfig(ctx context.Context) error {
+	var list v1alpha2.PaasConfigList
+
+	if err := w.mgr.GetClient().List(ctx, &list); err != nil {
+		return fmt.Errorf("failed to retrieve PaasConfigs: %w", err)
+	}
+
+	switch len(list.Items) {
+	case 0:
+		SetConfig(v1alpha2.PaasConfig{})
+	case 1:
+		SetConfig(list.Items[0])
+	default:
+		return errors.New("more than one PaasConfig, this should not happen")
+	}
+	return nil
+}
+
 // Start is the runnable for the PaasConfigInformer
 func (w *configInformer) Start(ctx context.Context) error {
 	ctx, logger := logging.GetLogComponent(ctx, "config_watcher")
 	logger.Info().Msg("starting config informer")
+
+	logger.Debug().Msg("setting initial paasConfig definition (empty when no PaasConfig is loaded)")
+	if err := w.setInitialConfig(ctx); err != nil {
+		logger.Error().AnErr("error", err).Msg("error setting initial config")
+		return err
+	}
 
 	informer, err := w.mgr.GetCache().GetInformer(ctx, &v1alpha2.PaasConfig{})
 	if err != nil {
@@ -59,7 +84,7 @@ func updateHandler(_, newObj interface{}) {
 	defer cancel()
 	_, logger := logging.GetLogComponent(ctx, "config_watcher")
 	if cfg.IsActive() && !reflect.DeepEqual(cfg.Spec, GetConfig().Spec) {
-		logger.Info().Msg("updating config")
+		logger.Debug().Any("config", cfg).Msg("updating config")
 		SetConfig(*cfg)
 	} else {
 		logger.Debug().Msg("config not changed")

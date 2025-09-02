@@ -55,14 +55,14 @@ func (s *Service) Generate(params map[string]interface{}, appSetName string) ([]
 
 	var paasList v1alpha2.PaasList
 	if err := s.kclient.List(ctx, &paasList); err != nil {
-		logger.Error().Msgf("List error: %v", err)
+		logger.Error().AnErr("error", err).Msg("List error")
 		return nil, err
 	}
 
-	logger.Debug().Msgf("ArgoCD plugin cap, listed: %v Paases", len(paasList.Items))
+	logger.Debug().Int("num_paases", len(paasList.Items)).Msg("ArgoCD plugin cap")
 	capName, ok := params["capability"].(string)
 	if !ok || capName == "" {
-		logger.Error().Msgf("invalid capability param: %v", capName)
+		logger.Error().Str("name", capName).Msg("invalid capability param")
 		return nil, errors.New("missing or invalid capability param")
 	}
 
@@ -70,7 +70,7 @@ func (s *Service) Generate(params map[string]interface{}, appSetName string) ([]
 	for _, paas := range paasList.Items {
 		elements, err := capElementsFromPaas(ctx, &paas, capName)
 		if err != nil {
-			logger.Error().Msgf("failed to get elements for paas %s: %v", paas.Name, err)
+			logger.Error().Str("paas_name", paas.Name).AnErr("error", err).Msg("failed to get elements")
 			continue // skip failed ones
 		}
 		if elements == nil {
@@ -83,7 +83,7 @@ func (s *Service) Generate(params map[string]interface{}, appSetName string) ([]
 		for k, v := range strMap {
 			inf[k] = v
 		}
-		logger.Debug().Msgf("added paas %s with %d elements", paas.Name, len(inf))
+		logger.Debug().Str("paas_name", paas.Name).Int("num_elements", len(inf)).Msg("added paas")
 		results = append(results, inf)
 	}
 
@@ -97,8 +97,12 @@ func capElementsFromPaas(
 ) (elements fields.Elements, err error) {
 	_, componentLogger := logging.GetLogComponent(ctx, "plugin_generator")
 	logger := componentLogger.With().Str("paas", paas.Name).Str("capability", capName).Logger()
-	myConfig := config.GetConfig()
-	templater := templating.NewTemplater(*paas, myConfig)
+	myConfig, err := config.GetConfigWithError()
+	if err != nil {
+		logger.Error().AnErr("error", err).Msg("getting error failed")
+		return nil, err
+	}
+	templater := templating.NewTemplater(*paas, *myConfig)
 	capConfig, exists := myConfig.Spec.Capabilities[capName]
 	if !exists {
 		logger.Error().Msg("capability is not configured")
@@ -106,19 +110,19 @@ func capElementsFromPaas(
 	}
 	templatedElements, err := applyCustomFieldTemplates(capConfig.CustomFields, templater)
 	if err != nil {
-		logger.Error().Msgf("templating custom fields failed: %v", err)
+		logger.Error().AnErr("error", err).Msg("templating custom fields failed")
 		return nil, err
 	}
 
 	capability, exists := paas.Spec.Capabilities[capName]
 	if !exists {
-		logger.Debug().Msgf("capability not enabled")
+		logger.Debug().Msg("capability not enabled")
 		return nil, nil
 	}
 
 	capElements, err := capability.CapExtraFields(myConfig.Spec.Capabilities[capName].CustomFields)
 	if err != nil {
-		logger.Error().Msgf("getting capability custom fields failed: %v", err)
+		logger.Error().AnErr("error", err).Msg("getting capability custom fields failed")
 		return nil, err
 	}
 	elements = templatedElements.AsFieldElements().Merge(capElements)
@@ -126,7 +130,7 @@ func capElementsFromPaas(
 	for name, tpl := range myConfig.Spec.Templating.GenericCapabilityFields {
 		result, templateErr := templater.TemplateToMap(name, tpl)
 		if templateErr != nil {
-			logger.Error().Msgf("templating %s failed: %v", tpl, templateErr)
+			logger.Error().Str("template", tpl).AnErr("error", templateErr).Msg("templating failed")
 			return nil, fmt.Errorf("failed to run template %s", tpl)
 		}
 		for key, value := range result {
@@ -135,7 +139,7 @@ func capElementsFromPaas(
 	}
 
 	elements["paas"] = paas.Name
-	logger.Debug().Msgf("returning %d elements", len(elements))
+	logger.Debug().Str("paas", paas.Name).Int("num_elements", len(elements)).Msg("returning elements")
 	return elements, nil
 }
 

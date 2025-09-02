@@ -110,7 +110,10 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 	var allErrs field.ErrorList
 	var warnings []string
 	ctx, logger := logging.GetLogComponent(ctx, "webhook_paas_validate")
-	conf := config.GetConfig()
+	conf, err := config.GetConfigWithError()
+	if err != nil {
+		return nil, err
+	}
 	// Check for uninitialized config
 	if conf.Spec.DecryptKeysSecret.Name == "" {
 		return nil, apierrors.NewInternalError(errors.New("uninitialized PaasConfig"))
@@ -127,8 +130,8 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		validatePaasNamespaceNames,
 		validatePaasNamespaceGroups,
 	} {
-		if errs, err := val(ctx, v.client, conf, paas); err != nil {
-			return nil, apierrors.NewInternalError(err)
+		if errs, validationErr := val(ctx, v.client, *conf, paas); validationErr != nil {
+			return nil, apierrors.NewInternalError(validationErr)
 		} else if errs != nil {
 			allErrs = append(allErrs, errs...)
 		}
@@ -138,7 +141,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 	warnings = append(warnings, groupWarnings...)
 	allErrs = append(allErrs, groupErrors...)
 	warnings = append(warnings, v.validateQuota(paas)...)
-	warnings = append(warnings, v.validateExtraPerm(conf, paas)...)
+	warnings = append(warnings, v.validateExtraPerm(*conf, paas)...)
 
 	if len(allErrs) == 0 && len(warnings) == 0 {
 		logger.Info().Msg("validate ok")

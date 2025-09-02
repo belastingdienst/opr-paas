@@ -70,28 +70,28 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	authHeader := r.Header.Get("Authorization")
 	if authHeader != "Bearer "+h.bearerToken {
-		logger.Error().Msgf("invalid header: %s", authHeader)
+		logger.Error().Str("header", authHeader).Msg("invalid header")
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		logger.Error().Msgf("invalid body: %v", err)
+		logger.Error().AnErr("error", err).Msg("invalid body")
 		http.Error(w, fmt.Sprintf("read body error: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	var input PluginInput
 	if err = json.Unmarshal(body, &input); err != nil {
-		logger.Error().Msgf("invalid json: %s", body)
+		logger.Error().Bytes("body", body).Msg("invalid json")
 		http.Error(w, fmt.Sprintf("invalid json: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	result, err := h.service.Generate(input.Input.Parameters, input.ApplicationSetName)
 	if err != nil {
-		logger.Error().Msgf("generation error: %v", err)
+		logger.Error().AnErr("error", err).Msg("generation error")
 		http.Error(w, fmt.Sprintf("generation error: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -100,7 +100,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		logger.Debug().Msg("generate returns nil")
 		result = []map[string]interface{}{}
 	}
-	logger.Debug().Msgf("generate returns %d capabilities", len(result))
+	logger.Debug().Int("num_capabilities", len(result)).Msg("generate succeeded")
 
 	response := PluginResponse{}
 	response.Output.Parameters = result
@@ -109,7 +109,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		logger.Error().Msgf("json encoder failure: %v", err)
+		logger.Error().AnErr("error", err).Msg("json encoder failure")
 		return
 	}
 	logger.Debug().Msg("OK")

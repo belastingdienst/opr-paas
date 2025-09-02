@@ -84,14 +84,21 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 		return w, errs.ToAggregate()
 	}
 
-	myConfig := config.GetConfig()
+	myConfig, err := config.GetConfigWithError()
+	if err != nil {
+		errs = append(errs, field.InternalError(
+			field.NewPath("paasconfig"),
+			fmt.Errorf("unable to retrieve paasconfig: %s", err),
+		))
+	}
+
 	for _, validator := range []paasNsSpecValidator{
 		validatePaasNsName,
 		validatePaasNsGroups,
 		validatePaasNsSecrets,
 	} {
 		var fieldErrs []*field.Error
-		fieldErrs, err = validator(ctx, v.client, myConfig, *paas, *paasns)
+		fieldErrs, err = validator(ctx, v.client, *myConfig, *paas, *paasns)
 		if err != nil {
 			return nil, err
 		}

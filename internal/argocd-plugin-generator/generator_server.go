@@ -79,7 +79,7 @@ func (s *GeneratorServer) Start(ctx context.Context) error {
 
 	ln, err := net.Listen("tcp", s.opts.Addr)
 	if err != nil {
-		logger.Error().Msgf("Failed to create listener: %v", err)
+		logger.Error().AnErr("error", err).Msg("Failed to create listener")
 		return err
 	}
 	s.started = true
