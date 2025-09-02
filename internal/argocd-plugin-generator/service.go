@@ -97,8 +97,12 @@ func capElementsFromPaas(
 ) (elements fields.Elements, err error) {
 	_, componentLogger := logging.GetLogComponent(ctx, "plugin_generator")
 	logger := componentLogger.With().Str("paas", paas.Name).Str("capability", capName).Logger()
-	myConfig := config.GetConfig()
-	templater := templating.NewTemplater(*paas, myConfig)
+	myConfig, err := config.GetConfigWithError()
+	if err != nil {
+		logger.Error().Msgf("%e", err)
+		return nil, err
+	}
+	templater := templating.NewTemplater(*paas, *myConfig)
 	capConfig, exists := myConfig.Spec.Capabilities[capName]
 	if !exists {
 		logger.Error().Msg("capability is not configured")

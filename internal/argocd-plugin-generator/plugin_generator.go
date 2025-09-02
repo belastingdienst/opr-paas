@@ -72,7 +72,7 @@ func New(kclient client.Client, bindAddr string) *PluginGenerator {
 // Start satisfies Runnable so that the manager can start the runnable
 func (pg *PluginGenerator) Start(ctx context.Context) error {
 	_, logger := logging.GetLogComponent(ctx, "plugin_generator")
-	logger.Debug().Msg("token")
+	logger.Debug().Msg("started")
 	return pg.server.Start(ctx)
 }
 

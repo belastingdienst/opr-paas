@@ -9,6 +9,7 @@ See LICENSE.md for details.
 package config
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
@@ -19,17 +20,31 @@ import (
 // PaasConfigStore is a thread-safe store for the current PaasConfig
 type PaasConfigStore struct {
 	mutex sync.RWMutex
-	store v1alpha2.PaasConfig
+	store *v1alpha2.PaasConfig
 }
 
-var cnf = &PaasConfigStore{}
+var cnf PaasConfigStore
 
 // GetConfig retrieves the current configuration with the latest api version
 func GetConfig() v1alpha2.PaasConfig {
 	cnf.mutex.RLock()
 	defer cnf.mutex.RUnlock()
 
-	return cnf.store
+	if cnf.store == nil {
+		return v1alpha2.PaasConfig{}
+	}
+	return *cnf.store
+}
+
+// GetConfigWithError retrieves the current configuration with the latest api version
+func GetConfigWithError() (*v1alpha2.PaasConfig, error) {
+	cnf.mutex.RLock()
+	defer cnf.mutex.RUnlock()
+
+	if cnf.store == nil {
+		return nil, errors.New("uninitialized paasconfig")
+	}
+	return cnf.store, nil
 }
 
 // GetConfigV1 retrieves the current configuration as a v1alpha1.PaasConfig
@@ -37,8 +52,11 @@ func GetConfigV1() (v1alpha1.PaasConfig, error) {
 	cnf.mutex.RLock()
 	defer cnf.mutex.RUnlock()
 
+	if cnf.store == nil {
+		return v1alpha1.PaasConfig{}, errors.New("uninitialized paasconfig")
+	}
 	var v1conf v1alpha1.PaasConfig
-	err := v1conf.ConvertFrom(&cnf.store)
+	err := v1conf.ConvertFrom(cnf.store)
 	// err := (&cnf.store).ConvertTo(&v1conf)
 	return v1conf, err
 }
@@ -47,7 +65,7 @@ func GetConfigV1() (v1alpha1.PaasConfig, error) {
 func SetConfig(cfg v1alpha2.PaasConfig) {
 	cnf.mutex.Lock()
 	defer cnf.mutex.Unlock()
-	cnf.store = cfg
+	cnf.store = &cfg
 	logging.SetDynamicLoggingConfig(cfg.Spec.Debug, cfg.Spec.ComponentsDebug)
 }
 
@@ -57,6 +75,7 @@ func SetConfigV1(cfg v1alpha1.PaasConfig) error {
 	defer cnf.mutex.Unlock()
 	defer logging.SetDynamicLoggingConfig(cfg.Spec.Debug, cfg.Spec.ComponentsDebug)
 
-	return cfg.ConvertTo(&cnf.store)
+	cnf.store = &v1alpha2.PaasConfig{}
+	return cfg.ConvertTo(cnf.store)
 	// return (&cnf.store).ConvertFrom(&cfg)
 }

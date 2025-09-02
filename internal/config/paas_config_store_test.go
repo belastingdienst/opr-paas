@@ -20,7 +20,7 @@ func TestGetConfigWithEmptyConfigStore(t *testing.T) {
 }
 
 func TestGetConfig(t *testing.T) {
-	cnf = &PaasConfigStore{}
+	cnf = PaasConfigStore{}
 	SetConfig(v1alpha2.PaasConfig{
 		Spec: v1alpha2.PaasConfigSpec{
 			Debug: true,
