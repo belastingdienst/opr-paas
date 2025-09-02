@@ -403,6 +403,13 @@ func (in *PaasConfigList) DeepCopyObject() runtime.Object {
 func (in *PaasConfigSpec) DeepCopyInto(out *PaasConfigSpec) {
 	*out = *in
 	out.DecryptKeysSecret = in.DecryptKeysSecret
+	if in.ComponentsDebug != nil {
+		in, out := &in.ComponentsDebug, &out.ComponentsDebug
+		*out = make(map[string]bool, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	if in.Capabilities != nil {
 		in, out := &in.Capabilities, &out.Capabilities
 		*out = make(ConfigCapabilities, len(*in))

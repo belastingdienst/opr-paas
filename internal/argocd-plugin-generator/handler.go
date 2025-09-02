@@ -16,6 +16,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 )
 
 // GeneratorService defines the contract for services that generate data
@@ -53,38 +55,52 @@ func NewHandler(service GeneratorService, bearerToken string) *Handler {
 // for processing, and encodes the output as JSON. In case of errors,
 // an appropriate HTTP status code and error message are returned.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	_, componentLogger := logging.GetLogComponent(r.Context(), "plugin_generator")
+
+	logger := componentLogger.With().
+		Str("path", r.URL.Path).
+		Str("method", r.Method).
+		Logger()
+
 	if r.Method != http.MethodPost || r.URL.Path != "/api/v1/getparams.execute" {
+		logger.Error().Msg("invalid request method or path")
 		http.NotFound(w, r)
 		return
 	}
 
 	authHeader := r.Header.Get("Authorization")
 	if authHeader != "Bearer "+h.bearerToken {
+		logger.Error().Msgf("invalid header: %s", authHeader)
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		logger.Error().Msgf("invalid body: %v", err)
 		http.Error(w, fmt.Sprintf("read body error: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	var input PluginInput
 	if err = json.Unmarshal(body, &input); err != nil {
+		logger.Error().Msgf("invalid json: %s", body)
 		http.Error(w, fmt.Sprintf("invalid json: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	result, err := h.service.Generate(input.Input.Parameters, input.ApplicationSetName)
 	if err != nil {
+		logger.Error().Msgf("generation error: %v", err)
 		http.Error(w, fmt.Sprintf("generation error: %v", err), http.StatusInternalServerError)
 		return
 	}
 
 	if result == nil {
+		logger.Debug().Msg("generate returns nil")
 		result = []map[string]interface{}{}
 	}
+	logger.Debug().Msgf("generate returns %d capabilities", len(result))
 
 	response := PluginResponse{}
 	response.Output.Parameters = result
@@ -93,8 +109,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
+		logger.Error().Msgf("json encoder failure: %v", err)
 		return
 	}
+	logger.Debug().Msg("OK")
 }
 
 // PluginInput represents the expected request payload for the plug-in generator.

@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
-	"github.com/rs/zerolog/log"
+	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
@@ -38,6 +38,10 @@ type Service struct {
 // by the controller manager and is backed by the shared informer
 // cache for efficiency.
 func NewService(kclient client.Client) *Service {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_, logger := logging.GetLogComponent(ctx, "plugin_generator")
+	logger.Debug().Msg("New Service")
 	return &Service{kclient: kclient}
 }
 
@@ -45,28 +49,32 @@ func NewService(kclient client.Client) *Service {
 // should contain a key: "capability" which stands for the capability, for which a map of parameters is generated.
 // in case the input param is missing, or the generation fails, an error is returned.
 func (s *Service) Generate(params map[string]interface{}, appSetName string) ([]map[string]interface{}, error) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_, logger := logging.GetLogComponent(ctx, "plugin_generator")
 
 	var paasList v1alpha2.PaasList
 	if err := s.kclient.List(ctx, &paasList); err != nil {
+		logger.Error().Msgf("List error: %v", err)
 		return nil, err
 	}
 
-	log.Debug().Msgf("ArgoCD plugin cap, listed: %v Paases", len(paasList.Items))
+	logger.Debug().Msgf("ArgoCD plugin cap, listed: %v Paases", len(paasList.Items))
 	capName, ok := params["capability"].(string)
 	if !ok || capName == "" {
+		logger.Error().Msgf("invalid capability param: %v", capName)
 		return nil, errors.New("missing or invalid capability param")
 	}
 
 	var results []map[string]interface{}
 	for _, paas := range paasList.Items {
-		if _, ok = paas.Spec.Capabilities[capName]; !ok {
-			continue
-		}
-
-		elements, err := capElementsFromPaas(&paas, capName)
+		elements, err := capElementsFromPaas(ctx, &paas, capName)
 		if err != nil {
+			logger.Error().Msgf("failed to get elements for paas %s: %v", paas.Name, err)
 			continue // skip failed ones
+		}
+		if elements == nil {
+			continue
 		}
 
 		strMap := elements.GetElementsAsStringMap()
@@ -75,6 +83,7 @@ func (s *Service) Generate(params map[string]interface{}, appSetName string) ([]
 		for k, v := range strMap {
 			inf[k] = v
 		}
+		logger.Debug().Msgf("added paas %s with %d elements", paas.Name, len(inf))
 		results = append(results, inf)
 	}
 
@@ -82,21 +91,34 @@ func (s *Service) Generate(params map[string]interface{}, appSetName string) ([]
 }
 
 func capElementsFromPaas(
+	ctx context.Context,
 	paas *v1alpha2.Paas,
 	capName string,
 ) (elements fields.Elements, err error) {
+	_, componentLogger := logging.GetLogComponent(ctx, "plugin_generator")
+	logger := componentLogger.With().Str("paas", paas.Name).Str("capability", capName).Logger()
 	myConfig := config.GetConfig()
 	templater := templating.NewTemplater(*paas, myConfig)
-	capConfig := myConfig.Spec.Capabilities[capName]
+	capConfig, exists := myConfig.Spec.Capabilities[capName]
+	if !exists {
+		logger.Error().Msg("capability is not configured")
+		return nil, fmt.Errorf("capability %s is not configured", capName)
+	}
 	templatedElements, err := applyCustomFieldTemplates(capConfig.CustomFields, templater)
 	if err != nil {
+		logger.Error().Msgf("templating custom fields failed: %v", err)
 		return nil, err
 	}
 
-	capability := paas.Spec.Capabilities[capName]
+	capability, exists := paas.Spec.Capabilities[capName]
+	if !exists {
+		logger.Debug().Msgf("capability not enabled")
+		return nil, nil
+	}
 
 	capElements, err := capability.CapExtraFields(myConfig.Spec.Capabilities[capName].CustomFields)
 	if err != nil {
+		logger.Error().Msgf("getting capability custom fields failed: %v", err)
 		return nil, err
 	}
 	elements = templatedElements.AsFieldElements().Merge(capElements)
@@ -104,6 +126,7 @@ func capElementsFromPaas(
 	for name, tpl := range myConfig.Spec.Templating.GenericCapabilityFields {
 		result, templateErr := templater.TemplateToMap(name, tpl)
 		if templateErr != nil {
+			logger.Error().Msgf("templating %s failed: %v", tpl, templateErr)
 			return nil, fmt.Errorf("failed to run template %s", tpl)
 		}
 		for key, value := range result {
@@ -112,6 +135,7 @@ func capElementsFromPaas(
 	}
 
 	elements["paas"] = paas.Name
+	logger.Debug().Msgf("returning %d elements", len(elements))
 	return elements, nil
 }
 

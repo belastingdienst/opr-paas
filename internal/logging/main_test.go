@@ -108,47 +108,44 @@ func TestSetWebhookLogger(t *testing.T) {
 	assert.Contains(t, logLine, fmt.Sprintf(`"object":{"name":"%s","namespace":""}`, paasName))
 }
 
-func TestSetComponentDebug(t *testing.T) {
-	ResetComponentDebug()
-	dbgCmp := []string{"comp1", "comp2"}
-	defer ResetComponentDebug()
-	SetComponentDebug(dbgCmp)
-	require.Len(t, debugComponents, 2, "there should be 2 components in debug")
-	for _, c := range dbgCmp {
-		_, exists := debugComponents[c]
-		assert.True(t, exists, "%s should be in debugComponents")
-	}
-	_, exists := debugComponents["comp3"]
-	assert.False(t, exists, "comp3 should not be in debugComponents")
+func TestDebuggingStatic(t *testing.T) {
+	const comp1 = "component1"
+	SetDynamicLoggingConfig(false, nil)
+	ctx := context.TODO()
+	// debug false
+	SetStaticLoggingConfig(false, nil)
+	_, noDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.InfoLevel, noDebugLogger.GetLevel())
+	// debug true
+	SetStaticLoggingConfig(true, nil)
+	_, allDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.DebugLevel, allDebugLogger.GetLevel())
+	// debug component
+	SetStaticLoggingConfig(false, []string{comp1})
+	_, componentDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.DebugLevel, componentDebugLogger.GetLevel())
 }
 
-func TestSetLogComponent(t *testing.T) {
-	ResetComponentDebug()
-	obj := &v1alpha1.Paas{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: paasName,
-		},
-		Spec: v1alpha1.PaasSpec{},
-	}
-	obj.SetGroupVersionKind(schema.GroupVersionKind{
-		Kind:    "Paas",
-		Version: "v1alpha1",
-		Group:   "cpet.belastingdienst.nl",
-	})
+func TestDebuggingConfig(t *testing.T) {
+	const comp1 = "component1"
+	SetStaticLoggingConfig(false, nil)
+	ctx := context.TODO()
+	// debug false
+	SetDynamicLoggingConfig(false, nil)
+	_, noDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.InfoLevel, noDebugLogger.GetLevel())
+	// debug true
+	SetDynamicLoggingConfig(true, nil)
+	_, allDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.DebugLevel, allDebugLogger.GetLevel())
+	// debug component on
+	SetDynamicLoggingConfig(false, map[string]bool{comp1: true})
+	_, componentDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.DebugLevel, componentDebugLogger.GetLevel())
 
-	debugCmp := "comp1"
-	SetComponentDebug([]string{debugCmp})
-	for _, comp := range []string{"comp1", "comp2"} {
-		ctx := context.Background()
-		output := &logSink{}
-		log.Logger = log.Output(output)
-		ctx, _ = SetWebhookLogger(ctx, obj)
-		_, logger := GetLogComponent(ctx, comp)
-		require.NotNil(t, logger, "GetLogComponent should return a logger")
-		expected := zerolog.InfoLevel
-		if debugCmp == comp {
-			expected = zerolog.DebugLevel
-		}
-		assert.Equal(t, expected, logger.GetLevel(), "component %s should be %d", comp, expected)
-	}
+	// debug component off
+	SetStaticLoggingConfig(true, []string{comp1})
+	SetDynamicLoggingConfig(true, map[string]bool{comp1: false})
+	_, componentNoDebugLogger := GetLogComponent(ctx, comp1)
+	assert.Equal(t, zerolog.InfoLevel, componentNoDebugLogger.GetLevel())
 }

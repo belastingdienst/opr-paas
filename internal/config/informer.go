@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/rs/zerolog/log"
-
 	"k8s.io/client-go/tools/cache"
 	cache2 "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 )
 
 type configInformer struct {
@@ -25,7 +24,8 @@ func SetupPaasConfigInformer(mgr manager.Manager) error {
 
 // Start is the runnable for the PaasConfigInformer
 func (w *configInformer) Start(ctx context.Context) error {
-	log.Info().Msg("starting config informer")
+	ctx, logger := logging.GetLogComponent(ctx, "config_watcher")
+	logger.Info().Msg("starting config informer")
 
 	informer, err := w.mgr.GetCache().GetInformer(ctx, &v1alpha2.PaasConfig{})
 	if err != nil {
@@ -55,14 +55,18 @@ func updateHandler(_, newObj interface{}) {
 	if !ok {
 		return
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_, logger := logging.GetLogComponent(ctx, "config_watcher")
 	if cfg.IsActive() && !reflect.DeepEqual(cfg.Spec, GetConfig().Spec) {
-		log.Info().Msg("updating config")
+		logger.Info().Msg("updating config")
 		SetConfig(*cfg)
 	} else {
-		log.Debug().Msg("config not changed")
+		logger.Debug().Msg("config not changed")
 	}
 }
 
 func (w *configInformer) NeedLeaderElection() bool {
+	// Returning false means that this runnable does not need LeaderElection
 	return false // All replicas need to do this even though they might not be a leader
 }

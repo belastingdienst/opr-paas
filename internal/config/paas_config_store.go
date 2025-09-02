@@ -13,6 +13,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 )
 
 // PaasConfigStore is a thread-safe store for the current PaasConfig
@@ -47,12 +48,14 @@ func SetConfig(cfg v1alpha2.PaasConfig) {
 	cnf.mutex.Lock()
 	defer cnf.mutex.Unlock()
 	cnf.store = cfg
+	logging.SetDynamicLoggingConfig(cfg.Spec.Debug, cfg.Spec.ComponentsDebug)
 }
 
 // SetConfigV1 updates the current configuration using a v1alpha1.PaasConfig as input
 func SetConfigV1(cfg v1alpha1.PaasConfig) error {
 	cnf.mutex.Lock()
 	defer cnf.mutex.Unlock()
+	defer logging.SetDynamicLoggingConfig(cfg.Spec.Debug, cfg.Spec.ComponentsDebug)
 
 	return cfg.ConvertTo(&cnf.store)
 	// return (&cnf.store).ConvertFrom(&cfg)

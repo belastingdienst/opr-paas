@@ -157,17 +157,8 @@ func configureLogging(pretty bool, debug bool, componentDebugList string, splitL
 	log.Logger = log.Output(output)
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
-	if debug {
-		if componentDebugList != "" {
-			log.Fatal().Msg("cannot pass --debug and --component-debug simultaneously")
-		}
-	} else if componentDebugList != "" {
-		logging.SetComponentDebug(strings.Split(componentDebugList, ","))
-		log.Logger = log.Level(zerolog.InfoLevel)
-	} else {
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	}
-
+	logging.SetStaticLoggingConfig(debug, strings.Split(componentDebugList, ","))
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	ctrl.SetLogger(zerologr.New(&log.Logger))
 }
 

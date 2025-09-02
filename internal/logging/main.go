@@ -18,7 +18,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
-var debugComponents map[string]bool
+var (
+	// Commandline args will use this to enable all debug logging
+	staticDebug bool
+	// Commandline args can use this to enable logging for a component
+	staticComponents map[string]bool
+	// Commandline args will use this to enable all debug logging
+	dynamicDebug bool
+	// Commandline args can use this to enable logging for a component
+	dynamicComponents map[string]bool
+)
 
 // SetControllerLogger derives a context with a `zerolog` logger configured for a specific controller.
 // To be called once per reconciler.
@@ -63,29 +72,42 @@ func SetWebhookLogger(ctx context.Context, obj client.Object) (context.Context, 
 	return logger.WithContext(ctx), &logger
 }
 
-// ResetComponentDebug can be used to reset the map of Components that have debugging enabled
-func ResetComponentDebug() {
-	debugComponents = make(map[string]bool)
+// SetStaticLoggingConfig configures global debugging and component debugging from commandline argument perspective
+func SetStaticLoggingConfig(debug bool, components []string) {
+	staticDebug = debug
+	staticComponents = map[string]bool{}
+	for _, component := range components {
+		staticComponents[component] = true
+	}
 }
 
-// SetComponentDebug configures which components will log debug messages regardless of global log level.
-func SetComponentDebug(components []string) {
-	if debugComponents == nil {
-		ResetComponentDebug()
+// SetDynamicLoggingConfig configures global debugging and component debugging from Paas perspective
+func SetDynamicLoggingConfig(debug bool, components map[string]bool) {
+	dynamicDebug = debug
+	dynamicComponents = components
+}
+
+func getComponentDebugLevel(componentName string) zerolog.Level {
+	if enabled, exists := dynamicComponents[componentName]; exists {
+		if enabled {
+			return zerolog.DebugLevel
+		}
+		return zerolog.InfoLevel
 	}
-	for _, component := range components {
-		debugComponents[component] = true
+	if staticDebug || dynamicDebug {
+		return zerolog.DebugLevel
 	}
+	if enabled := staticComponents[componentName]; enabled {
+		return zerolog.DebugLevel
+	}
+	return zerolog.InfoLevel
 }
 
 // GetLogComponent gets the logger for a component from a context.
 func GetLogComponent(ctx context.Context, name string) (context.Context, *zerolog.Logger) {
 	logger := log.Ctx(ctx)
-	level := zerolog.InfoLevel
+	level := getComponentDebugLevel(name)
 
-	if _, enabled := debugComponents[name]; enabled {
-		level = zerolog.DebugLevel
-	}
 	if logger.GetLevel() != level {
 		ll := logger.Level(level)
 		logger = &ll
