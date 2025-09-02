@@ -98,7 +98,7 @@ func (r *PaasReconciler) paasNSsFromNs(ctx context.Context, ns string) map[strin
 
 func (r *PaasReconciler) getPaasNameFromPaasNs(ctx context.Context, paasNsObj client.Object) (string, error) {
 	var ns corev1.Namespace
-	_, logger := logging.GetLogComponent(ctx, "namespace")
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerNamespaceComponent)
 	if err := r.Get(ctx, types.NamespacedName{Name: paasNsObj.GetNamespace()}, &ns); err != nil {
 		logger.Error().Err(err).Msg("unable to get namespace where paasns resides")
 		return "", err

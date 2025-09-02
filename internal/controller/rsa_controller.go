@@ -27,7 +27,7 @@ func resetCrypts() {
 func (r *PaasReconciler) getRsaPrivateKeys(
 	ctx context.Context,
 ) (*crypt.PrivateKeys, error) {
-	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerSecretComponent)
 	rsaSecret := &corev1.Secret{}
 	cfg := config.GetConfig().Spec
 	namespacedName := cfg.DecryptKeysSecret

@@ -89,7 +89,7 @@ func (r *PaasReconciler) getPaasFromRequest(
 	req ctrl.Request,
 ) (paas *v1alpha2.Paas, err error) {
 	paas = &v1alpha2.Paas{}
-	ctx, logger := logging.GetLogComponent(ctx, "paas")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerPaasComponent)
 	if err = r.Get(ctx, req.NamespacedName, paas); err != nil {
 		return nil, client.IgnoreNotFound(err)
 	}

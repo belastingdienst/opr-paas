@@ -33,7 +33,7 @@ func resetCrypts() {
 
 // getRsaPrivateKeys fetches secret, compares to cached private keys, resets crypts if needed, and returns keys
 func getRsaPrivateKeys(ctx context.Context, _c client.Client) (*crypt.PrivateKeys, error) {
-	ctx, logger := logging.GetLogComponent(ctx, "webhook_getRsaPrivateKeys")
+	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookUtilsComponentV1)
 	rsaSecret := &corev1.Secret{}
 	conf, err := cnf.GetConfigV1()
 	if err != nil {

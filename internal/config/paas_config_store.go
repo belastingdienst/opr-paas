@@ -66,14 +66,14 @@ func SetConfig(cfg v1alpha2.PaasConfig) {
 	cnf.mutex.Lock()
 	defer cnf.mutex.Unlock()
 	cnf.store = &cfg
-	logging.SetDynamicLoggingConfig(cfg.Spec.Debug, cfg.Spec.ComponentsDebug)
+	logging.SetDynamicLoggingConfig(cfg.Spec.Debug, logging.NewComponentsFromStringMap(cfg.Spec.ComponentsDebug))
 }
 
 // SetConfigV1 updates the current configuration using a v1alpha1.PaasConfig as input
 func SetConfigV1(cfg v1alpha1.PaasConfig) error {
 	cnf.mutex.Lock()
 	defer cnf.mutex.Unlock()
-	defer logging.SetDynamicLoggingConfig(cfg.Spec.Debug, cfg.Spec.ComponentsDebug)
+	defer logging.SetDynamicLoggingConfig(cfg.Spec.Debug, logging.NewComponentsFromStringMap(cfg.Spec.ComponentsDebug))
 
 	cnf.store = &v1alpha2.PaasConfig{}
 	return cfg.ConvertTo(cnf.store)

@@ -67,7 +67,7 @@ func backendNamespace(
 	quota string,
 	scheme *runtime.Scheme,
 ) (*corev1.Namespace, error) {
-	ctx, _ = logging.GetLogComponent(ctx, "namespace")
+	ctx, _ = logging.GetLogComponent(ctx, logging.ControllerNamespaceComponent)
 	logger := log.Ctx(ctx)
 	logger.Info().Msgf("defining %s Namespace", name)
 
@@ -109,7 +109,7 @@ func (r *PaasReconciler) reconcileNamespaces(
 	paas *v1alpha2.Paas,
 	nsDefs namespaceDefs,
 ) (err error) {
-	ctx, logger := logging.GetLogComponent(ctx, "namespace")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerNamespaceComponent)
 	for _, nsDef := range nsDefs {
 		var ns *corev1.Namespace
 		if ns, err = backendNamespace(ctx, paas, nsDef.nsName, nsDef.quotaName, r.Scheme); err != nil {

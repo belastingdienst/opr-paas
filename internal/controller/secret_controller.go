@@ -205,7 +205,7 @@ func (r *PaasReconciler) reconcileNamespaceSecrets(
 	namespace string,
 	paasSecrets map[string]string,
 ) error {
-	ctx, logger := logging.GetLogComponent(ctx, "secret")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerSecretComponent)
 	logger.Debug().Msg("reconciling Secrets")
 	desiredSecrets, err := r.backendSecrets(ctx, paas, paasns, namespace, paasSecrets)
 	if err != nil {

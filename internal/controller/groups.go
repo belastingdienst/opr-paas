@@ -153,7 +153,7 @@ func (r *PaasReconciler) finalizeGroups(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) error {
-	ctx, _ = logging.GetLogComponent(ctx, "group")
+	ctx, _ = logging.GetLogComponent(ctx, logging.ControllerGroupComponent)
 	existingGroups, err := r.getExistingGroups(ctx, paas)
 	if err != nil {
 		return err
@@ -169,7 +169,7 @@ func (r *PaasReconciler) reconcileGroups(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) error {
-	ctx, logger := logging.GetLogComponent(ctx, "group")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerGroupComponent)
 	logger.Info().Msg("reconciling groups for Paas")
 	desiredGroups, err := r.backendGroups(ctx, paas)
 	if err != nil {

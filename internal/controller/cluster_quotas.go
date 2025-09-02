@@ -69,7 +69,7 @@ func (r *PaasReconciler) backendQuota(
 		quotaName = join(paas.Name, suffix)
 	}
 
-	_, logger := logging.GetLogComponent(ctx, "quota")
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerClusterQuotaComponent)
 	logger.Info().Msg("defining quota")
 
 	labels := map[string]string{}
@@ -157,7 +157,7 @@ func (r *PaasReconciler) backendUnneededQuotas(
 }
 
 func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, quotaName string) error {
-	ctx, logger := logging.GetLogComponent(ctx, "quota")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterQuotaComponent)
 	logger.Info().Msg("finalizing")
 	quota := &quotav1.ClusterResourceQuota{}
 	if err := r.Get(ctx, types.NamespacedName{
@@ -177,7 +177,7 @@ func (r *PaasReconciler) reconcileQuotas(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) (err error) {
-	ctx, logger := logging.GetLogComponent(ctx, "quota")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterQuotaComponent)
 	logger.Info().Msg("creating quotas for Paas")
 	// Create quotas if needed
 	quotas, err := r.backendEnabledQuotas(ctx, paas)

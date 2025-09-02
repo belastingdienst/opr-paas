@@ -62,7 +62,7 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 	var errs field.ErrorList
 	paasns, ok := obj.(*v1alpha2.PaasNS)
 	ctx, _ = logging.SetWebhookLogger(ctx, paasns)
-	ctx, logger := logging.GetLogComponent(ctx, "paasns_validate_create")
+	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasNSComponentV2)
 	logger.Info().Msgf("starting validation webhook for create")
 
 	if !ok {
@@ -128,7 +128,7 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 	}
 
 	ctx, _ = logging.SetWebhookLogger(ctx, oldPaasns)
-	ctx, logger := logging.GetLogComponent(ctx, "paasns_validate_update")
+	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasNSComponentV2)
 
 	newPaasns, ok := newObj.(*v1alpha2.PaasNS)
 	if !ok {
@@ -265,7 +265,7 @@ func validatePaasNsSecrets(
 
 func paasNStoPaas(ctx context.Context, c client.Client, paasns *v1alpha2.PaasNS) (paas *v1alpha2.Paas, err error) {
 	var ns corev1.Namespace
-	ctx, logger := logging.GetLogComponent(ctx, "paasns_to_paas")
+	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasNSComponentV2)
 	if err = c.Get(
 		context.Background(),
 		types.NamespacedName{Name: paasns.GetNamespace()},

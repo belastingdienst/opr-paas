@@ -163,7 +163,7 @@ func (r *PaasReconciler) reconcileClusterRoleBinding(
 		return err
 	}
 
-	ctx, _ = logging.GetLogComponent(ctx, "clusterrolebinding")
+	ctx, _ = logging.GetLogComponent(ctx, logging.ControllerClusterRoleBindingsComponent)
 	permissions := capConfig.ExtraPermissions.AsConfigRolesSas(capability.ExtraPermissions)
 	permissions.Merge(capConfig.DefaultPermissions.AsConfigRolesSas(true))
 	for role, sas := range permissions {

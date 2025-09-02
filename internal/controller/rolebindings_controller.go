@@ -186,7 +186,7 @@ func (r *PaasReconciler) reconcileNamespaceRolebinding(
 	roleName string,
 	groupNames []string,
 ) error {
-	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerRoleBindingComponent)
 	rbName := types.NamespacedName{Namespace: nsName, Name: fmt.Sprintf("paas-%s", roleName)}
 	logger.Debug().
 		Str("role", roleName).
@@ -215,7 +215,7 @@ func (r *PaasReconciler) reconcileNamespaceRolebindings(
 	paasns *v1alpha2.PaasNS,
 	nsName string,
 ) error {
-	ctx, logger := logging.GetLogComponent(ctx, "rolebinding")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerRoleBindingComponent)
 	// Use a map of sets to avoid duplicates
 	roleGroups := map[string]map[string]struct{}{}
 

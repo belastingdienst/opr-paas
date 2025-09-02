@@ -155,7 +155,7 @@ func validateNoPaasConfigExists(
 	ctx context.Context,
 	k8sClient client.Client,
 ) (warn admission.Warnings, allErrs field.ErrorList) {
-	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateNoPaasConfigExists")
+	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasConfigComponentV1)
 	childPath := field.NewPath("spec")
 
 	var list v1alpha1.PaasConfigList
@@ -179,7 +179,7 @@ func validatePaasConfigSpec(
 	k8sClient client.Client,
 	spec v1alpha1.PaasConfigSpec,
 ) (warn admission.Warnings, allErrs field.ErrorList) {
-	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validatePaasConfig")
+	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasConfigComponentV1)
 	childPath := field.NewPath("spec")
 
 	// Ensure we generate some warnings if deprecated items are used
