@@ -49,7 +49,7 @@ We currently have implemented debug-mode for the following components:
 - Controllers:
   - capabilities_controller
   - cluster_quota_controller
-  - cluster_role_binding__controller
+  - cluster_role_binding_controller
   - group_controller
   - namespace_controller
   - paas_controller

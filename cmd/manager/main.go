@@ -157,7 +157,6 @@ func configureLogging(pretty bool, debug bool, componentDebugList string, splitL
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
 	logging.SetStaticLoggingConfig(debug, logging.NewComponentsFromString(componentDebugList))
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	ctrl.SetLogger(zerologr.New(&log.Logger))
 }
 
