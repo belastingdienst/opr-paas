@@ -155,7 +155,7 @@ func validateNoPaasConfigExists(
 	ctx context.Context,
 	k8sClient client.Client,
 ) (warn admission.Warnings, allErrs field.ErrorList) {
-	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validateNoPaasConfigExists")
+	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasConfigComponentV2)
 	childPath := field.NewPath("spec")
 
 	var list v1alpha2.PaasConfigList
@@ -179,7 +179,7 @@ func validatePaasConfigSpec(
 	k8sClient client.Client,
 	spec v1alpha2.PaasConfigSpec,
 ) (warn admission.Warnings, allErrs field.ErrorList) {
-	ctx, logger := logging.GetLogComponent(ctx, "webhook_paasconfig_validatePaasConfig")
+	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasConfigComponentV2)
 	childPath := field.NewPath("spec")
 
 	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, k8sClient, spec.DecryptKeysSecret, childPath)...)

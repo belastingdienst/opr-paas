@@ -106,7 +106,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	capName string,
 ) error {
 	var err error
-	ctx, logger := logging.GetLogComponent(ctx, "appset")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerCapabilitiesComponent)
 	logger.Info().Msgf("reconciling %s Applicationset", capName)
 	myConfig := config.GetConfig()
 	namespacedName := myConfig.Spec.CapabilityK8sName(capName)
@@ -223,7 +223,7 @@ func (r *PaasReconciler) finalizeDisabledAppSetCaps(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) error {
-	ctx, logger := logging.GetLogComponent(ctx, "Applicationsets")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerCapabilitiesComponent)
 	for capName := range config.GetConfig().Spec.Capabilities {
 		logger.Info().Msgf("reconciling %s Applicationset", capName)
 		if _, exists := paas.Spec.Capabilities[capName]; exists {

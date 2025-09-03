@@ -55,7 +55,7 @@ func NewHandler(service GeneratorService, bearerToken string) *Handler {
 // for processing, and encodes the output as JSON. In case of errors,
 // an appropriate HTTP status code and error message are returned.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	_, componentLogger := logging.GetLogComponent(r.Context(), "plugin_generator")
+	_, componentLogger := logging.GetLogComponent(r.Context(), logging.PluginGeneratorComponent)
 
 	logger := componentLogger.With().
 		Str("path", r.URL.Path).

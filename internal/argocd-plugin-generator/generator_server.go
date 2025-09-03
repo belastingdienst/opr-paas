@@ -62,7 +62,7 @@ func NewServer(opts ServerOptions, handler http.Handler) *GeneratorServer {
 
 // Start starts the GeneratorServer. If it fails, it returns an error.
 func (s *GeneratorServer) Start(ctx context.Context) error {
-	ctx, componentLogger := logging.GetLogComponent(ctx, "plugin_generator")
+	ctx, componentLogger := logging.GetLogComponent(ctx, logging.PluginGeneratorComponent)
 	logger := componentLogger.With().Str("server", s.opts.Addr).Logger()
 	token := os.Getenv(s.opts.TokenEnvVar)
 	if token == "" {
@@ -88,7 +88,7 @@ func (s *GeneratorServer) Start(ctx context.Context) error {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
-		_, shutdownLogger := logging.GetLogComponent(shutdownCtx, "plugin_generator")
+		_, shutdownLogger := logging.GetLogComponent(shutdownCtx, logging.PluginGeneratorComponent)
 		logger = shutdownLogger.With().Str("server", s.opts.Addr).Logger()
 		logger.Debug().Msg("shutting down")
 		_ = s.server.Shutdown(shutdownCtx)
@@ -101,7 +101,7 @@ func (s *GeneratorServer) Start(ctx context.Context) error {
 // server has been started and is reachable over TCP.
 func (s *GeneratorServer) StartedChecker() healthz.Checker {
 	return func(r *http.Request) error {
-		_, logger := logging.GetLogComponent(r.Context(), "plugin_generator")
+		_, logger := logging.GetLogComponent(r.Context(), logging.PluginGeneratorComponent)
 		if !s.started {
 			logger.Error().Msg("not yet started")
 			return errors.New("argoCD plugin generator server has not been started yet")

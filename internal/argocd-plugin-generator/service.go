@@ -40,7 +40,7 @@ type Service struct {
 func NewService(kclient client.Client) *Service {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	_, logger := logging.GetLogComponent(ctx, "plugin_generator")
+	_, logger := logging.GetLogComponent(ctx, logging.PluginGeneratorComponent)
 	logger.Debug().Msg("New Service")
 	return &Service{kclient: kclient}
 }
@@ -51,7 +51,7 @@ func NewService(kclient client.Client) *Service {
 func (s *Service) Generate(params map[string]interface{}, appSetName string) ([]map[string]interface{}, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	_, logger := logging.GetLogComponent(ctx, "plugin_generator")
+	_, logger := logging.GetLogComponent(ctx, logging.PluginGeneratorComponent)
 
 	var paasList v1alpha2.PaasList
 	if err := s.kclient.List(ctx, &paasList); err != nil {
@@ -95,7 +95,7 @@ func capElementsFromPaas(
 	paas *v1alpha2.Paas,
 	capName string,
 ) (elements fields.Elements, err error) {
-	_, componentLogger := logging.GetLogComponent(ctx, "plugin_generator")
+	_, componentLogger := logging.GetLogComponent(ctx, logging.PluginGeneratorComponent)
 	logger := componentLogger.With().Str("paas", paas.Name).Str("capability", capName).Logger()
 	myConfig, err := config.GetConfigWithError()
 	if err != nil {

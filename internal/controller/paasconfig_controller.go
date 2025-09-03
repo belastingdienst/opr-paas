@@ -63,7 +63,7 @@ func (pcr *PaasConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	cfg := &v1alpha2.PaasConfig{}
 	ctx, _ = logging.SetControllerLogger(ctx, cfg, pcr.Scheme, req)
-	ctx, logger := logging.GetLogComponent(ctx, "paasconfig")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerPaasConfigComponent)
 
 	if err := pcr.Get(ctx, req.NamespacedName, cfg); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)

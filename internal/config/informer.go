@@ -43,7 +43,7 @@ func (w *configInformer) setInitialConfig(ctx context.Context) error {
 
 // Start is the runnable for the PaasConfigInformer
 func (w *configInformer) Start(ctx context.Context) error {
-	ctx, logger := logging.GetLogComponent(ctx, "config_watcher")
+	ctx, logger := logging.GetLogComponent(ctx, logging.ConfigComponent)
 	logger.Info().Msg("starting config informer")
 
 	logger.Debug().Msg("setting initial paasConfig definition (empty when no PaasConfig is loaded)")
@@ -82,7 +82,7 @@ func updateHandler(_, newObj interface{}) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	_, logger := logging.GetLogComponent(ctx, "config_watcher")
+	_, logger := logging.GetLogComponent(ctx, logging.ConfigComponent)
 	if cfg.IsActive() && !reflect.DeepEqual(cfg.Spec, GetConfig().Spec) {
 		logger.Debug().Any("config", cfg).Msg("updating config")
 		SetConfig(*cfg)

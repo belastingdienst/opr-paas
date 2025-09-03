@@ -109,7 +109,7 @@ func TestSetWebhookLogger(t *testing.T) {
 }
 
 func TestDebuggingStatic(t *testing.T) {
-	const comp1 = "component1"
+	const comp1 = TestComponent
 	SetDynamicLoggingConfig(false, nil)
 	ctx := context.TODO()
 	// debug false
@@ -121,13 +121,13 @@ func TestDebuggingStatic(t *testing.T) {
 	_, allDebugLogger := GetLogComponent(ctx, comp1)
 	assert.Equal(t, zerolog.DebugLevel, allDebugLogger.GetLevel())
 	// debug component
-	SetStaticLoggingConfig(false, []string{comp1})
+	SetStaticLoggingConfig(false, Components{comp1: true})
 	_, componentDebugLogger := GetLogComponent(ctx, comp1)
 	assert.Equal(t, zerolog.DebugLevel, componentDebugLogger.GetLevel())
 }
 
 func TestDebuggingConfig(t *testing.T) {
-	const comp1 = "component1"
+	const comp1 = TestComponent
 	SetStaticLoggingConfig(false, nil)
 	ctx := context.TODO()
 	// debug false
@@ -139,13 +139,13 @@ func TestDebuggingConfig(t *testing.T) {
 	_, allDebugLogger := GetLogComponent(ctx, comp1)
 	assert.Equal(t, zerolog.DebugLevel, allDebugLogger.GetLevel())
 	// debug component on
-	SetDynamicLoggingConfig(false, map[string]bool{comp1: true})
+	SetDynamicLoggingConfig(false, map[Component]bool{comp1: true})
 	_, componentDebugLogger := GetLogComponent(ctx, comp1)
 	assert.Equal(t, zerolog.DebugLevel, componentDebugLogger.GetLevel())
 
 	// debug component off
-	SetStaticLoggingConfig(true, []string{comp1})
-	SetDynamicLoggingConfig(true, map[string]bool{comp1: false})
+	SetStaticLoggingConfig(true, Components{comp1: true})
+	SetDynamicLoggingConfig(true, map[Component]bool{comp1: false})
 	_, componentNoDebugLogger := GetLogComponent(ctx, comp1)
 	assert.Equal(t, zerolog.InfoLevel, componentNoDebugLogger.GetLevel())
 }

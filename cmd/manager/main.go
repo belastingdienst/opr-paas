@@ -13,7 +13,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 
 	argocdplugingenerator "github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
@@ -157,7 +156,7 @@ func configureLogging(pretty bool, debug bool, componentDebugList string, splitL
 	log.Logger = log.Output(output)
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
-	logging.SetStaticLoggingConfig(debug, strings.Split(componentDebugList, ","))
+	logging.SetStaticLoggingConfig(debug, logging.NewComponentsFromString(componentDebugList))
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	ctrl.SetLogger(zerologr.New(&log.Logger))
 }
