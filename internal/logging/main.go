@@ -110,6 +110,5 @@ func GetLogComponent(ctx context.Context, name Component) (context.Context, *zer
 		logger = &ll
 		ctx = logger.WithContext(ctx)
 	}
-	logger.Debug().Msg("debugging is on")
 	return ctx, logger
 }
