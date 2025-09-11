@@ -16,7 +16,6 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 
-	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,7 +71,7 @@ func (r *PaasReconciler) backendSecret(
 	namespacedName types.NamespacedName,
 	url string,
 ) (*corev1.Secret, error) {
-	logger := log.Ctx(ctx)
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerSecretComponent)
 	logger.Info().Msg("defining Secret")
 
 	s := &corev1.Secret{
@@ -148,7 +147,7 @@ func (r *PaasReconciler) deleteObsoleteSecrets(
 	existingSecrets *corev1.SecretList,
 	desiredSecrets *corev1.SecretList,
 ) error {
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerSecretComponent)
 	logger.Info().Msg("deleting obsolete secrets")
 
 	// Delete secrets that are no longer needed
@@ -182,7 +181,7 @@ func (r *PaasReconciler) getExistingSecrets(
 	paas *v1alpha2.Paas,
 	ns string,
 ) (*corev1.SecretList, error) {
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerSecretComponent)
 	// Check in NamespaceName
 	logger.Debug().Msgf("listing existing secrets in namespace: %s", ns)
 	secrets := &corev1.SecretList{}

@@ -19,7 +19,6 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 
-	"github.com/rs/zerolog/log"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +33,7 @@ func ensureRoleBinding(
 	paas *v1alpha2.Paas,
 	rb *rbac.RoleBinding,
 ) error {
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerRoleBindingComponent)
 	if len(rb.Subjects) < 1 {
 		return finalizeRoleBinding(ctx, r, rb)
 	}
@@ -80,7 +79,7 @@ func createRoleBinding(
 	r Reconciler,
 	rb *rbac.RoleBinding,
 ) error {
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerRoleBindingComponent)
 	// Create the rolebinding
 	logger.Info().
 		Str("Namespace", rb.Namespace).
@@ -109,7 +108,7 @@ func backendRoleBinding(
 	role string,
 	groupNames []string,
 ) (*rbac.RoleBinding, error) {
-	logger := log.Ctx(ctx)
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerRoleBindingComponent)
 	logger.Info().Msgf("defining %s RoleBinding", name)
 	var subjects []rbac.Subject
 	for _, groupName := range groupNames {

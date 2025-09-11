@@ -6,7 +6,6 @@ import (
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -69,7 +68,7 @@ func (r *PaasReconciler) getRsa(ctx context.Context, paasName string) (*crypt.Cr
 	} else if c, err = crypt.NewCryptFromKeys(*keys, "", paasName); err != nil {
 		return nil, err
 	}
-	logger := log.Ctx(ctx)
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerSecretComponent)
 	logger.Debug().Msgf("creating new crypt for %s", paasName)
 	crypts[paasName] = c
 	return c, nil

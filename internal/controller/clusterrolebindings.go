@@ -16,7 +16,6 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 
-	"github.com/rs/zerolog/log"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,7 +46,7 @@ func updateClusterRoleBinding(
 	r client.Client,
 	crb *rbac.ClusterRoleBinding,
 ) (err error) {
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterRoleBindingsComponent)
 	if len(crb.Subjects) == 0 && crb.ResourceVersion != "" {
 		logger.Info().Msgf("cleaning empty ClusterRoleBinding %s", crb.Name)
 		return r.Delete(ctx, crb)
@@ -129,7 +128,7 @@ func addOrUpdateCrb(
 	nsName string,
 	sas map[string]bool,
 ) (changed bool) {
-	logger := log.Ctx(ctx)
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerClusterRoleBindingsComponent)
 	crbName := crb.Name
 	for sa, add := range sas {
 		if add {
@@ -206,7 +205,7 @@ func (r *PaasReconciler) finalizeClusterRoleBinding(
 	role string,
 	nsRegularExpression regexp.Regexp,
 ) error {
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterRoleBindingsComponent)
 	crb, err := getClusterRoleBinding(ctx, r.Client, role)
 	if err != nil {
 		return err
