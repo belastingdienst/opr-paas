@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -157,7 +158,8 @@ func configureLogging(pretty bool, debug bool, componentDebugList string, splitL
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
 	logging.SetStaticLoggingConfig(debug, logging.NewComponentsFromString(componentDebugList))
-	ctrl.SetLogger(zerologr.New(&log.Logger))
+	_, logger := logging.GetLogComponent(context.TODO(), logging.RuntimeComponent)
+	ctrl.SetLogger(zerologr.New(logger))
 }
 
 type infoLevelWriter struct {
