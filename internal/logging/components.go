@@ -9,9 +9,12 @@ type Components map[Component]bool
 type Component int
 
 const (
-	// RuntimeComponent represents a logging component for the runtime controller.
-	// Note: As the runtime logger is only fetched once, changing debuglevel with PaasConfix has no effect.
+	// RuntimeComponent represents a logging component for the runtime controller
+	// (Note: As the runtime logger is only fetched once, changing debuglevel with PaasConfix has no effect.)
 	RuntimeComponent Component = iota
+	// ApiComponent represents a logging component for the runtime controller.
+	// Note: As the runtime logger is only fetched once, changing debuglevel with PaasConfix has no effect.
+	ApiComponent Component = iota
 
 	// WebhookPaasConfigComponentV1 represents a logging component for the v1alpha1 code for the PaasConfig webhook
 	WebhookPaasConfigComponentV1 Component = iota
@@ -64,6 +67,7 @@ const (
 var (
 	componentConverter = map[string]Component{
 		"runtime": RuntimeComponent,
+		"api":     ApiComponent,
 
 		"paasconfig_webhook_v1": WebhookPaasConfigComponentV1,
 		"paas_webhook_v1":       WebhookPaasComponentV1,
