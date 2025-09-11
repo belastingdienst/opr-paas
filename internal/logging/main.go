@@ -106,9 +106,9 @@ func GetLogComponent(ctx context.Context, name Component) (context.Context, *zer
 	level := getComponentDebugLevel(name)
 
 	if logger.GetLevel() != level {
-		ll := logger.Level(level)
+		ll := logger.Level(level).With().Str("component", componentToString(name)).Logger()
 		logger = &ll
-		ctx = logger.With().Str("component", componentToString(name)).Logger().WithContext(ctx)
+		ctx = logger.WithContext(ctx)
 	}
 	return ctx, logger
 }

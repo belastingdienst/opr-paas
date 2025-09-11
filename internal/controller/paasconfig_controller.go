@@ -15,7 +15,6 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -132,7 +131,7 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 }
 
 func (pcr *PaasConfigReconciler) addFinalizer(ctx context.Context, cfg *v1alpha2.PaasConfig) (requeue bool, err error) {
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerPaasConfigComponent)
 
 	if !controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
 		if ok := controllerutil.AddFinalizer(cfg, paasconfigFinalizer); !ok {
@@ -152,7 +151,7 @@ func (pcr *PaasConfigReconciler) finalize(
 	ctx context.Context,
 	cfg *v1alpha2.PaasConfig,
 ) (requeue bool, err error) {
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerPaasConfigComponent)
 	logger.Info().Msg("paasconfig marked for deletion")
 
 	if controllerutil.ContainsFinalizer(cfg, paasconfigFinalizer) {
