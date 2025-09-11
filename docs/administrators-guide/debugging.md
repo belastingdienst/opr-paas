@@ -37,6 +37,8 @@ we call components).
 We currently have implemented debug-mode for the following components:
 - Controller runtime:
   - runtime (**note** setting or changing with PaasConfig has no effect)
+- Api (conversion code):
+  - api
 - Webhooks:
   - v1alpha1:
     - paasconfig_webhook_v1
