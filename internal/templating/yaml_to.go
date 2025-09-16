@@ -3,8 +3,9 @@ package templating
 import (
 	"fmt"
 
+	"github.com/goccy/go-yaml"
+
 	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
-	"gopkg.in/yaml.v3"
 )
 
 type (
