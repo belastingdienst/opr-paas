@@ -12,7 +12,6 @@ import (
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	cnf "github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -79,7 +78,7 @@ func getRsa(ctx context.Context, _c client.Client, paasName string) (*crypt.Cryp
 	} else if c, err = crypt.NewCryptFromKeys(*keys, "", paasName); err != nil {
 		return nil, err
 	}
-	logger := log.Ctx(ctx)
+	_, logger := logging.GetLogComponent(ctx, logging.WebhookUtilsComponentV1)
 	logger.Debug().Msgf("creating new crypt for %s", paasName)
 	crypts[paasName] = c
 	return c, nil

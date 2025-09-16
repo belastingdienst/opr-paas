@@ -9,6 +9,13 @@ type Components map[Component]bool
 type Component int
 
 const (
+	// RuntimeComponent represents a logging component for the runtime controller
+	// (Note: As the runtime logger is only fetched once, changing debuglevel with PaasConfix has no effect.)
+	RuntimeComponent Component = iota
+	// ApiComponent represents a logging component for the runtime controller.
+	// Note: As the runtime logger is only fetched once, changing debuglevel with PaasConfix has no effect.
+	ApiComponent Component = iota
+
 	// WebhookPaasConfigComponentV1 represents a logging component for the v1alpha1 code for the PaasConfig webhook
 	WebhookPaasConfigComponentV1 Component = iota
 	// WebhookPaasComponentV1 represents a logging component for the v1alpha1 code for the Paas webhook
@@ -59,6 +66,9 @@ const (
 
 var (
 	componentConverter = map[string]Component{
+		"runtime": RuntimeComponent,
+		"api":     ApiComponent,
+
 		"paasconfig_webhook_v1": WebhookPaasConfigComponentV1,
 		"paas_webhook_v1":       WebhookPaasComponentV1,
 		"paasns_webhook_v1":     WebhookPaasNSComponentV1,
@@ -68,15 +78,15 @@ var (
 		"paasns_webhook_v2":     WebhookPaasNSComponentV2,
 		"utils_webhook_v2":      WebhookUtilsComponentV2,
 
-		"capabilities_controller":          ControllerCapabilitiesComponent,
-		"cluster_quota_controller":         ControllerClusterQuotaComponent,
-		"cluster_role_binding__controller": ControllerClusterRoleBindingsComponent,
-		"group_controller":                 ControllerGroupComponent,
-		"namespace_controller":             ControllerNamespaceComponent,
-		"paas_controller":                  ControllerPaasComponent,
-		"paas_config_controller":           ControllerPaasConfigComponent,
-		"rolebinding_controller":           ControllerRoleBindingComponent,
-		"secret_controller":                ControllerSecretComponent,
+		"capabilities_controller":         ControllerCapabilitiesComponent,
+		"cluster_quota_controller":        ControllerClusterQuotaComponent,
+		"cluster_role_binding_controller": ControllerClusterRoleBindingsComponent,
+		"group_controller":                ControllerGroupComponent,
+		"namespace_controller":            ControllerNamespaceComponent,
+		"paas_controller":                 ControllerPaasComponent,
+		"paas_config_controller":          ControllerPaasConfigComponent,
+		"rolebinding_controller":          ControllerRoleBindingComponent,
+		"secret_controller":               ControllerSecretComponent,
 
 		"plugin_generator": PluginGeneratorComponent,
 		"config_watcher":   ConfigComponent,

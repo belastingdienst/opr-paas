@@ -25,7 +25,6 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas/v3/internal/paasresource"
 
-	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -89,7 +88,7 @@ func (r *PaasReconciler) getPaasFromRequest(
 	req ctrl.Request,
 ) (paas *v1alpha2.Paas, err error) {
 	paas = &v1alpha2.Paas{}
-	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerPaasComponent)
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerPaasComponent)
 	if err = r.Get(ctx, req.NamespacedName, paas); err != nil {
 		return nil, client.IgnoreNotFound(err)
 	}
@@ -154,7 +153,7 @@ func (r *PaasReconciler) setFinalizing(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) error {
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerPaasComponent)
 
 	logger.Info().Msg("finalizing Paas")
 	// Let's add here a status "Downgrade" to reflect that this resource began its process to be terminated.
@@ -175,7 +174,7 @@ func (r *PaasReconciler) removeFinalizer(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) error {
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerPaasComponent)
 	meta.SetStatusCondition(paas.GetConditions(), metav1.Condition{
 		Type:   v1alpha2.TypeDegradedPaas,
 		Status: metav1.ConditionTrue, Reason: "Finalizing", ObservedGeneration: paas.GetGeneration(),
@@ -239,7 +238,7 @@ func (r *PaasReconciler) reconcileNamespacedResources(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) (err error) {
-	logger := log.Ctx(ctx)
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerPaasComponent)
 	logger.Debug().Msg("inside namespaced resource reconciler")
 	nsDefs, err := r.nsDefsFromPaas(ctx, paas)
 	if err != nil {
@@ -317,8 +316,10 @@ func allPaases(mgr ctrl.Manager) []reconcile.Request {
 	// Enqueue all Paas objects
 	var reqs []reconcile.Request
 	var paasList v1alpha2.PaasList
-	if err := mgr.GetClient().List(context.Background(), &paasList); err != nil {
-		mgr.GetLogger().Error(err, "unable to list paases")
+	ctx := context.Background()
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerPaasComponent)
+	if err := mgr.GetClient().List(ctx, &paasList); err != nil {
+		logger.Error().AnErr("error", err).Msg("unable to list paases")
 		return nil
 	}
 
@@ -384,7 +385,7 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha2.Paas) error {
-	logger := log.Ctx(ctx)
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerPaasComponent)
 	logger.Debug().Msg("inside Paas finalizer")
 
 	paasReconcilers := []func(context.Context, *v1alpha2.Paas) error{

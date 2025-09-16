@@ -7,11 +7,12 @@ See LICENSE.md for details.
 package v1alpha1
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/rs/zerolog/log"
+	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
@@ -28,10 +29,7 @@ func (p *Paas) ConvertFrom(srcRaw conversion.Hub) error {
 		return fmt.Errorf("cannot convert to v1alpha1: got %T", srcRaw)
 	}
 
-	logger := log.With().
-		Any("conversion", p.GetObjectKind().GroupVersionKind()).
-		Str("name", p.GetName()).
-		Logger()
+	_, logger := logging.GetLogComponent(context.TODO(), logging.ApiComponent)
 	logger.Debug().Msg("Starting conversion from hub (v1alpha2) to spoke (v1alpha1)")
 
 	p.ObjectMeta = src.ObjectMeta
@@ -85,10 +83,7 @@ func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 		return fmt.Errorf("cannot convert from v1alpha1: got %T", dstRaw)
 	}
 
-	logger := log.With().
-		Any("conversion", p.GetObjectKind().GroupVersionKind()).
-		Str("name", p.GetName()).
-		Logger()
+	_, logger := logging.GetLogComponent(context.TODO(), logging.ApiComponent)
 	logger.Debug().Msg("Starting conversion from spoke (v1alpha1) to hub (v1alpha2)")
 
 	dst.ObjectMeta = p.ObjectMeta

@@ -6,12 +6,12 @@ import (
 	"strings"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -40,14 +40,13 @@ func (l *logSink) Index(i int) string {
 
 func TestSetControllerLogger(t *testing.T) {
 	ctx := context.TODO()
-	obj := &v1alpha1.Paas{
+	obj := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: paasName,
 		},
-		Spec: v1alpha1.PaasSpec{},
 	}
 	runtimeSchema := runtime.NewScheme()
-	_ = v1alpha1.AddToScheme(runtimeSchema)
+	_ = corev1.AddToScheme(runtimeSchema)
 	req := controllerruntime.Request{}
 
 	output := &logSink{}
@@ -60,8 +59,8 @@ func TestSetControllerLogger(t *testing.T) {
 	logLine := output.Index(1)
 	expectedPrefix := `{"controller":`
 	assert.True(t, strings.HasPrefix(logLine, expectedPrefix), "logline should begin with `%s`", expectedPrefix)
-	assert.Contains(t, logLine, `"Group":"cpet.belastingdienst.nl"`)
-	assert.Contains(t, logLine, `"Kind":"Paas"`)
+	assert.Contains(t, logLine, `"Group":""`)
+	assert.Contains(t, logLine, `"Kind":"Namespace"`)
 	assert.Contains(t, logLine, `"message":"some controller log"`)
 	assert.Contains(t, logLine, `"object":{"Namespace":"","Name":""}`)
 }
@@ -69,22 +68,21 @@ func TestSetControllerLogger(t *testing.T) {
 func TestSetControllerLoggerUnknownGVK(t *testing.T) {
 	ctx := context.Background()
 	runtimeSchema := runtime.NewScheme()
-	obj := &v1alpha1.Paas{}
+	obj := &corev1.Namespace{}
 	output := &logSink{}
 	log.Logger = log.Output(output)
 	_, logger := SetControllerLogger(ctx, obj, runtimeSchema, controllerruntime.Request{})
 
 	assert.NotNil(t, logger)
-	assert.Contains(t, output.Index(0), "no kind is registered for the type v1alpha1.Paas")
+	assert.Contains(t, output.Index(0), "no kind is registered for the type v1.Namespace")
 }
 
 func TestSetWebhookLogger(t *testing.T) {
 	ctx := context.TODO()
-	obj := &v1alpha1.Paas{
+	obj := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: paasName,
 		},
-		Spec: v1alpha1.PaasSpec{},
 	}
 	obj.SetGroupVersionKind(schema.GroupVersionKind{
 		Kind:    "Paas",

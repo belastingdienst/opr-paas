@@ -18,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	userv1 "github.com/openshift/api/user/v1"
-	"github.com/rs/zerolog/log"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -40,7 +39,7 @@ func (r *PaasReconciler) ensureGroup(
 		changed   bool
 		groupName = group.GetName()
 	)
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerGroupComponent)
 	// See if group already exists and create if it doesn't
 	found := &userv1.Group{}
 	err := r.Get(ctx, client.ObjectKeyFromObject(group), found)
@@ -93,7 +92,7 @@ func (r *PaasReconciler) backendGroup(
 	group v1alpha2.PaasGroup,
 ) (*userv1.Group, error) {
 	block := config.GetConfig().Spec.FeatureFlags.GroupUserManagement == "block"
-	logger := log.Ctx(ctx)
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerGroupComponent)
 	logger.Debug().Msg("defining group")
 	// We don't manage groups with a query
 	if len(group.Query) != 0 {
@@ -198,7 +197,7 @@ func (r *PaasReconciler) deleteObsoleteGroups(
 	desiredGroups []*userv1.Group,
 	existingGroups []*userv1.Group,
 ) error {
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerGroupComponent)
 	logger.Info().Msg("deleting obsolete groups")
 	for _, existingGroup := range existingGroups {
 		if !isGroupInGroups(existingGroup, desiredGroups) {
@@ -225,7 +224,7 @@ func (r *PaasReconciler) getExistingGroups(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) (existingGroups []*userv1.Group, err error) {
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerGroupComponent)
 	var groups userv1.GroupList
 	listOpts := []client.ListOption{
 		client.MatchingLabels(map[string]string{ManagedByLabelKey: paas.Name}),

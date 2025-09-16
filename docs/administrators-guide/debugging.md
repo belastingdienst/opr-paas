@@ -35,6 +35,10 @@ With component logging, you have the option to enable debug-mode, with only for 
 we call components).
 
 We currently have implemented debug-mode for the following components:
+- Controller runtime:
+  - runtime (**note** setting or changing with PaasConfig has no effect)
+- Api (conversion code):
+  - api
 - Webhooks:
   - v1alpha1:
     - paasconfig_webhook_v1
@@ -49,7 +53,7 @@ We currently have implemented debug-mode for the following components:
 - Controllers:
   - capabilities_controller
   - cluster_quota_controller
-  - cluster_role_binding__controller
+  - cluster_role_binding_controller
   - group_controller
   - namespace_controller
   - paas_controller

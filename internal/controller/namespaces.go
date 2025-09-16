@@ -16,7 +16,6 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 
-	"github.com/rs/zerolog/log"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -68,7 +67,7 @@ func backendNamespace(
 	scheme *runtime.Scheme,
 ) (*corev1.Namespace, error) {
 	ctx, _ = logging.GetLogComponent(ctx, logging.ControllerNamespaceComponent)
-	logger := log.Ctx(ctx)
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerNamespaceComponent)
 	logger.Info().Msgf("defining %s Namespace", name)
 
 	labels := map[string]string{}
@@ -130,7 +129,7 @@ func (r *PaasReconciler) finalizeObsoleteNamespaces(
 ) (err error) {
 	var nss corev1.NamespaceList
 	var i int
-	logger := log.Ctx(ctx)
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerNamespaceComponent)
 	listOpts := []client.ListOption{
 		client.MatchingLabels(map[string]string{ManagedByLabelKey: paas.Name}),
 	}
