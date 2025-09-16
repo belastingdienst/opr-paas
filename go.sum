@@ -77,8 +77,8 @@ github.com/go-playground/universal-translator v0.18.1 h1:Bcnm0ZwsGyWbCzImXv+pAJn
 github.com/go-playground/universal-translator v0.18.1/go.mod h1:xekY+UJKNuX9WP91TpwSH2VMlDf28Uj24BCp08ZFTUY=
 github.com/go-playground/validator/v10 v10.26.0 h1:SP05Nqhjcvz81uJaRfEV0YBSSSGMc/iMaVtFbr3Sw2k=
 github.com/go-playground/validator/v10 v10.26.0/go.mod h1:I5QpIEbmr8On7W0TktmJAumgzX4CA1XNl4ZmDuVHKKo=
-github.com/go-sprout/sprout v1.0.1 h1:IOMNNWV8pkr485t+IivkGwo9AfmcKodXLqwZHpfqb6U=
-github.com/go-sprout/sprout v1.0.1/go.mod h1:487647R4XurbFbAWIwWM0+hVi9IUzvce6uMDR0u3r9Q=
+github.com/go-sprout/sprout v1.0.2 h1:sAtDB94vqOa+OczpuzD2lklIaNRmG7DK18loVQ+3zT4=
+github.com/go-sprout/sprout v1.0.2/go.mod h1:HlUXnn3tkTfOj3QKV5q24SX3jN/oUesty1+4ssFaU94=
 github.com/go-task/slim-sprig/v3 v3.0.0 h1:sUs3vkvUymDpBKi3qH1YSqBQk9+9D/8M2mN1vB6EwHI=
 github.com/go-task/slim-sprig/v3 v3.0.0/go.mod h1:W848ghGpv3Qj3dhTPRyJypKRiqCdHZiAzKg9hl15HA8=
 github.com/goccy/go-json v0.10.5 h1:Fq85nIqj+gXn/S5ahsiTlK3TmC85qgirsdTP/+DeaC4=
