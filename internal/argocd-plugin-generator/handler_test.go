@@ -20,12 +20,12 @@ import (
 
 // mockGeneratorService implements GeneratorService for tests
 type mockGeneratorService struct {
-	generateFunc func(params map[string]interface{}, appSetName string) ([]map[string]interface{}, error)
+	generateFunc func(params map[string]interface{}) ([]map[string]interface{}, error)
 }
 
-func (m *mockGeneratorService) Generate(params map[string]interface{}, appSetName string) (
+func (m *mockGeneratorService) Generate(params map[string]interface{}) (
 	[]map[string]interface{}, error) {
-	return m.generateFunc(params, appSetName)
+	return m.generateFunc(params)
 }
 
 var _ = Describe("Handler", func() {
@@ -72,7 +72,7 @@ var _ = Describe("Handler", func() {
 		})
 
 		It("returns 400 if body cannot be read", func() {
-			mockService.generateFunc = func(params map[string]interface{}, appSetName string) (
+			mockService.generateFunc = func(params map[string]interface{}) (
 				[]map[string]interface{}, error) {
 				return nil, nil
 			}
@@ -99,7 +99,7 @@ var _ = Describe("Handler", func() {
 		})
 
 		It("returns 500 if Service.Generate returns an error", func() {
-			mockService.generateFunc = func(params map[string]interface{}, appSetName string) (
+			mockService.generateFunc = func(params map[string]interface{}) (
 				[]map[string]interface{}, error) {
 				return nil, errors.New("generation failed")
 			}
@@ -126,10 +126,9 @@ var _ = Describe("Handler", func() {
 				{"key1": "value1"},
 				{"key2": "value2"},
 			}
-			mockService.generateFunc = func(params map[string]interface{}, appSetName string) (
+			mockService.generateFunc = func(params map[string]interface{}) (
 				[]map[string]interface{}, error) {
 				Expect(params).To(HaveKeyWithValue("foo", "bar"))
-				Expect(appSetName).To(Equal("appset1"))
 				return expectedResult, nil
 			}
 

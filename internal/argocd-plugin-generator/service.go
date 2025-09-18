@@ -48,7 +48,7 @@ func NewService(kclient client.Client) *Service {
 // Generate returns a generated []map[string]interface{} based on the provided map[string]interface. The input map
 // should contain a key: "capability" which stands for the capability, for which a map of parameters is generated.
 // in case the input param is missing, or the generation fails, an error is returned.
-func (s *Service) Generate(params map[string]interface{}, appSetName string) ([]map[string]interface{}, error) {
+func (s *Service) Generate(params map[string]interface{}) ([]map[string]interface{}, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	_, logger := logging.GetLogComponent(ctx, logging.PluginGeneratorComponent)
