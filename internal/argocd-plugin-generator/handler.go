@@ -25,7 +25,7 @@ import (
 // and an ApplicationSet name, then return a slice of key/value maps representing
 // the generated output, or an error if generation fails.
 type GeneratorService interface {
-	Generate(params map[string]interface{}, appSetName string) ([]map[string]interface{}, error)
+	Generate(params map[string]interface{}) ([]map[string]interface{}, error)
 }
 
 // Handler is the HTTP request handler for the plug-in generator.
@@ -89,7 +89,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.service.Generate(input.Input.Parameters, input.ApplicationSetName)
+	result, err := h.service.Generate(input.Input.Parameters)
 	if err != nil {
 		logger.Error().AnErr("error", err).Msg("generation error")
 		http.Error(w, fmt.Sprintf("generation error: %v", err), http.StatusInternalServerError)

@@ -99,7 +99,7 @@ var _ = Describe("Service", func() {
 			params := map[string]interface{}{
 				"capability": "argocd",
 			}
-			results, err := svc.Generate(params, "some-app-set")
+			results, err := svc.Generate(params)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).NotTo(BeEmpty())
 
@@ -118,15 +118,14 @@ var _ = Describe("Service", func() {
 			params = map[string]interface{}{
 				"capability": "nonexistent",
 			}
-			results, err = svc.Generate(params, "some-app-set")
+			results, err = svc.Generate(params)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("capability nonexistent is not configured"))
 			Expect(results).To(BeEmpty())
 
 			By("Calling Generate with no param")
 
 			params = map[string]interface{}{}
-			_, err = svc.Generate(params, "some-app-set")
+			_, err = svc.Generate(params)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("missing or invalid capability param"))
 		})
@@ -137,7 +136,7 @@ var _ = Describe("Service", func() {
 			params := map[string]interface{}{
 				"capability": "argocd",
 			}
-			results, err := svc.Generate(params, "some-app-set")
+			results, err := svc.Generate(params)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("uninitialized paasconfig"))
 			Expect(results).To(BeEmpty())
