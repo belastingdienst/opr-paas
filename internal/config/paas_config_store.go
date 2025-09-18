@@ -57,7 +57,6 @@ func GetConfigV1() (v1alpha1.PaasConfig, error) {
 	}
 	var v1conf v1alpha1.PaasConfig
 	err := v1conf.ConvertFrom(cnf.store)
-	// err := (&cnf.store).ConvertTo(&v1conf)
 	return v1conf, err
 }
 
@@ -77,5 +76,11 @@ func SetConfigV1(cfg v1alpha1.PaasConfig) error {
 
 	cnf.store = &v1alpha2.PaasConfig{}
 	return cfg.ConvertTo(cnf.store)
-	// return (&cnf.store).ConvertFrom(&cfg)
+}
+
+// ResetConfig resets the configstore
+func ResetConfig() {
+	cnf.mutex.Lock()
+	defer cnf.mutex.Unlock()
+	cnf.store = nil
 }

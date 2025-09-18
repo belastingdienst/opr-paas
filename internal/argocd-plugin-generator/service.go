@@ -70,8 +70,8 @@ func (s *Service) Generate(params map[string]interface{}, appSetName string) ([]
 	for _, paas := range paasList.Items {
 		elements, err := capElementsFromPaas(ctx, &paas, capName)
 		if err != nil {
-			logger.Error().Str("paas_name", paas.Name).AnErr("error", err).Msg("failed to get elements")
-			continue // skip failed ones
+			logger.Error().Str("paas_name", paas.Name).AnErr("error", err).Msg("failed to generate elements")
+			return nil, err // return error to caller
 		}
 		if elements == nil {
 			continue
@@ -99,7 +99,7 @@ func capElementsFromPaas(
 	logger := componentLogger.With().Str("paas", paas.Name).Str("capability", capName).Logger()
 	myConfig, err := config.GetConfigWithError()
 	if err != nil {
-		logger.Error().AnErr("error", err).Msg("getting error failed")
+		logger.Error().AnErr("error", err).Msg("get paasConfig failed")
 		return nil, err
 	}
 	templater := templating.NewTemplater(*paas, *myConfig)
