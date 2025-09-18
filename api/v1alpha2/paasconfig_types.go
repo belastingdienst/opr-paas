@@ -12,7 +12,6 @@ package v1alpha2
 import (
 	"reflect"
 
-	"github.com/belastingdienst/opr-paas/v3/api"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	"k8s.io/apimachinery/pkg/api/meta"
 
@@ -47,16 +46,8 @@ type PaasConfig struct {
 	Status PaasConfigStatus `json:"status,omitempty"`
 }
 
-func (pc PaasConfig) GetConditions() []metav1.Condition {
-	return pc.Status.Conditions
-}
-
 func (pc PaasConfig) GetSpec() PaasConfigSpec {
 	return pc.Spec
-}
-
-func (pcs PaasConfigSpec) GetCapabilities() api.ConfigCapabilities {
-	return pcs.Capabilities
 }
 
 type PaasConfigSpec struct {
@@ -138,18 +129,6 @@ func (crm ConfigRoleMappings) Roles(roleMaps []string) []string {
 		}
 	}
 	return mappedRoles
-}
-
-type ConfigLdap struct {
-	// LDAP server hostname
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Required
-	Host string `json:"host"`
-
-	// LDAP server port
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Required
-	Port int32 `json:"port"`
 }
 
 type ConfigFeatureFlags struct {
