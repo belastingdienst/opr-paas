@@ -191,16 +191,22 @@ func configureManager(f *flags) ctrl.Manager {
 	return mgr
 }
 
-func setupPluginGenerator(f *flags, manager ctrl.Manager) {
+func setupPluginGenerator(f *flags, m ctrl.Manager) {
 	if f.argocdPluginGenAddr != "0" {
-		pluginGenerator := argocdplugingenerator.New(manager.GetClient(), f.argocdPluginGenAddr)
-		if err := manager.Add(pluginGenerator); err != nil {
+		pluginGenerator, err := argocdplugingenerator.New(m.GetClient(), m.GetCache(), f.argocdPluginGenAddr)
+		if err != nil {
+			log.Fatal().Msgf("failed to create plugin generator: %v", err)
+		}
+		err = m.Add(pluginGenerator)
+		if err != nil {
 			log.Fatal().Msgf("failed to add plugin generator: %v", err)
 		}
-		if err := manager.AddReadyzCheck("argocd plugin generator", pluginGenerator.StartedChecker()); err != nil {
+		err = m.AddReadyzCheck("argocd plugin generator", pluginGenerator.StartedChecker())
+		if err != nil {
 			log.Fatal().Msgf("failed to add ArgoCD plugin generator readiness check: %v", err)
 		}
-		if err := manager.AddHealthzCheck("argocd plugin generator", pluginGenerator.StartedChecker()); err != nil {
+		err = m.AddHealthzCheck("argocd plugin generator", pluginGenerator.StartedChecker())
+		if err != nil {
 			log.Fatal().Msgf("failed to add ArgoCD plugin generator health check: %v", err)
 		}
 	}
