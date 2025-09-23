@@ -46,23 +46,23 @@ Once downloaded, the crypttool has two options for encrypting content:
     echo -e 'private investigations' | ./crypttool --encrypt-from-stdin -paas-name tst-tst -key ~/Downloads/public.bin
     ```
 
-### using cURL against the webservice api
+### Using cURL against the webservice api
 
 !!! example
 
     ```bash
-    ENDPOINT_URL="https://paas-webservice-paas-system.apps.mycluster.example/v1/encrypt"
+    ENDPOINT_URL="https://paas-webservice-paas-system.apps.mycluster.example.com/v1/encrypt"
     JSONTYPE='Content-Type: application/json'
     PAAS=tst-tst
     SECRET=$(awk '{printf "%s\\n", $0}' ~/.ssh/id_rsa)
     curl -X POST "${ENDPOINT_URL}" -H "${JSONTYPE}" -d '{"paas":"'${PAAS}'","secret":"'${SECRET}'"}'
     ```
 
-### other options
+### Other options
 
 Options are endless. Be creative...
 
-## defining secrets
+## Defining secrets
 
 Encrypted Secrets can be specified in multiple places.
 
@@ -105,7 +105,7 @@ be deployed in the namespace belonging to the capability specifically.
               2wkeKe...g==
     ```
 
-By defining the secret as part of a PaasNs, the secret will be deployed in the
+By defining the secret as part of a PaasNs (`PaasNs.spec.secrets`), the secret will be deployed in the
 corresponding namespace only.
 
 !!! example
@@ -113,16 +113,10 @@ corresponding namespace only.
     ```yaml
     ---
     apiVersion: cpet.belastingdienst.nl/v1alpha2
-    kind: Paas
+    kind: PaasNS
     metadata:
       name: tst-tst
     spec:
-      capabilities:
-        # The argocd capability enabled
-        argocd: {}
-      requestor: my-team
-      quota:
-        limits.cpu: "40"
       secrets:
         'ssh://git@my-git-host/my-git-repo.git': >-
           2wkeKe...g==

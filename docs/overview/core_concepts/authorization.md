@@ -158,7 +158,6 @@ DevOps engineers could additionally create a PaasNS with the following definitio
       name: adminonly
       namespace: my-paas-argocd
     spec:
-      paas: my-paas
       # The namespace would only contain RoleBindings for the `my-paas-us` group, which drills
       # down to the `admin`, `edit`, `view`, `alert-routing-edit`, and `monitoring-edit` ClusterRoles.
       groups:
@@ -169,5 +168,4 @@ DevOps engineers could additionally create a PaasNS with the following definitio
 
 - All groups will have the permissions as specified in the Paas.
 - Next to permissions on groups and users, there is also capabilities to implement
-  permissions for service accounts. See [extra_permissions](../../administrators-guide/capabilities.md#configuring-permissions) for
-  more info.
+  permissions for service accounts. See [extra_permissions](../../administrators-guide/capabilities.md#configuring-permissions) for more info.
