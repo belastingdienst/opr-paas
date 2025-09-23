@@ -31,7 +31,7 @@ func TestWithMetrics_IncrementsCounter(t *testing.T) {
 				w.WriteHeader(http.StatusOK)
 				_, err := io.WriteString(w, "ok")
 				if err != nil {
-					return
+					t.Fatal(err)
 				}
 			},
 			wantStatus: http.StatusOK,
