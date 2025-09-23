@@ -8,9 +8,12 @@ package argocd_plugin_generator
 
 import (
 	"context"
+	"fmt"
 	"os"
 
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 )
@@ -40,6 +43,7 @@ type GeneratorServerInterface interface {
 type PluginGenerator struct {
 	service *Service
 	server  GeneratorServerInterface
+	cache   cache.Cache
 }
 
 // New creates a new PluginGenerator instance using the provided
@@ -47,7 +51,7 @@ type PluginGenerator struct {
 //
 // The client is passed to the Service for interacting with Kubernetes
 // objects, and the server will be configured internally to use this service.
-func New(kclient client.Client, bindAddr string) *PluginGenerator {
+func New(kclient client.Client, c cache.Cache, bindAddr string) (*PluginGenerator, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	_, logger := logging.GetLogComponent(ctx, logging.PluginGeneratorComponent)
@@ -62,11 +66,22 @@ func New(kclient client.Client, bindAddr string) *PluginGenerator {
 		TokenEnvVar: tokenEnvVar,
 	}, handler)
 
+	// Ensure informer for Paas exists, to trigger sync of the cache
+	if _, err := c.GetInformer(context.Background(), &v1alpha2.Paas{}); err != nil {
+		return nil, fmt.Errorf("failed to get informer for Paas: %w", err)
+	}
+
+	// Ensure informer for PaasConfig exists, to trigger sync of the cache
+	if _, err := c.GetInformer(context.Background(), &v1alpha2.PaasConfig{}); err != nil {
+		return nil, fmt.Errorf("failed to get informer for Paas: %w", err)
+	}
+
 	logger.Debug().Msg("New PluginGenerator")
 	return &PluginGenerator{
 		service: generatorService,
 		server:  server,
-	}
+		cache:   c,
+	}, nil
 }
 
 // Start satisfies Runnable so that the manager can start the runnable
@@ -85,4 +100,9 @@ func (pg *PluginGenerator) NeedLeaderElection() bool {
 // StartedChecker return a health checker
 func (pg *PluginGenerator) StartedChecker() healthz.Checker {
 	return pg.server.StartedChecker()
+}
+
+// GetCache satisfies hasCache interface so the manager knows to put this runnable in the cache group
+func (pg *PluginGenerator) GetCache() cache.Cache {
+	return pg.cache
 }
