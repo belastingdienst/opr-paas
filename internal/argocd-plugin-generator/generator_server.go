@@ -72,7 +72,7 @@ func (s *GeneratorServer) Start(ctx context.Context) error {
 
 	s.server = &http.Server{
 		Addr:         s.opts.Addr,
-		Handler:      s.handler,
+		Handler:      withMetrics(s.handler),
 		ReadTimeout:  pluginServerTimeout,
 		WriteTimeout: pluginServerTimeout,
 	}
