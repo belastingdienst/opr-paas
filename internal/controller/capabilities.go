@@ -14,7 +14,6 @@ import (
 	"reflect"
 
 	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	appv1 "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
@@ -51,13 +50,16 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) error {
-	paasConfigSpec := config.GetConfig().Spec
+	myConfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
 	for capName := range paas.Spec.Capabilities {
-		if _, exists := paasConfigSpec.Capabilities[capName]; !exists {
+		if _, exists := myConfig.Spec.Capabilities[capName]; !exists {
 			return errors.New("capability not configured")
 		}
 
-		if err := r.ensureAppSetCap(ctx, paas, capName); err != nil {
+		if err = r.ensureAppSetCap(ctx, paas, capName); err != nil {
 			return err
 		}
 	}
@@ -68,10 +70,10 @@ func (r *PaasReconciler) ensureAppSetCaps(
 func capElementsFromPaas(
 	paas *v1alpha2.Paas,
 	capName string,
+	paasConfig v1alpha2.PaasConfig,
 ) (elements fields.Elements, err error) {
-	myConfig := config.GetConfig()
-	templater := templating.NewTemplater(*paas, myConfig)
-	capConfig := myConfig.Spec.Capabilities[capName]
+	templater := templating.NewTemplater(*paas, paasConfig)
+	capConfig := paasConfig.Spec.Capabilities[capName]
 	templatedElements, err := applyCustomFieldTemplates(capConfig.CustomFields, templater)
 	if err != nil {
 		return nil, err
@@ -79,13 +81,13 @@ func capElementsFromPaas(
 
 	capability := paas.Spec.Capabilities[capName]
 
-	capElements, err := capability.CapExtraFields(myConfig.Spec.Capabilities[capName].CustomFields)
+	capElements, err := capability.CapExtraFields(paasConfig.Spec.Capabilities[capName].CustomFields)
 	if err != nil {
 		return nil, err
 	}
 	elements = templatedElements.AsFieldElements().Merge(capElements)
 
-	for name, tpl := range myConfig.Spec.Templating.GenericCapabilityFields {
+	for name, tpl := range paasConfig.Spec.Templating.GenericCapabilityFields {
 		result, templateErr := templater.TemplateToMap(name, tpl)
 		if templateErr != nil {
 			return nil, fmt.Errorf("failed to run template %s", tpl)
@@ -108,7 +110,10 @@ func (r *PaasReconciler) ensureAppSetCap(
 	var err error
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerCapabilitiesComponent)
 	logger.Info().Msgf("reconciling %s Applicationset", capName)
-	myConfig := config.GetConfig()
+	myConfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
 	namespacedName := myConfig.Spec.CapabilityK8sName(capName)
 	if !reflect.DeepEqual(namespacedName, types.NamespacedName{}) {
 		appSet := &appv1.ApplicationSet{}
@@ -120,7 +125,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 			return err
 		}
 
-		elements, err2 := capElementsFromPaas(paas, capName)
+		elements, err2 := capElementsFromPaas(paas, capName, myConfig)
 		if err2 != nil {
 			return err
 		}
@@ -180,7 +185,11 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	capName string,
 ) error {
 	as := &appv1.ApplicationSet{}
-	asNamespacedName := config.GetConfig().Spec.CapabilityK8sName(capName)
+	myConfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	asNamespacedName := myConfig.Spec.CapabilityK8sName(capName)
 	if !reflect.DeepEqual(asNamespacedName, types.NamespacedName{}) {
 		err := r.Get(ctx, asNamespacedName, as)
 		var entries fields.Entries
@@ -224,12 +233,16 @@ func (r *PaasReconciler) finalizeDisabledAppSetCaps(
 	paas *v1alpha2.Paas,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerCapabilitiesComponent)
-	for capName := range config.GetConfig().Spec.Capabilities {
+	myConfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	for capName := range myConfig.Spec.Capabilities {
 		logger.Info().Msgf("reconciling %s Applicationset", capName)
 		if _, exists := paas.Spec.Capabilities[capName]; exists {
 			continue
 		}
-		err := r.finalizeAppSetCap(ctx, paas.Name, capName)
+		err = r.finalizeAppSetCap(ctx, paas.Name, capName)
 		if err != nil {
 			return err
 		}

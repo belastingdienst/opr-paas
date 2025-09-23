@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -37,7 +36,7 @@ var _ = Describe("NamespaceDef", func() {
 		paasNsGroups = []string{group1, group2}
 	)
 	BeforeEach(func() {
-		ctx = context.Background()
+		//ctx = context.Background()
 		paas = v1alpha2.Paas{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: paasName,
@@ -74,7 +73,13 @@ var _ = Describe("NamespaceDef", func() {
 				},
 			},
 		}
-		config.SetConfig(paasConfig)
+
+		// Updates context to include paasConfig
+		ctx = context.Background()
+		ctx = context.WithValue(ctx, contextKeyPaasConfig, paasConfig)
+		_, err := getConfigFromContext(ctx)
+		Expect(err).To(Not(HaveOccurred()))
+
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),

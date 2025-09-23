@@ -123,7 +123,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	if paas.DeletionTimestamp != nil {
 		return nil, nil
 	}
-	conf, err := config.GetConfigV1()
+	conf, err := config.GetConfigV1(ctx, v.client)
 	if err != nil {
 		return nil, err
 	}

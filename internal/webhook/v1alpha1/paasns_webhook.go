@@ -96,7 +96,7 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 		}
 	}
 
-	errs = append(errs, validatePaasNsName(paasns.Name)...)
+	errs = append(errs, v.validatePaasNsName(paasns.Name)...)
 
 	paas, err := paasNStoPaas(ctx, v.client, paasns)
 	if err != nil {
@@ -271,13 +271,14 @@ func compareGroups(subGroups []string, superGroups []string) (errs field.ErrorLi
 }
 
 // validatePaasNsName returns an error when the naam of the PaasNs does not meet validations RE
-func validatePaasNsName(name string) (errs field.ErrorList) {
-	conf, err := config.GetConfigV1()
+func (v *PaasNSCustomValidator) validatePaasNsName(name string) (errs field.ErrorList) {
+	conf, err := config.GetConfigV1(context.Background(), v.client)
 	if err != nil {
 		errs = append(errs, field.InternalError(
 			field.NewPath("paasconfig"),
 			fmt.Errorf("unable to retrieve paasconfig: %s", err),
 		))
+		return errs
 	}
 
 	if strings.Contains(name, ".") {

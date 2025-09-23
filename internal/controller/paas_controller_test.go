@@ -15,7 +15,6 @@ import (
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	argocd "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
@@ -140,7 +139,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		appSet       *argocd.ApplicationSet
 		reconciler   *PaasReconciler
 		request      controllerruntime.Request
-		myConfig     v1alpha2.PaasConfig
+		myConfig     *v1alpha2.PaasConfig
 		paasName     = paasRequestor
 		capNamespace = paasName + "-" + capName
 		privateKey   []byte
@@ -187,7 +186,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 				},
 			},
 		}
-		myConfig = v1alpha2.PaasConfig{
+		myConfig = &v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
@@ -214,7 +213,10 @@ var _ = Describe("Paas Controller", Ordered, func() {
 				QuotaLabel:      "q.lbl",
 			},
 		}
-		config.SetConfig(myConfig)
+
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, myConfig)
+
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),
@@ -553,7 +555,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		paas                     *v1alpha2.Paas
 		reconciler               *PaasReconciler
 		request                  controllerruntime.Request
-		myConfig                 v1alpha2.PaasConfig
+		myConfig                 *v1alpha2.PaasConfig
 		privateKey               []byte
 		mycrypt                  *crypt.Crypt
 		paasSecretValue          string
@@ -635,7 +637,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		request.Name = paasName
 		assurePaas(ctx, *paas)
 		Expect(paas.Kind).To(Equal("Paas"))
-		myConfig = v1alpha2.PaasConfig{
+		myConfig = &v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
@@ -664,7 +666,10 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 				},
 			},
 		}
-		config.SetConfig(myConfig)
+
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, myConfig)
+
 		reconciler = &PaasReconciler{Client: k8sClient, Scheme: k8sClient.Scheme()}
 	})
 	// create Paas

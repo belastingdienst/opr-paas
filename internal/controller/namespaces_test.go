@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -35,7 +34,7 @@ var _ = Describe("Namespace", Ordered, func() {
 	var (
 		paas       *v1alpha2.Paas
 		reconciler *PaasReconciler
-		myConfig   v1alpha2.PaasConfig
+		myConfig   *v1alpha2.PaasConfig
 		paasName   = paasRequestor
 	)
 	ctx := context.Background()
@@ -67,7 +66,7 @@ var _ = Describe("Namespace", Ordered, func() {
 				},
 			},
 		}
-		myConfig = v1alpha2.PaasConfig{
+		myConfig = &v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
@@ -94,7 +93,9 @@ var _ = Describe("Namespace", Ordered, func() {
 				},
 			},
 		}
-		config.SetConfig(myConfig)
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, myConfig)
+
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),

@@ -26,7 +26,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 	var (
 		ctx        context.Context
 		reconciler *PaasReconciler
-		paasConfig v1alpha2.PaasConfig
+		paasConfig *v1alpha2.PaasConfig
 		paas       *v1alpha2.Paas
 		quotaName  = types.NamespacedName{Name: join("paas", capName)}
 	)
@@ -60,7 +60,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 
 	BeforeEach(func() {
 		ctx = context.Background()
-		paasConfig = v1alpha2.PaasConfig{
+		paasConfig = &v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
@@ -79,7 +79,8 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 				},
 			},
 		}
-		config.SetConfig(paasConfig)
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, paasConfig)
 
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
@@ -197,7 +198,9 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 
 	When("a capability is configured with a cluster-wide quota minimum and maximum", func() {
 		BeforeEach(func() {
-			conf := config.GetConfig()
+			conf, err := config.GetConfig(ctx, k8sClient)
+			Expect(err).NotTo(HaveOccurred())
+
 			c := conf.Spec.Capabilities[capName]
 			c.QuotaSettings.MinQuotas = map[corev1.ResourceName]resourcev1.Quantity{
 				corev1.ResourceLimitsCPU:   resourcev1.MustParse("9"),
@@ -208,7 +211,8 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 				corev1.ResourceRequestsCPU: resourcev1.MustParse("6"),
 			}
 			conf.Spec.Capabilities[capName] = c
-			config.SetConfig(conf)
+			err = k8sClient.Update(ctx, &conf)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should create a ClusterResourceQuota with the minimum quota when reconciling Paas' "+
@@ -266,11 +270,14 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 
 		It("should create a ClusterResourceQuota with the sum of Paas' quotas multiplied by the ratio "+
 			"when the capability is configured with a ratio other than 1", func() {
-			conf := config.GetConfig()
+			conf, err := config.GetConfig(ctx, k8sClient)
+			Expect(err).NotTo(HaveOccurred())
+
 			c := conf.Spec.Capabilities[capName]
 			c.QuotaSettings.Ratio = 1.4
 			conf.Spec.Capabilities[capName] = c
-			config.SetConfig(conf)
+
+			err = k8sClient.Update(ctx, &conf)
 
 			addPaasWithDefCap(join(paasPrefix, "1"))
 			addPaasWithCap(

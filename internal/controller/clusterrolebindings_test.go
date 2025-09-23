@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	rbac "k8s.io/api/rbac/v1"
@@ -31,7 +30,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 		secondPaas      *v1alpha2.Paas
 		secondNsDefs    namespaceDefs
 		reconciler      *PaasReconciler
-		paasConfig      v1alpha2.PaasConfig
+		paasConfig      *v1alpha2.PaasConfig
 		capConfig       v1alpha2.ConfigCapability
 		defaultCapPerms = []string{capName + "-view"}
 		extraCapPerms   = []string{capName + "-edit"}
@@ -46,7 +45,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 				capName: extraCapPerms,
 			},
 		}
-		paasConfig = v1alpha2.PaasConfig{
+		paasConfig = &v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
@@ -60,7 +59,9 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 	})
 	BeforeEach(func() {
 		ctx = context.Background()
-		config.SetConfig(paasConfig)
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, paasConfig)
+
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),

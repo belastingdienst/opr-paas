@@ -50,7 +50,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		validSecret1Key = "validSecret1"
 		validSecret2    string
 		validator       PaasNSCustomValidator
-		conf            v1alpha2.PaasConfig
+		conf            *v1alpha2.PaasConfig
 		scheme          *runtime.Scheme
 	)
 
@@ -139,7 +139,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
-		conf = v1alpha2.PaasConfig{
+		conf = &v1alpha2.PaasConfig{
 			Spec: v1alpha2.PaasConfigSpec{
 				DecryptKeysSecret: v1alpha2.NamespacedName{
 					Name:      paasPkSecret,
@@ -147,6 +147,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
+
 		config.SetConfig(conf)
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
 		Expect(obj).NotTo(BeNil(), "Expected obj to be initialized")
@@ -205,7 +206,9 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				{name: "", validation: "^.$", valid: false},
 			} {
 				conf.Spec.Validations = v1alpha2.PaasConfigValidations{"paasNs": {"name": test.validation}}
-				config.SetConfig(conf)
+				err := k8sClient.Update(ctx, conf)
+				Expect(err).To(Not(HaveOccurred()))
+
 				obj.Name = test.name
 				if test.valid {
 					warn, err := validator.ValidateCreate(ctx, obj)
