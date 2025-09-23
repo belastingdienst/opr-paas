@@ -23,8 +23,6 @@ var _ = Describe("GeneratorServer", func() {
 		server          *GeneratorServer
 		opts            ServerOptions
 		handler         http.Handler
-		ctx             context.Context
-		cancel          context.CancelFunc
 		addr            string
 		testTokenEnvVar string
 		tokenValue      string

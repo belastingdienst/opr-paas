@@ -16,7 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -75,7 +74,11 @@ func (r *PaasReconciler) updateClusterWideQuotaResources(
 	if err != nil {
 		return err
 	}
-	c, exists := config.GetConfig().Spec.Capabilities[capabilityName]
+	myConfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	c, exists := myConfig.Spec.Capabilities[capabilityName]
 	if !exists {
 		return fmt.Errorf("missing capability config for %s", capabilityName)
 	}
@@ -101,6 +104,7 @@ func (r *PaasReconciler) updateClusterWideQuotaResources(
 func backendClusterWideQuota(
 	quotaName string,
 	hardQuotas map[corev1.ResourceName]resourcev1.Quantity,
+	quotaLabel string,
 ) *quotav1.ClusterResourceQuota {
 	quota := &quotav1.ClusterResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{
@@ -110,7 +114,7 @@ func backendClusterWideQuota(
 			Selector: quotav1.ClusterResourceQuotaSelector{
 				LabelSelector: &metav1.LabelSelector{
 					MatchLabels: map[string]string{
-						config.GetConfig().Spec.QuotaLabel: quotaName,
+						quotaLabel: quotaName,
 					},
 				},
 			},
@@ -146,11 +150,14 @@ func (r *PaasReconciler) finalizeClusterWideQuotas(ctx context.Context, paas *v1
 }
 
 func (r *PaasReconciler) reconcileClusterWideQuota(ctx context.Context, paas *v1alpha2.Paas) error {
-	myconfig := config.GetConfig()
+	myconfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
 
 	for capabilityName := range myconfig.Spec.Capabilities {
 		if _, exists := paas.Spec.Capabilities[capabilityName]; exists {
-			err := r.addToClusterWideQuota(ctx, paas, capabilityName)
+			err = r.addToClusterWideQuota(ctx, paas, capabilityName)
 			if err != nil && k8serrors.IsNotFound(err) {
 				continue
 			}
@@ -158,7 +165,7 @@ func (r *PaasReconciler) reconcileClusterWideQuota(ctx context.Context, paas *v1
 				return err
 			}
 		} else {
-			err := r.removeFromClusterWideQuota(ctx, paas, capabilityName)
+			err = r.removeFromClusterWideQuota(ctx, paas, capabilityName)
 			if err != nil && k8serrors.IsNotFound(err) {
 				continue
 			}
@@ -206,19 +213,23 @@ func (r *PaasReconciler) needsUpdate(current, desired *quotav1.ClusterResourceQu
 
 func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alpha2.Paas, capabilityName string) error {
 	quotaName := clusterWideQuotaName(capabilityName)
-	paasConfigSpec, exists := config.GetConfig().Spec.Capabilities[capabilityName]
+	myConfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	capConfig, exists := myConfig.Spec.Capabilities[capabilityName]
 	if !exists {
 		return fmt.Errorf("capability %s does not exist in configuration", capabilityName)
 	}
-	if !paasConfigSpec.QuotaSettings.Clusterwide {
+	if !capConfig.QuotaSettings.Clusterwide {
 		return nil
 	}
 
-	desired := backendClusterWideQuota(quotaName, paasConfigSpec.QuotaSettings.MinQuotas)
+	desired := backendClusterWideQuota(quotaName, capConfig.QuotaSettings.MinQuotas, myConfig.Spec.QuotaLabel)
 
 	// Try to fetch existing quota
 	current := &quotav1.ClusterResourceQuota{}
-	err := r.Get(ctx, client.ObjectKeyFromObject(desired), current)
+	err = r.Get(ctx, client.ObjectKeyFromObject(desired), current)
 	if err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
@@ -257,18 +268,22 @@ func (r *PaasReconciler) removeFromClusterWideQuota(
 	paas *v1alpha2.Paas,
 	capabilityName string,
 ) error {
+	myConfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
 	var quota *quotav1.ClusterResourceQuota
 	quotaName := clusterWideQuotaName(capabilityName)
 	var capConfig v1alpha2.ConfigCapability
 	var exists bool
-	if capConfig, exists = config.GetConfig().Spec.Capabilities[capabilityName]; !exists {
+	if capConfig, exists = myConfig.Spec.Capabilities[capabilityName]; !exists {
 		// If a Paas was created with a capability that was nog yet configured, we should be able to delete it.
 		// Returning an error would block deletion.
 		return nil
 	}
 	quota = backendClusterWideQuota(quotaName,
-		capConfig.QuotaSettings.MinQuotas)
-	err := r.Get(ctx, client.ObjectKeyFromObject(quota), quota)
+		capConfig.QuotaSettings.MinQuotas, myConfig.Spec.QuotaLabel)
+	err = r.Get(ctx, client.ObjectKeyFromObject(quota), quota)
 	if err != nil && k8serrors.IsNotFound(err) {
 		return nil
 	} else if err != nil {

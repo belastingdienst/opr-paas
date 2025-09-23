@@ -11,11 +11,11 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	argocd "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
@@ -24,6 +24,7 @@ import (
 	userv1 "github.com/openshift/api/user/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -140,7 +141,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		appSet       *argocd.ApplicationSet
 		reconciler   *PaasReconciler
 		request      controllerruntime.Request
-		myConfig     v1alpha2.PaasConfig
+		myConfig     *v1alpha2.PaasConfig
 		paasName     = paasRequestor
 		capNamespace = paasName + "-" + capName
 		privateKey   []byte
@@ -187,7 +188,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 				},
 			},
 		}
-		myConfig = v1alpha2.PaasConfig{
+		myConfig = &v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
@@ -214,11 +215,26 @@ var _ = Describe("Paas Controller", Ordered, func() {
 				QuotaLabel:      "q.lbl",
 			},
 		}
-		config.SetConfig(myConfig)
+
+		// Create myConfig in the cluster
+		err := k8sClient.Create(ctx, myConfig)
+		Expect(err).NotTo(HaveOccurred())
+
+		// The reconciler needs an active PaasConfig. As this is lost when creating, we must
+		// call the PaasConfig reconciler the update the status
+		pcReconciler := &PaasConfigReconciler{k8sClient, k8sClient.Scheme()}
+		paasConfigReconcileReq := controllerruntime.Request{NamespacedName: types.NamespacedName{Name: myConfig.Name}}
+		_, err = pcReconciler.Reconcile(ctx, paasConfigReconcileReq)
+		Expect(err).NotTo(HaveOccurred())
+
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),
 		}
+	})
+
+	AfterEach(func() {
+		waitForDeletePaasConfig(ctx, myConfig)
 	})
 
 	When("requesting schema from Reconciler", func() {
@@ -553,7 +569,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		paas                     *v1alpha2.Paas
 		reconciler               *PaasReconciler
 		request                  controllerruntime.Request
-		myConfig                 v1alpha2.PaasConfig
+		myConfig                 *v1alpha2.PaasConfig
 		privateKey               []byte
 		mycrypt                  *crypt.Crypt
 		paasSecretValue          string
@@ -635,7 +651,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		request.Name = paasName
 		assurePaas(ctx, *paas)
 		Expect(paas.Kind).To(Equal("Paas"))
-		myConfig = v1alpha2.PaasConfig{
+		myConfig = &v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
@@ -664,9 +680,25 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 				},
 			},
 		}
-		config.SetConfig(myConfig)
+
+		// Create PaasConfig in the cluster
+		err = k8sClient.Create(ctx, myConfig)
+		Expect(err).NotTo(HaveOccurred())
+
+		// The reconciler needs an active PaasConfig. As this is lost when creating, we must
+		// call the PaasConfig reconciler the update the status
+		pcReconciler := &PaasConfigReconciler{k8sClient, k8sClient.Scheme()}
+		paasConfigReconcileReq := controllerruntime.Request{NamespacedName: types.NamespacedName{Name: myConfig.Name}}
+		_, err = pcReconciler.Reconcile(ctx, paasConfigReconcileReq)
+		Expect(err).NotTo(HaveOccurred())
+
 		reconciler = &PaasReconciler{Client: k8sClient, Scheme: k8sClient.Scheme()}
 	})
+
+	AfterAll(func() {
+		waitForDeletePaasConfig(ctx, myConfig)
+	})
+
 	// create Paas
 	When("creating a Paas and PaasNS", func() {
 		namespaces := []string{
@@ -887,6 +919,11 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			assurePaas(ctx, *paas)
 			_, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
+
+			// As we call finalizePaas directly, we've skipped the code in which
+			// the PaasConfig is added to the context. Therefore, we add this explicitly.
+			ctx = context.WithValue(ctx, contextKeyPaasConfig, *myConfig)
+
 			err = reconciler.finalizePaas(ctx, paas)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -916,3 +953,22 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		})
 	})
 })
+
+func waitForDeletePaasConfig(ctx context.Context, config *v1alpha2.PaasConfig) {
+	// Delete myConfig from the Cluster
+	err := k8sClient.Delete(ctx, config)
+	Expect(err).NotTo(HaveOccurred())
+
+	// Call PaasConfig reconciler to delete finalizer
+	pcReconciler := &PaasConfigReconciler{k8sClient, k8sClient.Scheme()}
+	paasConfigReconcileReq := controllerruntime.Request{NamespacedName: types.NamespacedName{Name: config.Name}}
+	_, err = pcReconciler.Reconcile(ctx, paasConfigReconcileReq)
+	Expect(err).NotTo(HaveOccurred())
+
+	// Wait until the resource is actually gone
+	Eventually(func() bool {
+		found := &v1alpha2.PaasConfig{}
+		err = k8sClient.Get(ctx, types.NamespacedName{Name: config.Name}, found)
+		return apierrors.IsNotFound(err)
+	}, 5*time.Second, 250*time.Millisecond).Should(BeTrue())
+}

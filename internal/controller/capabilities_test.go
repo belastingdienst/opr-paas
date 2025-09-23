@@ -11,7 +11,6 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	appv1 "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -75,7 +74,6 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 			groupTemplate = `g, system:cluster-admins, role:admin{{ range $groupName, $group := .Paas.Spec.Groups }}
 g, {{ $groupName }}, role:admin{{end}}`
 		)
-		ctx = context.Background()
 		paasConfig = v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
@@ -109,7 +107,12 @@ g, {{ $groupName }}, role:admin{{end}}`
 				},
 			},
 		}
-		config.SetConfig(paasConfig)
+
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, paasConfig)
+		_, err := getConfigFromContext(ctx)
+		Expect(err).ToNot(HaveOccurred())
+
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),
@@ -191,7 +194,8 @@ g, ` + group2 + `, role:admin`
 				argoCapConfig := paasConfig.Spec.Capabilities[capName]
 				argoCapConfig.AppSet = invalidCapAppSet
 				paasConfig.Spec.Capabilities[capName] = argoCapConfig
-				config.SetConfig(paasConfig)
+				// Updates context with updated PaasConfig
+				ctx = context.WithValue(ctx, contextKeyPaasConfig, paasConfig)
 				err := reconciler.ensureAppSetCap(ctx, paas, capName)
 				Expect(err).Error().To(MatchError(
 					ContainSubstring("applicationsets.argoproj.io \"" + invalidCapAppSet + "\" not found")))

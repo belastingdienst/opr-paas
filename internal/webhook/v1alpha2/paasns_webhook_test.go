@@ -10,19 +10,21 @@ package v1alpha2
 //revive:disable:dot-imports
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -139,7 +141,11 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
+
 		conf = v1alpha2.PaasConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "paas-config",
+			},
 			Spec: v1alpha2.PaasConfigSpec{
 				DecryptKeysSecret: v1alpha2.NamespacedName{
 					Name:      paasPkSecret,
@@ -147,12 +153,29 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
-		config.SetConfig(conf)
+
+		err := k8sClient.Create(ctx, &conf)
+		Expect(err).To(Not(HaveOccurred()))
+
+		latest := &v1alpha2.PaasConfig{}
+		err = k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latest)
+		Expect(err).NotTo(HaveOccurred())
+
+		meta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:   v1alpha2.TypeActivePaasConfig,
+			Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: latest.Generation,
+			Message: "This config is the active config!",
+		})
+		err = k8sClient.Status().Update(ctx, latest)
+		Expect(err).NotTo(HaveOccurred())
+
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
 		Expect(obj).NotTo(BeNil(), "Expected obj to be initialized")
 	})
 
 	AfterEach(func() {
+		err := k8sClient.Delete(ctx, &conf)
+		Expect(err).To(Not(HaveOccurred()))
 	})
 
 	Context("When properly creating or updating a PaasNS", func() {
@@ -205,7 +228,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				{name: "", validation: "^.$", valid: false},
 			} {
 				conf.Spec.Validations = v1alpha2.PaasConfigValidations{"paasNs": {"name": test.validation}}
-				config.SetConfig(conf)
+				ctx = context.WithValue(ctx, contextKeyPaasConfig, conf)
+
 				obj.Name = test.name
 				if test.valid {
 					warn, err := validator.ValidateCreate(ctx, obj)

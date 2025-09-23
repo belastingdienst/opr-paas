@@ -11,7 +11,6 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	userv1 "github.com/openshift/api/user/v1"
@@ -30,7 +29,7 @@ var _ = Describe("Group controller", Ordered, func() {
 	var (
 		ctx        context.Context
 		paas       *v1alpha2.Paas
-		myConfig   *v1alpha2.PaasConfig
+		myConfig   v1alpha2.PaasConfig
 		group      *userv1.Group
 		reconciler *PaasReconciler
 	)
@@ -48,12 +47,24 @@ var _ = Describe("Group controller", Ordered, func() {
 			},
 		}
 		// Set the PaasConfig so reconcilers know where to find our fixtures
-		myConfig = genericConfig.DeepCopy()
-		myConfig.Spec.Templating.GroupLabels = v1alpha2.ConfigTemplatingItem{
-			"": "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" +
-				kubeInstLabel + "\" }}{{$key}}: {{$value}}\n{{end}}{{end}}",
+
+		myConfig = v1alpha2.PaasConfig{
+			Spec: v1alpha2.PaasConfigSpec{
+				DecryptKeysSecret: v1alpha2.NamespacedName{
+					Name:      "keys",
+					Namespace: "paas-system",
+				},
+				Templating: v1alpha2.ConfigTemplatingItems{
+					GroupLabels: map[string]string{
+						"": "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" +
+							kubeInstLabel + "\" }}{{$key}}: {{$value}}\n{{end}}{{end}}",
+					},
+				},
+			},
 		}
-		config.SetConfig(*myConfig)
+
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, myConfig)
 	})
 
 	AfterEach(func() {
@@ -165,7 +176,10 @@ var _ = Describe("Group controller", Ordered, func() {
 				}
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %s: %v", setting, expects)
 				myConfig.Spec.FeatureFlags.GroupUserManagement = setting
-				config.SetConfig(*myConfig)
+
+				// Updates context to include paasConfig
+				ctx = context.WithValue(context.Background(), contextKeyPaasConfig, myConfig)
+
 				groups, err := reconciler.backendGroups(ctx, paas)
 				Expect(err).NotTo(HaveOccurred())
 				if expects.groups {

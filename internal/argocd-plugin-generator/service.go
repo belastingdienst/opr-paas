@@ -67,8 +67,14 @@ func (s *Service) Generate(params map[string]interface{}) ([]map[string]interfac
 	}
 
 	var results []map[string]interface{}
+	myConfig, err := config.GetConfig(ctx, s.kclient)
+	if err != nil {
+		logger.Error().AnErr("error", err).Msg("GetConfig error")
+		return nil, err
+	}
 	for _, paas := range paasList.Items {
-		elements, err := capElementsFromPaas(ctx, &paas, capName)
+		var elements fields.Elements
+		elements, err = capElementsFromPaas(ctx, &paas, capName, myConfig)
 		if err != nil {
 			logger.Error().Str("paas_name", paas.Name).AnErr("error", err).Msg("failed to generate elements")
 			return nil, err // return error to caller
@@ -94,16 +100,12 @@ func capElementsFromPaas(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 	capName string,
+	paasConfig v1alpha2.PaasConfig,
 ) (elements fields.Elements, err error) {
 	_, componentLogger := logging.GetLogComponent(ctx, logging.PluginGeneratorComponent)
 	logger := componentLogger.With().Str("paas", paas.Name).Str("capability", capName).Logger()
-	myConfig, err := config.GetConfigWithError()
-	if err != nil {
-		logger.Error().AnErr("error", err).Msg("get paasConfig failed")
-		return nil, err
-	}
-	templater := templating.NewTemplater(*paas, *myConfig)
-	capConfig, exists := myConfig.Spec.Capabilities[capName]
+	templater := templating.NewTemplater(*paas, paasConfig)
+	capConfig, exists := paasConfig.Spec.Capabilities[capName]
 	if !exists {
 		logger.Error().Msg("capability is not configured")
 		return nil, fmt.Errorf("capability %s is not configured", capName)
@@ -120,14 +122,14 @@ func capElementsFromPaas(
 		return nil, nil
 	}
 
-	capElements, err := capability.CapExtraFields(myConfig.Spec.Capabilities[capName].CustomFields)
+	capElements, err := capability.CapExtraFields(paasConfig.Spec.Capabilities[capName].CustomFields)
 	if err != nil {
 		logger.Error().AnErr("error", err).Msg("getting capability custom fields failed")
 		return nil, err
 	}
 	elements = templatedElements.AsFieldElements().Merge(capElements)
 
-	for name, tpl := range myConfig.Spec.Templating.GenericCapabilityFields {
+	for name, tpl := range paasConfig.Spec.Templating.GenericCapabilityFields {
 		result, templateErr := templater.TemplateToMap(name, tpl)
 		if templateErr != nil {
 			logger.Error().Str("template", tpl).AnErr("error", templateErr).Msg("templating failed")

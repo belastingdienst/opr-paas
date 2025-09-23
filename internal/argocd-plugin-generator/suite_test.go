@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package argocd_plugin_generator
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"runtime"
@@ -21,13 +22,15 @@ import (
 	"github.com/rs/zerolog/log"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	xclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
 var (
+	cancel    context.CancelFunc
 	cfg       *rest.Config
-	k8sClient xclient.Client
+	k8sClient client.Client
+	ctx       context.Context
 	testEnv   *envtest.Environment
 )
 
@@ -37,6 +40,7 @@ func TestArgoCDPluginGenerator(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	ctx, cancel = context.WithCancel(context.TODO())
 	log.Logger = log.Level(zerolog.DebugLevel).
 		Output(zerolog.ConsoleWriter{Out: GinkgoWriter})
 	ctrl.SetLogger(zerologr.New(&log.Logger))
@@ -58,7 +62,6 @@ var _ = BeforeSuite(func() {
 		// the tests directly. When we run make test it will be setup and used automatically.
 		BinaryAssetsDirectory: binDirs[len(binDirs)-1],
 	}
-
 	var err error
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
@@ -67,13 +70,14 @@ var _ = BeforeSuite(func() {
 	err = v1alpha2.AddToScheme(testEnv.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	k8sClient, err = xclient.New(cfg, xclient.Options{Scheme: testEnv.Scheme})
+	k8sClient, err = client.New(cfg, client.Options{Scheme: testEnv.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 })
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
+	cancel()
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
