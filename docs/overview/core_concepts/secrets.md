@@ -90,8 +90,7 @@ in the PaasNs. Additionally, `secret`s can also be created in a Paas.
 
 ### Defining secrets in a Paas
 
-The Paas controller only manages secrets in Paas namespaces which can be defined as part of a Paas (generic, capability 
-or namespace), or a PaasNS.
+The Paas controller only manages secrets in Paas namespaces which can be defined as part of a Paas (generic, capability or namespace), or a PaasNS.
 
 secrets can be defined in a Paas on three levels:
 
@@ -152,16 +151,15 @@ original secret is not removed.
       name: my-ns
       namespace: my-paas-argocd
     spec:
-      paas: my-paas
       secrets:
         # Specifying a secret for a specific PaasNs namespace
         "ssh://git@github.com/belastingdienst/paas.git": >-
           2wkeKebCnqgl...L/jDAUmhWG3ng==
     ```
 
-# Usecase 1: SSH secrets
+# Use case 1: SSH secrets
 
-One option (the most common usecase) is to add git credentials for argocd.
+One option (the most common use case) is to add git credentials for argocd.
 
 !!! example
 
