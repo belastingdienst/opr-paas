@@ -19,7 +19,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	xclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -65,10 +64,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = v1alpha2.AddToScheme(scheme.Scheme)
+	err = v1alpha2.AddToScheme(testEnv.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	k8sClient, err = xclient.New(cfg, xclient.Options{Scheme: scheme.Scheme})
+	k8sClient, err = xclient.New(cfg, xclient.Options{Scheme: testEnv.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 })

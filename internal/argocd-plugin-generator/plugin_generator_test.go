@@ -15,6 +15,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 )
@@ -67,7 +68,11 @@ var _ = Describe("PluginGenerator", func() {
 			_ = os.Setenv("ARGOCD_GENERATOR_TOKEN", "test-token")
 			defer os.Unsetenv("ARGOCD_GENERATOR_TOKEN")
 
-			pg = New(fakeClient, ":4355")
+			// use testEnv cfg and schema to create a cache
+			cache, err := cache.New(cfg, cache.Options{Scheme: testEnv.Scheme})
+			Expect(err).NotTo(HaveOccurred())
+			pg, err = New(fakeClient, cache, ":4355")
+			Expect(err).NotTo(HaveOccurred())
 
 			Expect(pg).ToNot(BeNil())
 			Expect(pg.service).ToNot(BeNil())
