@@ -131,7 +131,7 @@ The ArgoCD Applicationset could look like this:
                 subservice: "{{subservice}}"
             path: paas-capabilities/argocd
             repoURL: "ssh://git@github.com/belastingdienst/my-paas-capabilities.git"
-            targetRevision: master
+            targetRevision: main
           syncPolicy:
             automated:
               selfHeal: true
