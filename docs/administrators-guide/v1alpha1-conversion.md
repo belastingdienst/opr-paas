@@ -64,7 +64,7 @@ We advise to add the following custom fields to your argocd capability:
             git_url:
               required: true
             git_revision:
-              default: "master"
+              default: "main"
             git_path:
               default: "."
     ```
