@@ -7,8 +7,14 @@ See LICENSE.md for details.
 package controller
 
 import (
+	"context"
+	"fmt"
 	"strings"
+
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 )
+
+const contextKeyPaasConfig = "paasConfig"
 
 func join(argv ...string) string {
 	return strings.Join(argv, "-")
@@ -31,4 +37,16 @@ func intersect(l1 []string, l2 []string) (li []string) {
 		}
 	}
 	return li
+}
+
+// getConfigFromContext returns the PaasConfig object from the config, using the
+// contextKeyPaasConfig. If the returned value cannot be parsed to the latest
+// api version PaasConfig, it returns an error.
+func getConfigFromContext(ctx context.Context) (v1alpha2.PaasConfig, error) {
+	rawConfig := ctx.Value(contextKeyPaasConfig)
+	myConfig, ok := rawConfig.(v1alpha2.PaasConfig)
+	if !ok {
+		return v1alpha2.PaasConfig{}, fmt.Errorf("could not get config from context")
+	}
+	return myConfig, nil
 }

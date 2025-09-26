@@ -11,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -158,7 +157,11 @@ func (r *PaasReconciler) paasCapabilityNss(
 	paasGroups []string,
 ) (namespaceDefs, error) {
 	result := namespaceDefs{}
-	capsConfig := config.GetConfig().Spec.Capabilities
+	myConfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		return result, err
+	}
+	capsConfig := myConfig.Spec.Capabilities
 
 	for capName, capDef := range paas.Spec.Capabilities {
 		capConfig, ok := capsConfig[capName]

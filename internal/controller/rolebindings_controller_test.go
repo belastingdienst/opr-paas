@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -36,7 +35,7 @@ var _ = Describe("Rolebinding", Ordered, func() {
 	var (
 		paas       *v1alpha2.Paas
 		reconciler *PaasReconciler
-		myConfig   v1alpha2.PaasConfig
+		myConfig   *v1alpha2.PaasConfig
 		paasName   = paasRequestor
 		ns1        = join(paasRequestor, "ns1")
 	)
@@ -70,7 +69,7 @@ var _ = Describe("Rolebinding", Ordered, func() {
 				},
 			},
 		}
-		myConfig = v1alpha2.PaasConfig{
+		myConfig = &v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
@@ -99,7 +98,10 @@ var _ = Describe("Rolebinding", Ordered, func() {
 				},
 			},
 		}
-		config.SetConfig(myConfig)
+
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, myConfig)
+
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),

@@ -34,7 +34,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		oldObj    *v1alpha1.Paas
 		validator PaasCustomValidator
 		mycrypt   *crypt.Crypt
-		conf      v1alpha1.PaasConfig
+		conf      *v1alpha1.PaasConfig
 	)
 
 	BeforeAll(func() {
@@ -50,7 +50,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		obj = &v1alpha1.Paas{}
 		oldObj = &v1alpha1.Paas{}
 		validator = PaasCustomValidator{k8sClient}
-		conf = v1alpha1.PaasConfig{
+		conf = &v1alpha1.PaasConfig{
 			Spec: v1alpha1.PaasConfigSpec{
 				DecryptKeysSecret: v1alpha1.NamespacedName{
 					Name:      "keys",
@@ -69,7 +69,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			},
 		}
 
-		err := config.SetConfigV1(conf)
+		err := k8sClient.Create(ctx, conf)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
@@ -238,17 +238,13 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should deny creation when a capability custom field is not configured", func() {
-			v1conf := v1alpha1.PaasConfig{}
-			v2conf := config.GetConfig()
-			v1conf.ConvertFrom(&v2conf)
-			conf := v1conf.Spec
-
-			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
+			conf.Spec.Capabilities["foo"] = v1alpha1.ConfigCapability{
 				CustomFields: map[string]v1alpha1.ConfigCustomField{
 					"bar": {},
 				},
 			}
-			config.SetConfigV1(v1alpha1.PaasConfig{Spec: conf})
+			err := k8sClient.Update(ctx, conf)
+			Expect(err).To(Not(HaveOccurred()))
 
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
@@ -263,7 +259,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					},
 				},
 			}
-			_, err := validator.ValidateCreate(ctx, obj)
+			_, err = validator.ValidateCreate(ctx, obj)
 
 			var serr *apierrors.StatusError
 			Expect(errors.As(err, &serr)).To(BeTrue())

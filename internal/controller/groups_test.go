@@ -11,7 +11,6 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	userv1 "github.com/openshift/api/user/v1"
@@ -53,7 +52,8 @@ var _ = Describe("Group controller", Ordered, func() {
 			"": "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" +
 				kubeInstLabel + "\" }}{{$key}}: {{$value}}\n{{end}}{{end}}",
 		}
-		config.SetConfig(*myConfig)
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, myConfig)
 	})
 
 	AfterEach(func() {
@@ -165,7 +165,10 @@ var _ = Describe("Group controller", Ordered, func() {
 				}
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %s: %v", setting, expects)
 				myConfig.Spec.FeatureFlags.GroupUserManagement = setting
-				config.SetConfig(*myConfig)
+
+				// Updates context to include paasConfig
+				ctx = context.WithValue(context.Background(), contextKeyPaasConfig, myConfig)
+				
 				groups, err := reconciler.backendGroups(ctx, paas)
 				Expect(err).NotTo(HaveOccurred())
 				if expects.groups {

@@ -10,7 +10,6 @@ import (
 	"context"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -66,7 +65,8 @@ var _ = Describe("Service", func() {
 
 	BeforeEach(func() {
 		svc = NewService(k8sClient)
-		config.SetConfig(examplePaasConfig)
+		err := k8sClient.Create(context.Background(), &examplePaasConfig)
+		Expect(err).To(Not(HaveOccurred()))
 	})
 
 	Context("Generate", func() {
@@ -131,7 +131,7 @@ var _ = Describe("Service", func() {
 		})
 		It("returns err when no PaasConfig is set", func() {
 			By("Calling Generate")
-			config.ResetConfig()
+			err := k8sClient.DeleteAllOf(context.Background(), &v1alpha2.PaasConfig{})
 
 			params := map[string]interface{}{
 				"capability": "argocd",

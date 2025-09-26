@@ -12,7 +12,6 @@ import (
 	"maps"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 
@@ -59,19 +58,23 @@ func ensureNamespace(
 }
 
 // backendNamespace is a code for defining Namespaces
-func backendNamespace(
+func (r *PaasReconciler) backendNamespace(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 	name string,
 	quota string,
-	scheme *runtime.Scheme,
 ) (*corev1.Namespace, error) {
 	ctx, _ = logging.GetLogComponent(ctx, logging.ControllerNamespaceComponent)
 	_, logger := logging.GetLogComponent(ctx, logging.ControllerNamespaceComponent)
 	logger.Info().Msgf("defining %s Namespace", name)
 
 	labels := map[string]string{}
-	myConfig := config.GetConfig()
+
+	myConfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
 	for tplName, tpl := range myConfig.Spec.Templating.NamespaceLabels {
 		result, err := labelTemplater.TemplateToMap(tplName, tpl)
@@ -89,11 +92,11 @@ func backendNamespace(
 		Spec: corev1.NamespaceSpec{},
 	}
 	logger.Info().Msgf("setting Quotagroup %s", quota)
-	ns.Labels[config.GetConfig().Spec.QuotaLabel] = quota
+	ns.Labels[myConfig.Spec.QuotaLabel] = quota
 	ns.Labels[ManagedByLabelKey] = paas.Name
 
 	logger.Info().Str("Paas", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
-	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {
+	if err := controllerutil.SetControllerReference(paas, ns, r.Scheme); err != nil {
 		logger.Err(err).Msg("setControllerReference failure")
 		return nil, err
 	}
@@ -111,7 +114,7 @@ func (r *PaasReconciler) reconcileNamespaces(
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerNamespaceComponent)
 	for _, nsDef := range nsDefs {
 		var ns *corev1.Namespace
-		if ns, err = backendNamespace(ctx, paas, nsDef.nsName, nsDef.quotaName, r.Scheme); err != nil {
+		if ns, err = r.backendNamespace(ctx, paas, nsDef.nsName, nsDef.quotaName); err != nil {
 			return fmt.Errorf("failure while defining namespace %s: %s", nsDef.nsName, err.Error())
 		} else if err = ensureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
 			return fmt.Errorf("failure while creating namespace %s: %s", nsDef.nsName, err.Error())

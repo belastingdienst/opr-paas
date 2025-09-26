@@ -34,7 +34,7 @@ func resetCrypts() {
 func getRsaPrivateKeys(ctx context.Context, _c client.Client) (*crypt.PrivateKeys, error) {
 	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookUtilsComponentV1)
 	rsaSecret := &corev1.Secret{}
-	conf, err := cnf.GetConfigV1()
+	conf, err := cnf.GetConfigV1(ctx, _c)
 	if err != nil {
 		return nil, err
 	}

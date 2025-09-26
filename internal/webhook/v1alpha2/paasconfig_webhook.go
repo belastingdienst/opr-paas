@@ -9,9 +9,11 @@ package v1alpha2
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"regexp"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/controller"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 	"github.com/belastingdienst/opr-paas/v3/internal/validate"
@@ -118,8 +120,12 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(
 		allErrs = append(allErrs, flderr...)
 	}
 
-	// TODO(hikarukin): figure out what we need to check on update specifically
 	logger.Debug().Msgf("old PaasConfig: %v", oldObj.(*v1alpha2.PaasConfig))
+
+	// TODO(portly-halicore-76): Is this needed as the RSA controller does this as well...
+	if !reflect.DeepEqual(oldObj.(*v1alpha2.PaasConfig).Spec.DecryptKeysSecret, newObj.(*v1alpha2.PaasConfig).Spec.DecryptKeysSecret) && newObj.(*v1alpha2.PaasConfig).IsActive() {
+		controller.ResetCrypts()
+	}
 
 	if len(allErrs) > 0 {
 		return warn, apierrors.NewInvalid(
