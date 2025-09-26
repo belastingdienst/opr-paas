@@ -6,7 +6,9 @@ on:
       - published
 env:
   PYTHON_VERSION: 3.x
-
+  # Golang version to use across CI steps
+  GOLANG_VERSION: '1.25'
+  
 permissions:
   contents: write
   id-token: write
@@ -26,7 +28,9 @@ jobs:
 
       - name: Set up Go for generating API doc
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-
+        with:
+          go-version: ${{ env.GOLANG_VERSION }}
+      
       - name: Generate API document
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
