@@ -27,21 +27,20 @@ import (
 )
 
 // ensureRoleBinding ensures RoleBinding presence in given rolebinding.
-func ensureRoleBinding(
+func (r *PaasReconciler) ensureRoleBinding(
 	ctx context.Context,
-	r Reconciler,
 	paas *v1alpha2.Paas,
 	rb *rbac.RoleBinding,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerRoleBindingComponent)
 	if len(rb.Subjects) < 1 {
-		return finalizeRoleBinding(ctx, r, rb)
+		return r.finalizeRoleBinding(ctx, rb)
 	}
 	// See if rolebinding exists and create if it doesn't
 	found := &rbac.RoleBinding{}
 	err := r.Get(ctx, client.ObjectKeyFromObject(rb), found)
 	if err != nil && errors.IsNotFound(err) {
-		return createRoleBinding(ctx, r, rb)
+		return r.createRoleBinding(ctx, rb)
 	} else if err != nil {
 		// Error that isn't due to the rolebinding not existing
 		logger.Err(err).Msg("error getting rolebinding")
@@ -74,9 +73,8 @@ func ensureRoleBinding(
 	return nil
 }
 
-func createRoleBinding(
+func (r *PaasReconciler) createRoleBinding(
 	ctx context.Context,
-	r Reconciler,
 	rb *rbac.RoleBinding,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerRoleBindingComponent)
@@ -100,9 +98,8 @@ func createRoleBinding(
 }
 
 // backendRoleBinding is code for defining RoleBindings
-func backendRoleBinding(
+func (r *PaasReconciler) backendRoleBinding(
 	ctx context.Context,
-	r Reconciler,
 	paas *v1alpha2.Paas,
 	name types.NamespacedName,
 	role string,
@@ -156,9 +153,8 @@ func backendRoleBinding(
 }
 
 // finalizeRoleBinding ensures RoleBinding presence in given rolebinding.
-func finalizeRoleBinding(
+func (r *PaasReconciler) finalizeRoleBinding(
 	ctx context.Context,
-	r Reconciler,
 	rb *rbac.RoleBinding,
 ) error {
 	namespacedName := types.NamespacedName{
@@ -191,11 +187,11 @@ func (r *PaasReconciler) reconcileNamespaceRolebinding(
 		Str("role", roleName).
 		Strs("groups", groupNames).
 		Msg("creating Rolebinding")
-	rb, err := backendRoleBinding(ctx, r, paas, rbName, roleName, groupNames)
+	rb, err := r.backendRoleBinding(ctx, paas, rbName, roleName, groupNames)
 	if err != nil {
 		return err
 	}
-	if err = ensureRoleBinding(ctx, r, paas, rb); err != nil {
+	if err = r.ensureRoleBinding(ctx, paas, rb); err != nil {
 		err = fmt.Errorf(
 			"failure while creating/updating rolebinding %s/%s: %s",
 			rb.Namespace,

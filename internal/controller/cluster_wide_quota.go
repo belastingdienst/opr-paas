@@ -98,7 +98,8 @@ func (r *PaasReconciler) updateClusterWideQuotaResources(
 }
 
 // backendQuota is a code for Creating Quota
-func backendClusterWideQuota(
+func (r *PaasReconciler) backendClusterWideQuota(
+	ctx context.Context,
 	quotaName string,
 	hardQuotas map[corev1.ResourceName]resourcev1.Quantity,
 ) *quotav1.ClusterResourceQuota {
@@ -214,7 +215,7 @@ func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alph
 		return nil
 	}
 
-	desired := backendClusterWideQuota(quotaName, paasConfigSpec.QuotaSettings.MinQuotas)
+	desired := r.backendClusterWideQuota(ctx, quotaName, paasConfigSpec.QuotaSettings.MinQuotas)
 
 	// Try to fetch existing quota
 	current := &quotav1.ClusterResourceQuota{}
@@ -266,7 +267,7 @@ func (r *PaasReconciler) removeFromClusterWideQuota(
 		// Returning an error would block deletion.
 		return nil
 	}
-	quota = backendClusterWideQuota(quotaName,
+	quota = r.backendClusterWideQuota(ctx, quotaName,
 		capConfig.QuotaSettings.MinQuotas)
 	err := r.Get(ctx, client.ObjectKeyFromObject(quota), quota)
 	if err != nil && k8serrors.IsNotFound(err) {

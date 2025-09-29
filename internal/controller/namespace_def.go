@@ -62,12 +62,8 @@ func newNamespaceDefFromPaasNS(nsName string, paasns *v1alpha2.PaasNS,
 // Helper to merge secrets
 func mergeSecrets(base, override map[string]string) map[string]string {
 	merged := make(map[string]string)
-	for k, v := range base {
-		merged[k] = v
-	}
-	for k, v := range override {
-		merged[k] = v
-	}
+	maps.Copy(merged, base)
+	maps.Copy(merged, override)
 	return merged
 }
 
