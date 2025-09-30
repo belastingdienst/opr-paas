@@ -19,18 +19,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // ensureNamespace ensures Namespace presence in given namespace.
-func ensureNamespace(
+func (r *PaasReconciler) ensureNamespace(
 	ctx context.Context,
-	r client.Client,
 	paas *v1alpha2.Paas,
 	ns *corev1.Namespace,
-	scheme *runtime.Scheme,
 ) error {
 	// See if namespace exists and create if it doesn't
 	found := &corev1.Namespace{}
@@ -41,7 +38,7 @@ func ensureNamespace(
 		// Error that isn't due to the namespace not existing
 		return err
 	} else if !paas.AmIOwner(found.OwnerReferences) {
-		if err = controllerutil.SetControllerReference(paas, found, scheme); err != nil {
+		if err = controllerutil.SetControllerReference(paas, found, r.Scheme); err != nil {
 			return err
 		}
 	}
@@ -59,14 +56,12 @@ func ensureNamespace(
 }
 
 // backendNamespace is a code for defining Namespaces
-func backendNamespace(
+func (r *PaasReconciler) backendNamespace(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 	name string,
 	quota string,
-	scheme *runtime.Scheme,
 ) (*corev1.Namespace, error) {
-	ctx, _ = logging.GetLogComponent(ctx, logging.ControllerNamespaceComponent)
 	_, logger := logging.GetLogComponent(ctx, logging.ControllerNamespaceComponent)
 	logger.Info().Msgf("defining %s Namespace", name)
 
@@ -93,7 +88,7 @@ func backendNamespace(
 	ns.Labels[ManagedByLabelKey] = paas.Name
 
 	logger.Info().Str("Paas", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
-	if err := controllerutil.SetControllerReference(paas, ns, scheme); err != nil {
+	if err := controllerutil.SetControllerReference(paas, ns, r.Scheme); err != nil {
 		logger.Err(err).Msg("setControllerReference failure")
 		return nil, err
 	}
@@ -111,9 +106,9 @@ func (r *PaasReconciler) reconcileNamespaces(
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerNamespaceComponent)
 	for _, nsDef := range nsDefs {
 		var ns *corev1.Namespace
-		if ns, err = backendNamespace(ctx, paas, nsDef.nsName, nsDef.quotaName, r.Scheme); err != nil {
+		if ns, err = r.backendNamespace(ctx, paas, nsDef.nsName, nsDef.quotaName); err != nil {
 			return fmt.Errorf("failure while defining namespace %s: %s", nsDef.nsName, err.Error())
-		} else if err = ensureNamespace(ctx, r.Client, paas, ns, r.Scheme); err != nil {
+		} else if err = r.ensureNamespace(ctx, paas, ns); err != nil {
 			return fmt.Errorf("failure while creating namespace %s: %s", nsDef.nsName, err.Error())
 		}
 		logger.Debug().Msgf("namespace %s successfully created with quotaName %s", nsDef.nsName, nsDef.quotaName)

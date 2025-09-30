@@ -20,14 +20,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const crbNamePrefix string = "paas"
 
-func getClusterRoleBinding(
+func (r *PaasReconciler) getClusterRoleBinding(
 	ctx context.Context,
-	r client.Client,
 	role string,
 ) (crb *rbac.ClusterRoleBinding, err error) {
 	crbName := join(crbNamePrefix, role)
@@ -41,9 +39,8 @@ func getClusterRoleBinding(
 	return found, nil
 }
 
-func updateClusterRoleBinding(
+func (r *PaasReconciler) updateClusterRoleBinding(
 	ctx context.Context,
-	r client.Client,
 	crb *rbac.ClusterRoleBinding,
 ) (err error) {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterRoleBindingsComponent)
@@ -166,11 +163,11 @@ func (r *PaasReconciler) reconcileClusterRoleBinding(
 	permissions := capConfig.ExtraPermissions.AsConfigRolesSas(capability.ExtraPermissions)
 	permissions.Merge(capConfig.DefaultPermissions.AsConfigRolesSas(true))
 	for role, sas := range permissions {
-		if crb, err = getClusterRoleBinding(ctx, r.Client, role); err != nil {
+		if crb, err = r.getClusterRoleBinding(ctx, role); err != nil {
 			return err
 		}
 		if addOrUpdateCrb(ctx, crb, nsName, sas) {
-			if err = updateClusterRoleBinding(ctx, r.Client, crb); err != nil {
+			if err = r.updateClusterRoleBinding(ctx, crb); err != nil {
 				return err
 			}
 		}
@@ -206,7 +203,7 @@ func (r *PaasReconciler) finalizeClusterRoleBinding(
 	nsRegularExpression regexp.Regexp,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterRoleBindingsComponent)
-	crb, err := getClusterRoleBinding(ctx, r.Client, role)
+	crb, err := r.getClusterRoleBinding(ctx, role)
 	if err != nil {
 		return err
 	}
@@ -219,7 +216,7 @@ func (r *PaasReconciler) finalizeClusterRoleBinding(
 		return nil
 	}
 	logger.Info().Msgf("updating rolebinding %s after cleaning SA's for '%s'", role, nsRegularExpression.String())
-	return updateClusterRoleBinding(ctx, r.Client, crb)
+	return r.updateClusterRoleBinding(ctx, crb)
 }
 
 func (r *PaasReconciler) finalizeCapClusterRoleBindings(ctx context.Context, paas *v1alpha2.Paas) error {
