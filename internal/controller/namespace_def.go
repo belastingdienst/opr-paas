@@ -59,18 +59,6 @@ func newNamespaceDefFromPaasNS(nsName string, paasns *v1alpha2.PaasNS,
 	}
 }
 
-// Helper to merge secrets
-func mergeSecrets(base, override map[string]string) map[string]string {
-	merged := make(map[string]string)
-	for k, v := range base {
-		merged[k] = v
-	}
-	for k, v := range override {
-		merged[k] = v
-	}
-	return merged
-}
-
 // paasNSsFromNs gets all PaasNs objects from a namespace and returns a map of all paasNS's.
 // Key of the map is based on the namespaced name of the PaasNS, so that we have uniqueness
 // paasNSsFromNs runs recursively, to collect all PaasNS's in the namespaces of founds PaasNS namespaces too.
