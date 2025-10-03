@@ -177,7 +177,7 @@ jobs:
         # https://github.com/marketplace/actions/kubernetes-kind-cluster#example-workflow
       - name: Kubernetes KinD Cluster
         run: |
-          go install sigs.k8s.io/kind@v0.26.0
+          go install sigs.k8s.io/kind@v0.30.0
           kind create cluster
       - name: Test kind setup successfully
         run: |
