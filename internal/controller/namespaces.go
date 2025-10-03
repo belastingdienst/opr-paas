@@ -91,7 +91,7 @@ func (r *PaasReconciler) backendNamespace(
 	ns.Labels[ManagedByLabelKey] = paas.Name
 
 	logger.Info().Str("Paas", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
-	if err := controllerutil.SetControllerReference(paas, ns, r.Scheme); err != nil {
+	if err = controllerutil.SetControllerReference(paas, ns, r.Scheme); err != nil {
 		logger.Err(err).Msg("setControllerReference failure")
 		return nil, err
 	}

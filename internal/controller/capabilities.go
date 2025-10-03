@@ -17,7 +17,7 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	appv1 "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
