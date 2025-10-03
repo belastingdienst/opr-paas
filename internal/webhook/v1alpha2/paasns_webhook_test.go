@@ -20,11 +20,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
+	cl "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -54,6 +53,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		validator       PaasNSCustomValidator
 		conf            v1alpha2.PaasConfig
 		scheme          *runtime.Scheme
+		fakeClient      cl.Client
 	)
 
 	BeforeAll(func() {
@@ -87,32 +87,32 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		Expect(v1alpha2.AddToScheme(scheme)).To(Succeed())
 		Expect(corev1.AddToScheme(scheme)).To(Succeed())
 
-		// Create a fake client that already has the existing PaasConfig
-		cl := fake.NewClientBuilder().
+		// Create a fake client that already has the existing Paas
+		fakeClient = fake.NewClientBuilder().
 			WithScheme(scheme).
 			WithObjects(paas).
 			Build()
 
-		validator = PaasNSCustomValidator{cl}
+		validator = PaasNSCustomValidator{fakeClient}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 
-		createNamespace(cl, paasSystem)
+		createNamespace(fakeClient, paasSystem)
 		mycrypt, privateKey, err = newGeneratedCrypt(paasName)
 		if err != nil {
 			Fail(err.Error())
 		}
-		createPaasPrivateKeySecret(cl, paasSystem, paasPkSecret, privateKey)
+		createPaasPrivateKeySecret(fakeClient, paasSystem, paasPkSecret, privateKey)
 		paasSecret, err = mycrypt.Encrypt([]byte("paasSecret"))
 		Expect(err).NotTo(HaveOccurred())
 		validSecret1, err = mycrypt.Encrypt([]byte("validSecretCreated"))
 		Expect(err).NotTo(HaveOccurred())
 		validSecret2, err = mycrypt.Encrypt([]byte("validSecretUpdated"))
 		Expect(err).NotTo(HaveOccurred())
-		createPaasNamespace(cl, *paas, paasName)
+		createPaasNamespace(fakeClient, *paas, paasName)
 		// This is a namespace with Owner ref to mypaas and prefix set to myotherpaas-
-		createPaasNamespace(cl, *paas, otherPaasName)
+		createPaasNamespace(fakeClient, *paas, otherPaasName)
 		// This is a namespace without Owner ref
-		createNamespace(cl, nsWithoutOwnerRef)
+		createNamespace(fakeClient, nsWithoutOwnerRef)
 	})
 
 	BeforeEach(func() {
@@ -152,29 +152,25 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 					Namespace: paasSystem,
 				},
 			},
-		}
+			Status: v1alpha2.PaasConfigStatus{
+				Conditions: []metav1.Condition{
+					{
+						Type:    v1alpha2.TypeActivePaasConfig,
+						Status:  metav1.ConditionTrue,
+						Message: "This config is the active config!",
+					},
+				},
+			}}
 
-		err := k8sClient.Create(ctx, &conf)
+		err := fakeClient.Create(ctx, &conf)
 		Expect(err).To(Not(HaveOccurred()))
-
-		latest := &v1alpha2.PaasConfig{}
-		err = k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latest)
-		Expect(err).NotTo(HaveOccurred())
-
-		meta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
-			Type:   v1alpha2.TypeActivePaasConfig,
-			Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: latest.Generation,
-			Message: "This config is the active config!",
-		})
-		err = k8sClient.Status().Update(ctx, latest)
-		Expect(err).NotTo(HaveOccurred())
 
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
 		Expect(obj).NotTo(BeNil(), "Expected obj to be initialized")
 	})
 
 	AfterEach(func() {
-		err := k8sClient.Delete(ctx, &conf)
+		err := fakeClient.Delete(ctx, &conf)
 		Expect(err).To(Not(HaveOccurred()))
 	})
 

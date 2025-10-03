@@ -148,15 +148,19 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 	// This will not occur.
 	paas, _ := paasNStoPaas(ctx, v.client, newPaasns)
 
+	myConfig, err := config.GetConfig(ctx, v.client)
+	if err != nil {
+		errs = append(errs, field.InternalError(
+			field.NewPath("paasconfig"),
+			fmt.Errorf("unable to retrieve paasconfig: %s", err),
+		))
+		return w, errs.ToAggregate()
+	}
+
 	for _, validator := range []paasNsSpecValidator{
 		validatePaasNsGroups,
 		validatePaasNsSecrets,
 	} {
-		var myConfig v1alpha2.PaasConfig
-		myConfig, err = getConfigFromContext(ctx)
-		if err != nil {
-			return nil, err
-		}
 		var fieldErrs []*field.Error
 		fieldErrs, err = validator(ctx, v.client, myConfig, *paas, *newPaasns)
 		if err != nil {
