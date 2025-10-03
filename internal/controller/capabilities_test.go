@@ -110,8 +110,6 @@ g, {{ $groupName }}, role:admin{{end}}`
 
 		// Updates context to include paasConfig
 		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, paasConfig)
-		_, err := getConfigFromContext(ctx)
-		Expect(err).ToNot(HaveOccurred())
 
 		reconciler = &PaasReconciler{
 			Client: k8sClient,

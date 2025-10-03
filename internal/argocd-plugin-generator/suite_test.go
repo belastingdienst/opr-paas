@@ -7,7 +7,6 @@ See LICENSE.md for details.
 package argocd_plugin_generator
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"runtime"
@@ -29,7 +28,6 @@ import (
 var (
 	cfg       *rest.Config
 	k8sClient client.Client
-	ctx       context.Context
 	testEnv   *envtest.Environment
 )
 
@@ -39,7 +37,6 @@ func TestArgoCDPluginGenerator(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	ctx = context.Background()
 	log.Logger = log.Level(zerolog.DebugLevel).
 		Output(zerolog.ConsoleWriter{Out: GinkgoWriter})
 	ctrl.SetLogger(zerologr.New(&log.Logger))

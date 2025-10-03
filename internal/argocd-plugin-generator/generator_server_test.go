@@ -23,11 +23,11 @@ var _ = Describe("GeneratorServer", func() {
 		server          *GeneratorServer
 		opts            ServerOptions
 		handler         http.Handler
+		ctx             context.Context
+		cancel          context.CancelFunc
 		addr            string
 		testTokenEnvVar string
 		tokenValue      string
-		cancel          context.CancelFunc
-		testContext     context.Context
 	)
 
 	const randomAddress = "127.0.0.1:0"
@@ -47,7 +47,7 @@ var _ = Describe("GeneratorServer", func() {
 			TokenEnvVar: testTokenEnvVar,
 		}
 
-		testContext, cancel = context.WithCancel(context.Background())
+		ctx, cancel = context.WithCancel(context.Background())
 	})
 
 	AfterEach(func() {
@@ -57,7 +57,7 @@ var _ = Describe("GeneratorServer", func() {
 
 	It("returns an error if the token environment variable is not set", func() {
 		server = NewServer(opts, handler)
-		err := server.Start(testContext)
+		err := server.Start(ctx)
 		Expect(err).To(MatchError(fmt.Sprintf("environment variable %s not set", testTokenEnvVar)))
 	})
 
@@ -71,7 +71,7 @@ var _ = Describe("GeneratorServer", func() {
 			cancel()
 		}()
 
-		err := server.Start(testContext)
+		err := server.Start(ctx)
 		Expect(err).To(SatisfyAny(BeNil(), MatchError("http: Server closed")))
 	})
 
@@ -81,7 +81,7 @@ var _ = Describe("GeneratorServer", func() {
 
 		done := make(chan error)
 		go func() {
-			done <- server.Start(testContext)
+			done <- server.Start(ctx)
 		}()
 
 		// give the server time to start
@@ -113,7 +113,7 @@ var _ = Describe("GeneratorServer", func() {
 		server = NewServer(opts, handler)
 
 		// Attempting to bind to the same address should fail
-		err = server.Start(testContext)
+		err = server.Start(ctx)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("address already in use"))
 	})
@@ -132,7 +132,7 @@ var _ = Describe("GeneratorServer", func() {
 
 		done := make(chan error)
 		go func() {
-			done <- server.Start(testContext)
+			done <- server.Start(ctx)
 		}()
 
 		time.Sleep(200 * time.Millisecond) // give server time to start
