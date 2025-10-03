@@ -12,7 +12,6 @@ import (
 	"maps"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 
@@ -66,10 +65,14 @@ func (r *PaasReconciler) backendNamespace(
 	logger.Info().Msgf("defining %s Namespace", name)
 
 	labels := map[string]string{}
-	myConfig := config.GetConfig()
+	myConfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
 	for tplName, tpl := range myConfig.Spec.Templating.NamespaceLabels {
-		result, err := labelTemplater.TemplateToMap(tplName, tpl)
+		var result templating.TemplateResult
+		result, err = labelTemplater.TemplateToMap(tplName, tpl)
 		if err != nil {
 			return nil, err
 		}
@@ -84,7 +87,7 @@ func (r *PaasReconciler) backendNamespace(
 		Spec: corev1.NamespaceSpec{},
 	}
 	logger.Info().Msgf("setting Quotagroup %s", quota)
-	ns.Labels[config.GetConfig().Spec.QuotaLabel] = quota
+	ns.Labels[myConfig.Spec.QuotaLabel] = quota
 	ns.Labels[ManagedByLabelKey] = paas.Name
 
 	logger.Info().Str("Paas", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
