@@ -27,7 +27,6 @@ import (
 )
 
 var (
-	cancel    context.CancelFunc
 	cfg       *rest.Config
 	k8sClient client.Client
 	ctx       context.Context
@@ -40,7 +39,7 @@ func TestArgoCDPluginGenerator(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	ctx, cancel = context.WithCancel(context.TODO())
+	ctx = context.Background()
 	log.Logger = log.Level(zerolog.DebugLevel).
 		Output(zerolog.ConsoleWriter{Out: GinkgoWriter})
 	ctrl.SetLogger(zerologr.New(&log.Logger))
@@ -77,7 +76,6 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
-	cancel()
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })

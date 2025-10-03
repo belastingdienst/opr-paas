@@ -26,6 +26,8 @@ var _ = Describe("GeneratorServer", func() {
 		addr            string
 		testTokenEnvVar string
 		tokenValue      string
+		cancel          context.CancelFunc
+		testContext     context.Context
 	)
 
 	const randomAddress = "127.0.0.1:0"
@@ -45,7 +47,7 @@ var _ = Describe("GeneratorServer", func() {
 			TokenEnvVar: testTokenEnvVar,
 		}
 
-		ctx, cancel = context.WithCancel(context.Background())
+		testContext, cancel = context.WithCancel(context.Background())
 	})
 
 	AfterEach(func() {
@@ -55,7 +57,7 @@ var _ = Describe("GeneratorServer", func() {
 
 	It("returns an error if the token environment variable is not set", func() {
 		server = NewServer(opts, handler)
-		err := server.Start(ctx)
+		err := server.Start(testContext)
 		Expect(err).To(MatchError(fmt.Sprintf("environment variable %s not set", testTokenEnvVar)))
 	})
 
@@ -69,7 +71,7 @@ var _ = Describe("GeneratorServer", func() {
 			cancel()
 		}()
 
-		err := server.Start(ctx)
+		err := server.Start(testContext)
 		Expect(err).To(SatisfyAny(BeNil(), MatchError("http: Server closed")))
 	})
 
@@ -79,7 +81,7 @@ var _ = Describe("GeneratorServer", func() {
 
 		done := make(chan error)
 		go func() {
-			done <- server.Start(ctx)
+			done <- server.Start(testContext)
 		}()
 
 		// give the server time to start
@@ -111,7 +113,7 @@ var _ = Describe("GeneratorServer", func() {
 		server = NewServer(opts, handler)
 
 		// Attempting to bind to the same address should fail
-		err = server.Start(ctx)
+		err = server.Start(testContext)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("address already in use"))
 	})
@@ -130,7 +132,7 @@ var _ = Describe("GeneratorServer", func() {
 
 		done := make(chan error)
 		go func() {
-			done <- server.Start(ctx)
+			done <- server.Start(testContext)
 		}()
 
 		time.Sleep(200 * time.Millisecond) // give server time to start
