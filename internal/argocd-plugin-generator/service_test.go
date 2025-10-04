@@ -7,6 +7,8 @@ See LICENSE.md for details.
 package argocd_plugin_generator
 
 import (
+	"context"
+
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
@@ -31,9 +33,11 @@ var _ = Describe("Service", func() {
 	var (
 		svc  *Service
 		conf v1alpha2.PaasConfig
+		ctx  context.Context
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		conf = v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "example-paasconfig",
