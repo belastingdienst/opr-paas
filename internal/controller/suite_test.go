@@ -45,18 +45,10 @@ import (
 )
 
 var (
-	cfg           *rest.Config
-	k8sClient     client.Client
-	testEnv       *envtest.Environment
-	_             *rsa.PublicKey
-	genericConfig = v1alpha2.PaasConfig{
-		Spec: v1alpha2.PaasConfigSpec{
-			DecryptKeysSecret: v1alpha2.NamespacedName{
-				Name:      "keys",
-				Namespace: "paas-system",
-			},
-		},
-	}
+	cfg       *rest.Config
+	k8sClient client.Client
+	testEnv   *envtest.Environment
+	_         *rsa.PublicKey
 )
 
 func TestControllers(t *testing.T) {

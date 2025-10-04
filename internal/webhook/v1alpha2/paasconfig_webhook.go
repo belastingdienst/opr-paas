@@ -118,7 +118,6 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(
 		allErrs = append(allErrs, flderr...)
 	}
 
-	// TODO(hikarukin): figure out what we need to check on update specifically
 	logger.Debug().Msgf("old PaasConfig: %v", oldObj.(*v1alpha2.PaasConfig))
 
 	if len(allErrs) > 0 {

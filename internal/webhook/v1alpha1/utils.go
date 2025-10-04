@@ -8,8 +8,10 @@ package v1alpha1
 
 import (
 	"context"
+	"errors"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	cnf "github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	corev1 "k8s.io/api/core/v1"
@@ -20,6 +22,12 @@ import (
 var (
 	crypts             map[string]*crypt.Crypt
 	decryptPrivateKeys *crypt.PrivateKeys
+)
+
+type contextKey int
+
+const (
+	contextKeyPaasConfig contextKey = iota
 )
 
 // TODO: devotional-phoenix-97: We should refine this code and the entire crypt implementation including caching.
@@ -34,7 +42,7 @@ func resetCrypts() {
 func getRsaPrivateKeys(ctx context.Context, _c client.Client) (*crypt.PrivateKeys, error) {
 	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookUtilsComponentV1)
 	rsaSecret := &corev1.Secret{}
-	conf, err := cnf.GetConfigV1()
+	conf, err := cnf.GetConfigV1(ctx, _c)
 	if err != nil {
 		return nil, err
 	}
@@ -82,4 +90,15 @@ func getRsa(ctx context.Context, _c client.Client, paasName string) (*crypt.Cryp
 	logger.Debug().Msgf("creating new crypt for %s", paasName)
 	crypts[paasName] = c
 	return c, nil
+}
+
+// getConfigFromContext returns the PaasConfig object from the config, using the
+// contextKeyPaasConfig. If the returned value cannot be parsed to a v1alpha1
+// PaasConfig, it returns an error.
+func getConfigFromContext(ctx context.Context) (v1alpha1.PaasConfig, error) {
+	myConfig, ok := ctx.Value(contextKeyPaasConfig).(v1alpha1.PaasConfig)
+	if !ok {
+		return v1alpha1.PaasConfig{}, errors.New("could not get config from context")
+	}
+	return myConfig, nil
 }

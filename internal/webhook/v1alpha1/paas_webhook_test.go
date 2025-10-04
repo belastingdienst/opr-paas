@@ -17,14 +17,16 @@ import (
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 var _ = Describe("Paas Webhook", Ordered, func() {
@@ -34,7 +36,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		oldObj    *v1alpha1.Paas
 		validator PaasCustomValidator
 		mycrypt   *crypt.Crypt
-		conf      v1alpha1.PaasConfig
+		conf      *v1alpha2.PaasConfig
 	)
 
 	BeforeAll(func() {
@@ -50,16 +52,20 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		obj = &v1alpha1.Paas{}
 		oldObj = &v1alpha1.Paas{}
 		validator = PaasCustomValidator{k8sClient}
-		conf = v1alpha1.PaasConfig{
-			Spec: v1alpha1.PaasConfigSpec{
-				DecryptKeysSecret: v1alpha1.NamespacedName{
+		// We create a v1alpha2 PaasConfig as that is used by default and converted to a v1alpha1 is needed
+		conf = &v1alpha2.PaasConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "paas-config",
+			},
+			Spec: v1alpha2.PaasConfigSpec{
+				DecryptKeysSecret: v1alpha2.NamespacedName{
 					Name:      "keys",
 					Namespace: "paas-system",
 				},
-				Capabilities: v1alpha1.ConfigCapabilities{
-					"cap5": v1alpha1.ConfigCapability{
+				Capabilities: v1alpha2.ConfigCapabilities{
+					"cap5": v1alpha2.ConfigCapability{
 						AppSet: "someAppset",
-						QuotaSettings: v1alpha1.ConfigQuotaSettings{
+						QuotaSettings: v1alpha2.ConfigQuotaSettings{
 							DefQuota: map[corev1.ResourceName]resource.Quantity{
 								corev1.ResourceLimitsCPU: resource.MustParse("5"),
 							},
@@ -68,8 +74,20 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				},
 			},
 		}
+		err := k8sClient.Create(ctx, conf)
+		Expect(err).NotTo(HaveOccurred())
 
-		err := config.SetConfigV1(conf)
+		latest := &v1alpha2.PaasConfig{}
+		err = k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latest)
+		Expect(err).NotTo(HaveOccurred())
+
+		meta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:   v1alpha2.TypeActivePaasConfig,
+			Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: latest.Generation,
+			Message: "This config is the active config!",
+		})
+
+		err = k8sClient.Status().Update(ctx, latest)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
@@ -78,6 +96,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 	})
 
 	AfterEach(func() {
+		err := k8sClient.Delete(ctx, conf)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("When creating a Paas under Validating Webhook", func() {
@@ -94,9 +114,14 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 		It("Should validation paas name", func() {
 			const paasNameValidation = "^([a-z0-9]{3})-([a-z0-9]{3})$"
-			conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"name": paasNameValidation}}
+			// Update PaasConfig
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			latestConf.Spec.Validations = v1alpha2.PaasConfigValidations{"paas": {"name": paasNameValidation}}
+			err = k8sClient.Update(ctx, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
 
-			config.SetConfigV1(conf)
 			obj = &v1alpha1.Paas{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "this-is-invalid",
@@ -119,9 +144,14 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				{requestor: "invalid-requestor", validation: "^[a-z]+$", valid: false},
 				{requestor: "", validation: "^.$", valid: false},
 			} {
-				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
-				conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"requestor": test.validation}}
-				config.SetConfigV1(conf)
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				latestConf.Spec.Validations = v1alpha2.PaasConfigValidations{"paas": {"requestor": test.validation}}
+				err = k8sClient.Update(ctx, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+
 				obj.Spec.Requestor = test.requestor
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn).To(BeNil())
@@ -142,9 +172,14 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				{name: "invalid-name", validation: "^[a-z]+$", valid: false},
 				{name: "", validation: "^.$", valid: false},
 			} {
-				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
-				conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"namespaceName": test.validation}}
-				config.SetConfigV1(conf)
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				latestConf.Spec.Validations = v1alpha2.PaasConfigValidations{"paas": {"namespaceName": test.validation}}
+				err = k8sClient.Update(ctx, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+
 				obj.Spec.Namespaces = []string{test.name}
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn).To(BeNil())
@@ -238,17 +273,20 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should deny creation when a capability custom field is not configured", func() {
-			v1conf := v1alpha1.PaasConfig{}
-			v2conf := config.GetConfig()
-			v1conf.ConvertFrom(&v2conf)
-			conf := v1conf.Spec
-
-			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
-				CustomFields: map[string]v1alpha1.ConfigCustomField{
+			// Update PaasConfig
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			latestConf.Spec.Capabilities["foo"] = v1alpha2.ConfigCapability{
+				CustomFields: map[string]v1alpha2.ConfigCustomField{
 					"bar": {},
 				},
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
+					DefQuota: map[corev1.ResourceName]resource.Quantity{"bar": resource.MustParse("1")},
+				},
 			}
-			config.SetConfigV1(v1alpha1.PaasConfig{Spec: conf})
+			err = k8sClient.Update(ctx, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
 
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
@@ -263,7 +301,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					},
 				},
 			}
-			_, err := validator.ValidateCreate(ctx, obj)
+			_, err = validator.ValidateCreate(ctx, obj)
 
 			var serr *apierrors.StatusError
 			Expect(errors.As(err, &serr)).To(BeTrue())
@@ -280,16 +318,20 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should deny creation when a capability is missing a required custom field", func() {
-			nospecconf, err := config.GetConfigV1()
-			Expect(err).NotTo(HaveOccurred())
-
-			conf := nospecconf.Spec
-			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
-				CustomFields: map[string]v1alpha1.ConfigCustomField{
+			// Update PaasConfig
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			latestConf.Spec.Capabilities["foo"] = v1alpha2.ConfigCapability{
+				CustomFields: map[string]v1alpha2.ConfigCustomField{
 					"bar": {Required: true},
 				},
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
+					DefQuota: map[corev1.ResourceName]resource.Quantity{"bar": resource.MustParse("1")},
+				},
 			}
-			config.SetConfigV1(v1alpha1.PaasConfig{Spec: conf})
+			err = k8sClient.Update(ctx, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
 
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
@@ -314,17 +356,21 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should deny creation when a custom field does not match validation regex", func() {
-			nospecconf, err := config.GetConfigV1()
-			Expect(err).NotTo(HaveOccurred())
-
-			conf := nospecconf.Spec
-			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
-				CustomFields: map[string]v1alpha1.ConfigCustomField{
+			// Update PaasConfig
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			latestConf.Spec.Capabilities["foo"] = v1alpha2.ConfigCapability{
+				CustomFields: map[string]v1alpha2.ConfigCustomField{
 					"bar": {Validation: "^\\d+$"}, // Must be an integer
 					"baz": {Validation: "^\\w+$"}, // Must not be whitespace
 				},
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
+					DefQuota: map[corev1.ResourceName]resource.Quantity{"bar": resource.MustParse("1")},
+				},
 			}
-			config.SetConfigV1(v1alpha1.PaasConfig{Spec: conf})
+			err = k8sClient.Update(ctx, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
 
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
@@ -355,8 +401,14 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should validate group names", func() {
-			conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paas": {"groupName": "^[a-z0-9-]{1,63}$"}}
-			config.SetConfigV1(conf)
+			// Update PaasConfig
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			latestConf.Spec.Validations = v1alpha2.PaasConfigValidations{"paas": {"groupName": "^[a-z0-9-]{1,63}$"}}
+			err = k8sClient.Update(ctx, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+
 			validChars := "abcdefghijklmknopqrstuvwzyz-0123456789"
 			for _, test := range []struct {
 				name  string
@@ -423,12 +475,16 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should warn when quota limits are set higher than requests", func() {
-			nospecconf, err := config.GetConfigV1()
-			Expect(err).NotTo(HaveOccurred())
-
-			conf := nospecconf.Spec
-			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{}
-			config.SetConfigV1(v1alpha1.PaasConfig{Spec: conf})
+			// Update PaasConfig
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			latestConf.Spec.Capabilities["foo"] = v1alpha2.ConfigCapability{
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
+					DefQuota: map[corev1.ResourceName]resource.Quantity{"foo": resource.MustParse("1")},
+				}}
+			err = k8sClient.Update(ctx, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
 
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
@@ -460,19 +516,26 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		})
 
 		It("Should warn when extra permissions are requested for a capability that are not configured", func() {
-			nospecconf, err := config.GetConfigV1()
-			Expect(err).NotTo(HaveOccurred())
-
-			conf := nospecconf.Spec
-			conf.Capabilities["foo"] = v1alpha1.ConfigCapability{
-				ExtraPermissions: v1alpha1.ConfigCapPerm{
+			// Update PaasConfig
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			latestConf.Spec.Capabilities["foo"] = v1alpha2.ConfigCapability{
+				ExtraPermissions: v1alpha2.ConfigCapPerm{
 					"bar": []string{"baz"},
 				},
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
+					DefQuota: map[corev1.ResourceName]resource.Quantity{"foo": resource.MustParse("1")},
+				},
 			}
-			conf.Capabilities["bar"] = v1alpha1.ConfigCapability{
+			latestConf.Spec.Capabilities["bar"] = v1alpha2.ConfigCapability{
 				// No extra permissions
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
+					DefQuota: map[corev1.ResourceName]resource.Quantity{"bar": resource.MustParse("1")},
+				},
 			}
-			config.SetConfigV1(v1alpha1.PaasConfig{Spec: conf})
+			err = k8sClient.Update(ctx, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
 
 			obj = &v1alpha1.Paas{
 				Spec: v1alpha1.PaasSpec{
@@ -507,16 +570,21 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					"thin.storageclass.storage.k8s.io/persistentvolumeclaims": resource.MustParse("10G"),
 				}
 				validation       = fmt.Sprintf("(%s)", strings.Join(validResourceKeys, "|"))
-				validationConfig = v1alpha1.PaasConfigValidations{
-					"paas": v1alpha1.PaasConfigTypeValidations{"allowedQuotas": validation},
+				validationConfig = v1alpha2.PaasConfigValidations{
+					"paas": v1alpha2.PaasConfigTypeValidations{"allowedQuotas": validation},
 				}
 				invalidQuotas = map[corev1.ResourceName]resource.Quantity{
 					"limits.cpu": resource.MustParse("1.1"),
 				}
 			)
 			It("should allow cap quota names that meet re", func() {
-				conf.Spec.Validations = validationConfig
-				config.SetConfigV1(conf)
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				latestConf.Spec.Validations = validationConfig
+				err = k8sClient.Update(ctx, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
 				obj = &v1alpha1.Paas{
 					Spec: v1alpha1.PaasSpec{
 						Capabilities: v1alpha1.PaasCapabilities{
@@ -532,8 +600,13 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				Expect(err).Error().NotTo(HaveOccurred())
 			})
 			It("should deny cap quota names that do not meet re", func() {
-				conf.Spec.Validations = validationConfig
-				config.SetConfigV1(conf)
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				latestConf.Spec.Validations = validationConfig
+				err = k8sClient.Update(ctx, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
 				obj = &v1alpha1.Paas{
 					Spec: v1alpha1.PaasSpec{
 						Capabilities: v1alpha1.PaasCapabilities{
@@ -548,16 +621,26 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				Expect(warn, err).Error().To(HaveOccurred())
 			})
 			It("should allow paas quota names that meet re", func() {
-				conf.Spec.Validations = validationConfig
-				config.SetConfigV1(conf)
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				latestConf.Spec.Validations = validationConfig
+				err = k8sClient.Update(ctx, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
 				obj = &v1alpha1.Paas{Spec: v1alpha1.PaasSpec{Quota: validQuotas}}
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn, err).Error().NotTo(HaveOccurred())
 				Expect(err).Error().NotTo(HaveOccurred())
 			})
 			It("should deny cap quota names that do not meet re", func() {
-				conf.Spec.Validations = validationConfig
-				config.SetConfigV1(conf)
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				latestConf.Spec.Validations = validationConfig
+				err = k8sClient.Update(ctx, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
 				obj = &v1alpha1.Paas{Spec: v1alpha1.PaasSpec{Quota: invalidQuotas}}
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn, err).Error().To(HaveOccurred())

@@ -10,10 +10,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,30 +94,6 @@ func (pcr *PaasConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		}
 		return ctrl.Result{}, nil
 	}
-
-	// As there can be reasons why we reconcile again, we check if there is a diff in the desired state vs GetConfig()
-	// when there is no change, we exit this function.
-	if reflect.DeepEqual(cfg.Spec, config.GetConfig().Spec) {
-		logger.Info().Msg("Cached config equals desired state")
-		// Reconciling succeeded, set appropriate Condition
-		err := pcr.setSuccessfulCondition(ctx, cfg)
-		if err != nil {
-			logger.Err(err).Msg("failed to update PaasConfig status")
-			return ctrl.Result{}, nil
-		}
-		return ctrl.Result{}, nil
-	}
-
-	logger.Info().Msg("configuration has changed")
-	// If the decryptSecrets have been configured differently, we must reset
-	// the cached crypts as those are no longer valid.
-	if !reflect.DeepEqual(cfg.Spec.DecryptKeysSecret, config.GetConfig().Spec.DecryptKeysSecret) {
-		logger.Info().Msg("Decryption keys changed")
-		resetCrypts()
-	}
-	// Update the shared configuration store
-	config.SetConfig(*cfg)
-	logger.Info().Msg("Set the cached config successfully")
 
 	// Reconciling succeeded, set appropriate Condition
 	err := pcr.setSuccessfulCondition(ctx, cfg)

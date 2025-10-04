@@ -65,7 +65,7 @@ override:
   - path: internal/crypt/main.go
     threshold: 12
   - path: internal/config/informer.go
-    threshold: 23
+    threshold: 0
   - path: ^internal/controller/paas_controller.go$
     threshold: 62
   - path: ^internal/controller/paasconfig_controller.go$

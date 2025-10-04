@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 
@@ -118,10 +117,15 @@ func (r *PaasReconciler) backendRoleBinding(
 	}
 
 	labels := map[string]string{}
-	myConfig := config.GetConfig()
+	myConfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		logger.Err(err).Msg("error getting config")
+		return nil, err
+	}
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
-	for name, tpl := range myConfig.Spec.Templating.RoleBindingLabels {
-		result, err := labelTemplater.TemplateToMap(name, tpl)
+	for n, tpl := range myConfig.Spec.Templating.RoleBindingLabels {
+		var result templating.TemplateResult
+		result, err = labelTemplater.TemplateToMap(n, tpl)
 		if err != nil {
 			return nil, err
 		}
@@ -145,7 +149,7 @@ func (r *PaasReconciler) backendRoleBinding(
 		},
 	}
 	logger.Info().Msg("setting Owner")
-	if err := controllerutil.SetControllerReference(paas, rb, r.getScheme()); err != nil {
+	if err = controllerutil.SetControllerReference(paas, rb, r.getScheme()); err != nil {
 		return rb, err
 	}
 
@@ -214,7 +218,12 @@ func (r *PaasReconciler) reconcileNamespaceRolebindings(
 	// Use a map of sets to avoid duplicates
 	roleGroups := map[string]map[string]struct{}{}
 
-	for _, roleList := range config.GetConfig().Spec.RoleMappings {
+	myConfig, err := getConfigFromContext(ctx)
+	if err != nil {
+		logger.Err(err).Msg("error getting config")
+		return err
+	}
+	for _, roleList := range myConfig.Spec.RoleMappings {
 		for _, role := range roleList {
 			roleGroups[role] = map[string]struct{}{}
 		}
@@ -229,7 +238,7 @@ func (r *PaasReconciler) reconcileNamespaceRolebindings(
 		logger.Info().Msgf("defining Rolebindings for Group %s", groupKey)
 		// Convert the groupKey to a groupName to map the rolebinding subjects to a group
 		groupName := paas.GroupKey2GroupName(groupKey)
-		for _, mappedRole := range config.GetConfig().Spec.RoleMappings.Roles(groupRoles) {
+		for _, mappedRole := range myConfig.Spec.RoleMappings.Roles(groupRoles) {
 			if _, exists := roleGroups[mappedRole]; !exists {
 				roleGroups[mappedRole] = map[string]struct{}{}
 			}
@@ -242,7 +251,7 @@ func (r *PaasReconciler) reconcileNamespaceRolebindings(
 		for groupName := range groupSet {
 			groupNames = append(groupNames, groupName)
 		}
-		err := r.reconcileNamespaceRolebinding(ctx, paas, nsName, roleName, groupNames)
+		err = r.reconcileNamespaceRolebinding(ctx, paas, nsName, roleName, groupNames)
 		if err != nil {
 			return err
 		}

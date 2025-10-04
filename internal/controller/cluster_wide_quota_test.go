@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -79,7 +78,8 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 				},
 			},
 		}
-		config.SetConfig(paasConfig)
+		// Updates context to include paasConfig
+		ctx = context.WithValue(ctx, contextKeyPaasConfig, paasConfig)
 
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
@@ -197,8 +197,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 
 	When("a capability is configured with a cluster-wide quota minimum and maximum", func() {
 		BeforeEach(func() {
-			conf := config.GetConfig()
-			c := conf.Spec.Capabilities[capName]
+			c := paasConfig.Spec.Capabilities[capName]
 			c.QuotaSettings.MinQuotas = map[corev1.ResourceName]resourcev1.Quantity{
 				corev1.ResourceLimitsCPU:   resourcev1.MustParse("9"),
 				corev1.ResourceRequestsCPU: resourcev1.MustParse("3"),
@@ -207,8 +206,8 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 				corev1.ResourceLimitsCPU:   resourcev1.MustParse("18"),
 				corev1.ResourceRequestsCPU: resourcev1.MustParse("6"),
 			}
-			conf.Spec.Capabilities[capName] = c
-			config.SetConfig(conf)
+			paasConfig.Spec.Capabilities[capName] = c
+			ctx = context.WithValue(ctx, contextKeyPaasConfig, paasConfig)
 		})
 
 		It("should create a ClusterResourceQuota with the minimum quota when reconciling Paas' "+
@@ -266,11 +265,11 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 
 		It("should create a ClusterResourceQuota with the sum of Paas' quotas multiplied by the ratio "+
 			"when the capability is configured with a ratio other than 1", func() {
-			conf := config.GetConfig()
-			c := conf.Spec.Capabilities[capName]
+			c := paasConfig.Spec.Capabilities[capName]
 			c.QuotaSettings.Ratio = 1.4
-			conf.Spec.Capabilities[capName] = c
-			config.SetConfig(conf)
+			paasConfig.Spec.Capabilities[capName] = c
+
+			ctx = context.WithValue(ctx, contextKeyPaasConfig, paasConfig)
 
 			addPaasWithDefCap(join(paasPrefix, "1"))
 			addPaasWithCap(

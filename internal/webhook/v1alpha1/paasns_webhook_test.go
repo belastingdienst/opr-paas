@@ -15,13 +15,15 @@ import (
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 var _ = Describe("PaasNS Webhook", Ordered, func() {
@@ -47,23 +49,11 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		validSecret1Key = "validSecret1"
 		validSecret2    string
 		validator       PaasNSCustomValidator
-		conf            v1alpha1.PaasConfig
+		conf            *v1alpha1.PaasConfig
 	)
 
 	BeforeAll(func() {
 		var err error
-
-		conf = v1alpha1.PaasConfig{
-			Spec: v1alpha1.PaasConfigSpec{
-				DecryptKeysSecret: v1alpha1.NamespacedName{
-					Name:      paasPkSecret,
-					Namespace: paasSystem,
-				},
-			},
-		}
-
-		err = config.SetConfigV1(conf)
-		Expect(err).NotTo(HaveOccurred())
 
 		createNamespace(paasSystem)
 
@@ -140,15 +130,46 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
-		conf = v1alpha1.PaasConfig{
+		conf = &v1alpha1.PaasConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "paas-config",
+			},
 			Spec: v1alpha1.PaasConfigSpec{
+				ArgoPermissions: v1alpha1.ConfigArgoPermissions{
+					Header:       "header",
+					ResourceName: "name",
+					Role:         "role",
+				},
 				DecryptKeysSecret: v1alpha1.NamespacedName{
 					Name:      paasPkSecret,
 					Namespace: paasSystem,
 				},
+				LDAP: v1alpha1.ConfigLdap{
+					Host: "host.nl",
+					Port: 1,
+				},
+				GroupSyncList: v1alpha1.NamespacedName{
+					Namespace: "namespace",
+					Name:      "name",
+				},
 			},
 		}
-		config.SetConfigV1(conf)
+
+		err := k8sClient.Create(ctx, conf)
+		Expect(err).To(Not(HaveOccurred()))
+
+		latest := &v1alpha2.PaasConfig{}
+		err = k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latest)
+		Expect(err).NotTo(HaveOccurred())
+
+		meta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:   v1alpha2.TypeActivePaasConfig,
+			Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: latest.Generation,
+			Message: "This config is the active config!",
+		})
+		err = k8sClient.Status().Update(ctx, latest)
+		Expect(err).NotTo(HaveOccurred())
+
 		validator = PaasNSCustomValidator{k8sClient}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
@@ -156,6 +177,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 	})
 
 	AfterEach(func() {
+		err := k8sClient.Delete(ctx, conf)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("When properly creating or updating a PaasNS", func() {
@@ -207,11 +230,18 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				{name: "invalid-name", validation: "^[a-z]+$", valid: false},
 				{name: "", validation: "^.$", valid: false},
 			} {
-				conf.Spec.Validations = v1alpha1.PaasConfigValidations{"paasNs": {"name": test.validation}}
-				config.SetConfigV1(conf)
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				latestConf.Spec.Validations = v1alpha2.PaasConfigValidations{"paasNs": {"name": test.validation}}
+				err = k8sClient.Update(ctx, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+
 				obj.Name = test.name
 				if test.valid {
-					warn, err := validator.ValidateCreate(ctx, obj)
+					var warn admission.Warnings
+					warn, err = validator.ValidateCreate(ctx, obj)
 					Expect(warn).To(BeNil())
 					Expect(warn, err).Error().NotTo(HaveOccurred())
 				}

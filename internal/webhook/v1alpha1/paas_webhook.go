@@ -9,7 +9,6 @@ package v1alpha1
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 
@@ -72,6 +71,13 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
 	}
 	ctx, logger := logging.SetWebhookLogger(ctx, paas)
+
+	myConf, err := config.GetConfigV1(ctx, v.client)
+	if err != nil {
+		return nil, err
+	}
+	ctx = context.WithValue(ctx, contextKeyPaasConfig, myConf)
+
 	logger.Info().Msg("starting validation webhook for creation")
 
 	return v.validate(ctx, paas)
@@ -92,6 +98,12 @@ func (v *PaasCustomValidator) ValidateUpdate(
 		return nil, nil
 	}
 	logger.Info().Msg("starting validation webhook for update")
+
+	myConf, err := config.GetConfigV1(ctx, v.client)
+	if err != nil {
+		return nil, err
+	}
+	ctx = context.WithValue(ctx, contextKeyPaasConfig, myConf)
 
 	return v.validate(ctx, paas)
 }
@@ -123,14 +135,9 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	if paas.DeletionTimestamp != nil {
 		return nil, nil
 	}
-	conf, err := config.GetConfigV1()
+	conf, err := getConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
-	}
-
-	// Check for uninitialized config
-	if conf.Spec.DecryptKeysSecret.Name == "" {
-		return nil, apierrors.NewInternalError(errors.New("uninitialized PaasConfig"))
 	}
 
 	for _, val := range []paasSpecValidator{

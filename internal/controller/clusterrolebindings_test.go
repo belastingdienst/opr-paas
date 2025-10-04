@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	rbac "k8s.io/api/rbac/v1"
@@ -60,7 +59,9 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 	})
 	BeforeEach(func() {
 		ctx = context.Background()
-		config.SetConfig(paasConfig)
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, paasConfig)
+
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),
