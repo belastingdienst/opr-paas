@@ -61,7 +61,7 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 	if err != nil {
 		return nil, err
 	}
-	ctx = context.WithValue(ctx, contextKeyPaasConfig, myConf)
+	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConf)
 
 	if !ok {
 		return nil, &field.Error{
@@ -237,7 +237,7 @@ func compareGroups(subGroups []string, superGroups []string) (errs field.ErrorLi
 
 // validatePaasNsName returns an error when the naam of the PaasNs does not meet validations RE
 func (v *PaasNSCustomValidator) validatePaasNsName(ctx context.Context, name string) (errs field.ErrorList) {
-	conf, err := getConfigFromContext(ctx)
+	conf, err := config.GetConfigFromContextV1(ctx)
 	if err != nil {
 		errs = append(errs, field.InternalError(
 			field.NewPath("paasconfig"),

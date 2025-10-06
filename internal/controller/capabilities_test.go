@@ -11,6 +11,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	appv1 "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -109,7 +110,7 @@ g, {{ $groupName }}, role:admin{{end}}`
 		}
 
 		// Updates context to include paasConfig
-		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, paasConfig)
+		ctx = context.WithValue(context.Background(), config.ContextKeyPaasConfig, paasConfig)
 
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
@@ -193,7 +194,7 @@ g, ` + group2 + `, role:admin`
 				argoCapConfig.AppSet = invalidCapAppSet
 				paasConfig.Spec.Capabilities[capName] = argoCapConfig
 				// Updates context with updated PaasConfig
-				ctx = context.WithValue(ctx, contextKeyPaasConfig, paasConfig)
+				ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, paasConfig)
 				err := reconciler.ensureAppSetCap(ctx, paas, capName)
 				Expect(err).Error().To(MatchError(
 					ContainSubstring("applicationsets.argoproj.io \"" + invalidCapAppSet + "\" not found")))

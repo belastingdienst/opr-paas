@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -15,8 +16,8 @@ var (
 	decryptPrivateKeys *crypt.PrivateKeys
 )
 
-// ResetCrypts removes all crypts and resets decryptSecretPrivateKeys
-func ResetCrypts() {
+// resetCrypts removes all crypts and resets decryptSecretPrivateKeys
+func resetCrypts() {
 	crypts = map[string]*crypt.Crypt{}
 	decryptPrivateKeys = nil
 }
@@ -27,7 +28,7 @@ func (r *PaasReconciler) getRsaPrivateKeys(
 ) (*crypt.PrivateKeys, error) {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerSecretComponent)
 	rsaSecret := &corev1.Secret{}
-	cfg, err := getConfigFromContext(ctx)
+	cfg, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +56,7 @@ func (r *PaasReconciler) getRsaPrivateKeys(
 	}
 
 	logger.Debug().Msgf("setting (%d) new keys", len(keys))
-	ResetCrypts()
+	resetCrypts()
 	decryptPrivateKeys = &keys
 	return decryptPrivateKeys, nil
 }

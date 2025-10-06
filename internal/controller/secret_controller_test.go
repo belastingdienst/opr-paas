@@ -11,6 +11,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -160,7 +161,7 @@ var _ = Describe("secret controller", Ordered, func() {
 		}
 
 		// Updates context to include paasConfig
-		ctx = context.WithValue(context.Background(), contextKeyPaasConfig, myConfig)
+		ctx = context.WithValue(context.Background(), config.ContextKeyPaasConfig, myConfig)
 	})
 
 	When("reconciling a PaasNS with a SshSecrets value", func() {

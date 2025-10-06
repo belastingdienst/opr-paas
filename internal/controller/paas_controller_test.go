@@ -16,6 +16,7 @@ import (
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	argocd "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
@@ -922,7 +923,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 
 			// As we call finalizePaas directly, we've skipped the code in which
 			// the PaasConfig is added to the context. Therefore, we add this explicitly.
-			ctx = context.WithValue(ctx, contextKeyPaasConfig, *myConfig)
+			ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, *myConfig)
 
 			err = reconciler.finalizePaas(ctx, paas)
 			Expect(err).NotTo(HaveOccurred())
@@ -954,21 +955,21 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 	})
 })
 
-func waitForDeletePaasConfig(ctx context.Context, config *v1alpha2.PaasConfig) {
+func waitForDeletePaasConfig(ctx context.Context, paasConfig *v1alpha2.PaasConfig) {
 	// Delete myConfig from the Cluster
-	err := k8sClient.Delete(ctx, config)
+	err := k8sClient.Delete(ctx, paasConfig)
 	Expect(err).NotTo(HaveOccurred())
 
 	// Call PaasConfig reconciler to delete finalizer
 	pcReconciler := &PaasConfigReconciler{k8sClient, k8sClient.Scheme()}
-	paasConfigReconcileReq := controllerruntime.Request{NamespacedName: types.NamespacedName{Name: config.Name}}
+	paasConfigReconcileReq := controllerruntime.Request{NamespacedName: types.NamespacedName{Name: paasConfig.Name}}
 	_, err = pcReconciler.Reconcile(ctx, paasConfigReconcileReq)
 	Expect(err).NotTo(HaveOccurred())
 
 	// Wait until the resource is actually gone
 	Eventually(func() bool {
 		found := &v1alpha2.PaasConfig{}
-		err = k8sClient.Get(ctx, types.NamespacedName{Name: config.Name}, found)
+		err = k8sClient.Get(ctx, types.NamespacedName{Name: paasConfig.Name}, found)
 		return apierrors.IsNotFound(err)
 	}, 5*time.Second, 250*time.Millisecond).Should(BeTrue())
 }

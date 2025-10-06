@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 
 	corev1 "k8s.io/api/core/v1"
@@ -145,7 +146,7 @@ func (r *PaasReconciler) paasCapabilityNss(
 	paasGroups []string,
 ) (namespaceDefs, error) {
 	result := namespaceDefs{}
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return result, err
 	}

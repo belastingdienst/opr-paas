@@ -12,6 +12,7 @@ import (
 	"maps"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 
@@ -65,7 +66,7 @@ func (r *PaasReconciler) backendNamespace(
 	logger.Info().Msgf("defining %s Namespace", name)
 
 	labels := map[string]string{}
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

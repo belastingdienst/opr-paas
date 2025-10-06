@@ -12,6 +12,7 @@ import (
 	"maps"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
@@ -72,7 +73,7 @@ func (r *PaasReconciler) backendQuota(
 	logger.Info().Msg("defining quota")
 
 	labels := map[string]string{}
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +120,7 @@ func (r *PaasReconciler) backendEnabledQuotas(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) (quotas []*quotav1.ClusterResourceQuota, err error) {
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +152,7 @@ type PaasQuotas map[string]paasquota.Quota
 func (r *PaasReconciler) backendUnneededQuotas(ctx context.Context,
 	paas *v1alpha2.Paas,
 ) (quotas []string, err error) {
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

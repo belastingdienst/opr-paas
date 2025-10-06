@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 
 	rbac "k8s.io/api/rbac/v1"
@@ -153,7 +154,7 @@ func (r *PaasReconciler) reconcileClusterRoleBinding(
 ) (err error) {
 	var crb *rbac.ClusterRoleBinding
 	capability, capExists := paas.Spec.Capabilities[capName]
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -223,7 +224,7 @@ func (r *PaasReconciler) finalizeClusterRoleBinding(
 }
 
 func (r *PaasReconciler) finalizeCapClusterRoleBindings(ctx context.Context, paas *v1alpha2.Paas) error {
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -253,7 +254,7 @@ func (r *PaasReconciler) finalizePaasClusterRoleBindings(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) (err error) {
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return err
 	}

@@ -12,6 +12,7 @@ import (
 	"reflect"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -90,7 +91,7 @@ func (r *PaasReconciler) backendGroup(
 	paasGroupKey string,
 	group v1alpha2.PaasGroup,
 ) (*userv1.Group, error) {
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -213,7 +213,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		logger.Err(err).Msg("failed to get PaasConfig")
 		return ctrl.Result{}, err
 	}
-	ctx = context.WithValue(ctx, contextKeyPaasConfig, paasConfig)
+	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, paasConfig)
 
 	if paas, err = r.getPaasFromRequest(ctx, req); err != nil {
 		logger.Err(err).Msg("could not get Paas from k8s")

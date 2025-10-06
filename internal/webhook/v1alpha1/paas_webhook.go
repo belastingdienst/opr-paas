@@ -76,7 +76,7 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 	if err != nil {
 		return nil, err
 	}
-	ctx = context.WithValue(ctx, contextKeyPaasConfig, myConf)
+	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConf)
 
 	logger.Info().Msg("starting validation webhook for creation")
 
@@ -103,7 +103,7 @@ func (v *PaasCustomValidator) ValidateUpdate(
 	if err != nil {
 		return nil, err
 	}
-	ctx = context.WithValue(ctx, contextKeyPaasConfig, myConf)
+	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConf)
 
 	return v.validate(ctx, paas)
 }
@@ -135,7 +135,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha1.Paas)
 	if paas.DeletionTimestamp != nil {
 		return nil, nil
 	}
-	conf, err := getConfigFromContext(ctx)
+	conf, err := config.GetConfigFromContextV1(ctx)
 	if err != nil {
 		return nil, err
 	}

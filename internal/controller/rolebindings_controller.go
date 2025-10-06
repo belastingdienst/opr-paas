@@ -12,6 +12,7 @@ import (
 	"maps"
 	"reflect"
 
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
@@ -117,7 +118,7 @@ func (r *PaasReconciler) backendRoleBinding(
 	}
 
 	labels := map[string]string{}
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		logger.Err(err).Msg("error getting config")
 		return nil, err
@@ -218,7 +219,7 @@ func (r *PaasReconciler) reconcileNamespaceRolebindings(
 	// Use a map of sets to avoid duplicates
 	roleGroups := map[string]map[string]struct{}{}
 
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		logger.Err(err).Msg("error getting config")
 		return err

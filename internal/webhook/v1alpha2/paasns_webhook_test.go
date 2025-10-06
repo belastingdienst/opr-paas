@@ -16,6 +16,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -224,7 +225,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				{name: "", validation: "^.$", valid: false},
 			} {
 				conf.Spec.Validations = v1alpha2.PaasConfigValidations{"paasNs": {"name": test.validation}}
-				ctx = context.WithValue(ctx, contextKeyPaasConfig, conf)
+				ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, conf)
 
 				obj.Name = test.name
 				if test.valid {

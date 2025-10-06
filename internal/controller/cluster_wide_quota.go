@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
@@ -74,7 +75,7 @@ func (r *PaasReconciler) updateClusterWideQuotaResources(
 	if err != nil {
 		return err
 	}
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -150,7 +151,7 @@ func (r *PaasReconciler) finalizeClusterWideQuotas(ctx context.Context, paas *v1
 }
 
 func (r *PaasReconciler) reconcileClusterWideQuota(ctx context.Context, paas *v1alpha2.Paas) error {
-	myconfig, err := getConfigFromContext(ctx)
+	myconfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -213,7 +214,7 @@ func (r *PaasReconciler) needsUpdate(current, desired *quotav1.ClusterResourceQu
 
 func (r *PaasReconciler) addToClusterWideQuota(ctx context.Context, paas *v1alpha2.Paas, capabilityName string) error {
 	quotaName := clusterWideQuotaName(capabilityName)
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -268,7 +269,7 @@ func (r *PaasReconciler) removeFromClusterWideQuota(
 	paas *v1alpha2.Paas,
 	capabilityName string,
 ) error {
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return err
 	}

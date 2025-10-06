@@ -14,6 +14,7 @@ import (
 	"reflect"
 
 	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	appv1 "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
@@ -51,7 +52,7 @@ func (r *PaasReconciler) ensureAppSetCaps(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) error {
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -73,7 +74,7 @@ func capElementsFromPaas(
 	paas *v1alpha2.Paas,
 	capName string,
 ) (elements fields.Elements, err error) {
-	paasConfig, err := getConfigFromContext(ctx)
+	paasConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +116,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	var err error
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerCapabilitiesComponent)
 	logger.Info().Msgf("reconciling %s Applicationset", capName)
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -190,7 +191,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	capName string,
 ) error {
 	as := &appv1.ApplicationSet{}
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return err
 	}
@@ -239,7 +240,7 @@ func (r *PaasReconciler) finalizeDisabledAppSetCaps(
 	paas *v1alpha2.Paas,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerCapabilitiesComponent)
-	myConfig, err := getConfigFromContext(ctx)
+	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return err
 	}

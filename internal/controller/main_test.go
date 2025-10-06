@@ -7,13 +7,10 @@ See LICENSE.md for details.
 package controller
 
 import (
-	"context"
-	"fmt"
 	"maps"
 	"reflect"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -81,72 +78,6 @@ func TestMergeSecrets(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("mergeSecrets() = %v, want %v", got, tt.want)
 			}
-		})
-	}
-}
-
-func Test_getConfigFromContext(t *testing.T) {
-	type args struct {
-		ctx context.Context
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    v1alpha2.PaasConfig
-		wantErr assert.ErrorAssertionFunc
-	}{
-		{
-			name: "config exists in context",
-			args: args{
-				ctx: context.WithValue(context.Background(), contextKeyPaasConfig, v1alpha2.PaasConfig{
-					Spec: v1alpha2.PaasConfigSpec{
-						Debug: true,
-					},
-				}),
-			},
-			want: v1alpha2.PaasConfig{
-				Spec: v1alpha2.PaasConfigSpec{
-					Debug: true,
-				},
-			},
-			wantErr: assert.NoError,
-		},
-		{
-			name: "no config in context",
-			args: args{
-				ctx: context.Background(),
-			},
-			want:    v1alpha2.PaasConfig{},
-			wantErr: assert.Error,
-		},
-		{
-			name: "wrong type in context",
-			args: args{
-				ctx: context.WithValue(context.Background(), contextKeyPaasConfig, "not-a-config"),
-			},
-			want:    v1alpha2.PaasConfig{},
-			wantErr: assert.Error,
-		},
-		{
-			name: "config fails in context as pointer",
-			args: args{
-				ctx: context.WithValue(context.Background(), contextKeyPaasConfig, &v1alpha2.PaasConfig{
-					Spec: v1alpha2.PaasConfigSpec{
-						Debug: true,
-					},
-				}),
-			},
-			want:    v1alpha2.PaasConfig{},
-			wantErr: assert.Error,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := getConfigFromContext(tt.args.ctx)
-			if !tt.wantErr(t, err, fmt.Sprintf("getConfigFromContext(%v)", tt.args.ctx)) {
-				return
-			}
-			assert.Equalf(t, tt.want, got, "getConfigFromContext(%v)", tt.args.ctx)
 		})
 	}
 }

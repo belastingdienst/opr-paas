@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -79,7 +80,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 			},
 		}
 		// Updates context to include paasConfig
-		ctx = context.WithValue(ctx, contextKeyPaasConfig, paasConfig)
+		ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, paasConfig)
 
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
@@ -207,7 +208,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 				corev1.ResourceRequestsCPU: resourcev1.MustParse("6"),
 			}
 			paasConfig.Spec.Capabilities[capName] = c
-			ctx = context.WithValue(ctx, contextKeyPaasConfig, paasConfig)
+			ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, paasConfig)
 		})
 
 		It("should create a ClusterResourceQuota with the minimum quota when reconciling Paas' "+
@@ -269,7 +270,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 			c.QuotaSettings.Ratio = 1.4
 			paasConfig.Spec.Capabilities[capName] = c
 
-			ctx = context.WithValue(ctx, contextKeyPaasConfig, paasConfig)
+			ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, paasConfig)
 
 			addPaasWithDefCap(join(paasPrefix, "1"))
 			addPaasWithCap(

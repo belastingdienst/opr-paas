@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -100,7 +101,7 @@ var _ = Describe("Rolebinding", Ordered, func() {
 		}
 
 		// Updates context to include paasConfig
-		ctx = context.WithValue(ctx, contextKeyPaasConfig, myConfig)
+		ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConfig)
 
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
