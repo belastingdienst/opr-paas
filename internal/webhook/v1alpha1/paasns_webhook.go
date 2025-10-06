@@ -57,18 +57,17 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasNSComponentV1)
 	logger.Info().Msgf("starting validation webhook for create")
 
-	myConf, err := config.GetConfigV1(ctx, v.client)
-	if err != nil {
-		return nil, err
-	}
-	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConf)
-
 	if !ok {
 		return nil, &field.Error{
 			Type:   field.ErrorTypeTypeInvalid,
 			Detail: fmt.Errorf("expected a PaasNS object but got %T", obj).Error(),
 		}
 	}
+	myConf, err := config.GetConfigV1(ctx, v.client)
+	if err != nil {
+		return nil, err
+	}
+	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConf)
 
 	errs = append(errs, v.validatePaasNsName(ctx, paasns.Name)...)
 
@@ -119,6 +118,12 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 
 	ctx, _ = logging.SetWebhookLogger(ctx, oldPaasns)
 	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasNSComponentV1)
+
+	myConf, err := config.GetConfigV1(ctx, v.client)
+	if err != nil {
+		return nil, err
+	}
+	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConf)
 
 	newPaasns, ok := newObj.(*v1alpha1.PaasNS)
 	if !ok {

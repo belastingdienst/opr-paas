@@ -49,7 +49,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		validSecret1Key = "validSecret1"
 		validSecret2    string
 		validator       PaasNSCustomValidator
-		conf            *v1alpha1.PaasConfig
+		conf            *v1alpha2.PaasConfig
 	)
 
 	BeforeAll(func() {
@@ -130,27 +130,15 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
-		conf = &v1alpha1.PaasConfig{
+		// We create a v1alpha2 PaasConfig as that is used by default and converted to a v1alpha1 is needed
+		conf = &v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
 			},
-			Spec: v1alpha1.PaasConfigSpec{
-				ArgoPermissions: v1alpha1.ConfigArgoPermissions{
-					Header:       "header",
-					ResourceName: "name",
-					Role:         "role",
-				},
-				DecryptKeysSecret: v1alpha1.NamespacedName{
+			Spec: v1alpha2.PaasConfigSpec{
+				DecryptKeysSecret: v1alpha2.NamespacedName{
 					Name:      paasPkSecret,
 					Namespace: paasSystem,
-				},
-				LDAP: v1alpha1.ConfigLdap{
-					Host: "host.nl",
-					Port: 1,
-				},
-				GroupSyncList: v1alpha1.NamespacedName{
-					Namespace: "namespace",
-					Name:      "name",
 				},
 			},
 		}
