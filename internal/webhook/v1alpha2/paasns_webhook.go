@@ -13,11 +13,11 @@ import (
 	"maps"
 	"strings"
 
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -84,12 +84,13 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 		return w, errs.ToAggregate()
 	}
 
-	myConfig, err := config.GetConfigWithError()
+	myConfig, err := config.GetConfig(ctx, v.client)
 	if err != nil {
 		errs = append(errs, field.InternalError(
 			field.NewPath("paasconfig"),
 			fmt.Errorf("unable to retrieve paasconfig: %s", err),
 		))
+		return w, errs.ToAggregate()
 	}
 
 	for _, validator := range []paasNsSpecValidator{
@@ -98,7 +99,7 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 		validatePaasNsSecrets,
 	} {
 		var fieldErrs []*field.Error
-		fieldErrs, err = validator(ctx, v.client, *myConfig, *paas, *paasns)
+		fieldErrs, err = validator(ctx, v.client, myConfig, *paas, *paasns)
 		if err != nil {
 			return nil, err
 		}
@@ -147,11 +148,19 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 	// This will not occur.
 	paas, _ := paasNStoPaas(ctx, v.client, newPaasns)
 
+	myConfig, err := config.GetConfig(ctx, v.client)
+	if err != nil {
+		errs = append(errs, field.InternalError(
+			field.NewPath("paasconfig"),
+			fmt.Errorf("unable to retrieve paasconfig: %s", err),
+		))
+		return w, errs.ToAggregate()
+	}
+
 	for _, validator := range []paasNsSpecValidator{
 		validatePaasNsGroups,
 		validatePaasNsSecrets,
 	} {
-		myConfig := config.GetConfig()
 		var fieldErrs []*field.Error
 		fieldErrs, err = validator(ctx, v.client, myConfig, *paas, *newPaasns)
 		if err != nil {

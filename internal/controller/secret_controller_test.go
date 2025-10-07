@@ -159,7 +159,9 @@ var _ = Describe("secret controller", Ordered, func() {
 				QuotaLabel:      "q.lbl",
 			},
 		}
-		config.SetConfig(myConfig)
+
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), config.ContextKeyPaasConfig, myConfig)
 	})
 
 	When("reconciling a PaasNS with a SshSecrets value", func() {

@@ -61,6 +61,12 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
 	}
 	ctx, logger := logging.SetWebhookLogger(ctx, paas)
+	myConfig, err := config.GetConfig(ctx, v.client)
+	if err != nil {
+		return nil, err
+	}
+	// Updates context to include paasConfig
+	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConfig)
 	logger.Info().Msg("starting validation webhook for creation")
 
 	return v.validate(ctx, paas)
@@ -82,6 +88,12 @@ func (v *PaasCustomValidator) ValidateUpdate(
 	}
 	logger.Info().Msg("starting validation webhook for update")
 
+	myConfig, err := config.GetConfig(ctx, v.client)
+	if err != nil {
+		return nil, err
+	}
+	// Updates context to include paasConfig
+	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConfig)
 	return v.validate(ctx, paas)
 }
 
@@ -110,7 +122,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 	var allErrs field.ErrorList
 	var warnings []string
 	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasComponentV2)
-	conf, err := config.GetConfigWithError()
+	conf, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -130,18 +142,18 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		validatePaasNamespaceNames,
 		validatePaasNamespaceGroups,
 	} {
-		if errs, validationErr := val(ctx, v.client, *conf, paas); validationErr != nil {
+		if errs, validationErr := val(ctx, v.client, conf, paas); validationErr != nil {
 			return nil, apierrors.NewInternalError(validationErr)
 		} else if errs != nil {
 			allErrs = append(allErrs, errs...)
 		}
 	}
 
-	groupWarnings, groupErrors := v.validateGroups(paas.Spec.Groups)
+	groupWarnings, groupErrors := v.validateGroups(paas.Spec.Groups, conf.Spec.FeatureFlags.GroupUserManagement)
 	warnings = append(warnings, groupWarnings...)
 	allErrs = append(allErrs, groupErrors...)
 	warnings = append(warnings, v.validateQuota(paas)...)
-	warnings = append(warnings, v.validateExtraPerm(*conf, paas)...)
+	warnings = append(warnings, v.validateExtraPerm(conf, paas)...)
 
 	if len(allErrs) == 0 && len(warnings) == 0 {
 		logger.Info().Msg("validate ok")
@@ -401,8 +413,8 @@ func validateCustomFields(
 }
 
 // validateGroups returns a warning for any of the passed groups which contain both users and a query.
-func (*PaasCustomValidator) validateGroups(groups v1alpha2.PaasGroups) (warnings []string, errs []*field.Error) {
-	groupUserFeatureFlag := config.GetConfig().Spec.FeatureFlags.GroupUserManagement
+func (*PaasCustomValidator) validateGroups(groups v1alpha2.PaasGroups,
+	groupUserFeatureFlag string) (warnings []string, errs []*field.Error) {
 	for key, grp := range groups {
 		if len(grp.Query) > 0 && len(grp.Users) > 0 {
 			warnings = append(warnings, fmt.Sprintf(

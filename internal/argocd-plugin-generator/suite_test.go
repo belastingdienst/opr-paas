@@ -21,13 +21,13 @@ import (
 	"github.com/rs/zerolog/log"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	xclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
 var (
 	cfg       *rest.Config
-	k8sClient xclient.Client
+	k8sClient client.Client
 	testEnv   *envtest.Environment
 )
 
@@ -58,7 +58,6 @@ var _ = BeforeSuite(func() {
 		// the tests directly. When we run make test it will be setup and used automatically.
 		BinaryAssetsDirectory: binDirs[len(binDirs)-1],
 	}
-
 	var err error
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
@@ -67,7 +66,7 @@ var _ = BeforeSuite(func() {
 	err = v1alpha2.AddToScheme(testEnv.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	k8sClient, err = xclient.New(cfg, xclient.Options{Scheme: testEnv.Scheme})
+	k8sClient, err = client.New(cfg, client.Options{Scheme: testEnv.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 })

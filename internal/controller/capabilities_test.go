@@ -75,7 +75,6 @@ var _ = Describe("Capabilities controller", Ordered, func() {
 			groupTemplate = `g, system:cluster-admins, role:admin{{ range $groupName, $group := .Paas.Spec.Groups }}
 g, {{ $groupName }}, role:admin{{end}}`
 		)
-		ctx = context.Background()
 		paasConfig = v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
@@ -109,7 +108,10 @@ g, {{ $groupName }}, role:admin{{end}}`
 				},
 			},
 		}
-		config.SetConfig(paasConfig)
+
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), config.ContextKeyPaasConfig, paasConfig)
+
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),
@@ -191,7 +193,8 @@ g, ` + group2 + `, role:admin`
 				argoCapConfig := paasConfig.Spec.Capabilities[capName]
 				argoCapConfig.AppSet = invalidCapAppSet
 				paasConfig.Spec.Capabilities[capName] = argoCapConfig
-				config.SetConfig(paasConfig)
+				// Updates context with updated PaasConfig
+				ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, paasConfig)
 				err := reconciler.ensureAppSetCap(ctx, paas, capName)
 				Expect(err).Error().To(MatchError(
 					ContainSubstring("applicationsets.argoproj.io \"" + invalidCapAppSet + "\" not found")))

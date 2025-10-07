@@ -46,38 +46,6 @@ type PaasNSCustomValidator struct {
 
 //revive:enable:line-length-limit
 
-// TODO devotional-phoenix-97: combine with controller code
-
-// nssFromNs gets all PaasNs objects from a namespace and returns a list of all the corresponding namespaces
-// It also returns PaasNS in those namespaces recursively.
-func nssFromNs(ctx context.Context, c client.Client, ns string) (map[string]int, error) {
-	nss := map[string]int{}
-	pnsList := &v1alpha1.PaasNSList{}
-	if err := c.List(ctx, pnsList, &client.ListOptions{Namespace: ns}); err != nil {
-		return nil, err
-	}
-	for _, pns := range pnsList.Items {
-		nsName := pns.NamespaceName()
-		if value, exists := nss[nsName]; exists {
-			nss[nsName] = value + 1
-		} else {
-			nss[nsName] = 1
-		}
-		// Call myself (recursively)
-		subNss, err := nssFromNs(ctx, c, nsName)
-		if err != nil {
-			return nil, err
-		}
-		for key, value := range subNss {
-			nss[key] += value
-		}
-	}
-	return nss, nil
-}
-
-// nssFromPaas accepts a Paas and returns a list of all namespaces managed by this Paas
-// nssFromPaas uses nssFromNs which is recursive.
-
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
 func (v *PaasNSCustomValidator) ValidateCreate(
 	ctx context.Context,
@@ -95,8 +63,13 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 			Detail: fmt.Errorf("expected a PaasNS object but got %T", obj).Error(),
 		}
 	}
+	myConf, err := config.GetConfigV1(ctx, v.client)
+	if err != nil {
+		return nil, err
+	}
+	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConf)
 
-	errs = append(errs, validatePaasNsName(paasns.Name)...)
+	errs = append(errs, v.validatePaasNsName(ctx, paasns.Name)...)
 
 	paas, err := paasNStoPaas(ctx, v.client, paasns)
 	if err != nil {
@@ -146,6 +119,12 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 	ctx, _ = logging.SetWebhookLogger(ctx, oldPaasns)
 	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasNSComponentV1)
 
+	myConf, err := config.GetConfigV1(ctx, v.client)
+	if err != nil {
+		return nil, err
+	}
+	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConf)
+
 	newPaasns, ok := newObj.(*v1alpha1.PaasNS)
 	if !ok {
 		return nil, &field.Error{
@@ -170,15 +149,6 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 	}
 
 	paas, _ := paasNStoPaas(ctx, v.client, newPaasns)
-	// This will not occur.
-	// if err != nil {
-	// 	return w, &field.Error{
-	// 		Type:     field.ErrorTypeNotSupported,
-	// 		Field:    field.NewPath("spec").Child("paas").String(),
-	// 		BadValue: newPaasns.Spec.Paas,
-	// 		Detail:   fmt.Sprintf("paas %s does not exist", newPaasns.Spec.Paas),
-	// 	}
-	// }
 
 	if !reflect.DeepEqual(oldPaasns.Spec.Groups, newPaasns.Spec.Groups) {
 		// Raise errors when groups are not in paas
@@ -271,13 +241,14 @@ func compareGroups(subGroups []string, superGroups []string) (errs field.ErrorLi
 }
 
 // validatePaasNsName returns an error when the naam of the PaasNs does not meet validations RE
-func validatePaasNsName(name string) (errs field.ErrorList) {
-	conf, err := config.GetConfigV1()
+func (v *PaasNSCustomValidator) validatePaasNsName(ctx context.Context, name string) (errs field.ErrorList) {
+	conf, err := config.GetConfigFromContextV1(ctx)
 	if err != nil {
 		errs = append(errs, field.InternalError(
 			field.NewPath("paasconfig"),
 			fmt.Errorf("unable to retrieve paasconfig: %s", err),
 		))
+		return errs
 	}
 
 	if strings.Contains(name, ".") {

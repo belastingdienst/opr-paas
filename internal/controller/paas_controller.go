@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -205,6 +206,14 @@ func (r *PaasReconciler) removeFinalizer(
 func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	paas := &v1alpha2.Paas{ObjectMeta: metav1.ObjectMeta{Name: req.Name}}
 	ctx, logger := logging.SetControllerLogger(ctx, paas, r.Scheme, req)
+
+	// Get PaasConfig and add to context
+	paasConfig, err := config.GetConfig(ctx, r.Client)
+	if err != nil {
+		logger.Err(err).Msg("failed to get PaasConfig")
+		return ctrl.Result{}, err
+	}
+	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, paasConfig)
 
 	if paas, err = r.getPaasFromRequest(ctx, req); err != nil {
 		logger.Err(err).Msg("could not get Paas from k8s")

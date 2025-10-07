@@ -74,7 +74,8 @@ var _ = Describe("NamespaceDef", func() {
 				},
 			},
 		}
-		config.SetConfig(paasConfig)
+		// Updates context to include paasConfig
+		ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, paasConfig)
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),

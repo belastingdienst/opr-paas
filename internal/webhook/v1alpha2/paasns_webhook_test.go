@@ -10,6 +10,7 @@ package v1alpha2
 //revive:disable:dot-imports
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	cl "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -52,6 +54,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		validator       PaasNSCustomValidator
 		conf            v1alpha2.PaasConfig
 		scheme          *runtime.Scheme
+		fakeClient      cl.Client
 	)
 
 	BeforeAll(func() {
@@ -85,32 +88,32 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		Expect(v1alpha2.AddToScheme(scheme)).To(Succeed())
 		Expect(corev1.AddToScheme(scheme)).To(Succeed())
 
-		// Create a fake client that already has the existing PaasConfig
-		cl := fake.NewClientBuilder().
+		// Create a fake client that already has the existing Paas
+		fakeClient = fake.NewClientBuilder().
 			WithScheme(scheme).
 			WithObjects(paas).
 			Build()
 
-		validator = PaasNSCustomValidator{cl}
+		validator = PaasNSCustomValidator{fakeClient}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 
-		createNamespace(cl, paasSystem)
+		createNamespace(fakeClient, paasSystem)
 		mycrypt, privateKey, err = newGeneratedCrypt(paasName)
 		if err != nil {
 			Fail(err.Error())
 		}
-		createPaasPrivateKeySecret(cl, paasSystem, paasPkSecret, privateKey)
+		createPaasPrivateKeySecret(fakeClient, paasSystem, paasPkSecret, privateKey)
 		paasSecret, err = mycrypt.Encrypt([]byte("paasSecret"))
 		Expect(err).NotTo(HaveOccurred())
 		validSecret1, err = mycrypt.Encrypt([]byte("validSecretCreated"))
 		Expect(err).NotTo(HaveOccurred())
 		validSecret2, err = mycrypt.Encrypt([]byte("validSecretUpdated"))
 		Expect(err).NotTo(HaveOccurred())
-		createPaasNamespace(cl, *paas, paasName)
+		createPaasNamespace(fakeClient, *paas, paasName)
 		// This is a namespace with Owner ref to mypaas and prefix set to myotherpaas-
-		createPaasNamespace(cl, *paas, otherPaasName)
+		createPaasNamespace(fakeClient, *paas, otherPaasName)
 		// This is a namespace without Owner ref
-		createNamespace(cl, nsWithoutOwnerRef)
+		createNamespace(fakeClient, nsWithoutOwnerRef)
 	})
 
 	BeforeEach(func() {
@@ -139,20 +142,37 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				},
 			},
 		}
+
 		conf = v1alpha2.PaasConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "paas-config",
+			},
 			Spec: v1alpha2.PaasConfigSpec{
 				DecryptKeysSecret: v1alpha2.NamespacedName{
 					Name:      paasPkSecret,
 					Namespace: paasSystem,
 				},
 			},
-		}
-		config.SetConfig(conf)
+			Status: v1alpha2.PaasConfigStatus{
+				Conditions: []metav1.Condition{
+					{
+						Type:    v1alpha2.TypeActivePaasConfig,
+						Status:  metav1.ConditionTrue,
+						Message: "This config is the active config!",
+					},
+				},
+			}}
+
+		err := fakeClient.Create(ctx, &conf)
+		Expect(err).To(Not(HaveOccurred()))
+
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
 		Expect(obj).NotTo(BeNil(), "Expected obj to be initialized")
 	})
 
 	AfterEach(func() {
+		err := fakeClient.Delete(ctx, &conf)
+		Expect(err).To(Not(HaveOccurred()))
 	})
 
 	Context("When properly creating or updating a PaasNS", func() {
@@ -205,7 +225,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				{name: "", validation: "^.$", valid: false},
 			} {
 				conf.Spec.Validations = v1alpha2.PaasConfigValidations{"paasNs": {"name": test.validation}}
-				config.SetConfig(conf)
+				ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, conf)
+
 				obj.Name = test.name
 				if test.valid {
 					warn, err := validator.ValidateCreate(ctx, obj)

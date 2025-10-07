@@ -60,7 +60,9 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 	})
 	BeforeEach(func() {
 		ctx = context.Background()
-		config.SetConfig(paasConfig)
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), config.ContextKeyPaasConfig, paasConfig)
+
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),

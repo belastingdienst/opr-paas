@@ -86,7 +86,10 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 				},
 			},
 		}
-		config.SetConfig(myConfig)
+
+		// Updates context to include paasConfig
+		ctx = context.WithValue(context.Background(), config.ContextKeyPaasConfig, myConfig)
+
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),

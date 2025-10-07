@@ -28,10 +28,13 @@ func (r *PaasReconciler) getRsaPrivateKeys(
 ) (*crypt.PrivateKeys, error) {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerSecretComponent)
 	rsaSecret := &corev1.Secret{}
-	cfg := config.GetConfig().Spec
-	namespacedName := cfg.DecryptKeysSecret
+	cfg, err := config.GetConfigFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	namespacedName := cfg.Spec.DecryptKeysSecret
 
-	err := r.Get(ctx, types.NamespacedName{
+	err = r.Get(ctx, types.NamespacedName{
 		Name:      namespacedName.Name,
 		Namespace: namespacedName.Namespace,
 	}, rsaSecret)

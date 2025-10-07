@@ -91,7 +91,11 @@ func (r *PaasReconciler) backendGroup(
 	paasGroupKey string,
 	group v1alpha2.PaasGroup,
 ) (*userv1.Group, error) {
-	block := config.GetConfig().Spec.FeatureFlags.GroupUserManagement == "block"
+	myConfig, err := config.GetConfigFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	block := myConfig.Spec.FeatureFlags.GroupUserManagement == "block"
 	_, logger := logging.GetLogComponent(ctx, logging.ControllerGroupComponent)
 	logger.Debug().Msg("defining group")
 	// We don't manage groups with a query
@@ -105,10 +109,10 @@ func (r *PaasReconciler) backendGroup(
 	}
 
 	labels := map[string]string{}
-	myConfig := config.GetConfig()
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
 	for name, tpl := range myConfig.Spec.Templating.GroupLabels {
-		result, err := labelTemplater.TemplateToMap(name, tpl)
+		var result templating.TemplateResult
+		result, err = labelTemplater.TemplateToMap(name, tpl)
 		if err != nil {
 			return nil, err
 		}
@@ -124,7 +128,7 @@ func (r *PaasReconciler) backendGroup(
 	g.Users = group.Users
 	g.Labels[ManagedByLabelKey] = paas.Name
 
-	if err := controllerutil.SetOwnerReference(paas, g, r.Scheme); err != nil {
+	if err = controllerutil.SetOwnerReference(paas, g, r.Scheme); err != nil {
 		return nil, err
 	}
 	return g, nil

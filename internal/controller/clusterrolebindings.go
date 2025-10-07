@@ -154,7 +154,11 @@ func (r *PaasReconciler) reconcileClusterRoleBinding(
 ) (err error) {
 	var crb *rbac.ClusterRoleBinding
 	capability, capExists := paas.Spec.Capabilities[capName]
-	capConfig, capConfigExists := config.GetConfig().Spec.Capabilities[capName]
+	myConfig, err := config.GetConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	capConfig, capConfigExists := myConfig.Spec.Capabilities[capName]
 	if !capConfigExists && !capExists {
 		return err
 	}
@@ -220,7 +224,11 @@ func (r *PaasReconciler) finalizeClusterRoleBinding(
 }
 
 func (r *PaasReconciler) finalizeCapClusterRoleBindings(ctx context.Context, paas *v1alpha2.Paas) error {
-	for capName, capConfig := range config.GetConfig().Spec.Capabilities {
+	myConfig, err := config.GetConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	for capName, capConfig := range myConfig.Spec.Capabilities {
 		nsRE := regexp.MustCompile(fmt.Sprintf("^%s-%s$", paas.Name, capName))
 		if _, isDefined := paas.Spec.Capabilities[capName]; isDefined {
 			continue
@@ -233,7 +241,7 @@ func (r *PaasReconciler) finalizeCapClusterRoleBindings(ctx context.Context, paa
 			roles = append(roles, extraRoles...)
 		}
 		for _, role := range roles {
-			err := r.finalizeClusterRoleBinding(ctx, role, *nsRE)
+			err = r.finalizeClusterRoleBinding(ctx, role, *nsRE)
 			if err != nil {
 				return err
 			}
@@ -246,8 +254,12 @@ func (r *PaasReconciler) finalizePaasClusterRoleBindings(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 ) (err error) {
+	myConfig, err := config.GetConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
 	var capRoles []string
-	for _, capConfig := range config.GetConfig().Spec.Capabilities {
+	for _, capConfig := range myConfig.Spec.Capabilities {
 		capRoles = append(capRoles, capConfig.ExtraPermissions.Roles()...)
 		capRoles = append(capRoles, capConfig.DefaultPermissions.Roles()...)
 	}

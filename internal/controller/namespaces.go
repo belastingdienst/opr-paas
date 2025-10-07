@@ -66,10 +66,14 @@ func (r *PaasReconciler) backendNamespace(
 	logger.Info().Msgf("defining %s Namespace", name)
 
 	labels := map[string]string{}
-	myConfig := config.GetConfig()
+	myConfig, err := config.GetConfigFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
 	for tplName, tpl := range myConfig.Spec.Templating.NamespaceLabels {
-		result, err := labelTemplater.TemplateToMap(tplName, tpl)
+		var result templating.TemplateResult
+		result, err = labelTemplater.TemplateToMap(tplName, tpl)
 		if err != nil {
 			return nil, err
 		}
@@ -84,11 +88,11 @@ func (r *PaasReconciler) backendNamespace(
 		Spec: corev1.NamespaceSpec{},
 	}
 	logger.Info().Msgf("setting Quotagroup %s", quota)
-	ns.Labels[config.GetConfig().Spec.QuotaLabel] = quota
+	ns.Labels[myConfig.Spec.QuotaLabel] = quota
 	ns.Labels[ManagedByLabelKey] = paas.Name
 
 	logger.Info().Str("Paas", paas.Name).Str("namespace", ns.Name).Msg("setting Owner")
-	if err := controllerutil.SetControllerReference(paas, ns, r.Scheme); err != nil {
+	if err = controllerutil.SetControllerReference(paas, ns, r.Scheme); err != nil {
 		logger.Err(err).Msg("setControllerReference failure")
 		return nil, err
 	}

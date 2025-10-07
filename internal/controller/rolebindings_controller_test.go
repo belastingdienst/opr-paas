@@ -99,7 +99,10 @@ var _ = Describe("Rolebinding", Ordered, func() {
 				},
 			},
 		}
-		config.SetConfig(myConfig)
+
+		// Updates context to include paasConfig
+		ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConfig)
+
 		reconciler = &PaasReconciler{
 			Client: k8sClient,
 			Scheme: k8sClient.Scheme(),
