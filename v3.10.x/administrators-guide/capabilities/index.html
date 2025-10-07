@@ -1,0 +1,1717 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Dutch Tax Office">
+      
+      
+        <link rel="canonical" href="https://belastingdienst.github.io/opr-paas/v3.10.x/administrators-guide/capabilities/">
+      
+      
+        <link rel="prev" href="../">
+      
+      
+        <link rel="next" href="../configuration/">
+      
+      
+      <link rel="icon" href="../../about/branding/paas-logo-v1-32x32px.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>Configuring capabilities - opr-paas</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.2a3383ac.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        
+        <link rel="stylesheet" href="../../assets/external/fonts.googleapis.com/css.49ea35f2.css">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+      
+        <meta  property="og:type"  content="website" >
+      
+        <meta  property="og:title"  content="Configuring capabilities - opr-paas" >
+      
+        <meta  property="og:description"  content="None" >
+      
+        <meta  property="og:image"  content="https://belastingdienst.github.io/opr-paas/v3.10.x/assets/images/social/administrators-guide/capabilities.png" >
+      
+        <meta  property="og:image:type"  content="image/png" >
+      
+        <meta  property="og:image:width"  content="1200" >
+      
+        <meta  property="og:image:height"  content="630" >
+      
+        <meta  property="og:url"  content="https://belastingdienst.github.io/opr-paas/v3.10.x/administrators-guide/capabilities/" >
+      
+        <meta  name="twitter:card"  content="summary_large_image" >
+      
+        <meta  name="twitter:title"  content="Configuring capabilities - opr-paas" >
+      
+        <meta  name="twitter:description"  content="None" >
+      
+        <meta  name="twitter:image"  content="https://belastingdienst.github.io/opr-paas/v3.10.x/assets/images/social/administrators-guide/capabilities.png" >
+      
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#configuring-capabilities" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+          <aside class="md-banner md-banner--warning">
+            <div class="md-banner__inner md-grid md-typeset">
+              
+  You're not viewing the latest version.
+  <a href="../../.."> 
+    <strong>Click here to go to latest.</strong>
+  </a>
+
+            </div>
+            <script>var el=document.querySelector("[data-md-component=outdated]"),base=new URL("../.."),outdated=__md_get("__outdated",sessionStorage,base);!0===outdated&&el&&(el.hidden=!1)</script>
+          </aside>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="opr-paas" class="md-header__button md-logo" aria-label="opr-paas" data-md-component="logo">
+      
+  <img src="../../about/branding/paas-logo-v1-180x180px.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            opr-paas
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Configuring capabilities
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/belastingdienst/opr-paas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    opr-paas
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../overview/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Overview
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Administrator Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user-guide/01_basic-usage/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../development-guide/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../about/branding/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="opr-paas" class="md-nav__button md-logo" aria-label="opr-paas" data-md-component="logo">
+      
+  <img src="../../about/branding/paas-logo-v1-180x180px.png" alt="logo">
+
+    </a>
+    opr-paas
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/belastingdienst/opr-paas" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    opr-paas
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../overview/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    Administrator Guide
+    
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Administrator Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Configuring capabilities
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuring capabilities
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-capabilities-in-the-paasconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring capabilities in the PaasConfig
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuring capabilities in the PaasConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-paasconfig-with-a-capability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example PaasConfig with a capability
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-quota" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring quota
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring permissions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-custom-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring custom fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-the-applicationset" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring the ApplicationSet
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuring the ApplicationSet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-applicationset" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example ApplicationSet
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuring the operator
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../debugging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Options to have additional logging
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../feature-flags/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuring feature flags
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../go-templating/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Go Template options
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installing the Operator
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secrets/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuring Secret encryption
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Security notes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../v1alpha1-conversion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Converting v1alpha1 to v1alpha2
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Validating field names
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../cluster-wide-quotas/basic-usage/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    Cluster wide quotas
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../user-guide/01_basic-usage/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    <a href="../../development-guide/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    Developer Guide
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+    
+    
+      
+        
+        
+      
+    
+    <li class="md-nav__item md-nav__item--pruned md-nav__item--nested">
+      
+        
+  
+  
+  
+    
+  
+  
+  
+    <a href="../../about/branding/" class="md-nav__link">
+      
+  
+  
+  <span class="md-ellipsis">
+    About
+    
+  </span>
+  
+
+      
+        <span class="md-nav__icon md-icon"></span>
+      
+    </a>
+  
+
+  
+
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-capabilities-in-the-paasconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring capabilities in the PaasConfig
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuring capabilities in the PaasConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-paasconfig-with-a-capability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example PaasConfig with a capability
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-quota" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring quota
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring permissions
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuring-custom-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring custom fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuring-the-applicationset" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuring the ApplicationSet
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuring the ApplicationSet">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-applicationset" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example ApplicationSet
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/belastingdienst/opr-paas/edit/main/docs/administrators-guide/capabilities.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="configuring-capabilities">Configuring capabilities<a class="headerlink" href="#configuring-capabilities" title="Permanent link">&para;</a></h1>
+<p>The Paas Operator can deliver capabilities to enable Paas deployments with CI and CD options with a one-click option.
+Some examples of capabilities include:</p>
+<ul>
+<li>enabling ArgoCD for Continuous Delivery on your Paas namespaces</li>
+<li>enabling Tekton for Continuous Integration of your application components</li>
+<li>observing your Paas resources with Grafana</li>
+<li>configuring federated Authentication and Authorization with keycloak</li>
+</ul>
+<p>Configuring capabilities does not require code changes / building new images. It only requires:</p>
+<ol>
+<li>configuration for the Paas operator via <code>PaasConfig</code></li>
+<li>an ApplicationSet in the namespace of the cluster-wide ArgoCD</li>
+<li>a git repository for the cluster-wide ArgoCD to be used for deploying the capability for a Paas with the capability defined</li>
+</ol>
+<h2 id="configuring-capabilities-in-the-paasconfig">Configuring capabilities in the PaasConfig<a class="headerlink" href="#configuring-capabilities-in-the-paasconfig" title="Permanent link">&para;</a></h2>
+<p>On every cluster running the Paas operator, a PaasConfig resource is defined.
+This PaasConfig resource holds the specific configuration for the operator.
+For each capability an entry needs to be set in <code>spec.capabilities</code> map. An example can be found below.
+Furthermore, the Paas operator needs to know the namespace where to search for ApplicationSets managing the capability (<code>spec.clusterwide_argocd_namespace</code>).</p>
+<h3 id="example-paasconfig-with-a-capability">Example PaasConfig with a capability<a class="headerlink" href="#example-paasconfig-with-a-capability" title="Permanent link">&para;</a></h3>
+<p>Below example shows all configuration required to configure a capability.</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="language-text highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>apiVersion: cpet.belastingdienst.nl/v1alpha2
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kind: PaasConfig
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>metadata:
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  name: opr-paas-config
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>spec:
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  clusterwide_argocd_namespace: paas-capabilities-argocd
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  capabilities:
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    mycap:
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>      applicationset: mycap-as
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>      default_permissions:
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        my-service-account:
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>          - my-cluster-role
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>      extra_permissions:
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        my-extra-service-account:
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>          - my-extra-cluster-role
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>      custom_fields:
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        my-custom-key:
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>          validation: &#39;^key_[0-9]+$&#39;
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>          required: true
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        my-custom-revision:
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>          validation: &#39;^(main|develop|feature-.*)$&#39;
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>          default: main
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>      quotas:
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        clusterwide: true
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>        defaults:
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>          limits.cpu: &quot;8&quot;
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>          limits.memory: 8Gi
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>          requests.cpu: &quot;4&quot;
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>          requests.memory: 5Gi
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>          requests.storage: &quot;5Gi&quot;
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>        min:
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>          limits.cpu: &quot;1&quot;
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>          limits.memory: 1Gi
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>          requests.cpu: &quot;500Mi&quot;
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>          requests.memory: 500Mi
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>        max:
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>          limits.cpu: &quot;16&quot;
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>          limits.memory: 16Gi
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>          requests.cpu: &quot;16&quot;
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>          requests.memory: 16Gi
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>          requests.storage: &quot;10Gi&quot;
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>          thin.storageclass.storage.k8s.io/persistentvolumeclaims: &quot;0&quot;
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>        ratio: 0.1
+</code></pre></div>
+</div>
+<h3 id="configuring-quota">Configuring quota<a class="headerlink" href="#configuring-quota" title="Permanent link">&para;</a></h3>
+<p>For every Capability for every Paas, a separate ClusterResourceQuota is created.
+Quotas can be set in a Paas, and when not set, the Capability configuration can have a Default which will be used instead.
+Furthermore, the capability configuration can also have a min and max value set.
+The Paas operator will use the value as set in the Paas, and these Default, Min and Max settings to come to the proper value to be set in the ClusterResourceQuota set on the namespace.
+Beyond these options, a capability can also be configured to use cluster-wide Quota with the <code>spec.capabilities["new-capability"].quotas.clusterwide</code>
+and <code>spec.capabilities["new-capability"].quotas.raio</code>.</p>
+<h4 id="more-info">More info<a class="headerlink" href="#more-info" title="Permanent link">&para;</a></h4>
+<p>For more information please check:</p>
+<ul>
+<li><a href="../cluster-wide-quotas/basic-usage/">administrators-guide's Cluster Wide Quotas section</a></li>
+<li><a href="../../development-guide/00_api/#configcapability">api-guide on capability quota configuration</a></li>
+<li><a href="../../development-guide/00_api/#paascapability">api-guide on capability quota in the Paas</a></li>
+</ul>
+<h3 id="configuring-permissions">Configuring permissions<a class="headerlink" href="#configuring-permissions" title="Permanent link">&para;</a></h3>
+<p>For every capability the Paas operator can grant permissions to service accounts.
+There are two options:</p>
+<ul>
+<li>Default permissions: These permissions are granted for this capability for every Paas</li>
+<li>Extra permissions: These permissions are granted only when a Paas has set <code>spec.capabilities[capability].extra_permissions</code> to true
+  The main goal for extra permissions is to start off with higher permissions to get started, and revert them when a lower permissive option is available (e.a. lower permissions are set as default permissions).
+  Customers starting with extra permissions can test with default permissions and return to extra permissions if they run into issues.</li>
+</ul>
+<h4 id="more-info_1">More info<a class="headerlink" href="#more-info_1" title="Permanent link">&para;</a></h4>
+<p>For more information on Default permissions and Extra permissions please refer to:</p>
+<ul>
+<li><a href="#example-paasconfig-with-a-capability">Example PaasConfig with a capability</a></li>
+<li><a href="../../development-guide/00_api/#configcapability">api-guide on capability configuration in the PaasConfig</a></li>
+<li><a href="../../development-guide/00_api/#paascapability">api-guide on capability configuration in the Paas</a></li>
+</ul>
+<h3 id="configuring-custom-fields">Configuring custom fields<a class="headerlink" href="#configuring-custom-fields" title="Permanent link">&para;</a></h3>
+<p>Capabilities might require options to be set in a Paas. The fields to be set would be specific to a capability.
+Some examples include:</p>
+<ul>
+<li>setting a git url, revision and path for a ArgoCD bootstrap application</li>
+<li>setting a version for the Keycloak capability</li>
+<li>deploying multiple streams of a capability and allowing some DevOps teams to run a <code>latest</code> while others run a <code>stable</code> stream</li>
+</ul>
+<p>For this reason we have introduced options for setting custom fields in the capability configuration in PaasConfig.
+Each custom field belongs to a capability (e.a. <code>capability_name</code>), has a field name (e.a. <code>custom_field_name</code>) and configuration.
+A custom field can be defined in PaasConfig in <code>PaasConfig.spec.capabilities[capability].customfields</code>.</p>
+<p>The following configuration can be set:</p>
+<ul>
+<li>validation: A regular expression used to validate input in a Paas</li>
+<li>required: When set to true, an error is returned when the custom field is not defined in a Paas</li>
+<li>default: When set, a Paas without the custom field set will use this default instead.</li>
+<li>template: When set to a valid go template, the template is processed against the current Paas
+  and PaasConfig end results are added as one or more custom fields in the ApplicationSet.</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>required</code> and <code>default</code> are mutually exclusive.</p>
+</div>
+<p>When set, a Paas can set these custom_fields, which brings them to the generators field in the Application created by the ApplicationSet for this specific Paas.</p>
+<h4 id="example-of-how-a-custom-field-operates">Example of how a custom field operates<a class="headerlink" href="#example-of-how-a-custom-field-operates" title="Permanent link">&para;</a></h4>
+<p>Imagine that on a cluster with</p>
+<ul>
+<li>a PaasConfig as defined in <a href="#example-paasconfig-with-a-capability">Example PaasConfig with a capability</a>, and</li>
+<li>an ApplicationSet as defined in <a href="#example-ApplicationSet">Example capability ApplicationSet</a>,
+  a DevOps engineer created a Paas with a content like:</li>
+</ul>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="language-text highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>apiVersion: cpet.belastingdienst.nl/v1alpha2
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kind: Paas
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>metadata:
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  name: my-paas
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>spec:
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>  capabilities:
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    mycap:
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>      custom_fields:
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>        my-custom-key: key_123
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>  ...
+</code></pre></div>
+</div>
+<p>The following would happen:</p>
+<ul>
+<li>The Paas operator would check all custom_fields and use the following field values:</li>
+<li>my-custom-key: key_123</li>
+<li>my-custom-revision main</li>
+<li>The Paas operator would create an entry in the list generator in the ApplicationSet, with custom fields set as elements</li>
+<li>The cluster-wide ArgoCD ApplicationSet controller would create a new Application for my-paas-capability-mycap</li>
+<li>the Application would have the following set in <code>spec.source.kustomize.commonLabels</code>:</li>
+<li>key: key_123</li>
+<li>revision: main</li>
+<li>From here, Kustomize could use these values to be set on all resources create by the cluster-wide ArgoCD for this capability for this Paas</li>
+</ul>
+<h4 id="templating">Templating<a class="headerlink" href="#templating" title="Permanent link">&para;</a></h4>
+<p>The templating feature allows administrators to dynamically generate values for custom fields in the ApplicationSet without 
+requiring users to explicitly specify these values in their Paas. This provides flexibility by enabling values to be derived from 
+the Paas, the PaasConfig, or a combination of both. The template support Go templating syntax, in which all values from the Paas 
+and PaasConfig can be referenced, more examples below. In addition to the default Go template functions, we've added support for
+<a href="https://docs.atom.codes/sprout/groups/all">all Sprout</a> Go template functions.</p>
+<p>For more info on templating, see <a href="../go-templating/">api-guide on using templating in paas configuration</a></p>
+<h4 id="notes">Notes:<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Precedence</strong>: When a custom field is configured with a template, it will take precedence over other settings like default, 
+validation, and required. This means that the template value will override any default or validation settings configured for that 
+field.</li>
+<li><strong>Overrides</strong>: Paas values will take precedence over template values. If a custom field is defined in the Paas, its value will 
+override the template.</li>
+<li><strong>Multi-value Fields</strong>: Templates return a string, which, if it can be parsed as YAML into a map or list, will result in a 
+multi-value entry in the ApplicationSet. The custom field name will be suffixed with the map keys or list indexes.</li>
+<li><strong>Template Validation</strong>: For easier validation and debugging of templates, we recommend using <a href="https://repeatit.io/">Repeat It</a>, 
+an online tool to test and validate your Go templates.</li>
+</ul>
+<h4 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h4>
+<p>You can now generate an argocd policy by ranging over the groups in the paas:</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="language-text highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>apiVersion: cpet.belastingdienst.nl/v1alpha2
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kind: PaasConfig
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>metadata:
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  name: opr-paas-config
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>spec:
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  clusterwide_argocd_namespace: paas-capabilities-argocd
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  capabilities:
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    mycap:
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>      ApplicationSet: mycap-as
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>      custom_fields:
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        argocd-policies:
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>          template: |
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>            g, system:cluster-admins, role:admin{{ range $groupName, $group := .Paas.Spec.Groups }}
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>            g, {{ $groupName }}, role:admin{{end}}
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>        my-custom-revision:
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>          validation: &#39;^(main|develop|feature-.*)$&#39;
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>          default: main
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>      quotas:
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>        defaults:
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>          limits.cpu: &quot;8&quot;
+</code></pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the above example, you see the first line and the range on line 1, and the templated lines and end block on line 2.
+This causes that for every line a \n and after that a new row is inserted.
+This in turn leaves out the ending \n, which is unwanted.</p>
+<p>So, if you happen to see a |+ and extra \n in the resulting appset list generator value,
+this can be fixed by changing they way all is joined / seperated on lines in the template.</p>
+</div>
+<p>You can reference values from the PaasConfig as well by referencing <code>.Config</code>:</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="language-text highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>apiVersion: cpet.belastingdienst.nl/v1alpha2
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>kind: PaasConfig
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>metadata:
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  name: opr-paas-config
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>spec:
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>  clusterwide_argocd_namespace: paas-capabilities-argocd
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  capabilities:
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    mycap:
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>      ApplicationSet: mycap-as
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>      custom_fields:
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>        debug:
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>          template: |
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>            {{ .Config.Spec.Debug }}
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        my-custom-revision:
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>          validation: &#39;^(main|develop|feature-.*)$&#39;
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>          default: main
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>      quotas:
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>        defaults:
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>          limits.cpu: &quot;8&quot;
+</code></pre></div>
+</div>
+<p>You can return a map and create multiple keys (string suffix).</p>
+<p>This would create 2 keys:</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="language-text highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>apiVersion: cpet.belastingdienst.nl/v1alpha2
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>kind: PaasConfig
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>metadata:
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>  name: opr-paas-config
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>spec:
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>  clusterwide_argocd_namespace: paas-capabilities-argocd
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>  capabilities:
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    mycap:
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>      ApplicationSet: mycap-as
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>      custom_fields:
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>        &quot;paas_config&quot;:
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>          template: |
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>            debug: {{ .Config.Spec.Debug }}
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>            argo_enabled: false
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>        my-custom-revision:
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>          validation: &#39;^(main|develop|feature-.*)$&#39;
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>          default: main
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>      quotas:
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>        defaults:
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>          limits.cpu: &quot;8&quot;
+</code></pre></div>
+</div>
+<p>Which results in the following applicationSet entries:</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="language-text highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>apiVersion: argoproj.io/v1alpha1
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>kind: ApplicationSet
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>metadata:
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  name: mycap-as
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  namespace: paas-capabilities-argocd
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>spec:
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>  generators:
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    - list:
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>        elements:
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>          - paas_config_debug: true
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>            paas_config_argo_enabled: false
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>  ...
+</code></pre></div>
+</div>
+<p>You can also specify a list in the .Template spec and create multiple keys (number suffix).</p>
+<p>This would create 3 keys:</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="language-text highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>apiVersion: cpet.belastingdienst.nl/v1alpha2
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>kind: PaasConfig
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>metadata:
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>  name: opr-paas-config
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>spec:
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>  clusterwide_argocd_namespace: paas-capabilities-argocd
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>  capabilities:
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    mycap:
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>      ApplicationSet: mycap-as
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>      custom_fields:
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>        &quot;paas_config&quot;:
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>          template: |
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>            - {{ .Config.Spec.Debug }}
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>            - {{ .Config.Spec.ArgoEnabled }}
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>            - custom fields with templating is cool
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>        my-custom-revision:
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>          validation: &#39;^(main|develop|feature-.*)$&#39;
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>          default: main
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>      quotas:
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>        defaults:
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>          limits.cpu: &quot;8&quot;
+</code></pre></div>
+</div>
+<p>Like so:</p>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="language-text highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>apiVersion: argoproj.io/v1alpha1
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>kind: ApplicationSet
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>metadata:
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>  name: mycap-as
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>  namespace: paas-capabilities-argocd
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>spec:
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>  generators:
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    - list:
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>        elements:
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>          - paas_config_0: true
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>            paas_config_1: false
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>            paas_config_2: custom fields with templating is cool
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>  ...
+</code></pre></div>
+</div>
+<h4 id="more-info_2">More info<a class="headerlink" href="#more-info_2" title="Permanent link">&para;</a></h4>
+<p>For more information on Custom Fields please revert to:</p>
+<ul>
+<li><a href="#example-paasconfig-with-a-capability">Example PaasConfig with a capability</a></li>
+<li><a href="#example-ApplicationSet">Example capability ApplicationSet with custom_fields being set as commonLabels</a></li>
+<li><a href="../../development-guide/00_api/#configcustomfield">api-guide on capability configuration in the PaasConfig</a></li>
+<li><a href="../../development-guide/00_api/#paascapability">api-guide on capability configuration in the Paas</a></li>
+</ul>
+<h2 id="configuring-the-applicationset">Configuring the ApplicationSet<a class="headerlink" href="#configuring-the-applicationset" title="Permanent link">&para;</a></h2>
+<p>Cluster administrators can configure the ApplicationSet to be used for this specific capability.
+Imagine a cluster-wide ArgoCD to manage capabilities for Paas'es.
+It is deployed in the namespace <code>paas-capabilities-argocd</code>.
+To enable any capability, <code>spec.clusterwide_argocd_namespace</code> needs to be set to <code>paas-capabilities-argocd</code>, so that the Paas operator will locate ApplicationSets for capabilities in this namespace.
+And for a new capability (e.a. <code>new-capability</code>), there should be an ApplicationSet to manage resources for this new capability.
+This ApplicationSet should be created in <code>paas-capabilities-argocd</code>, and it's name (e.a. <code>new-capability</code>) should be configured in PaasConfig (<code>spec.capabilities["new-capability"].ApplicationSet</code>).
+After setting this configuration, for every Paas with the capability <code>new-capability</code> defined, the Paas operator will
+<code>GET</code> the ApplicationSet <code>paas-capabilities-argocd.new-capability</code>, add the Paas to the list generator and update the ApplicationSet definition.
+This in turn will create a new Application for the capability for this Paas, and ArgoCD will create and manage the resources.</p>
+<h3 id="example-applicationset">Example ApplicationSet<a class="headerlink" href="#example-applicationset" title="Permanent link">&para;</a></h3>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<div class="language-text highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>apiVersion: argoproj.io/v1alpha1
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>kind: ApplicationSet
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>metadata:
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>  name: mycap-as
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>  namespace: paas-capabilities-argocd
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>spec:
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>  generators: []
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>  template:
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    metadata:
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>      name: &#39;{{paas}}-capability-mycap&#39;
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    spec:
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>      destination:
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>        namespace: &#39;{{paas}}-mycap&#39;
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>        server: &#39;https://kubernetes.default.svc&#39;
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>      project: &#39;{{paas}}&#39;
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>      source:
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>        kustomize:
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>          commonLabels:
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>            capability: mycap
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>            clusterquotagroup: &#39;{{requestor}}&#39;
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>            paas: &#39;{{paas}}&#39;
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>            service: &#39;{{service}}&#39;
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>            subservice: &#39;{{subservice}}&#39;
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>            key: &#39;{{my-custom-key}}&#39;
+<a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a>            revision: &#39;{{my-custom-revision}}&#39;
+<a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a>        path: paas-capabilities/mycap
+<a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a>        repoURL: &#39;https://www.github.com/belastingdienst/opr-paas-capabilities.git&#39;
+<a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a>        targetRevision: main
+<a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a>      syncPolicy:
+<a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a>        automated:
+<a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a>          selfHeal: true
+</code></pre></div>
+</div>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2024 Tax Administration of The Netherlands, software and documentation licensed under EUPL.
+
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["content.action.edit", "navigation.expand", "navigation.path", "navigation.tracking", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "navigation.top", "navigation.prune", "search.suggest", "search.share", "toc.follow"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"alias": true, "provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>
