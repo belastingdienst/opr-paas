@@ -15,9 +15,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	argocd "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -139,7 +137,6 @@ var _ = Describe("Paas Controller", Ordered, func() {
 	)
 	var (
 		paas         *v1alpha2.Paas
-		appSet       *argocd.ApplicationSet
 		reconciler   *PaasReconciler
 		request      controllerruntime.Request
 		myConfig     *v1alpha2.PaasConfig
@@ -162,15 +159,6 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		paasSecret, err = mycrypt.Encrypt([]byte("paasSecret"))
 		Expect(err).NotTo(HaveOccurred())
 		assureNamespace(ctx, "gsns")
-		appSet = &argocd.ApplicationSet{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      capAppSetName,
-				Namespace: capAppSetNamespace,
-			},
-			Spec: argocd.ApplicationSetSpec{
-				Generators: []argocd.ApplicationSetGenerator{},
-			},
-		}
 	})
 
 	BeforeEach(func() {
@@ -465,7 +453,6 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			assurePaas(ctx, *brokenPaas)
 			request.Name = paasName
 			request.NamespacedName = types.NamespacedName{Name: paasName}
-			assureAppSet(ctx, capAppSetName, capAppSetNamespace)
 			result, err = reconciler.Reconcile(ctx, request)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(ContainSubstring("failed to decrypt secret")))
@@ -473,37 +460,6 @@ var _ = Describe("Paas Controller", Ordered, func() {
 		})
 
 		// ensureAppSetCaps returns error is very difficult to test on its own. Skipping.
-	})
-
-	When("reconciling a Paas with argocd capability", func() {
-		It("should not return an error", func() {
-			paas.Name = paasWithArgoCDName
-			request.Name = paasWithArgoCDName
-			capNamespace = paasWithArgoCDName + "-" + capName
-			assurePaas(ctx, *paas)
-			assureNamespace(ctx, capNamespace)
-			patchAppSet(ctx, appSet)
-			result, err := reconciler.Reconcile(ctx, request)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(result.RequeueAfter.Microseconds()).To(BeZero())
-		})
-		It("should create an appset entry", func() {
-			a := &argocd.ApplicationSet{}
-			appSetName := types.NamespacedName{
-				Name:      capAppSetName,
-				Namespace: capAppSetNamespace,
-			}
-			err := k8sClient.Get(ctx, appSetName, a)
-			Expect(err).NotTo(HaveOccurred())
-			entries := make(fields.Entries)
-			for _, generator := range a.Spec.Generators {
-				var generatorEntries fields.Entries
-				generatorEntries, err = fields.EntriesFromJSON(generator.List.Elements)
-				Expect(err).NotTo(HaveOccurred())
-				entries = entries.Merge(generatorEntries)
-			}
-			Expect(entries).To(HaveKey(paasWithArgoCDName))
-		})
 	})
 
 	When("reconciling a Paas without argocd capability", func() {
@@ -515,29 +471,10 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			capNamespace = paasName + "-" + capName
 			assurePaas(ctx, *paas)
 			assureNamespace(ctx, capNamespace)
-			patchAppSet(ctx, appSet)
 			paas.Spec.Capabilities = make(v1alpha2.PaasCapabilities)
 			result, err := reconciler.Reconcile(ctx, request)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.RequeueAfter.Microseconds()).To(BeZero())
-		})
-
-		It("should not create an appset entry", func() {
-			appSet = &argocd.ApplicationSet{}
-			appSetName := types.NamespacedName{
-				Name:      capAppSetName,
-				Namespace: capAppSetNamespace,
-			}
-			err := k8sClient.Get(ctx, appSetName, appSet)
-			Expect(err).NotTo(HaveOccurred())
-			entries := make(fields.Entries)
-			for _, generator := range appSet.Spec.Generators {
-				var generatorEntries fields.Entries
-				generatorEntries, err = fields.EntriesFromJSON(generator.List.Elements)
-				Expect(err).NotTo(HaveOccurred())
-				entries = entries.Merge(generatorEntries)
-			}
-			Expect(entries).NotTo(HaveKey(paasName))
 		})
 	})
 })
@@ -607,7 +544,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		ns2SecretEncryptedValue, err = mycrypt.Encrypt([]byte(ns2SecretValue))
 		Expect(err).NotTo(HaveOccurred())
 		assureNamespace(ctx, capAppSetNamespace)
-		assureAppSet(ctx, capAppSetName, capAppSetNamespace)
 		paas = &v1alpha2.Paas{
 			// We need to set this for AmIOwner to work properly
 			TypeMeta: metav1.TypeMeta{
@@ -657,10 +593,8 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 				Name: "paas-config",
 			},
 			Spec: v1alpha2.PaasConfigSpec{
-				ClusterWideArgoCDNamespace: capAppSetNamespace,
 				Capabilities: map[string]v1alpha2.ConfigCapability{
 					capName: {
-						AppSet: capAppSetName,
 						QuotaSettings: v1alpha2.ConfigQuotaSettings{
 							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
 								corev1.ResourceLimitsCPU: resourcev1.MustParse("5"),
@@ -766,19 +700,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 				}
 			}
 		})
-		It("should have created paas appset list generator entries", func() {
-			var capAppSet argocd.ApplicationSet
-			err := reconciler.Get(ctx,
-				types.NamespacedName{Namespace: capAppSetNamespace, Name: capAppSetName}, &capAppSet)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(capAppSet.Spec.Generators).To(HaveLen(1))
-			list := getListGen(capAppSet.Spec.Generators)
-			Expect(list).NotTo(BeNil())
-			entries, err := fields.EntriesFromJSON(list.List.Elements)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(entries).To(HaveLen(1))
-			Expect(entries).To(HaveKey(paasName))
-		})
 		It("should have created paas rolebindings", func() {
 			for _, nsName := range namespaces {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
@@ -867,15 +788,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + paasGroupName + "\" not found"))
 		})
-		It("should successfully finalize disabled capabilities", func() {
-			var capAppSet argocd.ApplicationSet
-			err := reconciler.Get(ctx,
-				types.NamespacedName{Namespace: capAppSetNamespace, Name: capAppSetName}, &capAppSet)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(capAppSet.Spec.Generators).To(HaveLen(1))
-			list := getListGen(capAppSet.Spec.Generators)
-			Expect(list).To(BeNil())
-		})
 		It("should successfully finalize removed namespace1", func() {
 			deletedNamespaces := []string{join(paasName, ns1Name), join(paasName, capName), join(paasName, paasNSName)}
 			for _, nsName := range deletedNamespaces {
@@ -905,15 +817,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 				}
 			}
 		})
-		It("should have removed paas appset list generator entries", func() {
-			var capAppSet argocd.ApplicationSet
-			err := reconciler.Get(ctx,
-				types.NamespacedName{Namespace: capAppSetNamespace, Name: capAppSetName}, &capAppSet)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(capAppSet.Spec.Generators).To(HaveLen(1))
-			list := getListGen(capAppSet.Spec.Generators)
-			Expect(list).To(BeNil())
-		})
 	})
 	When("finalizing a Paas", Ordered, func() {
 		It("should finalize successfully", func() {
@@ -942,15 +845,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 					Expect(err).To(HaveOccurred())
 				}
 			}
-		})
-		It("should have deleted paas appset list generator entries", func() {
-			var capAppSet argocd.ApplicationSet
-			err := reconciler.Get(ctx,
-				types.NamespacedName{Namespace: capAppSetNamespace, Name: capAppSetName}, &capAppSet)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(capAppSet.Spec.Generators).To(HaveLen(1))
-			list := getListGen(capAppSet.Spec.Generators)
-			Expect(list).To(BeNil())
 		})
 	})
 })
