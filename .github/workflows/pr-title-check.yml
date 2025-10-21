@@ -4,6 +4,8 @@ on:
   pull_request:
     types: [opened, edited, reopened, synchronize]
 
+permissions: {}
+
 # PR updates can happen in quick succession leading to this
 # workflow being trigger a number of times. This limits it
 # to one run per PR.
