@@ -24,7 +24,9 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend_any_changed || steps.filter.outputs.ci_any_changed }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
       - uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v47.0.0
         id: filter
         with:
@@ -48,7 +50,9 @@ jobs:
       - codechanges
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
       - name: Setup Golang
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
@@ -72,7 +76,9 @@ jobs:
       pull-requests: read # for golangci/golangci-lint-action to fetch pull requests
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
       - name: Setup Golang
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
@@ -91,7 +97,9 @@ jobs:
       - codechanges
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
       - name: Check for changes in generated code
         run: |
           make manifests
@@ -108,7 +116,9 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
       - name: Setup Golang
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
@@ -117,11 +127,11 @@ jobs:
         run: make test
       - name: check test coverage
         id: coverage
-        uses: vladopajic/go-test-coverage@v2
+        uses: vladopajic/go-test-coverage@cc5012c2cfa84542e02b079141958a885861d326 # v2.17.0
+        continue-on-error: true # Should fail after coverage comment is posted
         with:
           config: .testcoverage.yaml
           profile: cover.out
-          continue-on-error: true # Should fail after coverage comment is posted
       - name: Generate test results artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -138,7 +148,7 @@ jobs:
             echo "No open pull request found for this branch."
           fi
       - name: create badge
-        uses: vladopajic/go-test-coverage@v2
+        uses: vladopajic/go-test-coverage@cc5012c2cfa84542e02b079141958a885861d326 # v2.17.0
         with:
           profile: cover.out
           threshold-total: 42
@@ -146,8 +156,8 @@ jobs:
           git-branch: badges
       - name: post coverage report
         if: env.pull_request_id
-        uses: thollander/actions-comment-pull-request@v3
-        continue-on-error: true #we need pull_request_target or this will fail when not running pr in BD organisation
+        uses: thollander/actions-comment-pull-request@24bffb9b452ba05a4f3f77933840a6a841d1b32b # v3.0.1
+        continue-on-error: true # we need pull_request_target or this will fail when not running pr in BD organisation
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           comment-tag: coverage-report
@@ -169,7 +179,9 @@ jobs:
       - codechanges
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
       - name: Setup Golang
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
@@ -225,7 +237,9 @@ jobs:
       - codechanges
     steps:
       - name: Checkout code
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
       - name: Get unit test code coverage
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:

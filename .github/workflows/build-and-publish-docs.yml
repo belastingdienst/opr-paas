@@ -21,7 +21,9 @@ jobs:
     steps:
 
       - name: Checkout repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v4.0.0
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
         
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages --depth=1
@@ -73,16 +75,19 @@ jobs:
       - name: Extract short tag
         id: extract_short_tag
         run: |
-          TAG="${{ github.event.release.tag_name }}"
+          TAG="${GITHUB_EVENT_RELEASE_TAG_NAME}"
           SHORT_TAG="$(echo "$TAG" | sed 's/\([0-9]*\.[0-9]*\).*/\1\.x/')"
           echo "SHORT_TAG=$SHORT_TAG" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_EVENT_RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
 
       - name: Deploy with mike 🚀
         # note that "mike set-default latest" was run manually in initial docs setup
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          STEPS_EXTRACT_SHORT_TAG_OUTPUTS_SHORT_TAG: ${{ steps.extract_short_tag.outputs.SHORT_TAG }}
         run: |
-          SHORT_TAG=${{ steps.extract_short_tag.outputs.SHORT_TAG }}
+          SHORT_TAG=${STEPS_EXTRACT_SHORT_TAG_OUTPUTS_SHORT_TAG}
           mike deploy --update-aliases --push --branch=gh-pages "$SHORT_TAG" latest
           mike --version
           
