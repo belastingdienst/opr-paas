@@ -135,8 +135,6 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 # Setup e2e
 .PHONY: setup-e2e
 setup-e2e: kustomize ## Setup test environment in the K8s cluster specified in ~/.kube/config.
-	# Create GitOps operator mocks
-	$(KUSTOMIZE) build test/e2e/manifests/gitops-operator | kubectl apply --server-side -f -
 	# Apply OpenShift mocks
 	$(KUSTOMIZE) build test/e2e/manifests/openshift | kubectl apply -f -
 	# Apply context needed by operator
@@ -341,7 +339,6 @@ setup-local-e2e:
 	$(CONTAINER_TOOL) build -t ${IMG} .
 	kind load image-archive <(${CONTAINER_TOOL} save controller:latest)
 
-	${KUSTOMIZE} build test/e2e/manifests/gitops-operator | kubectl create -f -
 	${KUSTOMIZE} build test/e2e/manifests/openshift | kubectl apply -f -
 
 	# Wait a bit as the paas-context files rely on the previous deployed mocks
