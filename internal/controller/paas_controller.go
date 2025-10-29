@@ -225,7 +225,14 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return ctrl.Result{}, nil
 	}
 
-	paasReconcilers := []func(context.Context, *v1alpha2.Paas) error{
+	nsDefs, err := r.nsDefsFromPaas(ctx, paas)
+	if err != nil {
+		logger.Err(err).Msg("could not get nsDefs from paas")
+		return ctrl.Result{}, err
+	}
+	logger.Debug().Msgf("Need to manage resources for %d namespaces", len(nsDefs))
+
+	paasReconcilers := []func(context.Context, *v1alpha2.Paas, namespaceDefs) error{
 		r.reconcileQuotas,
 		r.reconcileClusterWideQuota,
 		r.reconcileNamespacedResources,
@@ -235,7 +242,7 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	}
 
 	for _, reconciler := range paasReconcilers {
-		if err = reconciler(ctx, paas); err != nil {
+		if err = reconciler(ctx, paas, nsDefs); err != nil {
 			return ctrl.Result{}, errors.Join(err, r.setErrorCondition(ctx, paas, err))
 		}
 	}
@@ -246,14 +253,10 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 func (r *PaasReconciler) reconcileNamespacedResources(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
+	nsDefs namespaceDefs,
 ) (err error) {
 	_, logger := logging.GetLogComponent(ctx, logging.ControllerPaasComponent)
 	logger.Debug().Msg("inside namespaced resource reconciler")
-	nsDefs, err := r.nsDefsFromPaas(ctx, paas)
-	if err != nil {
-		return err
-	}
-	logger.Debug().Msgf("Need to manage resources for %d namespaces", len(nsDefs))
 	paasNsReconcilers := []func(context.Context, *v1alpha2.Paas, namespaceDefs) error{
 		r.reconcileNamespaces,
 		r.finalizeObsoleteNamespaces,

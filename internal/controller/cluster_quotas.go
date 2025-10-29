@@ -119,16 +119,25 @@ func (r *PaasReconciler) backendQuota(
 func (r *PaasReconciler) backendEnabledQuotas(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
+	nsDefs namespaceDefs,
 ) (quotas []*quotav1.ClusterResourceQuota, err error) {
 	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	quota, err := r.backendQuota(ctx, paas, "", paas.Spec.Quota)
-	if err != nil {
-		return nil, err
+
+	if len(nsDefs) > 0 {
+		for _, nsDef := range nsDefs {
+			if nsDef.capName == "" {
+				quota, err := r.backendQuota(ctx, paas, "", paas.Spec.Quota)
+				if err != nil {
+					return nil, err
+				}
+				quotas = append(quotas, quota)
+				break
+			}
+		}
 	}
-	quotas = append(quotas, quota)
 	for name, capability := range paas.Spec.Capabilities {
 		if capConfig, exists := myConfig.Spec.Capabilities[name]; !exists {
 			return nil, errors.New("a capability is requested, but not configured")
@@ -186,11 +195,12 @@ func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, quotaName str
 func (r *PaasReconciler) reconcileQuotas(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
+	nsDefs namespaceDefs,
 ) (err error) {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterQuotaComponent)
 	logger.Info().Msg("creating quotas for Paas")
 	// Create quotas if needed
-	quotas, err := r.backendEnabledQuotas(ctx, paas)
+	quotas, err := r.backendEnabledQuotas(ctx, paas, nsDefs)
 	if err != nil {
 		return err
 	}
