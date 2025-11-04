@@ -141,6 +141,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		validateGroupNames,
 		validatePaasNamespaceNames,
 		validatePaasNamespaceGroups,
+		validateAppNamespaceQuota,
 	} {
 		if errs, validationErr := val(ctx, v.client, conf, paas); validationErr != nil {
 			return nil, apierrors.NewInternalError(validationErr)
@@ -532,4 +533,44 @@ func validateSecrets(
 		}
 	}
 	return errs
+}
+
+// validate quota of namespaces that are not linked to a capability
+func validateAppNamespaceQuota(
+	ctx context.Context,
+	k8sClient client.Client,
+	_ v1alpha2.PaasConfig,
+	paas *v1alpha2.Paas,
+) ([]*field.Error, error) {
+	var errs []*field.Error
+
+	if len(paas.Spec.Quota) > 0 {
+		return nil, nil
+	}
+
+	if len(paas.Spec.Namespaces) > 0 {
+		errs = append(errs, field.Invalid(
+			field.NewPath("spec", "namespaces"),
+			fmt.Sprintf("%d", len(paas.Spec.Namespaces)),
+			fmt.Sprintf("quota can not be empty when paas has namespaces (number of namespaces: %d)", len(paas.Spec.Namespaces)),
+		))
+	}
+
+	for capName := range paas.Spec.Capabilities {
+		capNS := strings.Join([]string{paas.Name, capName}, "-")
+
+		pnsList := &v1alpha2.PaasNSList{}
+		if err := k8sClient.List(ctx, pnsList, &client.ListOptions{Namespace: capNS}); err != nil {
+			return errs, err
+		}
+		if len(pnsList.Items) > 0 {
+			errs = append(errs, field.Invalid(
+				field.NewPath("spec", "capabilities").Key(capName),
+				fmt.Sprintf("%d", len(pnsList.Items)),
+				"quota can not be empty when paas capability namespace has paasNs",
+			))
+		}
+	}
+
+	return errs, nil
 }
