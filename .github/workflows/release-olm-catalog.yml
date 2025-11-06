@@ -1,0 +1,28 @@
+name: Build and publish OLM catalog
+on:
+  release:
+    types: [published]
+
+jobs:
+  catalog:
+    name: Build & Push OLM Catalog
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Podman
+        run: sudo apt-get update && sudo apt-get install -y podman
+
+      - name: Install operator-sdk
+        run: make operator-sdk
+
+      - name: Build OLM catalog
+        run: make catalog-build VERSION=${{ github.ref_name }}
+
+      - name: Login to GHCR
+        run: podman login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push OLM catalog image
+        run: make catalog-push VERSION=${{ github.ref_name }}

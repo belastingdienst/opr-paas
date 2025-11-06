@@ -1,0 +1,398 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+    createdAt: "2025-11-05T09:59:46Z"
+    operators.operatorframework.io/builder: operator-sdk-v1.40.0
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v4
+  name: opr-paas.v0.1.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - kind: Paas
+      name: paas.cpet.belastingdienst.nl
+      version: v1alpha1
+    - kind: Paas
+      name: paas.cpet.belastingdienst.nl
+      version: v1alpha2
+    - kind: PaasConfig
+      name: paasconfig.cpet.belastingdienst.nl
+      version: v1alpha1
+    - kind: PaasConfig
+      name: paasconfig.cpet.belastingdienst.nl
+      version: v1alpha2
+    - kind: PaasNS
+      name: paasns.cpet.belastingdienst.nl
+      version: v1alpha1
+    - kind: PaasNS
+      name: paasns.cpet.belastingdienst.nl
+      version: v1alpha2
+  description: Opr Paas description. TODO.
+  displayName: Opr Paas
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          - secrets
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - argoproj.io
+          resources:
+          - applicationsets
+          verbs:
+          - get
+          - list
+          - patch
+          - watch
+        - apiGroups:
+          - cpet.belastingdienst.nl
+          resources:
+          - paas
+          - paasconfig
+          - paasns
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - cpet.belastingdienst.nl
+          resources:
+          - paas/finalizers
+          - paasconfig/finalizers
+          - paasns/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - cpet.belastingdienst.nl
+          resources:
+          - paas/status
+          - paasconfig/status
+          - paasns/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - quota.openshift.io
+          resources:
+          - clusterresourcequotas
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterrolebindings
+          - rolebindings
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterroles
+          verbs:
+          - bind
+        - apiGroups:
+          - user.openshift.io
+          resources:
+          - groups
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        serviceAccountName: paas-controller-manager
+      deployments:
+      - label:
+          app.kubernetes.io/component: manager
+          app.kubernetes.io/created-by: opr-paas
+          app.kubernetes.io/instance: paas-controller-manager
+          app.kubernetes.io/managed-by: kustomize
+          app.kubernetes.io/name: opr-paas
+          app.kubernetes.io/part-of: opr-paas
+          control-plane: paas-controller-manager
+        name: paas-controller-manager
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              control-plane: paas-controller-manager
+          strategy: {}
+          template:
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/default-container: manager
+              labels:
+                control-plane: paas-controller-manager
+            spec:
+              containers:
+              - args:
+                - --leader-elect
+                command:
+                - /manager
+                image: controller:latest
+                imagePullPolicy: IfNotPresent
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                name: manager
+                ports:
+                - containerPort: 9443
+                  name: webhook-server
+                  protocol: TCP
+                - containerPort: 8080
+                  name: metrics
+                  protocol: TCP
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                  requests:
+                    cpu: 10m
+                    memory: 64Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                volumeMounts:
+                - mountPath: /tmp/k8s-webhook-server/serving-certs
+                  name: cert
+                  readOnly: true
+                - mountPath: /tmp/paas-e2e/secrets/priv
+                  name: example-keys
+              serviceAccountName: paas-controller-manager
+              terminationGracePeriodSeconds: 10
+              volumes:
+              - name: cert
+                secret:
+                  defaultMode: 420
+                  secretName: webhook-server-cert
+              - name: example-keys
+                secret:
+                  defaultMode: 420
+                  secretName: example-keys
+      permissions:
+      - rules:
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        serviceAccountName: paas-controller-manager
+    strategy: deployment
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - opr-paas
+  links:
+  - name: Opr Paas
+    url: https://opr-paas.domain
+  maintainers:
+  - email: your@email.com
+    name: Maintainer Name
+  maturity: alpha
+  provider:
+    name: Provider Name
+    url: https://your.domain
+  version: 0.1.0
+  webhookdefinitions:
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    conversionCRDs:
+    - paas.cpet.belastingdienst.nl
+    - paasconfig.cpet.belastingdienst.nl
+    - paasns.cpet.belastingdienst.nl
+    deploymentName: paas-controller-manager
+    generateName: cpaaspaasconfigpaasns.kb.io
+    sideEffects: None
+    targetPort: 9443
+    type: ConversionWebhook
+    webhookPath: /convert
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: paas-controller-manager
+    failurePolicy: Fail
+    generateName: vpaas-v1alpha1.kb.io
+    rules:
+    - apiGroups:
+      - cpet.belastingdienst.nl
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - paas
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-cpet-belastingdienst-nl-v1alpha1-paas
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: paas-controller-manager
+    failurePolicy: Fail
+    generateName: vpaas-v1alpha2.kb.io
+    rules:
+    - apiGroups:
+      - cpet.belastingdienst.nl
+      apiVersions:
+      - v1alpha2
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - paas
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-cpet-belastingdienst-nl-v1alpha2-paas
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: paas-controller-manager
+    failurePolicy: Fail
+    generateName: vpaasconfig-v1alpha1.kb.io
+    rules:
+    - apiGroups:
+      - cpet.belastingdienst.nl
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - paasconfig
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-cpet-belastingdienst-nl-v1alpha1-paasconfig
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: paas-controller-manager
+    failurePolicy: Fail
+    generateName: vpaasconfig-v1alpha2.kb.io
+    rules:
+    - apiGroups:
+      - cpet.belastingdienst.nl
+      apiVersions:
+      - v1alpha2
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - paasconfig
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-cpet-belastingdienst-nl-v1alpha2-paasconfig
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: paas-controller-manager
+    failurePolicy: Fail
+    generateName: vpaasns-v1alpha1.kb.io
+    rules:
+    - apiGroups:
+      - cpet.belastingdienst.nl
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - paasns
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-cpet-belastingdienst-nl-v1alpha1-paasns
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: paas-controller-manager
+    failurePolicy: Fail
+    generateName: vpaasns-v1alpha2.kb.io
+    rules:
+    - apiGroups:
+      - cpet.belastingdienst.nl
+      apiVersions:
+      - v1alpha2
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - paasns
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-cpet-belastingdienst-nl-v1alpha2-paasns
