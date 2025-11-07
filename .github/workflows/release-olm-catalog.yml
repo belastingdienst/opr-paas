@@ -12,6 +12,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - name: Set up Podman
         run: sudo apt-get update && sudo apt-get install -y podman
 
@@ -19,10 +21,10 @@ jobs:
         run: make operator-sdk
 
       - name: Build OLM catalog
-        run: make catalog-build VERSION=${{ github.ref_name }}
+        run: make catalog-build VERSION=${GITHUB_REF_NAME}
 
       - name: Login to GHCR
-        run: podman login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+        run: podman login ghcr.io -u ${GITHUB_ACTOR} -p ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push OLM catalog image
-        run: make catalog-push VERSION=${{ github.ref_name }}
+        run: make catalog-push VERSION=${GITHUB_REF_NAME}
