@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"go.yaml.in/yaml/v3"
 )
 
 // Element represents a value for one entry in the list of the listgenerator
@@ -25,12 +23,12 @@ func ElementsFromJSON(raw []byte) (Elements, error) {
 	return newElements, nil
 }
 
-// GetElementsAsStringMap gets a value and returns as string
+// GetElementsAsAnyMap gets a value and returns as string
 // This should be a method on Element, but a method cannot exist on interface datatypes
-func (es Elements) GetElementsAsStringMap() (values map[string]string) {
-	values = make(map[string]string)
-	for key := range es {
-		values[key] = es.GetElementAsString(key)
+func (es Elements) GetElementsAsAnyMap() (values map[string]any) {
+	values = make(map[string]any)
+	for key, value := range es {
+		values[key] = value
 	}
 	return values
 }
@@ -56,11 +54,11 @@ func (es Elements) TryGetElementAsString(key string) (string, error) {
 	if ok {
 		return value, nil
 	}
-	y, err := yaml.Marshal(element)
+	j, err := json.Marshal(element)
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(string(y)), nil
+	return string(j), nil
 }
 
 // Merge merges all key/value pairs from another Entries on top of this and returns the resulting total Entries set

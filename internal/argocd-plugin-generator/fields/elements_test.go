@@ -43,13 +43,13 @@ var (
 func TestAsStringMap(t *testing.T) {
 	assert.Equal(
 		t,
-		map[string]string{
+		map[string]interface{}{
 			"a": "b",
-			"c": "6",
-			"d": "k1: v1\nk2: v2",
-			"e": "- e1\n- e2",
+			"c": 6.0,
+			"d": map[string]string{"k1": "v1", "k2": "v2"},
+			"e": []string{"e1", "e2"},
 		},
-		elements.GetElementsAsStringMap(),
+		elements.GetElementsAsAnyMap(),
 	)
 }
 
@@ -98,7 +98,7 @@ func TestElementsFromImproperJSON(t *testing.T) {
 }
 
 func TestElementsAsString(t *testing.T) {
-	expected := "{ 'a': 'b', 'c': '6', 'd': 'k1: v1\nk2: v2', 'e': '- e1\n- e2' }"
+	expected := `{ 'a': 'b', 'c': '6', 'd': '{"k1":"v1","k2":"v2"}', 'e': '["e1","e2"]' }`
 	require.NotNil(t, elements)
 	assert.Equal(t, expected, elements.String())
 }
