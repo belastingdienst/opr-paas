@@ -29,6 +29,7 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 		reqLbl        = "requestor-label"
 		qtaLbl        = "quota-label"
 		kubeInstLabel = "app.kubernetes.io/instance"
+		nsName        = "testNamespace"
 	)
 	var (
 		paas       *v1alpha2.Paas
@@ -52,6 +53,9 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 			},
 			Spec: v1alpha2.PaasSpec{
 				Requestor: paasRequestor,
+				Namespaces: v1alpha2.PaasNamespaces{
+					nsName: v1alpha2.PaasNamespace{},
+				},
 				Capabilities: v1alpha2.PaasCapabilities{
 					capName: v1alpha2.PaasCapability{},
 				},

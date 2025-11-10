@@ -33,6 +33,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		paasSystem        = "paasnssystem"
 		paasPkSecret      = "paasns-pk-secret"
 		paasName          = "mypaasns-paas"
+		paasNameNQ        = "no-quota"
 		otherPaasName     = "myotherpaas"
 		nsWithoutOwnerRef = paasName + "-without-owner-ref"
 		groupName1        = "mygroup1"
@@ -40,10 +41,12 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		otherGroup        = "myothergroup"
 		paasNsName        = "mypaasns"
 		paasUID           = paasName + "-uid"
+		PaasNQUUID        = paasNameNQ + "-uid"
 	)
 	var (
 		privateKey      []byte
 		paas            *v1alpha2.Paas
+		noQuotaPaas     *v1alpha2.Paas
 		obj             *v1alpha2.PaasNS
 		oldObj          *v1alpha2.PaasNS
 		mycrypt         *crypt.Crypt
@@ -84,6 +87,28 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			},
 		}
 
+		noQuotaPaas = &v1alpha2.Paas{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Paas",
+				APIVersion: "v1alpha2",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: paasNameNQ,
+				UID:  PaasNQUUID,
+			},
+			Spec: v1alpha2.PaasSpec{
+				Requestor: "paasns-requestor",
+				Groups: v1alpha2.PaasGroups{
+					groupName1: v1alpha2.PaasGroup{},
+					groupName2: v1alpha2.PaasGroup{},
+				},
+				Secrets: map[string]string{
+					paasSecret: paasSecret,
+				},
+				Quota: quota.Quota{},
+			},
+		}
+
 		scheme = runtime.NewScheme()
 		Expect(v1alpha2.AddToScheme(scheme)).To(Succeed())
 		Expect(corev1.AddToScheme(scheme)).To(Succeed())
@@ -91,7 +116,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		// Create a fake client that already has the existing Paas
 		fakeClient = fake.NewClientBuilder().
 			WithScheme(scheme).
-			WithObjects(paas).
+			WithObjects(paas, noQuotaPaas).
 			Build()
 
 		validator = PaasNSCustomValidator{fakeClient}
@@ -110,6 +135,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		validSecret2, err = mycrypt.Encrypt([]byte("validSecretUpdated"))
 		Expect(err).NotTo(HaveOccurred())
 		createPaasNamespace(fakeClient, *paas, paasName)
+		createPaasNamespace(fakeClient, *noQuotaPaas, paasNameNQ)
 		// This is a namespace with Owner ref to mypaas and prefix set to myotherpaas-
 		createPaasNamespace(fakeClient, *paas, otherPaasName)
 		// This is a namespace without Owner ref
@@ -309,6 +335,22 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			obj.DeletionTimestamp = &now
 			warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
 			Expect(warn, err).Error().ToNot(HaveOccurred())
+		})
+	})
+
+	Context("When creating a PaasNs but the parent paas doesn't have a quota defined, ", func() {
+		It("the paasNS can't be created", func() {
+			By("creating a paasNs, but the parent paas has no quota defined")
+
+			newObj := obj.DeepCopy()
+
+			newObj.ObjectMeta.Namespace = "no-quota"
+			newObj.Spec.Paas = "no-quota"
+
+			_, err := validator.ValidateCreate(ctx, newObj)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("PaasNs cannot be created when there is no quota defined"))
 		})
 	})
 })

@@ -19,12 +19,14 @@ import (
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
+	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	cl "sigs.k8s.io/controller-runtime/pkg/client"
@@ -113,6 +115,19 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(warn, err).Error().NotTo(HaveOccurred())
 			Expect(err).Error().NotTo(HaveOccurred())
 		})
+		It("should allow creating a paas with namespaces", func() {
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{"cap5": v1alpha2.PaasCapability{}},
+					Namespaces:   v1alpha2.PaasNamespaces{"myns": v1alpha2.PaasNamespace{}},
+					Quota:        quota.Quota{"cpu.limits": resourcev1.MustParse("10")},
+				},
+			}
+
+			warn, err := validator.ValidateCreate(ctx, obj)
+			Expect(warn, err).Error().NotTo(HaveOccurred())
+			Expect(err).Error().NotTo(HaveOccurred())
+		})
 		It("Should validate paas name", func() {
 			const paasNameValidation = "^([a-z0-9]{3})-([a-z0-9]{3})$"
 
@@ -187,6 +202,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 
 				obj.Spec.Namespaces = v1alpha2.PaasNamespaces{
 					test.name: v1alpha2.PaasNamespace{},
+				}
+				obj.Spec.Quota = paasquota.Quota{
+					"limits.cpu": resourcev1.MustParse("1"),
 				}
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn).To(BeNil())
@@ -434,6 +452,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 						"foo": {
 							Groups: []string{"group2", "group3"},
 						},
+					},
+					Quota: paasquota.Quota{
+						corev1.ResourceLimitsCPU: resourcev1.MustParse("1"),
 					},
 				},
 			}
@@ -783,7 +804,70 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			warnings, _ := validator.ValidateUpdate(ctx, nil, obj)
 			Expect(warnings).To(BeEmpty())
 		})
+
+		It("Should deny creation when a namespace is defined but no quota", func() {
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Namespaces: v1alpha2.PaasNamespaces{
+						"bobber": {},
+					},
+				},
+			}
+			_, err := validator.ValidateCreate(ctx, obj)
+
+			var serr *apierrors.StatusError
+			Expect(errors.As(err, &serr)).To(BeTrue())
+			causes := serr.Status().Details.Causes
+			Expect(causes).To(HaveLen(1))
+			Expect(causes).To(ContainElements(
+				metav1.StatusCause{
+					Type:    "FieldValueInvalid",
+					Message: "Invalid value: \"1\": quota can not be empty when paas has namespaces (number of namespaces: 1)",
+					Field:   "spec.namespaces",
+				},
+			))
+		})
+
+		It("Should deny creation when a capability with paasNS has been defined without quota", func() {
+			obj = &v1alpha2.Paas{
+				ObjectMeta: metav1.ObjectMeta{Name: paasName},
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{"cap5": v1alpha2.PaasCapability{}},
+					Quota:        quota.Quota{"limits.cpu": resourcev1.MustParse("10")},
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, obj)).Error().NotTo(HaveOccurred())
+
+			nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "my-paas-cap5"}}
+
+			Expect(k8sClient.Create(ctx, nsObj)).Error().NotTo(HaveOccurred())
+
+			paasNsObj := &v1alpha2.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: "my-paasns", Namespace: "my-paas-cap5"}}
+
+			Expect(k8sClient.Create(ctx, paasNsObj)).Error().NotTo(HaveOccurred())
+
+			newObj := obj.DeepCopy()
+
+			newObj.Spec.Quota = nil
+
+			_, err := validator.ValidateUpdate(ctx, obj, newObj)
+
+			var serr *apierrors.StatusError
+			Expect(errors.As(err, &serr)).To(BeTrue())
+			causes := serr.Status().Details.Causes
+			Expect(causes).To(HaveLen(1))
+			Expect(causes).To(ContainElements(
+				metav1.StatusCause{
+					Type:    "FieldValueInvalid",
+					Message: `Invalid value: "1": quota can not be empty when paas capability namespace has paasNs`,
+					Field:   "spec.capabilities[cap5]",
+				},
+			))
+
+		})
 	})
+
 })
 
 func newGeneratedCrypt(context string) (myCrypt *crypt.Crypt, privateKey []byte, err error) {
