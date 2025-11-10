@@ -66,7 +66,7 @@ func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config
 
 	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
 	assert.Contains(t, entries, paasWithArgo)
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, map[string]any{
 		"git_path":     paasArgoGitPath,
 		"git_revision": paasArgoGitRevision,
 		"git_url":      paasArgoGitURL,
@@ -75,7 +75,7 @@ func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config
 		"requestor":  paasRequestor,
 		"service":    "paas",
 		"subservice": "capability",
-	}, entries[paasWithArgo].GetElementsAsStringMap())
+	}, entries[paasWithArgo].GetElementsAsAnyMap())
 
 	assert.NotNil(
 		t,
@@ -144,7 +144,7 @@ func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config
 	// For now this still applies, later we move the git_.. properties to the appSet as well
 	// Assert AppSet entry updated accordingly
 	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
-	assert.Equal(t, map[string]string{
+	assert.Equal(t, map[string]any{
 		"git_path":     paasArgoGitPath,
 		"git_revision": updatedRevision,
 		"git_url":      paasArgoGitURL,
@@ -152,7 +152,7 @@ func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config
 		"requestor":    paasRequestor,
 		"service":      "paas",
 		"subservice":   "capability",
-	}, entries[paasWithArgo].GetElementsAsStringMap(), "ApplicationSet List generator contains the correct parameters")
+	}, entries[paasWithArgo].GetElementsAsAnyMap(), "ApplicationSet List generator contains the correct parameters")
 
 	assert.NotNil(
 		t,
