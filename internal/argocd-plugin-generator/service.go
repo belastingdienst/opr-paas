@@ -83,14 +83,8 @@ func (s *Service) Generate(params map[string]interface{}) ([]map[string]interfac
 			continue
 		}
 
-		strMap := elements.GetElementsAsStringMap()
-
-		inf := make(map[string]interface{}, len(strMap))
-		for k, v := range strMap {
-			inf[k] = v
-		}
-		logger.Debug().Str("paas_name", paas.Name).Int("num_elements", len(inf)).Msg("added paas")
-		results = append(results, inf)
+		logger.Debug().Str("paas_name", paas.Name).Int("num_elements", len(elements)).Msg("added paas")
+		results = append(results, elements.GetElementsAsAnyMap())
 	}
 
 	return results, nil
