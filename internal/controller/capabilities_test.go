@@ -161,8 +161,8 @@ g, ` + group2 + `, role:admin`
 				}
 				Expect(entries).To(HaveKey(paasName))
 				elements := entries[paasName]
-				Expect(elements.GetElementsAsStringMap()).To(Equal(
-					map[string]string{
+				Expect(elements.GetElementsAsAnyMap()).To(Equal(
+					map[string]any{
 						customField1Key:         customField1Value,
 						customField2Key:         customField2Value,
 						"paas":                  paasName,
