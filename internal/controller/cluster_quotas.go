@@ -119,12 +119,20 @@ func (r *PaasReconciler) backendQuota(
 func (r *PaasReconciler) backendEnabledQuotas(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
-	nsDefs namespaceDefs,
 ) (quotas []*quotav1.ClusterResourceQuota, err error) {
 	myConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterQuotaComponent)
+
+	nsDefs, err := r.nsDefsFromPaas(ctx, paas)
+	if err != nil {
+		logger.Err(err).Msg("could not get nsDefs from paas")
+		return nil, err
+	}
+	logger.Debug().Msgf("Need to manage resources for %d namespaces", len(nsDefs))
 
 	//if there are paasNs resources or if there are namespaces defined in the paas spec, we need a generic quota named after the
 	//paas
@@ -198,12 +206,12 @@ func (r *PaasReconciler) finalizeClusterQuota(ctx context.Context, quotaName str
 func (r *PaasReconciler) reconcileQuotas(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
-	nsDefs namespaceDefs,
 ) (err error) {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterQuotaComponent)
 	logger.Info().Msg("creating quotas for Paas")
+
 	// Create quotas if needed
-	quotas, err := r.backendEnabledQuotas(ctx, paas, nsDefs)
+	quotas, err := r.backendEnabledQuotas(ctx, paas)
 	if err != nil {
 		return err
 	}
