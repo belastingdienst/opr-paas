@@ -21,10 +21,16 @@ var (
 	key2     = "c"
 	value2   = 6.0
 	key3     = "d"
-	key4     = ""
+	value3   = map[string]string{"k1": "v1", "k2": "v2"}
+	key4     = "e"
+	value4   = []string{"e1", "e2"}
+	key5     = "f"
+	key6     = ""
 	elements = fields.Elements{
 		key1: value1,
 		key2: value2,
+		key3: value3,
+		key4: value4,
 	}
 	properJSON    = []byte(fmt.Sprintf(`{"%s":"%s","%s":%f}`, key1, value1, key2, value2))
 	improperJSONs = [][]byte{
@@ -40,6 +46,8 @@ func TestAsStringMap(t *testing.T) {
 		map[string]string{
 			"a": "b",
 			"c": "6",
+			"d": "k1: v1\nk2: v2",
+			"e": "- e1\n- e2",
 		},
 		elements.GetElementsAsStringMap(),
 	)
@@ -62,7 +70,7 @@ func TestTryGetElementAsString(t *testing.T) {
 
 func TestGetElementAsString(t *testing.T) {
 	require.NotNil(t, elements)
-	for _, key := range []string{key1, key2, key3, key4} {
+	for _, key := range []string{key1, key2, key3, key4, key5, key6} {
 		if _, exists := elements[key]; exists {
 			assert.NotEmpty(t, elements.GetElementAsString(key))
 		} else {
@@ -90,7 +98,7 @@ func TestElementsFromImproperJSON(t *testing.T) {
 }
 
 func TestElementsAsString(t *testing.T) {
-	expected := `{ 'a': 'b', 'c': '6' }`
+	expected := "{ 'a': 'b', 'c': '6', 'd': 'k1: v1\nk2: v2', 'e': '- e1\n- e2' }"
 	require.NotNil(t, elements)
 	assert.Equal(t, expected, elements.String())
 }

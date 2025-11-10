@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"go.yaml.in/yaml/v3"
 )
 
 // Element represents a value for one entry in the list of the listgenerator
@@ -54,7 +56,11 @@ func (es Elements) TryGetElementAsString(key string) (string, error) {
 	if ok {
 		return value, nil
 	}
-	return fmt.Sprintf("%v", element), nil
+	y, err := yaml.Marshal(element)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(y)), nil
 }
 
 // Merge merges all key/value pairs from another Entries on top of this and returns the resulting total Entries set
