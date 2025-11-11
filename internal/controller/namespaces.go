@@ -13,6 +13,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 
@@ -72,12 +73,16 @@ func (r *PaasReconciler) backendNamespace(
 	}
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
 	for tplName, tpl := range myConfig.Spec.Templating.NamespaceLabels {
-		var result templating.TemplateResult
+		var result fields.ElementArray
 		result, err = labelTemplater.TemplateToMap(tplName, tpl)
 		if err != nil {
 			return nil, err
 		}
-		maps.Copy(labels, result)
+		r, convErr := result.AsElementMap()
+		if convErr != nil {
+			return nil, convErr
+		}
+		maps.Copy(labels, r.AsLabels())
 	}
 
 	ns := &corev1.Namespace{

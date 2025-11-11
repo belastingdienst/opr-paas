@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8sv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -23,19 +23,19 @@ const (
 
 var (
 	entries1 = fields.Entries{
-		paas1Name: fields.Elements{
+		paas1Name: fields.ElementMap{
 			"key1": "othervalue1",
 			"key2": paas1Value2,
 			"paas": paas1Name,
 		},
 	}
 	entries2 = fields.Entries{
-		paas1Name: fields.Elements{
+		paas1Name: fields.ElementMap{
 			"key1": paas1Value1,
 			"key4": paas1Value4,
 			"paas": paas1Name,
 		},
-		paas2Name: fields.Elements{
+		paas2Name: fields.ElementMap{
 			"key1": paas2Value1,
 			"key3": paas2Value3,
 			"paas": paas2Name,
@@ -132,7 +132,7 @@ func TestEntriesAsJSON(t *testing.T) {
 	}
 	assert.Equal(t, expected2, json2)
 	entries3 := fields.Entries{
-		"paas3": fields.Elements{
+		"paas3": fields.ElementMap{
 			"key1": "value1",
 		},
 	}

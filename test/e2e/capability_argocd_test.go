@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
@@ -66,7 +67,7 @@ func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config
 
 	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
 	assert.Contains(t, entries, paasWithArgo)
-	assert.Equal(t, map[string]any{
+	assert.Equal(t, fields.ElementMap{
 		"git_path":     paasArgoGitPath,
 		"git_revision": paasArgoGitRevision,
 		"git_url":      paasArgoGitURL,
@@ -75,7 +76,7 @@ func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config
 		"requestor":  paasRequestor,
 		"service":    "paas",
 		"subservice": "capability",
-	}, entries[paasWithArgo].GetElementsAsAnyMap())
+	}, entries[paasWithArgo])
 
 	assert.NotNil(
 		t,
@@ -144,15 +145,19 @@ func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config
 	// For now this still applies, later we move the git_.. properties to the appSet as well
 	// Assert AppSet entry updated accordingly
 	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
-	assert.Equal(t, map[string]any{
-		"git_path":     paasArgoGitPath,
-		"git_revision": updatedRevision,
-		"git_url":      paasArgoGitURL,
-		"paas":         paasWithArgo,
-		"requestor":    paasRequestor,
-		"service":      "paas",
-		"subservice":   "capability",
-	}, entries[paasWithArgo].GetElementsAsAnyMap(), "ApplicationSet List generator contains the correct parameters")
+	assert.Equal(t,
+		fields.ElementMap{
+			"git_path":     paasArgoGitPath,
+			"git_revision": updatedRevision,
+			"git_url":      paasArgoGitURL,
+			"paas":         paasWithArgo,
+			"requestor":    paasRequestor,
+			"service":      "paas",
+			"subservice":   "capability",
+		},
+		entries[paasWithArgo],
+		"ApplicationSet List generator contains the correct parameters",
+	)
 
 	assert.NotNil(
 		t,

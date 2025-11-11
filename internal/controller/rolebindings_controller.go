@@ -13,6 +13,7 @@ import (
 	"reflect"
 
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
@@ -125,12 +126,16 @@ func (r *PaasReconciler) backendRoleBinding(
 	}
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
 	for n, tpl := range myConfig.Spec.Templating.RoleBindingLabels {
-		var result templating.TemplateResult
+		var result fields.ElementArray
 		result, err = labelTemplater.TemplateToMap(n, tpl)
 		if err != nil {
 			return nil, err
 		}
-		maps.Copy(labels, result)
+		r, convErr := result.AsElementMap()
+		if convErr != nil {
+			return nil, convErr
+		}
+		maps.Copy(labels, r.AsLabels())
 	}
 	rb := &rbac.RoleBinding{
 		TypeMeta: metav1.TypeMeta{

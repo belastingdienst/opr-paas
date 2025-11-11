@@ -10,7 +10,7 @@ import (
 
 // Entries represents all entries in the list of the listgenerator
 // This is a map so that values are unique, the key is the paas entry
-type Entries map[string]Elements
+type Entries map[string]ElementMap
 
 // Merge merges all key/value pairs from another Entries on top of this and returns the resulting total Entries set
 func (en Entries) Merge(added Entries) (entries Entries) {
@@ -65,7 +65,7 @@ func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
 func EntriesFromJSON(data []apiextensionsv1.JSON) (Entries, error) {
 	e := Entries{}
 	for _, raw := range data {
-		entry, err := ElementsFromJSON(raw.Raw)
+		entry, err := ElementMapFromJSON(raw.Raw)
 		if err != nil {
 			return nil, err
 		}

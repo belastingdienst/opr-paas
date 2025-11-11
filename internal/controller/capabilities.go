@@ -13,8 +13,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	appv1 "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
@@ -73,7 +73,7 @@ func capElementsFromPaas(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 	capName string,
-) (elements fields.Elements, err error) {
+) (elements fields.ElementMap, err error) {
 	paasConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -91,16 +91,18 @@ func capElementsFromPaas(
 	if err != nil {
 		return nil, err
 	}
-	elements = templatedElements.AsFieldElements().Merge(capElements)
+	elements = templatedElements.Merge(capElements)
 
 	for name, tpl := range paasConfig.Spec.Templating.GenericCapabilityFields {
 		result, templateErr := templater.TemplateToMap(name, tpl)
 		if templateErr != nil {
 			return nil, fmt.Errorf("failed to run template %s", tpl)
 		}
-		for key, value := range result {
-			elements[key] = value
+		em, convErr := result.AsElementMap()
+		if convErr != nil {
+			return nil, fmt.Errorf("failed to convert to map: %v", convErr)
 		}
+		elements = elements.Merge(em)
 	}
 
 	elements["paas"] = paas.Name
@@ -168,8 +170,8 @@ func (r *PaasReconciler) ensureAppSetCap(
 func applyCustomFieldTemplates(
 	ccfields map[string]v1alpha2.ConfigCustomField,
 	templater templating.Templater[v1alpha2.Paas, v1alpha2.PaasConfig, v1alpha2.PaasConfigSpec],
-) (templating.TemplateResult, error) {
-	var result templating.TemplateResult
+) (fields.ElementMap, error) {
+	result := fields.ElementMap{}
 
 	for name, fieldConfig := range ccfields {
 		if fieldConfig.Template != "" {
@@ -177,7 +179,11 @@ func applyCustomFieldTemplates(
 			if err != nil {
 				return nil, err
 			}
-			result = result.Merge(fieldResult)
+			em, err := fieldResult.AsElementMap()
+			if err != nil {
+				return nil, err
+			}
+			result = result.Merge(em)
 		}
 	}
 

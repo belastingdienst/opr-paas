@@ -13,6 +13,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
@@ -79,12 +80,16 @@ func (r *PaasReconciler) backendQuota(
 	}
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
 	for name, tpl := range myConfig.Spec.Templating.ClusterQuotaLabels {
-		var result templating.TemplateResult
+		var result fields.ElementArray
 		result, err = labelTemplater.TemplateToMap(name, tpl)
 		if err != nil {
 			return nil, err
 		}
-		maps.Copy(labels, result)
+		r, convErr := result.AsElementMap()
+		if convErr != nil {
+			return nil, convErr
+		}
+		maps.Copy(labels, r.AsLabels())
 	}
 
 	// matchLabels := map[string]string{"dcs.itsmoplosgroep": paas.Name}

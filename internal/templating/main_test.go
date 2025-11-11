@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -110,29 +111,29 @@ func TestValidTemplateToMap(t *testing.T) {
 	for _, test := range []struct {
 		key      string
 		template string
-		expected templating.TemplateResult
+		expected fields.ElementArray
 	}{
 		{
 			key:      "mystring",
 			template: "{{ .Paas.Name }}",
-			expected: templating.TemplateResult{"mystring": paasName},
+			expected: fields.ElementMap{"mystring": paasName},
 		},
 		{
 			key:      "mymap",
 			template: `{"a":"b","c":"d"}`,
-			expected: templating.TemplateResult{
-				"mymap_a": "b",
-				"mymap_c": "d",
+			expected: fields.ElementMap{
+				"a": "b",
+				"c": "d",
 			},
 		},
 		{
 			key:      "mylist",
 			template: `["a","b","c","d"]`,
-			expected: templating.TemplateResult{
-				"mylist_0": "a",
-				"mylist_1": "b",
-				"mylist_2": "c",
-				"mylist_3": "d",
+			expected: fields.ElementList{
+				"a",
+				"b",
+				"c",
+				"d",
 			},
 		},
 	} {

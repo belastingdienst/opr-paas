@@ -14,17 +14,18 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 // mockGeneratorService implements GeneratorService for tests
 type mockGeneratorService struct {
-	generateFunc func(params map[string]interface{}) ([]map[string]interface{}, error)
+	generateFunc func(params fields.ElementMap) ([]fields.ElementMap, error)
 }
 
-func (m *mockGeneratorService) Generate(params map[string]interface{}) (
-	[]map[string]interface{}, error) {
+func (m *mockGeneratorService) Generate(params fields.ElementMap) (
+	[]fields.ElementMap, error) {
 	return m.generateFunc(params)
 }
 
@@ -72,8 +73,8 @@ var _ = Describe("Handler", func() {
 		})
 
 		It("returns 400 if body cannot be read", func() {
-			mockService.generateFunc = func(params map[string]interface{}) (
-				[]map[string]interface{}, error) {
+			mockService.generateFunc = func(params fields.ElementMap) (
+				[]fields.ElementMap, error) {
 				return nil, nil
 			}
 
@@ -99,15 +100,15 @@ var _ = Describe("Handler", func() {
 		})
 
 		It("returns 500 if Service.Generate returns an error", func() {
-			mockService.generateFunc = func(params map[string]interface{}) (
-				[]map[string]interface{}, error) {
+			mockService.generateFunc = func(params fields.ElementMap) (
+				[]fields.ElementMap, error) {
 				return nil, errors.New("generation failed")
 			}
 
-			payload := map[string]interface{}{
+			payload := fields.ElementMap{
 				"applicationSetName": "appset1",
-				"input": map[string]interface{}{
-					"parameters": map[string]interface{}{"foo": "bar"},
+				"input": fields.ElementMap{
+					"parameters": fields.ElementMap{"foo": "bar"},
 				},
 			}
 			body, _ := json.Marshal(payload)
@@ -122,20 +123,20 @@ var _ = Describe("Handler", func() {
 		})
 
 		It("returns 200 and JSON when Generate succeeds", func() {
-			expectedResult := []map[string]interface{}{
+			expectedResult := []fields.ElementMap{
 				{"key1": "value1"},
 				{"key2": "value2"},
 			}
-			mockService.generateFunc = func(params map[string]interface{}) (
-				[]map[string]interface{}, error) {
+			mockService.generateFunc = func(params fields.ElementMap) (
+				[]fields.ElementMap, error) {
 				Expect(params).To(HaveKeyWithValue("foo", "bar"))
 				return expectedResult, nil
 			}
 
-			payload := map[string]interface{}{
+			payload := fields.ElementMap{
 				"applicationSetName": "appset1",
-				"input": map[string]interface{}{
-					"parameters": map[string]interface{}{"foo": "bar"},
+				"input": fields.ElementMap{
+					"parameters": fields.ElementMap{"foo": "bar"},
 				},
 			}
 			body, _ := json.Marshal(payload)
@@ -146,16 +147,11 @@ var _ = Describe("Handler", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
-			var jsonResp map[string]interface{}
+			var jsonResp PluginResponse
 			Expect(json.NewDecoder(resp.Body).Decode(&jsonResp)).To(Succeed())
-			Expect(jsonResp).To(HaveKey("output"))
-			output, ok := jsonResp["output"].(map[string]interface{})
-			Expect(ok).To(BeTrue(), "output should be a map[string]interface{}")
-			Expect(output).To(HaveKey("parameters"))
-			Expect(output["parameters"]).To(Equal([]interface{}{
-				map[string]interface{}{"key1": "value1"},
-				map[string]interface{}{"key2": "value2"},
-			}))
+			Expect(jsonResp.Output.Parameters).To(Equal(
+				[]fields.ElementMap{{"key1": "value1"}, {"key2": "value2"}},
+			))
 		})
 	})
 })
