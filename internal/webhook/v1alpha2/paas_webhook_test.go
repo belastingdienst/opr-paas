@@ -816,9 +816,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(causes).To(HaveLen(1))
 			Expect(causes).To(ContainElements(
 				metav1.StatusCause{
-					Type:    "FieldValueInvalid",
-					Message: "Invalid value: \"1\": quota can not be empty when paas has namespaces (number of namespaces: 1)",
-					Field:   "spec.namespaces",
+					Type: "FieldValueInvalid",
+					Message: "Invalid value: \"1\": quota can not be empty when paas has namespaces" +
+						" (number of namespaces: 1)",
+					Field: "spec.namespaces",
 				},
 			))
 		})

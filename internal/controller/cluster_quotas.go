@@ -134,8 +134,8 @@ func (r *PaasReconciler) backendEnabledQuotas(
 	}
 	logger.Debug().Msgf("Need to manage resources for %d namespaces", len(nsDefs))
 
-	// if there are paasNs resources or if there are namespaces defined in the paas spec, we need a generic quota named after the
-	// paas
+	// if there are paasNs resources or if there are namespaces defined in the paas spec,
+	// we need a generic quota named after the paas
 	for _, nsDef := range nsDefs {
 		if nsDef.capName == "" {
 			// if the nsdef isn't a capability, define a quota
