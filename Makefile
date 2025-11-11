@@ -29,7 +29,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # belastingdienst/opr-paas:$VERSION and my.domain/opr-paas-catalog:$VERSION.
-IMAGE_TAG_BASE ?= belastingdienst/opr-paas:0.1.0
+IMAGE_TAG_BASE ?= ghcr.io/belastingdienst/opr-paas
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
@@ -319,18 +319,6 @@ ifneq ($(origin CATALOG_BASE_IMG), undefined)
 FROM_INDEX_OPT := --from-index $(CATALOG_BASE_IMG)
 endif
 
-# Build a catalog image by adding bundle images to an empty catalog using the operator package manager tool, 'opm'.
-# This recipe invokes 'opm' in 'semver' bundle add mode. For more information on add modes, see:
-# https://github.com/operator-framework/community-operators/blob/7f1438c/docs/packaging-operator.md#updating-your-existing-operator
-.PHONY: catalog-build
-catalog-build: opm ## Build a catalog image.
-	$(OPM) index add --container-tool docker --mode semver --tag $(CATALOG_IMG) --bundles $(BUNDLE_IMGS) $(FROM_INDEX_OPT)
-
-# Push the catalog image.
-.PHONY: catalog-push
-catalog-push: ## Push a catalog image.
-	$(MAKE) docker-push IMG=$(CATALOG_IMG)
-
 .PHONY: refresh-kind
 refresh-kind:
 	kind delete cluster
@@ -372,3 +360,26 @@ install-go-test-coverage:
 .PHONY: check-coverage
 check-coverage: install-go-test-coverage test
 	${GOBIN}/go-test-coverage --config=./.testcoverage.yaml
+
+.PHONY: bundle
+bundle: operator-sdk kustomize
+	$(KUSTOMIZE) build manifests/default | \
+	  $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
+
+.PHONY: bundle-validate
+bundle-validate: operator-sdk
+	$(OPERATOR_SDK) bundle validate ./bundle
+
+.PHONY: catalog-build catalog-push
+
+catalog-build: ## Generate OLM catalog image using operator-sdk
+	$(OPERATOR_SDK) generate catalog --manifests ./bundle \
+		--image-tag-base ghcr.io/belastingdienst/opr-paas-catalog \
+		--package opr-paas \
+		--channels stable \
+		--default-channel stable \
+		--version $(VERSION)
+
+
+catalog-push: ## Push catalog image to container registry
+	$(CONTAINER_TOOL) push ghcr.io/belastingdienst/opr-paas-catalog:$(VERSION)

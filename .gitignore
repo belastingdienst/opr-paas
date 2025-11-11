@@ -41,3 +41,8 @@ manifests/install.yaml
 install.yaml
 
 .vscode/
+
+/bundle/manifests/*
+!/bundle/manifests/opr-paas.clusterserviceversion.yaml
+!/bundle.Dockerfile
+!/bundle/metadata/
