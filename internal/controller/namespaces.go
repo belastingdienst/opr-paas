@@ -13,9 +13,9 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	"github.com/belastingdienst/opr-paas/v3/internal/templating"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
+	"github.com/belastingdienst/opr-paas/v3/pkg/templating"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

@@ -18,8 +18,8 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 )
 
 // GeneratorService defines the contract for services that generate data
