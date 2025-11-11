@@ -19,14 +19,12 @@ import (
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
-	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
-	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	cl "sigs.k8s.io/controller-runtime/pkg/client"
@@ -120,7 +118,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				Spec: v1alpha2.PaasSpec{
 					Capabilities: v1alpha2.PaasCapabilities{"cap5": v1alpha2.PaasCapability{}},
 					Namespaces:   v1alpha2.PaasNamespaces{"myns": v1alpha2.PaasNamespace{}},
-					Quota:        quota.Quota{"cpu.limits": resourcev1.MustParse("10")},
+					Quota:        quota.Quota{"cpu.limits": resource.MustParse("10")},
 				},
 			}
 
@@ -203,8 +201,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				obj.Spec.Namespaces = v1alpha2.PaasNamespaces{
 					test.name: v1alpha2.PaasNamespace{},
 				}
-				obj.Spec.Quota = paasquota.Quota{
-					"limits.cpu": resourcev1.MustParse("1"),
+				obj.Spec.Quota = quota.Quota{
+					"limits.cpu": resource.MustParse("1"),
 				}
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn).To(BeNil())
@@ -453,8 +451,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 							Groups: []string{"group2", "group3"},
 						},
 					},
-					Quota: paasquota.Quota{
-						corev1.ResourceLimitsCPU: resourcev1.MustParse("1"),
+					Quota: quota.Quota{
+						corev1.ResourceLimitsCPU: resource.MustParse("1"),
 					},
 				},
 			}
@@ -768,7 +766,6 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(validator.ValidateUpdate(ctx, nil, obj)).Error().
 				To(MatchError(ContainSubstring("capability not configured")))
 		})
-
 		It(
 			"Should generate a warning when updating a Paas with a group that contains both users and a queries",
 			func() {
@@ -789,7 +786,6 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				).To(ContainElement("spec.groups[foo] contains both users and query, the users will be ignored"))
 			},
 		)
-
 		It("Should not warn when updating a Paas with a group that contains just users", func() {
 			obj = &v1alpha2.Paas{
 				Spec: v1alpha2.PaasSpec{
@@ -804,7 +800,6 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			warnings, _ := validator.ValidateUpdate(ctx, nil, obj)
 			Expect(warnings).To(BeEmpty())
 		})
-
 		It("Should deny creation when a namespace is defined but no quota", func() {
 			obj = &v1alpha2.Paas{
 				Spec: v1alpha2.PaasSpec{
@@ -827,13 +822,12 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				},
 			))
 		})
-
 		It("Should deny creation when a capability with paasNS has been defined without quota", func() {
 			obj = &v1alpha2.Paas{
 				ObjectMeta: metav1.ObjectMeta{Name: paasName},
 				Spec: v1alpha2.PaasSpec{
 					Capabilities: v1alpha2.PaasCapabilities{"cap5": v1alpha2.PaasCapability{}},
-					Quota:        quota.Quota{"limits.cpu": resourcev1.MustParse("10")},
+					Quota:        quota.Quota{"limits.cpu": resource.MustParse("10")},
 				},
 			}
 

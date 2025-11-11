@@ -552,7 +552,8 @@ func validateAppNamespaceQuota(
 		errs = append(errs, field.Invalid(
 			field.NewPath("spec", "namespaces"),
 			fmt.Sprintf("%d", len(paas.Spec.Namespaces)),
-			fmt.Sprintf("quota can not be empty when paas has namespaces (number of namespaces: %d)", len(paas.Spec.Namespaces)),
+			fmt.Sprintf("quota can not be empty when paas has namespaces (number of namespaces: %d)",
+				len(paas.Spec.Namespaces)),
 		))
 	}
 

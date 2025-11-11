@@ -344,7 +344,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 
 			newObj := obj.DeepCopy()
 
-			newObj.ObjectMeta.Namespace = "no-quota"
+			newObj.Namespace = "no-quota"
 			newObj.Spec.Paas = "no-quota"
 
 			_, err := validator.ValidateCreate(ctx, newObj)
