@@ -139,8 +139,9 @@ func (r *PaasReconciler) backendEnabledQuotas(
 	for _, nsDef := range nsDefs {
 		if nsDef.capName == "" {
 			// if the nsdef isn't a capability, define a quota
-			quota, errors := r.backendQuota(ctx, paas, "", paas.Spec.Quota)
-			if errors != nil {
+			var quota *quotav1.ClusterResourceQuota
+			quota, err = r.backendQuota(ctx, paas, "", paas.Spec.Quota)
+			if err != nil {
 				return nil, err
 			}
 			// add quota to the quota's definitions

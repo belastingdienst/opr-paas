@@ -285,7 +285,7 @@ func validateQuota(
 		errs = append(errs, field.Invalid(
 			field.NewPath("Paas").Child("spec").Child("quota"),
 			"{}",
-			fmt.Sprint("PaasNs cannot be created when there is no quota defined in the parent Paas"),
+			"PaasNs cannot be created when there is no quota defined in the parent Paas",
 		))
 	}
 	return errs, nil
