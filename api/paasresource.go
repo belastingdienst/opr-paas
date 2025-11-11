@@ -1,4 +1,4 @@
-// Package paasresource has a Resource interface which can be used for functions that should work with multiple Paas
+// Package api has a Resource interface which can be used for functions that should work with multiple Paas
 // resources.
 package api
 
