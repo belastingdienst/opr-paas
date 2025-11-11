@@ -23,12 +23,12 @@ func ElementsFromJSON(raw []byte) (Elements, error) {
 	return newElements, nil
 }
 
-// GetElementsAsStringMap gets a value and returns as string
+// GetElementsAsAnyMap gets a value and returns as string
 // This should be a method on Element, but a method cannot exist on interface datatypes
-func (es Elements) GetElementsAsStringMap() (values map[string]string) {
-	values = make(map[string]string)
-	for key := range es {
-		values[key] = es.GetElementAsString(key)
+func (es Elements) GetElementsAsAnyMap() (values map[string]any) {
+	values = make(map[string]any)
+	for key, value := range es {
+		values[key] = value
 	}
 	return values
 }
@@ -54,7 +54,11 @@ func (es Elements) TryGetElementAsString(key string) (string, error) {
 	if ok {
 		return value, nil
 	}
-	return fmt.Sprintf("%v", element), nil
+	j, err := json.Marshal(element)
+	if err != nil {
+		return "", err
+	}
+	return string(j), nil
 }
 
 // Merge merges all key/value pairs from another Entries on top of this and returns the resulting total Entries set
