@@ -12,11 +12,13 @@ See LICENSE.md for details.
 package argocd_plugin_generator
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 )
 
@@ -25,7 +27,7 @@ import (
 // and an ApplicationSet name, then return a slice of key/value maps representing
 // the generated output, or an error if generation fails.
 type GeneratorService interface {
-	Generate(params map[string]interface{}) ([]map[string]interface{}, error)
+	Generate(ctx context.Context, params fields.ElementMap) ([]fields.ElementMap, error)
 }
 
 // Handler is the HTTP request handler for the plug-in generator.
@@ -55,12 +57,7 @@ func NewHandler(service GeneratorService, bearerToken string) *Handler {
 // for processing, and encodes the output as JSON. In case of errors,
 // an appropriate HTTP status code and error message are returned.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	_, componentLogger := logging.GetLogComponent(r.Context(), logging.PluginGeneratorComponent)
-
-	logger := componentLogger.With().
-		Str("path", r.URL.Path).
-		Str("method", r.Method).
-		Logger()
+	ctx, logger := logging.SetPluginLogger(r.Context(), r)
 
 	if r.Method != http.MethodPost || r.URL.Path != "/api/v1/getparams.execute" {
 		logger.Error().Msg("invalid request method or path")
@@ -89,7 +86,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.service.Generate(input.Input.Parameters)
+	result, err := h.service.Generate(ctx, input.Input.Parameters)
 	if err != nil {
 		logger.Error().AnErr("error", err).Msg("generation error")
 		http.Error(w, fmt.Sprintf("generation error: %v", err), http.StatusInternalServerError)
@@ -98,7 +95,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if result == nil {
 		logger.Debug().Msg("generate returns nil")
-		result = []map[string]interface{}{}
+		result = []fields.ElementMap{}
 	}
 	logger.Debug().Int("num_capabilities", len(result)).Msg("generate succeeded")
 
@@ -123,7 +120,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 type PluginInput struct {
 	ApplicationSetName string `json:"applicationSetName"`
 	Input              struct {
-		Parameters map[string]interface{} `json:"parameters"`
+		Parameters fields.ElementMap `json:"parameters"`
 	} `json:"input"`
 }
 
@@ -133,6 +130,6 @@ type PluginInput struct {
 // key-value pairs representing generated parameters for the ApplicationSet.
 type PluginResponse struct {
 	Output struct {
-		Parameters []map[string]interface{} `json:"parameters"`
+		Parameters []fields.ElementMap `json:"parameters"`
 	} `json:"output"`
 }

@@ -10,6 +10,7 @@ import (
 	"context"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -134,14 +135,14 @@ var _ = Describe("Service", func() {
 
 			By("Calling Generate")
 
-			params := map[string]interface{}{
+			params := fields.ElementMap{
 				"capability": "argocd",
 			}
-			results, err := svc.Generate(params)
+			results, err := svc.Generate(ctx, params)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).NotTo(BeEmpty())
 
-			Expect(results[0]).To(Equal(map[string]interface{}{
+			Expect(results[0]).To(Equal(fields.ElementMap{
 				"git_path":     paasArgoGitPath,
 				"git_revision": paasArgoGitRevision,
 				"git_url":      paasArgoGitURL,
@@ -153,17 +154,17 @@ var _ = Describe("Service", func() {
 
 			By("Calling Generate with a non-existent capability")
 
-			params = map[string]interface{}{
+			params = fields.ElementMap{
 				"capability": "nonexistent",
 			}
-			results, err = svc.Generate(params)
+			results, err = svc.Generate(ctx, params)
 			Expect(err).To(HaveOccurred())
 			Expect(results).To(BeEmpty())
 
 			By("Calling Generate with no param")
 
-			params = map[string]interface{}{}
-			_, err = svc.Generate(params)
+			params = fields.ElementMap{}
+			_, err = svc.Generate(ctx, params)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("missing or invalid capability param"))
 		})
@@ -172,10 +173,10 @@ var _ = Describe("Service", func() {
 			err := k8sClient.Delete(ctx, &conf)
 			Expect(err).To(Not(HaveOccurred()))
 
-			params := map[string]interface{}{
+			params := fields.ElementMap{
 				"capability": "argocd",
 			}
-			results, err := svc.Generate(params)
+			results, err := svc.Generate(ctx, params)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("no PaasConfig found"))
 			Expect(results).To(BeEmpty())

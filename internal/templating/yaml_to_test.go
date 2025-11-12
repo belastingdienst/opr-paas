@@ -3,6 +3,7 @@ package templating
 import (
 	"testing"
 
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,33 +16,27 @@ key4: vald
 `
 	parsed, err := yamlToMap([]byte(exampleYaml))
 	assert.NoError(t, err)
-	expected := TemplateResult{
-		"map_key1": "val1",
-		"map_key2": "val2",
-		"map_key3": "valc",
-		"map_key4": "vald",
-	}
-	assert.Equal(t, expected, parsed.AsResult("map"))
-	expected = TemplateResult{
+	assert.Equal(t, fields.ElementMap{
 		"key1": "val1",
 		"key2": "val2",
 		"key3": "valc",
 		"key4": "vald",
-	}
-	assert.Equal(t, expected, parsed.AsResult(""))
+	},
+		parsed,
+	)
 }
 
 func TestResultMerge(t *testing.T) {
 	var (
-		tr1 = TemplateResult{
+		tr1 = fields.ElementMap{
 			"key1": "val1",
 			"key2": "val2",
 		}
-		tr2 = TemplateResult{
+		tr2 = fields.ElementMap{
 			"key2": "1",
 			"key3": "val3",
 		}
-		expected = TemplateResult{
+		expected = fields.ElementMap{
 			"key1": "val1",
 			"key2": "1",
 			"key3": "val3",
@@ -59,18 +54,11 @@ func TestYamlToList(t *testing.T) {
 `
 	parsed, err := yamlToList([]byte(exampleYaml))
 	assert.NoError(t, err)
-	expected := TemplateResult{
-		"list_0": "vala",
-		"list_1": "valb",
-		"list_2": "val3",
-		"list_3": "val4",
+	expected := fields.ElementList{
+		"vala",
+		"valb",
+		"val3",
+		"val4",
 	}
-	assert.Equal(t, expected, parsed.AsResult("list"))
-	expected = TemplateResult{
-		"0": "vala",
-		"1": "valb",
-		"2": "val3",
-		"3": "val4",
-	}
-	assert.Equal(t, expected, parsed.AsResult(""))
+	assert.Equal(t, expected, parsed)
 }

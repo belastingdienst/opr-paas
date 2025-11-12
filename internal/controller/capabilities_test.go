@@ -10,8 +10,8 @@ import (
 	"context"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	appv1 "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -154,15 +154,15 @@ g, ` + group2 + `, role:admin`
 				Expect(err).NotTo(HaveOccurred())
 				entries := make(fields.Entries)
 				for _, generator := range appSet.Spec.Generators {
-					var generatorEntries fields.Entries
-					generatorEntries, err = fields.EntriesFromJSON(generator.List.Elements)
+					generatorEntries := fields.Entries{}
+					err = generatorEntries.FromJSON(paasKey, generator.List.Elements)
 					Expect(err).NotTo(HaveOccurred())
 					entries = entries.Merge(generatorEntries)
 				}
 				Expect(entries).To(HaveKey(paasName))
 				elements := entries[paasName]
-				Expect(elements.GetElementsAsAnyMap()).To(Equal(
-					map[string]any{
+				Expect(elements).To(Equal(
+					fields.ElementMap{
 						customField1Key:         customField1Value,
 						customField2Key:         customField2Value,
 						"paas":                  paasName,

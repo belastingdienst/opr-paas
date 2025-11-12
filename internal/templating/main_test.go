@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/templating"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,10 +35,15 @@ var (
 		"role3",
 		"role4",
 	}
+	labels = fields.ElementMap{
+		"lbl1": "some",
+		"lbl2": "thing",
+	}
 	paas = v1alpha2.Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: paasName,
-			UID:  "abc", // Needed or owner references fail
+			Name:   paasName,
+			UID:    "abc", // Needed or owner references fail
+			Labels: labels.AsLabels(),
 		},
 		Spec: v1alpha2.PaasSpec{
 			Requestor: capName,
@@ -110,30 +116,35 @@ func TestValidTemplateToMap(t *testing.T) {
 	for _, test := range []struct {
 		key      string
 		template string
-		expected templating.TemplateResult
+		expected fields.ElementMap
 	}{
 		{
 			key:      "mystring",
 			template: "{{ .Paas.Name }}",
-			expected: templating.TemplateResult{"mystring": paasName},
+			expected: fields.ElementMap{"mystring": paasName},
 		},
 		{
 			key:      "mymap",
 			template: `{"a":"b","c":"d"}`,
-			expected: templating.TemplateResult{
-				"mymap_a": "b",
-				"mymap_c": "d",
+			expected: fields.ElementMap{
+				"mymap-a": "b",
+				"mymap-c": "d",
 			},
 		},
 		{
 			key:      "mylist",
 			template: `["a","b","c","d"]`,
-			expected: templating.TemplateResult{
-				"mylist_0": "a",
-				"mylist_1": "b",
-				"mylist_2": "c",
-				"mylist_3": "d",
+			expected: fields.ElementMap{
+				"mylist-0": "a",
+				"mylist-1": "b",
+				"mylist-2": "c",
+				"mylist-3": "d",
 			},
+		},
+		{
+			key:      "object",
+			template: "{{ toYAML .Paas.ObjectMeta.Labels }}",
+			expected: labels.Prefix("object"),
 		},
 	} {
 		tpl := templating.NewTemplater(paas, paasConfig)

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/paasresource"
 	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 
@@ -89,11 +89,11 @@ func listOrFail[L k8s.ObjectList](ctx context.Context, namespace string, obj L, 
 // (https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-List/)
 // which are present in the passed ApplicationSet.
 func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) (allEntries fields.Entries, err error) {
-	var generatorEntries fields.Entries
 	allEntries = make(fields.Entries)
 	for _, generator := range applicationSet.Spec.Generators {
 		if generator.List != nil {
-			generatorEntries, err = fields.EntriesFromJSON(generator.List.Elements)
+			generatorEntries := fields.Entries{}
+			err = generatorEntries.FromJSON("paas", generator.List.Elements)
 			if err != nil {
 				return nil, err
 			}

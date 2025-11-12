@@ -14,7 +14,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/groups"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -338,9 +338,9 @@ type PaasCapability struct {
 // CapExtraFields returns all extra fields that are configured for a capability
 func (pc *PaasCapability) CapExtraFields(
 	fieldConfig map[string]ConfigCustomField,
-) (elements fields.Elements, err error) {
+) (elements fields.ElementMap, err error) {
 	// TODO: remove argocd specific fields
-	elements = make(fields.Elements)
+	elements = fields.ElementMap{}
 	elements["git_url"] = pc.GitURL
 	elements["git_revision"] = pc.GitRevision
 	elements["git_path"] = pc.GitPath

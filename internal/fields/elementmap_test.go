@@ -7,10 +7,11 @@ See LICENSE.md for details.
 package fields_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
+	"github.com/belastingdienst/opr-paas/v3/internal/fields"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +27,7 @@ var (
 	value4   = []string{"e1", "e2"}
 	key5     = "f"
 	key6     = ""
-	elements = fields.Elements{
+	elements = fields.ElementMap{
 		key1: value1,
 		key2: value2,
 		key3: value3,
@@ -40,16 +41,17 @@ var (
 	}
 )
 
-func TestAsStringMap(t *testing.T) {
+func TestAsLabels(t *testing.T) {
+	sm := elements.AsLabels()
 	assert.Equal(
 		t,
-		map[string]interface{}{
+		map[string]string{
 			"a": "b",
-			"c": 6.0,
-			"d": map[string]string{"k1": "v1", "k2": "v2"},
-			"e": []string{"e1", "e2"},
+			"c": "6",
+			"d": `map[k1:v1 k2:v2]`,
+			"e": `[e1 e2]`,
 		},
-		elements.GetElementsAsAnyMap(),
+		sm,
 	)
 }
 
@@ -80,7 +82,7 @@ func TestGetElementAsString(t *testing.T) {
 }
 
 func TestElementsFromProperJSON(t *testing.T) {
-	e, err := fields.ElementsFromJSON(properJSON)
+	e, err := fields.ElementMapFromJSON(properJSON)
 	assert.NoError(t, err)
 	assert.NotNil(t, e)
 	assert.Contains(t, e, key1)
@@ -91,25 +93,16 @@ func TestElementsFromProperJSON(t *testing.T) {
 
 func TestElementsFromImproperJSON(t *testing.T) {
 	for _, JSON := range improperJSONs {
-		e, err := fields.ElementsFromJSON(JSON)
+		e, err := fields.ElementMapFromJSON(JSON)
 		assert.Error(t, err)
 		assert.Nil(t, e)
 	}
 }
 
 func TestElementsAsString(t *testing.T) {
-	expected := `{ 'a': 'b', 'c': '6', 'd': '{"k1":"v1","k2":"v2"}', 'e': '["e1","e2"]' }`
+	expected := `{"a":"b","c":6,"d":{"k1":"v1","k2":"v2"},"e":["e1","e2"]}`
 	require.NotNil(t, elements)
-	assert.Equal(t, expected, elements.String())
-}
-
-func TestKey(t *testing.T) {
-	const paasName = "my-paas"
-	assert.Empty(t, elements.Key())
-	elements2 := fields.Elements{
-		key1:   value1,
-		key2:   value2,
-		"paas": paasName,
-	}
-	assert.Equal(t, paasName, elements2.Key())
+	j, marshalErr := json.Marshal(elements)
+	assert.NoError(t, marshalErr)
+	assert.Equal(t, expected, string(j))
 }
