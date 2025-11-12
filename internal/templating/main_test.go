@@ -127,24 +127,24 @@ func TestValidTemplateToMap(t *testing.T) {
 			key:      "mymap",
 			template: `{"a":"b","c":"d"}`,
 			expected: fields.ElementMap{
-				"a": "b",
-				"c": "d",
+				"mymap-a": "b",
+				"mymap-c": "d",
 			},
 		},
 		{
 			key:      "mylist",
 			template: `["a","b","c","d"]`,
-			expected: fields.ElementList{
-				"a",
-				"b",
-				"c",
-				"d",
+			expected: fields.ElementMap{
+				"mylist-0": "a",
+				"mylist-1": "b",
+				"mylist-2": "c",
+				"mylist-3": "d",
 			},
 		},
 		{
 			key:      "object",
-			template: "{{ toYaml .Paas.ObjectMeta.Labels }}",
-			expected: labels,
+			template: "{{ toYAML .Paas.ObjectMeta.Labels }}",
+			expected: labels.Prefix("object"),
 		},
 	} {
 		tpl := templating.NewTemplater(paas, paasConfig)
