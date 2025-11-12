@@ -35,10 +35,15 @@ var (
 		"role3",
 		"role4",
 	}
+	labels = fields.ElementMap{
+		"lbl1": "some",
+		"lbl2": "thing",
+	}
 	paas = v1alpha2.Paas{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: paasName,
-			UID:  "abc", // Needed or owner references fail
+			Name:   paasName,
+			UID:    "abc", // Needed or owner references fail
+			Labels: labels.AsLabels(),
 		},
 		Spec: v1alpha2.PaasSpec{
 			Requestor: capName,
@@ -135,6 +140,11 @@ func TestValidTemplateToMap(t *testing.T) {
 				"c",
 				"d",
 			},
+		},
+		{
+			key:      "object",
+			template: "{{ toYaml .Paas.ObjectMeta.Labels }}",
+			expected: labels,
 		},
 	} {
 		tpl := templating.NewTemplater(paas, paasConfig)

@@ -120,6 +120,11 @@ func (em ElementMap) AsElementMap() (ElementMap, error) {
 func (em ElementMap) Prefix(prefix string) ElementMap {
 	prefixed := ElementMap{}
 	for key, value := range em {
+		if key != "" {
+			key = fmt.Sprintf("%s_%s", prefix, key)
+		} else {
+			key = prefix
+		}
 		prefixed[key] = value
 	}
 	return prefixed

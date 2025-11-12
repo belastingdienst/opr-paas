@@ -73,18 +73,20 @@ func (t Templater[P, C, S]) TemplateToString(name string, templatedText string) 
 // If it can be parsed, it will prefix map keys / list indexes by `name` and return the map.
 // If it cannot be parsed as map / list, it will return a map with one key, value pair, where key = `name` and value
 // is the result.
-func (t Templater[P, C, S]) TemplateToMap(name string, templatedText string) (result fields.ElementArray, err error) {
-	yamlData, err := t.TemplateToString(name, templatedText)
-	if err != nil {
-		return nil, err
+func (t Templater[P, C, S]) TemplateToMap(name string, templatedText string) (fields.ElementArray, error) {
+	yamlData, templateErr := t.TemplateToString(name, templatedText)
+	if templateErr != nil {
+		return nil, templateErr
 	}
-	myMap, err := yamlToMap([]byte(yamlData))
-	if err == nil {
-		return myMap, nil
+	if myMap, err := yamlToMap([]byte(yamlData)); err == nil {
+		return myMap.Prefix(name), nil
 	}
-	myList, err := yamlToList([]byte(yamlData))
-	if err == nil {
-		return myList, nil
+	if myList, err := yamlToList([]byte(yamlData)); err == nil {
+		myMap, convErr := myList.AsElementMap()
+		if convErr != nil {
+			return nil, convErr
+		}
+		return myMap.Prefix(name), nil
 	}
 	return fields.ElementMap{name: yamlData}, nil
 }
