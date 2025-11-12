@@ -98,10 +98,7 @@ func capElementsFromPaas(
 		if templateErr != nil {
 			return nil, fmt.Errorf("failed to run template %s", tpl)
 		}
-		em, convErr := result.AsElementMap()
-		if convErr != nil {
-			return nil, fmt.Errorf("failed to convert to map: %v", convErr)
-		}
+		em := result.AsElementMap()
 		elements = elements.Merge(em)
 	}
 
@@ -126,7 +123,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	if !reflect.DeepEqual(namespacedName, types.NamespacedName{}) {
 		appSet := &appv1.ApplicationSet{}
 		err = r.Get(ctx, namespacedName, appSet)
-		var entries fields.Entries
+		entries := fields.Entries{}
 		var listGen *appv1.ApplicationSetGenerator
 		if err != nil {
 			// Applicationset does not exist
@@ -147,11 +144,18 @@ func (r *PaasReconciler) ensureAppSetCap(
 			entries = fields.Entries{
 				paas.Name: elements,
 			}
-		} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
+		} else if err = entries.FromJSON(paasKey, listGen.List.Elements); err != nil {
 			return err
 		} else {
-			entry := elements
-			entries[entry.Key()] = entry
+			paasName, exists := elements["paas"]
+			if !exists {
+				return errors.New("there was no entry for the name of this paas")
+			}
+			sPaasName, ok := paasName.(string)
+			if !ok {
+				return errors.New("entry for this paas is not a string")
+			}
+			entries[sPaasName] = elements
 		}
 		jsonentries, err3 := entries.AsJSON()
 		if err3 != nil {
@@ -179,10 +183,7 @@ func applyCustomFieldTemplates(
 			if err != nil {
 				return nil, err
 			}
-			em, err := fieldResult.AsElementMap()
-			if err != nil {
-				return nil, err
-			}
+			em := fieldResult.AsElementMap()
 			result = result.Merge(em)
 		}
 	}
@@ -204,7 +205,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	asNamespacedName := myConfig.Spec.CapabilityK8sName(capName)
 	if !reflect.DeepEqual(asNamespacedName, types.NamespacedName{}) {
 		err = r.Get(ctx, asNamespacedName, as)
-		var entries fields.Entries
+		entries := fields.Entries{}
 		var listGen *appv1.ApplicationSetGenerator
 		if err != nil {
 			// Applicationset does not exist
@@ -214,7 +215,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 		if listGen = getListGen(as.Spec.Generators); listGen == nil {
 			// no need to create the list
 			return nil
-		} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
+		} else if err = entries.FromJSON(paasKey, listGen.List.Elements); err != nil {
 			return err
 		}
 		delete(entries, paasName)

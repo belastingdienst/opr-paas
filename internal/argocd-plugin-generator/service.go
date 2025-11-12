@@ -132,11 +132,7 @@ func capElementsFromPaas(
 			logger.Error().Str("template", tpl).AnErr("error", templateErr).Msg("templating failed")
 			return nil, fmt.Errorf("failed to run template %s", tpl)
 		}
-		values, convErr := result.AsElementMap()
-		if convErr != nil {
-			logger.Error().Str("template", tpl).AnErr("error", convErr).Msg("stringmap conversion failed failed")
-			return nil, fmt.Errorf("failed to run template %s", tpl)
-		}
+		values := result.AsElementMap()
 		logger.Debug().Str("paas", paas.Name).Str("field", name).Any("generic", values).Msg("generic cap field")
 		elements = elements.Merge(values)
 	}
@@ -159,10 +155,7 @@ func applyCustomFieldTemplates(
 			if err != nil {
 				return nil, err
 			}
-			frm, err := fieldResult.AsElementMap()
-			if err != nil {
-				return nil, err
-			}
+			frm := fieldResult.AsElementMap()
 			result = result.Merge(frm)
 		}
 	}

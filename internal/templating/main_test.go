@@ -116,7 +116,7 @@ func TestValidTemplateToMap(t *testing.T) {
 	for _, test := range []struct {
 		key      string
 		template string
-		expected fields.ElementArray
+		expected fields.ElementMap
 	}{
 		{
 			key:      "mystring",

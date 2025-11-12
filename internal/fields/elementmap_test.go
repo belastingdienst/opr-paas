@@ -7,6 +7,7 @@ See LICENSE.md for details.
 package fields_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -99,18 +100,9 @@ func TestElementsFromImproperJSON(t *testing.T) {
 }
 
 func TestElementsAsString(t *testing.T) {
-	expected := `{ 'a': 'b', 'c': '6', 'd': '{"k1":"v1","k2":"v2"}', 'e': '["e1","e2"]' }`
+	expected := `{"a":"b","c":6,"d":{"k1":"v1","k2":"v2"},"e":["e1","e2"]}`
 	require.NotNil(t, elements)
-	assert.Equal(t, expected, elements.String())
-}
-
-func TestKey(t *testing.T) {
-	const paasName = "my-paas"
-	assert.Empty(t, elements.Key())
-	elements2 := fields.ElementMap{
-		key1:   value1,
-		key2:   value2,
-		"paas": paasName,
-	}
-	assert.Equal(t, paasName, elements2.Key())
+	j, marshalErr := json.Marshal(elements)
+	assert.NoError(t, marshalErr)
+	assert.Equal(t, expected, string(j))
 }

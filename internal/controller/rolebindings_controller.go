@@ -126,15 +126,12 @@ func (r *PaasReconciler) backendRoleBinding(
 	}
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
 	for n, tpl := range myConfig.Spec.Templating.RoleBindingLabels {
-		var result fields.ElementArray
+		var result fields.ElementMap
 		result, err = labelTemplater.TemplateToMap(n, tpl)
 		if err != nil {
 			return nil, err
 		}
-		r, convErr := result.AsElementMap()
-		if convErr != nil {
-			return nil, convErr
-		}
+		r := result.AsElementMap()
 		maps.Copy(labels, r.AsLabels())
 	}
 	rb := &rbac.RoleBinding{

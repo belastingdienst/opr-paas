@@ -11,6 +11,10 @@ import (
 	"strings"
 )
 
+const (
+	paasKey = "paas"
+)
+
 func join(argv ...string) string {
 	return strings.Join(argv, "-")
 }

@@ -73,15 +73,12 @@ func (r *PaasReconciler) backendNamespace(
 	}
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
 	for tplName, tpl := range myConfig.Spec.Templating.NamespaceLabels {
-		var result fields.ElementArray
+		var result fields.ElementMap
 		result, err = labelTemplater.TemplateToMap(tplName, tpl)
 		if err != nil {
 			return nil, err
 		}
-		r, convErr := result.AsElementMap()
-		if convErr != nil {
-			return nil, convErr
-		}
+		r := result.AsElementMap()
 		maps.Copy(labels, r.AsLabels())
 	}
 

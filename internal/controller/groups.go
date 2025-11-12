@@ -112,15 +112,12 @@ func (r *PaasReconciler) backendGroup(
 	labels := map[string]string{}
 	labelTemplater := templating.NewTemplater(*paas, myConfig)
 	for name, tpl := range myConfig.Spec.Templating.GroupLabels {
-		var result fields.ElementArray
+		var result fields.ElementMap
 		result, err = labelTemplater.TemplateToMap(name, tpl)
 		if err != nil {
 			return nil, err
 		}
-		r, convErr := result.AsElementMap()
-		if convErr != nil {
-			return nil, convErr
-		}
+		r := result.AsElementMap()
 		maps.Copy(labels, r.AsLabels())
 	}
 

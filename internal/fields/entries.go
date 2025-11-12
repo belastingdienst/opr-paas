@@ -3,7 +3,6 @@ package fields
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
@@ -28,20 +27,6 @@ func (en Entries) Merge(added Entries) (entries Entries) {
 	return entries
 }
 
-func (en Entries) String() string {
-	var l []string
-	keys := make([]string, 0, len(en))
-	for k := range en {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		value := en[key]
-		l = append(l, fmt.Sprintf("'%s': %s", key, value.String()))
-	}
-	return fmt.Sprintf("{ %s }", strings.Join(l, ", "))
-}
-
 // AsJSON can be used to convert Entries into JSON data
 func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
 	var list []apiextensionsv1.JSON
@@ -61,20 +46,23 @@ func (en Entries) AsJSON() ([]apiextensionsv1.JSON, error) {
 	return list, nil
 }
 
-// EntriesFromJSON can be used to pass a list of json data and parse it to Entries
-func EntriesFromJSON(data []apiextensionsv1.JSON) (Entries, error) {
-	e := Entries{}
+// FromJSON can be used to pass a list of json data and fill the values of this Entries with the result
+func (en *Entries) FromJSON(key string, data []apiextensionsv1.JSON) error {
+	self := *en
 	for _, raw := range data {
 		entry, err := ElementMapFromJSON(raw.Raw)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		key := entry.Key()
-		if key == "" {
-			return nil, fmt.Errorf(`json data "%s" does not contain a "paas" field`, raw)
+		value, exists := entry[key]
+		if !exists {
+			return fmt.Errorf(`json data "%s" does not contain a "%s" field`, raw, key)
 		}
-
-		e[key] = entry
+		name, ok := value.(string)
+		if !ok {
+			return fmt.Errorf(`json data "%s" has a "%s" field, but it is not a string`, raw, key)
+		}
+		self[name] = entry
 	}
-	return e, nil
+	return nil
 }

@@ -497,8 +497,8 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			entries := make(fields.Entries)
 			for _, generator := range a.Spec.Generators {
-				var generatorEntries fields.Entries
-				generatorEntries, err = fields.EntriesFromJSON(generator.List.Elements)
+				generatorEntries := fields.Entries{}
+				err = generatorEntries.FromJSON(paasKey, generator.List.Elements)
 				Expect(err).NotTo(HaveOccurred())
 				entries = entries.Merge(generatorEntries)
 			}
@@ -532,8 +532,8 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			entries := make(fields.Entries)
 			for _, generator := range appSet.Spec.Generators {
-				var generatorEntries fields.Entries
-				generatorEntries, err = fields.EntriesFromJSON(generator.List.Elements)
+				generatorEntries := fields.Entries{}
+				err = generatorEntries.FromJSON(paasKey, generator.List.Elements)
 				Expect(err).NotTo(HaveOccurred())
 				entries = entries.Merge(generatorEntries)
 			}
@@ -774,7 +774,8 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(capAppSet.Spec.Generators).To(HaveLen(1))
 			list := getListGen(capAppSet.Spec.Generators)
 			Expect(list).NotTo(BeNil())
-			entries, err := fields.EntriesFromJSON(list.List.Elements)
+			entries := fields.Entries{}
+			err = entries.FromJSON(paasKey, list.List.Elements)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(entries).To(HaveLen(1))
 			Expect(entries).To(HaveKey(paasName))

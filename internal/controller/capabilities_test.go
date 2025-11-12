@@ -154,8 +154,8 @@ g, ` + group2 + `, role:admin`
 				Expect(err).NotTo(HaveOccurred())
 				entries := make(fields.Entries)
 				for _, generator := range appSet.Spec.Generators {
-					var generatorEntries fields.Entries
-					generatorEntries, err = fields.EntriesFromJSON(generator.List.Elements)
+					generatorEntries := fields.Entries{}
+					err = generatorEntries.FromJSON(paasKey, generator.List.Elements)
 					Expect(err).NotTo(HaveOccurred())
 					entries = entries.Merge(generatorEntries)
 				}

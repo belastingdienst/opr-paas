@@ -21,8 +21,7 @@ var (
 )
 
 func TestListAsElementMap(t *testing.T) {
-	sm, convErr := listElements.AsElementMap()
-	assert.NoError(t, convErr)
+	sm := listElements.AsElementMap()
 	assert.Equal(
 		t,
 		fields.ElementMap{

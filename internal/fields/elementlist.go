@@ -7,11 +7,11 @@ import (
 // ElementList represents a list of any values
 type ElementList []Element
 
-// AsElementMap will convert this any map into a string map
-func (el ElementList) AsElementMap() (ElementMap, error) {
+// AsElementMap converts the list into an ElementMap with string indices as keys.
+func (el ElementList) AsElementMap() ElementMap {
 	result := ElementMap{}
 	for index, value := range el {
 		result[fmt.Sprintf("%d", index)] = value
 	}
-	return result, nil
+	return result
 }

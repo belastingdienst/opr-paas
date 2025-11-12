@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
-	"strings"
+	"maps"
 )
 
 // ElementMap represents all key, value pairs for one entry in the list of the listgenerator
@@ -18,19 +17,6 @@ func ElementMapFromJSON(raw []byte) (ElementMap, error) {
 		return nil, err
 	}
 	return newElementMap, nil
-}
-
-// GetElementMapAsStringMap converts all values to a json value and returns the set as a string map
-func (em ElementMap) GetElementMapAsStringMap() (map[string]string, error) {
-	values := map[string]string{}
-	for key, value := range em {
-		j, err := json.Marshal(value)
-		if err != nil {
-			return nil, err
-		}
-		values[key] = string(j)
-	}
-	return values, nil
 }
 
 // GetElementAsString gets a value and returns as string
@@ -63,43 +49,16 @@ func (em ElementMap) TryGetElementAsString(key string) (string, error) {
 
 // Merge merges all key/value pairs from another Entries on top of this and returns the resulting total Entries set
 func (em ElementMap) Merge(added ElementMap) ElementMap {
+	merged := maps.Clone(em)
 	for key, value := range added {
-		em[key] = value
+		merged[key] = value
 	}
-	return em
-}
-
-func (em ElementMap) String() string {
-	var l []string
-	keys := make([]string, 0, len(em))
-	for k := range em {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		value := em.GetElementAsString(key)
-		key = strings.ReplaceAll(key, "'", "\\'")
-		value = strings.ReplaceAll(value, "'", "\\'")
-		l = append(l, fmt.Sprintf("'%s': '%s'", key, value))
-	}
-	return fmt.Sprintf("{ %s }", strings.Join(l, ", "))
+	return merged
 }
 
 // AsJSON can be used to export all elements as JSON
 func (em ElementMap) AsJSON() ([]byte, error) {
 	return json.Marshal(em)
-}
-
-// Key returns the name of the Paas (as derived from the element with name "paas").
-// ElementMap have key, value pairs, and the "paas" value usually exists and has the name of the Paas.
-func (em ElementMap) Key() string {
-	if key, exists := em["paas"]; exists {
-		paasKey, valid := key.(string)
-		if valid {
-			return paasKey
-		}
-	}
-	return ""
 }
 
 // AsLabels will convert this any map into a string map
@@ -112,8 +71,8 @@ func (em ElementMap) AsLabels() map[string]string {
 }
 
 // AsElementMap will convert this any map into a string map
-func (em ElementMap) AsElementMap() (ElementMap, error) {
-	return em, nil
+func (em ElementMap) AsElementMap() ElementMap {
+	return em
 }
 
 // Prefix will return a new ElementMap with all keys prefixed with a value
