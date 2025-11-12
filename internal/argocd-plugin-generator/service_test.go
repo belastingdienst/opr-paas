@@ -138,7 +138,7 @@ var _ = Describe("Service", func() {
 			params := fields.ElementMap{
 				"capability": "argocd",
 			}
-			results, err := svc.Generate(params)
+			results, err := svc.Generate(ctx, params)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).NotTo(BeEmpty())
 
@@ -157,14 +157,14 @@ var _ = Describe("Service", func() {
 			params = fields.ElementMap{
 				"capability": "nonexistent",
 			}
-			results, err = svc.Generate(params)
+			results, err = svc.Generate(ctx, params)
 			Expect(err).To(HaveOccurred())
 			Expect(results).To(BeEmpty())
 
 			By("Calling Generate with no param")
 
 			params = fields.ElementMap{}
-			_, err = svc.Generate(params)
+			_, err = svc.Generate(ctx, params)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("missing or invalid capability param"))
 		})
@@ -176,7 +176,7 @@ var _ = Describe("Service", func() {
 			params := fields.ElementMap{
 				"capability": "argocd",
 			}
-			results, err := svc.Generate(params)
+			results, err := svc.Generate(ctx, params)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("no PaasConfig found"))
 			Expect(results).To(BeEmpty())

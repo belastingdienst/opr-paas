@@ -8,6 +8,7 @@ package argocd_plugin_generator
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -24,7 +25,7 @@ type mockGeneratorService struct {
 	generateFunc func(params fields.ElementMap) ([]fields.ElementMap, error)
 }
 
-func (m *mockGeneratorService) Generate(params fields.ElementMap) (
+func (m *mockGeneratorService) Generate(ctx context.Context, params fields.ElementMap) (
 	[]fields.ElementMap, error) {
 	return m.generateFunc(params)
 }

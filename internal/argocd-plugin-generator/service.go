@@ -48,10 +48,10 @@ func NewService(kclient client.Client) *Service {
 // Generate returns a generated []fields.ElementMap based on the provided map[string]interface. The input map
 // should contain a key: "capability" which stands for the capability, for which a map of parameters is generated.
 // in case the input param is missing, or the generation fails, an error is returned.
-func (s *Service) Generate(params fields.ElementMap) ([]fields.ElementMap, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+func (s *Service) Generate(_ctx context.Context, params fields.ElementMap) ([]fields.ElementMap, error) {
+	ctx, logger := logging.GetLogComponent(_ctx, logging.PluginGeneratorComponent)
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	_, logger := logging.GetLogComponent(ctx, logging.PluginGeneratorComponent)
 
 	var paasList v1alpha2.PaasList
 	if err := s.kclient.List(ctx, &paasList); err != nil {
@@ -74,7 +74,7 @@ func (s *Service) Generate(params fields.ElementMap) ([]fields.ElementMap, error
 	}
 	for _, paas := range paasList.Items {
 		var elements fields.ElementMap
-		elements, err = capElementsFromPaas(ctx, &paas, capName, myConfig)
+		elements, err = capElementsFromPaas(_ctx, &paas, capName, myConfig)
 		if err != nil {
 			logger.Error().Str("paas_name", paas.Name).AnErr("error", err).Msg("failed to generate elements")
 			return nil, err // return error to caller
@@ -109,6 +109,7 @@ func capElementsFromPaas(
 		logger.Error().AnErr("error", err).Msg("templating custom fields failed")
 		return nil, err
 	}
+	logger.Debug().Str("paas", paas.Name).Any("templated", templatedElements).Msg("after templating")
 
 	capability, exists := paas.Spec.Capabilities[capName]
 	if !exists {
@@ -121,7 +122,9 @@ func capElementsFromPaas(
 		logger.Error().AnErr("error", err).Msg("getting capability custom fields failed")
 		return nil, err
 	}
+	logger.Debug().Str("paas", paas.Name).Any("cap.elements", capElements).Msg("after getting cap. elements")
 	elements = templatedElements.Merge(capElements)
+	logger.Debug().Str("paas", paas.Name).Any("merged", templatedElements).Msg("after merge with cap elements")
 
 	for name, tpl := range paasConfig.Spec.Templating.GenericCapabilityFields {
 		result, templateErr := templater.TemplateToMap(name, tpl)
@@ -134,8 +137,10 @@ func capElementsFromPaas(
 			logger.Error().Str("template", tpl).AnErr("error", convErr).Msg("stringmap conversion failed failed")
 			return nil, fmt.Errorf("failed to run template %s", tpl)
 		}
+		logger.Debug().Str("paas", paas.Name).Str("field", name).Any("generic", values).Msg("generic cap field")
 		elements = elements.Merge(values)
 	}
+	logger.Debug().Str("paas", paas.Name).Any("merged", templatedElements).Msg("after merge with generic templates")
 
 	elements["paas"] = paas.Name
 	logger.Debug().Str("paas", paas.Name).Int("num_elements", len(elements)).Msg("returning elements")

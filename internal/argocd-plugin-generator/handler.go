@@ -12,6 +12,7 @@ See LICENSE.md for details.
 package argocd_plugin_generator
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -26,7 +27,7 @@ import (
 // and an ApplicationSet name, then return a slice of key/value maps representing
 // the generated output, or an error if generation fails.
 type GeneratorService interface {
-	Generate(params fields.ElementMap) ([]fields.ElementMap, error)
+	Generate(ctx context.Context, params fields.ElementMap) ([]fields.ElementMap, error)
 }
 
 // Handler is the HTTP request handler for the plug-in generator.
@@ -56,12 +57,7 @@ func NewHandler(service GeneratorService, bearerToken string) *Handler {
 // for processing, and encodes the output as JSON. In case of errors,
 // an appropriate HTTP status code and error message are returned.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	_, componentLogger := logging.GetLogComponent(r.Context(), logging.PluginGeneratorComponent)
-
-	logger := componentLogger.With().
-		Str("path", r.URL.Path).
-		Str("method", r.Method).
-		Logger()
+	ctx, logger := logging.SetPluginLogger(r.Context(), r)
 
 	if r.Method != http.MethodPost || r.URL.Path != "/api/v1/getparams.execute" {
 		logger.Error().Msg("invalid request method or path")
@@ -90,7 +86,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.service.Generate(input.Input.Parameters)
+	result, err := h.service.Generate(ctx, input.Input.Parameters)
 	if err != nil {
 		logger.Error().AnErr("error", err).Msg("generation error")
 		http.Error(w, fmt.Sprintf("generation error: %v", err), http.StatusInternalServerError)
