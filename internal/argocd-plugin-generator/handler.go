@@ -18,8 +18,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/fields"
+	"github.com/belastingdienst/opr-paas/v3/api/plugin"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 )
 
 // GeneratorService defines the contract for services that generate data
@@ -79,7 +80,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input PluginInput
+	var input plugin.Input
 	if err = json.Unmarshal(body, &input); err != nil {
 		logger.Error().Bytes("body", body).Msg("invalid json")
 		http.Error(w, fmt.Sprintf("invalid json: %v", err), http.StatusBadRequest)
@@ -99,7 +100,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.Debug().Int("num_capabilities", len(result)).Msg("generate succeeded")
 
-	response := PluginResponse{}
+	response := plugin.Response{}
 	response.Output.Parameters = result
 
 	w.Header().Set("Content-Type", "application/json")
@@ -110,26 +111,4 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logger.Debug().Msg("OK")
-}
-
-// PluginInput represents the expected request payload for the plug-in generator.
-//
-// The ApplicationSetName identifies the target ApplicationSet in Argo CD.
-// Input.Parameters is a map of user-provided parameters, where keys are
-// strings and values are strings as well.
-type PluginInput struct {
-	ApplicationSetName string `json:"applicationSetName"`
-	Input              struct {
-		Parameters fields.ElementMap `json:"parameters"`
-	} `json:"input"`
-}
-
-// PluginResponse represents the response payload returned by the plug-in generator.
-//
-// Output.Parameters is a slice of maps, where each map contains a set of
-// key-value pairs representing generated parameters for the ApplicationSet.
-type PluginResponse struct {
-	Output struct {
-		Parameters []fields.ElementMap `json:"parameters"`
-	} `json:"output"`
 }

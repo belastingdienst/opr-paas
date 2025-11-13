@@ -15,7 +15,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/fields"
+	"github.com/belastingdienst/opr-paas/v3/api/plugin"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -148,7 +149,7 @@ var _ = Describe("Handler", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
-			var jsonResp PluginResponse
+			var jsonResp plugin.Response
 			Expect(json.NewDecoder(resp.Body).Decode(&jsonResp)).To(Succeed())
 			Expect(jsonResp.Output.Parameters).To(Equal(
 				[]fields.ElementMap{{"key1": "value1"}, {"key2": "value2"}},

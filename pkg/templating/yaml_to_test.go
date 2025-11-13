@@ -3,7 +3,7 @@ package templating
 import (
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/fields"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 	"github.com/stretchr/testify/assert"
 )
 
