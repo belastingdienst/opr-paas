@@ -445,7 +445,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			request.NamespacedName = types.NamespacedName{Name: paasName}
 			result, err = reconciler.Reconcile(ctx, request)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(ContainSubstring("a capability is requested, but not configured")))
+			Expect(err).To(MatchError(ContainSubstring("capability non-existent is not in PaasConfig")))
 			Expect(result).To(Equal(controllerruntime.Result{}))
 		})
 

@@ -249,11 +249,14 @@ func (r *PaasReconciler) reconcileNamespacedResources(
 ) (err error) {
 	_, logger := logging.GetLogComponent(ctx, logging.ControllerPaasComponent)
 	logger.Debug().Msg("inside namespaced resource reconciler")
+
 	nsDefs, err := r.nsDefsFromPaas(ctx, paas)
 	if err != nil {
+		logger.Err(err).Msg("could not get nsDefs from paas")
 		return err
 	}
 	logger.Debug().Msgf("Need to manage resources for %d namespaces", len(nsDefs))
+
 	paasNsReconcilers := []func(context.Context, *v1alpha2.Paas, namespaceDefs) error{
 		r.reconcileNamespaces,
 		r.finalizeObsoleteNamespaces,

@@ -47,7 +47,6 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		createNamespace("paas-system")
 		createPaasPrivateKeySecret("paas-system", "keys", pkey)
 	})
-
 	BeforeEach(func() {
 		obj = &v1alpha1.Paas{}
 		oldObj = &v1alpha1.Paas{}
