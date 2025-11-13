@@ -138,15 +138,17 @@ func (r *PaasReconciler) backendEnabledQuotas(
 	// we need a generic quota named after the paas
 	for _, nsDef := range nsDefs {
 		if nsDef.capName == "" {
-			// if the nsdef isn't a capability, define a quota
-			var quota *quotav1.ClusterResourceQuota
-			quota, err = r.backendQuota(ctx, paas, "", paas.Spec.Quota)
-			if err != nil {
-				return nil, err
+			// if the nsdef isn't a capability and the quota isn't empty, define a quota
+			if len(paas.Spec.Quota) > 0 {
+				var quota *quotav1.ClusterResourceQuota
+				quota, err = r.backendQuota(ctx, paas, "", paas.Spec.Quota)
+				if err != nil {
+					return nil, err
+				}
+				// add quota to the quota's definitions
+				quotas = append(quotas, quota)
+				break
 			}
-			// add quota to the quota's definitions
-			quotas = append(quotas, quota)
-			break
 		}
 	}
 
