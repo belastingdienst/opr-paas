@@ -128,7 +128,8 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 				Templating: v1alpha2.ConfigTemplatingItems{
 					ClusterQuotaLabels: v1alpha2.ConfigTemplatingItem{
 						//revive:disable-next-line
-						"": "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" + kubeInstLabel + "\" }}{{$key}}: {{$value}}\n{{end}}{{end}}",
+						"": "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" + kubeInstLabel + "\" }}" +
+							"{{$key}}: {{$value}}\n{{end}}{{end}}",
 					},
 				},
 			},
