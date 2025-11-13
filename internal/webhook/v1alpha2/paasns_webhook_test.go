@@ -339,8 +339,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 	})
 
 	Context("When creating a PaasNs but the parent paas doesn't have a quota defined, ", func() {
-		It("the paasNS can't be created", func() {
-			By("creating a paasNs, but the parent paas has no quota defined")
+		It("should not allow creation of a PaasNS", func() {
+			By("creating a PaasNS for a Paas without a defined Quota block")
 
 			newObj := obj.DeepCopy()
 

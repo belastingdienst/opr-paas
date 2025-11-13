@@ -810,6 +810,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 			_, err := validator.ValidateCreate(ctx, obj)
 
+			// We want to assert the actual message of the cause, which is packed in the StatusError object type.
+			// Therefore we type assert, unpack and assert that the Cause is exactly as expected
 			var serr *apierrors.StatusError
 			Expect(errors.As(err, &serr)).To(BeTrue())
 			causes := serr.Status().Details.Causes
@@ -823,7 +825,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				},
 			))
 		})
-		It("Should deny creation when a capability with paasNS has been defined without quota", func() {
+		It("Should deny modification when a capability with paasNS has been modified to have no quota", func() {
 			obj = &v1alpha2.Paas{
 				ObjectMeta: metav1.ObjectMeta{Name: paasName},
 				Spec: v1alpha2.PaasSpec{
@@ -831,23 +833,20 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					Quota:        quota.Quota{"limits.cpu": resource.MustParse("10")},
 				},
 			}
-
 			Expect(k8sClient.Create(ctx, obj)).Error().NotTo(HaveOccurred())
 
 			nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "my-paas-cap5"}}
-
 			Expect(k8sClient.Create(ctx, nsObj)).Error().NotTo(HaveOccurred())
 
 			paasNsObj := &v1alpha2.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: "my-paasns", Namespace: "my-paas-cap5"}}
-
 			Expect(k8sClient.Create(ctx, paasNsObj)).Error().NotTo(HaveOccurred())
 
 			newObj := obj.DeepCopy()
-
 			newObj.Spec.Quota = nil
-
 			_, err := validator.ValidateUpdate(ctx, obj, newObj)
 
+			// We want to assert the actual message of the cause, which is packed in the StatusError object type.
+			// Therefore we type assert, unpack and assert that the Cause is exactly as expected
 			var serr *apierrors.StatusError
 			Expect(errors.As(err, &serr)).To(BeTrue())
 			causes := serr.Status().Details.Causes
