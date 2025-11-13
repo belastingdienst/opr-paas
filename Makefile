@@ -370,16 +370,15 @@ bundle: operator-sdk kustomize
 bundle-validate: operator-sdk
 	$(OPERATOR_SDK) bundle validate ./bundle
 
-.PHONY: catalog-build catalog-push
+.PHONY: catalog-build
+catalog-build: opm ## Build catalog image using OPM
+	$(OPM) index add \
+		--mode semver \
+		--bundles $(BUNDLE_IMGS) \
+		--tag $(CATALOG_IMG) \
+		--container-tool $(CONTAINER_TOOL)
 
-catalog-build: ## Generate OLM catalog image using operator-sdk
-	$(OPERATOR_SDK) generate catalog --manifests ./bundle \
-		--image-tag-base ghcr.io/belastingdienst/opr-paas-catalog \
-		--package opr-paas \
-		--channels stable \
-		--default-channel stable \
-		--version $(VERSION)
-
-
+.PHONY: catalog-push
 catalog-push: ## Push catalog image to container registry
-	$(CONTAINER_TOOL) push ghcr.io/belastingdienst/opr-paas-catalog:$(VERSION)
+	$(CONTAINER_TOOL) push $(CATALOG_IMG)
+

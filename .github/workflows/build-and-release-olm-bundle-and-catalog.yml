@@ -1,0 +1,120 @@
+name: Build and release OLM bundle & catalog
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  version:
+    name: Normalize version
+    runs-on: ubuntu-latest
+    permissions: {}   # No permissions needed
+    outputs:
+      version: ${{ steps.export.outputs.version }}
+      test_mode: ${{ steps.export.outputs.test_mode }}
+
+    steps:
+      - name: Determine version
+        id: export
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            TEST_VERSION="0.0.0-test-${GITHUB_SHA::7}"
+            echo "version=${TEST_VERSION}" >> $GITHUB_OUTPUT
+            echo "test_mode=true" >> $GITHUB_OUTPUT
+          else
+            CLEANED="${GITHUB_REF_NAME#v}"
+            echo "version=${CLEANED}" >> $GITHUB_OUTPUT
+            echo "test_mode=false" >> $GITHUB_OUTPUT
+          fi
+
+  bundle:
+    name: Generate, validate, and publish OLM bundle
+    runs-on: ubuntu-latest
+    needs: version
+    permissions:
+      contents: write     # Only needed for uploading assets in real releases
+      packages: write     # Needed for pushing the bundle image
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      TEST_MODE: ${{ needs.version.outputs.test_mode }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: false
+
+      - name: Install Build Dependencies
+        run: |
+          make operator-sdk
+          make kustomize
+
+      - name: Generate OLM bundle
+        run: |
+          make bundle VERSION=${VERSION} \
+            CHANNELS=stable \
+            DEFAULT_CHANNEL=stable
+
+      - name: Validate OLM bundle
+        run: make bundle-validate
+
+      - name: Build bundle image
+        run: make bundle-build VERSION=${VERSION}
+
+      - name: Push bundle image (skip in test mode)
+        if: env.TEST_MODE != 'true'
+        run: make bundle-push VERSION=${VERSION}
+
+      - name: Upload bundle manifests to release (real releases only)
+        if: env.TEST_MODE != 'true'
+        uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090
+        with:
+          files: |
+            bundle/metadata/annotations.yaml
+            bundle/manifests/*
+
+  catalog:
+    name: Build & Push OLM Catalog
+    runs-on: ubuntu-latest
+    needs: [version, bundle]
+    permissions:
+      packages: write     # needed for GHCR push
+      contents: read      # required by checkout
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      TEST_MODE: ${{ needs.version.outputs.test_mode }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Install operator-sdk
+        run: make operator-sdk
+
+      - name: GHCR login (skip in test mode)
+        if: env.TEST_MODE != 'true'
+        run: |
+          podman login ghcr.io \
+            -u "${GITHUB_ACTOR}" \
+            -p "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Build catalog image
+        run: make catalog-build VERSION=${VERSION}
+
+      - name: Push catalog image (skip in test mode)
+        if: env.TEST_MODE != 'true'
+        run: make catalog-push VERSION=${VERSION}
