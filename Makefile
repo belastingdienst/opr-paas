@@ -372,7 +372,7 @@ bundle-validate: operator-sdk
 
 .PHONY: bundle-build
 bundle-build: ## Build OLM bundle image
-	$(CONTAINER_TOOL) build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	$(CONTAINER_TOOL) build -f bundle.Containerfile -t $(BUNDLE_IMG) .
 
 .PHONY: bundle-push
 bundle-push: ## Push OLM bundle image to registry
