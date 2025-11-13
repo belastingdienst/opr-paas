@@ -191,7 +191,8 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 			var quota quotav1.ClusterResourceQuota
 			err := reconciler.Get(ctx, types.NamespacedName{Name: "paas-empty-quota"}, &quota)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("clusterresourcequotas.quota.openshift.io \"paas-empty-quota\" not found"))
+			Expect(err.Error()).To(ContainSubstring("clusterresourcequotas.quota.openshift.io" +
+				" \"paas-empty-quota\" not found"))
 		})
 	})
 
@@ -205,7 +206,8 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 			var quota quotav1.ClusterResourceQuota
 			err := reconciler.Get(ctx, types.NamespacedName{Name: "paas-no-quota"}, &quota)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("clusterresourcequotas.quota.openshift.io \"paas-no-quota\" not found"))
+			Expect(err.Error()).To(ContainSubstring("clusterresourcequotas.quota.openshift.io" +
+				" \"paas-no-quota\" not found"))
 		})
 	})
 })
