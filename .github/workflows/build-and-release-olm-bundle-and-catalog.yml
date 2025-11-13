@@ -5,14 +5,11 @@ on:
     types: [published]
   workflow_dispatch:
 
-permissions:
-  contents: write
-  packages: write
-
 jobs:
   version:
     name: Normalize version
     runs-on: ubuntu-latest
+    permissions: {}   # No permissions needed
     outputs:
       version: ${{ steps.export.outputs.version }}
       test_mode: ${{ steps.export.outputs.test_mode }}
@@ -22,12 +19,10 @@ jobs:
         id: export
         run: |
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
-            # Safe test version → no push to GHCR allowed
             TEST_VERSION="0.0.0-test-${GITHUB_SHA::7}"
             echo "version=${TEST_VERSION}" >> $GITHUB_OUTPUT
             echo "test_mode=true" >> $GITHUB_OUTPUT
           else
-            # Real release → strip leading v (e.g. v3.12.0 → 3.12.0)
             CLEANED="${GITHUB_REF_NAME#v}"
             echo "version=${CLEANED}" >> $GITHUB_OUTPUT
             echo "test_mode=false" >> $GITHUB_OUTPUT
@@ -37,6 +32,9 @@ jobs:
     name: Generate, validate, and publish OLM bundle
     runs-on: ubuntu-latest
     needs: version
+    permissions:
+      contents: write     # Only needed for uploading assets in real releases
+      packages: write     # Needed for pushing the bundle image
     env:
       VERSION: ${{ needs.version.outputs.version }}
       TEST_MODE: ${{ needs.version.outputs.test_mode }}
@@ -76,7 +74,7 @@ jobs:
 
       - name: Upload bundle manifests to release (real releases only)
         if: env.TEST_MODE != 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090
         with:
           files: |
             bundle/metadata/annotations.yaml
@@ -86,6 +84,9 @@ jobs:
     name: Build & Push OLM Catalog
     runs-on: ubuntu-latest
     needs: [version, bundle]
+    permissions:
+      packages: write     # needed for GHCR push
+      contents: read      # required by checkout
     env:
       VERSION: ${{ needs.version.outputs.version }}
       TEST_MODE: ${{ needs.version.outputs.test_mode }}
@@ -104,7 +105,7 @@ jobs:
       - name: Install operator-sdk
         run: make operator-sdk
 
-      - name: Login to GHCR (skip in test mode)
+      - name: GHCR login (skip in test mode)
         if: env.TEST_MODE != 'true'
         run: |
           podman login ghcr.io \
