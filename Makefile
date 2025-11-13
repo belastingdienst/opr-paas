@@ -370,6 +370,14 @@ bundle: operator-sdk kustomize
 bundle-validate: operator-sdk
 	$(OPERATOR_SDK) bundle validate ./bundle
 
+.PHONY: bundle-build
+bundle-build: ## Build OLM bundle image
+	$(CONTAINER_TOOL) build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+
+.PHONY: bundle-push
+bundle-push: ## Push OLM bundle image to registry
+	$(CONTAINER_TOOL) push $(BUNDLE_IMG)
+
 .PHONY: catalog-build
 catalog-build: opm ## Build catalog image using OPM
 	$(OPM) index add \
