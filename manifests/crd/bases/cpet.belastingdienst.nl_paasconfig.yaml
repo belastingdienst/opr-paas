@@ -425,6 +425,11 @@ spec:
                         type: array
                       description: Default permissions set for this capability
                       type: object
+                    external:
+                      default: false
+                      description: external capabilities do not have quota, namespace,
+                        etc.
+                      type: boolean
                     extra_permissions:
                       additionalProperties:
                         items:

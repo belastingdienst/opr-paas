@@ -163,6 +163,11 @@ type ConfigCapability struct {
 
 	// Settings to allow specific configuration specific to a capability
 	CustomFields map[string]ConfigCustomField `json:"custom_fields,omitempty"`
+
+	// external capabilities do not have quota, namespace, etc.
+	// +kubebuilder:default:=false
+	// +kubebuilder:validation:Optional
+	External bool `json:"external"`
 }
 
 // For each resource type go templating can be used to derive the labels to be set on the resource when created
