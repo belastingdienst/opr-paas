@@ -7,7 +7,8 @@ import (
 
 	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/controller"
-	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	userv1 "github.com/openshift/api/user/v1"
 	"github.com/stretchr/testify/assert"
@@ -30,7 +31,10 @@ func TestGroupUsers(t *testing.T) {
 	paasSpec := api.PaasSpec{
 		Requestor:  paasRequestor,
 		Namespaces: api.PaasNamespaces{paasNamespace: api.PaasNamespace{}},
-		Quota:      make(quota.Quota),
+		Quota: map[corev1.ResourceName]resource.Quantity{
+			"cpu":    resource.MustParse("200m"),
+			"memory": resource.MustParse("256Mi"),
+		},
 		Groups:     groups,
 	}
 

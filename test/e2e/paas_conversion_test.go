@@ -6,9 +6,10 @@ import (
 
 	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
@@ -39,7 +40,10 @@ func createAlpha1PaasWithCondFn(name string, paasSpec api.PaasSpec, readyConditi
 func TestPaasConversion(t *testing.T) {
 	v1Spec := api.PaasSpec{
 		Requestor: "paas-user",
-		Quota:     make(quota.Quota),
+		Quota: map[corev1.ResourceName]resource.Quantity{
+		"cpu":    resource.MustParse("200m"),
+		"memory": resource.MustParse("256Mi"),
+		},
 		Capabilities: api.PaasCapabilities{
 			"argocd": {
 				Enabled:     true,
@@ -110,7 +114,10 @@ func assertV2Created(ctx context.Context, t *testing.T, cfg *envconf.Config) con
 		ObjectMeta: metav1.ObjectMeta{Name: paasv2Name},
 		Spec: v1alpha2.PaasSpec{
 			Requestor: "paas-user",
-			Quota:     make(quota.Quota),
+			Quota: map[corev1.ResourceName]resource.Quantity{
+			"cpu":    resource.MustParse("200m"),
+			"memory": resource.MustParse("256Mi"),
+		},
 			Capabilities: v1alpha2.PaasCapabilities{
 				"argocd": {
 					CustomFields: map[string]string{
