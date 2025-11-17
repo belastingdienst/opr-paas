@@ -35,7 +35,7 @@ func TestGroupUsers(t *testing.T) {
 			"cpu":    resource.MustParse("200m"),
 			"memory": resource.MustParse("256Mi"),
 		},
-		Groups:     groups,
+		Groups: groups,
 	}
 
 	testenv.Test(

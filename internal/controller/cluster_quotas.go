@@ -145,7 +145,6 @@ func (r *PaasReconciler) backendEnabledQuotas(
 		quotas = append(quotas, quota)
 	}
 
-
 	for name, capability := range paas.Spec.Capabilities {
 		if capConfig, exists := myConfig.Spec.Capabilities[name]; !exists {
 			return nil, errors.New("a capability is requested, but not configured")

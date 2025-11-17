@@ -33,7 +33,7 @@ func TestGroupQuery(t *testing.T) {
 			"cpu":    resource.MustParse("200m"),
 			"memory": resource.MustParse("256Mi"),
 		},
-		Groups:     api.PaasGroups{groupWithQueryName: api.PaasGroup{Query: groupQuery}},
+		Groups: api.PaasGroups{groupWithQueryName: api.PaasGroup{Query: groupQuery}},
 	}
 
 	testenv.Test(

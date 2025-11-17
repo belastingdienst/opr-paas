@@ -41,8 +41,8 @@ func TestPaasConversion(t *testing.T) {
 	v1Spec := api.PaasSpec{
 		Requestor: "paas-user",
 		Quota: map[corev1.ResourceName]resource.Quantity{
-		"cpu":    resource.MustParse("200m"),
-		"memory": resource.MustParse("256Mi"),
+			"cpu":    resource.MustParse("200m"),
+			"memory": resource.MustParse("256Mi"),
 		},
 		Capabilities: api.PaasCapabilities{
 			"argocd": {
@@ -115,9 +115,9 @@ func assertV2Created(ctx context.Context, t *testing.T, cfg *envconf.Config) con
 		Spec: v1alpha2.PaasSpec{
 			Requestor: "paas-user",
 			Quota: map[corev1.ResourceName]resource.Quantity{
-			"cpu":    resource.MustParse("200m"),
-			"memory": resource.MustParse("256Mi"),
-		},
+				"cpu":    resource.MustParse("200m"),
+				"memory": resource.MustParse("256Mi"),
+			},
 			Capabilities: v1alpha2.PaasCapabilities{
 				"argocd": {
 					CustomFields: map[string]string{
