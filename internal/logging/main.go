@@ -8,6 +8,7 @@ package logging
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
@@ -28,6 +29,21 @@ var (
 	// Commandline args can use this to enable logging for a component
 	dynamicComponents Components
 )
+
+// SetPluginLogger derives a context with a `zerolog` logger configured for a plugin request.
+func SetPluginLogger(
+	ctx context.Context,
+	req *http.Request,
+) (context.Context, *zerolog.Logger) {
+	logger := log.With().
+		Str("path", req.URL.Path).
+		Str("method", req.Method).
+		Str("requestID", uuid.NewString()).
+		Logger()
+	logger.Info().Msg("started processing request")
+
+	return logger.WithContext(ctx), &logger
+}
 
 // SetControllerLogger derives a context with a `zerolog` logger configured for a specific controller.
 // To be called once per reconciler.

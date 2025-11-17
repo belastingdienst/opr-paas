@@ -10,6 +10,7 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/api"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 )
 
 // PaasUnion is an interface representing either a v1alpha1.Paas or a v1alpha2.Paas
@@ -72,18 +73,16 @@ func (t Templater[P, C, S]) TemplateToString(name string, templatedText string) 
 // If it can be parsed, it will prefix map keys / list indexes by `name` and return the map.
 // If it cannot be parsed as map / list, it will return a map with one key, value pair, where key = `name` and value
 // is the result.
-func (t Templater[P, C, S]) TemplateToMap(name string, templatedText string) (result TemplateResult, err error) {
-	yamlData, err := t.TemplateToString(name, templatedText)
-	if err != nil {
-		return nil, err
+func (t Templater[P, C, S]) TemplateToMap(name string, templatedText string) (fields.ElementMap, error) {
+	yamlData, templateErr := t.TemplateToString(name, templatedText)
+	if templateErr != nil {
+		return nil, templateErr
 	}
-	myMap, err := yamlToMap([]byte(yamlData))
-	if err == nil {
-		return myMap.AsResult(name), nil
+	if myMap, err := yamlToMap([]byte(yamlData)); err == nil {
+		return myMap.Prefix(name), nil
 	}
-	myList, err := yamlToList([]byte(yamlData))
-	if err == nil {
-		return myList.AsResult(name), nil
+	if myList, err := yamlToList([]byte(yamlData)); err == nil {
+		return myList.AsElementMap().Prefix(name), nil
 	}
-	return TemplateResult{name: yamlData}, nil
+	return fields.ElementMap{name: yamlData}, nil
 }

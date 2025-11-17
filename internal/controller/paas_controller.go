@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"strings"
 
+	paasapi "github.com/belastingdienst/opr-paas/v3/api"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
@@ -24,7 +25,6 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	"github.com/belastingdienst/opr-paas/v3/internal/paasresource"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -289,7 +289,7 @@ func (r *PaasReconciler) setSuccessfulCondition(ctx context.Context, paas *v1alp
 	return r.Status().Update(ctx, paas)
 }
 
-func (r *PaasReconciler) setErrorCondition(ctx context.Context, resource paasresource.Resource, err error) error {
+func (r *PaasReconciler) setErrorCondition(ctx context.Context, resource paasapi.Resource, err error) error {
 	meta.SetStatusCondition(resource.GetConditions(), metav1.Condition{
 		Type:   v1alpha2.TypeReadyPaas,
 		Status: metav1.ConditionFalse, Reason: "ReconcilingError", ObservedGeneration: resource.GetGeneration(),

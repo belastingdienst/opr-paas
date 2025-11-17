@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
-	"github.com/belastingdienst/opr-paas/v3/internal/paasresource"
+	paasapi "github.com/belastingdienst/opr-paas/v3/api"
 	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -89,11 +89,11 @@ func listOrFail[L k8s.ObjectList](ctx context.Context, namespace string, obj L, 
 // (https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-List/)
 // which are present in the passed ApplicationSet.
 func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) (allEntries fields.Entries, err error) {
-	var generatorEntries fields.Entries
 	allEntries = make(fields.Entries)
 	for _, generator := range applicationSet.Spec.Generators {
 		if generator.List != nil {
-			generatorEntries, err = fields.EntriesFromJSON(generator.List.Elements)
+			generatorEntries := fields.Entries{}
+			err = generatorEntries.FromJSON("paas", generator.List.Elements)
 			if err != nil {
 				return nil, err
 			}
@@ -114,7 +114,7 @@ func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) (allEntri
 func waitForStatus(
 	ctx context.Context,
 	cfg *envconf.Config,
-	obj paasresource.Resource,
+	obj paasapi.Resource,
 	oldGeneration int64,
 	match func(conds []metav1.Condition) bool,
 ) error {
@@ -130,7 +130,7 @@ func waitForStatus(
 
 			// Filter out all non-current status conditions
 			conds := make([]metav1.Condition, 0)
-			for _, c := range *object.(paasresource.Resource).GetConditions() {
+			for _, c := range *object.(paasapi.Resource).GetConditions() {
 				if currentGen == c.ObservedGeneration {
 					conds = append(conds, c)
 				}
@@ -144,7 +144,7 @@ func waitForStatus(
 			"failed waiting for %s to be reconciled: %w and has status block: %v",
 			fetched.GetName(),
 			err,
-			fetched.(paasresource.Resource).GetConditions(),
+			fetched.(paasapi.Resource).GetConditions(),
 		)
 	}
 
@@ -155,7 +155,7 @@ func waitForStatus(
 func waitForCondition(
 	ctx context.Context,
 	cfg *envconf.Config,
-	obj paasresource.Resource,
+	obj paasapi.Resource,
 	oldGeneration int64,
 	readyCondition string,
 ) error {
@@ -165,7 +165,7 @@ func waitForCondition(
 }
 
 // createSync creates the resource, blocking until the given status condition is true.
-func createSync(ctx context.Context, cfg *envconf.Config, obj paasresource.Resource, readyCondition string) error {
+func createSync(ctx context.Context, cfg *envconf.Config, obj paasapi.Resource, readyCondition string) error {
 	if err := cfg.Client().Resources().Create(ctx, obj); err != nil {
 		return fmt.Errorf("failed to create %s: %w", obj.GetName(), err)
 	}
@@ -174,7 +174,7 @@ func createSync(ctx context.Context, cfg *envconf.Config, obj paasresource.Resou
 }
 
 // updateSync updates the resource, blocking until the given status condition is true.
-func updateSync(ctx context.Context, cfg *envconf.Config, obj paasresource.Resource, readyCondition string) error {
+func updateSync(ctx context.Context, cfg *envconf.Config, obj paasapi.Resource, readyCondition string) error {
 	gen := obj.GetGeneration()
 
 	if err := cfg.Client().Resources().Update(ctx, obj); err != nil {

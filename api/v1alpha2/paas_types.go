@@ -12,8 +12,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
-	"github.com/belastingdienst/opr-paas/v3/internal/groups"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
+	"github.com/belastingdienst/opr-paas/v3/pkg/groups"
 	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -89,8 +89,8 @@ func (pc PaasCapability) Quotas() (pq paasquota.Quota) {
 // CapExtraFields returns all extra fields that are configured for a capability
 func (pc *PaasCapability) CapExtraFields(
 	fieldConfig map[string]ConfigCustomField,
-) (elements fields.Elements, err error) {
-	elements = make(fields.Elements)
+) (elements fields.ElementMap, err error) {
+	elements = fields.ElementMap{}
 	var issues []error
 	for key, value := range pc.CustomFields {
 		if _, exists := fieldConfig[key]; !exists {

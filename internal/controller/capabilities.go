@@ -13,11 +13,11 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
 	appv1 "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v3/internal/templating"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
+	"github.com/belastingdienst/opr-paas/v3/pkg/templating"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -73,7 +73,7 @@ func capElementsFromPaas(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
 	capName string,
-) (elements fields.Elements, err error) {
+) (elements fields.ElementMap, err error) {
 	paasConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -91,16 +91,15 @@ func capElementsFromPaas(
 	if err != nil {
 		return nil, err
 	}
-	elements = templatedElements.AsFieldElements().Merge(capElements)
+	elements = templatedElements.Merge(capElements)
 
 	for name, tpl := range paasConfig.Spec.Templating.GenericCapabilityFields {
 		result, templateErr := templater.TemplateToMap(name, tpl)
 		if templateErr != nil {
 			return nil, fmt.Errorf("failed to run template %s", tpl)
 		}
-		for key, value := range result {
-			elements[key] = value
-		}
+		em := result.AsElementMap()
+		elements = elements.Merge(em)
 	}
 
 	elements["paas"] = paas.Name
@@ -124,7 +123,7 @@ func (r *PaasReconciler) ensureAppSetCap(
 	if !reflect.DeepEqual(namespacedName, types.NamespacedName{}) {
 		appSet := &appv1.ApplicationSet{}
 		err = r.Get(ctx, namespacedName, appSet)
-		var entries fields.Entries
+		entries := fields.Entries{}
 		var listGen *appv1.ApplicationSetGenerator
 		if err != nil {
 			// Applicationset does not exist
@@ -145,11 +144,18 @@ func (r *PaasReconciler) ensureAppSetCap(
 			entries = fields.Entries{
 				paas.Name: elements,
 			}
-		} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
+		} else if err = entries.FromJSON(paasKey, listGen.List.Elements); err != nil {
 			return err
 		} else {
-			entry := elements
-			entries[entry.Key()] = entry
+			paasName, exists := elements["paas"]
+			if !exists {
+				return errors.New("there was no entry for the name of this paas")
+			}
+			sPaasName, ok := paasName.(string)
+			if !ok {
+				return errors.New("entry for this paas is not a string")
+			}
+			entries[sPaasName] = elements
 		}
 		jsonentries, err3 := entries.AsJSON()
 		if err3 != nil {
@@ -168,8 +174,8 @@ func (r *PaasReconciler) ensureAppSetCap(
 func applyCustomFieldTemplates(
 	ccfields map[string]v1alpha2.ConfigCustomField,
 	templater templating.Templater[v1alpha2.Paas, v1alpha2.PaasConfig, v1alpha2.PaasConfigSpec],
-) (templating.TemplateResult, error) {
-	var result templating.TemplateResult
+) (fields.ElementMap, error) {
+	result := fields.ElementMap{}
 
 	for name, fieldConfig := range ccfields {
 		if fieldConfig.Template != "" {
@@ -177,7 +183,8 @@ func applyCustomFieldTemplates(
 			if err != nil {
 				return nil, err
 			}
-			result = result.Merge(fieldResult)
+			em := fieldResult.AsElementMap()
+			result = result.Merge(em)
 		}
 	}
 
@@ -198,7 +205,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 	asNamespacedName := myConfig.Spec.CapabilityK8sName(capName)
 	if !reflect.DeepEqual(asNamespacedName, types.NamespacedName{}) {
 		err = r.Get(ctx, asNamespacedName, as)
-		var entries fields.Entries
+		entries := fields.Entries{}
 		var listGen *appv1.ApplicationSetGenerator
 		if err != nil {
 			// Applicationset does not exist
@@ -208,7 +215,7 @@ func (r *PaasReconciler) finalizeAppSetCap(
 		if listGen = getListGen(as.Spec.Generators); listGen == nil {
 			// no need to create the list
 			return nil
-		} else if entries, err = fields.EntriesFromJSON(listGen.List.Elements); err != nil {
+		} else if err = entries.FromJSON(paasKey, listGen.List.Elements); err != nil {
 			return err
 		}
 		delete(entries, paasName)

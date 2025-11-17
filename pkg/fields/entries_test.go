@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	k8sv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 const (
+	myKey       = "mykey"
 	paas1Name   = "paas1"
 	paas1Value1 = "p1v1"
+	otherValue1 = "othervalue1"
 	paas1Value2 = 2.0
 	paas1Value4 = "p1v4"
 	paas2Name   = "paas2"
@@ -23,22 +25,22 @@ const (
 
 var (
 	entries1 = fields.Entries{
-		paas1Name: fields.Elements{
-			"key1": "othervalue1",
+		paas1Name: fields.ElementMap{
+			"key1": otherValue1,
 			"key2": paas1Value2,
-			"paas": paas1Name,
+			myKey:  paas1Name,
 		},
 	}
 	entries2 = fields.Entries{
-		paas1Name: fields.Elements{
+		paas1Name: fields.ElementMap{
 			"key1": paas1Value1,
 			"key4": paas1Value4,
-			"paas": paas1Name,
+			myKey:  paas1Name,
 		},
-		paas2Name: fields.Elements{
+		paas2Name: fields.ElementMap{
 			"key1": paas2Value1,
 			"key3": paas2Value3,
-			"paas": paas2Name,
+			myKey:  paas2Name,
 		},
 	}
 )
@@ -58,8 +60,8 @@ func TestHashData(t *testing.T) {
 	assert.Equal(t, elements1["key2"], paas1Value2)
 	require.Contains(t, elements1, "key4")
 	assert.Equal(t, elements1["key4"], paas1Value4)
-	assert.Contains(t, elements1, "paas")
-	assert.Equal(t, elements1["paas"], paas1Name)
+	assert.Contains(t, elements1, myKey)
+	assert.Equal(t, elements1[myKey], paas1Name)
 
 	require.Contains(t, resultEntries, paas2Name)
 	elements2 := resultEntries[paas2Name]
@@ -68,37 +70,8 @@ func TestHashData(t *testing.T) {
 	assert.Equal(t, paas2Value1, elements2["key1"])
 	require.Contains(t, elements2, "key3")
 	assert.Equal(t, paas2Value3, elements2["key3"])
-	assert.Contains(t, elements2, "paas")
-	assert.Equal(t, paas2Name, elements2["paas"])
-}
-
-func TestEntriesString(t *testing.T) {
-	assert.Equal(
-		t,
-		fmt.Sprintf("{ '%s': { 'key1': '%s', 'key2': '%.0f', 'key4': '%s', 'paas': '%s' } }",
-			paas1Name,
-			paas1Value1,
-			paas1Value2,
-			paas1Value4,
-			paas1Name,
-		),
-		entries1.String(),
-	)
-	assert.Equal(
-		t,
-		// revive:disable-next-line
-		fmt.Sprintf("{ '%s': { 'key1': '%s', 'key4': '%s', 'paas': '%s' }, '%s': { 'key1': '%s', 'key3': '%s', 'paas': '%s' } }",
-			paas1Name,
-			paas1Value1,
-			paas1Value4,
-			paas1Name,
-			paas2Name,
-			paas2Value1,
-			paas2Value3,
-			paas2Name,
-		),
-		entries2.String(),
-	)
+	assert.Contains(t, elements2, myKey)
+	assert.Equal(t, paas2Name, elements2[myKey])
 }
 
 func TestEntriesAsJSON(t *testing.T) {
@@ -107,10 +80,10 @@ func TestEntriesAsJSON(t *testing.T) {
 	assert.NotNil(t, json1)
 	expected1 := []k8sv1.JSON{
 		{Raw: []byte(
-			fmt.Sprintf(`{"key1":"%s","key2":%.0f,"key4":"%s","paas":"%s"}`,
-				paas1Value1,
+			fmt.Sprintf(`{"key1":"%s","key2":%.0f,"%s":"%s"}`,
+				otherValue1,
 				paas1Value2,
-				paas1Value4,
+				myKey,
 				paas1Name),
 		)},
 	}
@@ -121,18 +94,19 @@ func TestEntriesAsJSON(t *testing.T) {
 	assert.NotNil(t, json2)
 	expected2 := []k8sv1.JSON{
 		{Raw: []byte(
-			fmt.Sprintf(`{"key1":"%s","key4":"%s","paas":"%s"}`, paas1Value1, paas1Value4, paas1Name),
+			fmt.Sprintf(`{"key1":"%s","key4":"%s","%s":"%s"}`, paas1Value1, paas1Value4, myKey, paas1Name),
 		)},
 		{Raw: []byte(
-			fmt.Sprintf(`{"key1":"%s","key3":"%s","paas":"%s"}`,
+			fmt.Sprintf(`{"key1":"%s","key3":"%s","%s":"%s"}`,
 				paas2Value1,
 				paas2Value3,
+				myKey,
 				paas2Name,
 			))},
 	}
 	assert.Equal(t, expected2, json2)
 	entries3 := fields.Entries{
-		"paas3": fields.Elements{
+		"paas3": fields.ElementMap{
 			"key1": "value1",
 		},
 	}
@@ -152,9 +126,10 @@ func TestEntriesFromJSON(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, json1)
 
-	entries, err := fields.EntriesFromJSON(json1)
+	parsed1 := fields.Entries{}
+	err = parsed1.FromJSON(myKey, json1)
 	assert.NoError(t, err)
-	assert.Equal(t, entries1, entries)
+	assert.Equal(t, entries1, parsed1)
 
 	for _, jData := range []string{
 		fmt.Sprintf(`{"key1":"%s","key2":%.0f,"key4":"%s"}`, paas3Value1, paas3Value2, paas3Value4),
@@ -162,8 +137,9 @@ func TestEntriesFromJSON(t *testing.T) {
 	} {
 		t.Logf("testing with JSON data: %s", jData)
 		json2 := []k8sv1.JSON{{Raw: []byte(jData)}}
-		entries, err = fields.EntriesFromJSON(json2)
+		parsed2 := fields.Entries{}
+		err = parsed2.FromJSON(myKey, json2)
 		assert.Error(t, err)
-		assert.Nil(t, entries)
+		assert.Empty(t, parsed2)
 	}
 }

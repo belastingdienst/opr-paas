@@ -1,6 +1,6 @@
-// Package paasresource has a Resource interface which can be used for functions that should work with multiple Paas
+// Package api has a Resource interface which can be used for functions that should work with multiple Paas
 // resources.
-package paasresource
+package api
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

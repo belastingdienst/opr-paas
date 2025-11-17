@@ -11,7 +11,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator/fields"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -332,7 +332,7 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 		"default_key":  {Default: "default_value"},
 	})
 	require.NoError(t, err, "we should have no errors returned")
-	assert.Equal(t, fields.Elements{
+	assert.Equal(t, fields.ElementMap{
 		"git_url":      "https://github.com/org/other-repo",
 		"git_revision": "develop",
 		"git_path":     "argocd/myconfig",
