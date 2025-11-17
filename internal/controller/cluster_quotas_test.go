@@ -29,12 +29,15 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 		reqLbl        = "requestor-label"
 		qtaLbl        = "quota-label"
 		kubeInstLabel = "app.kubernetes.io/instance"
+		nsName        = "testNamespace"
 	)
 	var (
-		paas       *v1alpha2.Paas
-		reconciler *PaasReconciler
-		myConfig   v1alpha2.PaasConfig
-		paasName   = paasRequestor
+		paas           *v1alpha2.Paas
+		paasNoQuota    *v1alpha2.Paas
+		paasEmptyQuota *v1alpha2.Paas
+		reconciler     *PaasReconciler
+		myConfig       v1alpha2.PaasConfig
+		paasName       = paasRequestor
 	)
 	ctx := context.Background()
 
@@ -52,12 +55,56 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 			},
 			Spec: v1alpha2.PaasSpec{
 				Requestor: paasRequestor,
+				Namespaces: v1alpha2.PaasNamespaces{
+					nsName: v1alpha2.PaasNamespace{},
+				},
 				Capabilities: v1alpha2.PaasCapabilities{
 					capName: v1alpha2.PaasCapability{},
 				},
 				Quota: paasquota.Quota{
 					"cpu": resourcev1.MustParse("1"),
 				},
+			},
+		}
+		paasNoQuota = &v1alpha2.Paas{
+			ObjectMeta: metav1.ObjectMeta{
+				UID:  "MY-UID",
+				Name: "paas-no-quota",
+				Labels: map[string]string{
+					lbl1Key:       lbl1Value,
+					lbl2Key:       lbl2Value,
+					kubeInstLabel: "whatever",
+				},
+			},
+			Spec: v1alpha2.PaasSpec{
+				Requestor: paasRequestor,
+				Namespaces: v1alpha2.PaasNamespaces{
+					nsName: v1alpha2.PaasNamespace{},
+				},
+				Capabilities: v1alpha2.PaasCapabilities{
+					capName: v1alpha2.PaasCapability{},
+				},
+			},
+		}
+		paasEmptyQuota = &v1alpha2.Paas{
+			ObjectMeta: metav1.ObjectMeta{
+				UID:  "MY-UID",
+				Name: "paas-empty-quota",
+				Labels: map[string]string{
+					lbl1Key:       lbl1Value,
+					lbl2Key:       lbl2Value,
+					kubeInstLabel: "whatever",
+				},
+			},
+			Spec: v1alpha2.PaasSpec{
+				Requestor: paasRequestor,
+				Namespaces: v1alpha2.PaasNamespaces{
+					nsName: v1alpha2.PaasNamespace{},
+				},
+				Capabilities: v1alpha2.PaasCapabilities{
+					capName: v1alpha2.PaasCapability{},
+				},
+				Quota: paasquota.Quota{},
 			},
 		}
 		myConfig = v1alpha2.PaasConfig{
@@ -81,7 +128,8 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 				Templating: v1alpha2.ConfigTemplatingItems{
 					ClusterQuotaLabels: v1alpha2.ConfigTemplatingItem{
 						//revive:disable-next-line
-						"": "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" + kubeInstLabel + "\" }}{{$key}}: {{$value}}\n{{end}}{{end}}",
+						"": "{{ range $key, $value := .Paas.Labels }}{{ if ne $key \"" + kubeInstLabel + "\" }}" +
+							"{{$key}}: {{$value}}\n{{end}}{{end}}",
 					},
 				},
 			},
@@ -130,6 +178,36 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 				}
 				Expect(quota.ObjectMeta.Labels).NotTo(HaveKey(kubeInstLabel))
 			}
+		})
+	})
+
+	When("reconciling quota's for a paas with an empty quota block", func() {
+		It("reconciles successfully", func() {
+			err := reconciler.reconcileQuotas(ctx, paasEmptyQuota)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("creates all cluster resource quotas as expected", func() {
+			var quota quotav1.ClusterResourceQuota
+			err := reconciler.Get(ctx, types.NamespacedName{Name: "paas-empty-quota"}, &quota)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("clusterresourcequotas.quota.openshift.io" +
+				" \"paas-empty-quota\" not found"))
+		})
+	})
+
+	When("reconciling quota's for a paas without a quota block", func() {
+		It("reconciles successfully", func() {
+			err := reconciler.reconcileQuotas(ctx, paasNoQuota)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("creates all cluster resource quotas as expected", func() {
+			var quota quotav1.ClusterResourceQuota
+			err := reconciler.Get(ctx, types.NamespacedName{Name: "paas-no-quota"}, &quota)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("clusterresourcequotas.quota.openshift.io" +
+				" \"paas-no-quota\" not found"))
 		})
 	})
 })

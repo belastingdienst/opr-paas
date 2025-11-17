@@ -97,6 +97,7 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 		validatePaasNsName,
 		validatePaasNsGroups,
 		validatePaasNsSecrets,
+		validateQuota,
 	} {
 		var fieldErrs []*field.Error
 		fieldErrs, err = validator(ctx, v.client, myConfig, *paas, *paasns)
@@ -269,6 +270,24 @@ func validatePaasNsSecrets(
 		}
 	}
 
+	return errs, nil
+}
+
+func validateQuota(
+	ctx context.Context,
+	k8sClient client.Client,
+	conf v1alpha2.PaasConfig,
+	paas v1alpha2.Paas,
+	paasns v1alpha2.PaasNS,
+) ([]*field.Error, error) {
+	var errs []*field.Error
+	if len(paas.Spec.Quota) == 0 || paas.Spec.Quota == nil {
+		errs = append(errs, field.Invalid(
+			field.NewPath("Paas").Child("spec").Child("quota"),
+			"{}",
+			"PaasNs cannot be created when there is no quota defined in the parent Paas",
+		))
+	}
 	return errs, nil
 }
 

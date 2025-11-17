@@ -35,7 +35,9 @@ const (
 func TestCapabilityArgoCD(t *testing.T) {
 	paasSpec := api.PaasSpec{
 		Requestor: paasRequestor,
-		Quota:     quota.Quota{},
+		Quota: quota.Quota{
+			corev1.ResourceLimitsCPU: resource.MustParse("5"),
+		},
 		Capabilities: api.PaasCapabilities{
 			argoCapName: api.PaasCapability{
 				CustomFields: map[string]string{
