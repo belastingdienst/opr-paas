@@ -134,23 +134,17 @@ func (r *PaasReconciler) backendEnabledQuotas(
 	}
 	logger.Debug().Msgf("Need to manage resources for %d namespaces", len(nsDefs))
 
-	// if there are paasNs resources or if there are namespaces defined in the paas spec,
-	// we need a generic quota named after the paas
-	for _, nsDef := range nsDefs {
-		if nsDef.capName == "" {
-			// if the nsdef isn't a capability and the quota isn't empty, define a quota
-			if len(paas.Spec.Quota) > 0 {
-				var quota *quotav1.ClusterResourceQuota
-				quota, err = r.backendQuota(ctx, paas, "", paas.Spec.Quota)
-				if err != nil {
-					return nil, err
-				}
-				// add quota to the quota's definitions
-				quotas = append(quotas, quota)
-				break
-			}
+	// if the quota isn't empty, define a quota
+	if len(paas.Spec.Quota) > 0 {
+		var quota *quotav1.ClusterResourceQuota
+		quota, err = r.backendQuota(ctx, paas, "", paas.Spec.Quota)
+		if err != nil {
+			return nil, err
 		}
+		// add quota to the quota's definitions
+		quotas = append(quotas, quota)
 	}
+
 
 	for name, capability := range paas.Spec.Capabilities {
 		if capConfig, exists := myConfig.Spec.Capabilities[name]; !exists {
