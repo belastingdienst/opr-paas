@@ -157,6 +157,11 @@ func (r *PaasReconciler) paasCapabilityNss(
 		if !ok {
 			return nil, fmt.Errorf("capability %s is not in PaasConfig", capName)
 		}
+		// check if External is true, if so the cap shouldn't get quota or ns
+		if capConfig.QuotaSettings.External() {
+			continue
+		}
+
 		capNS := join(paas.Name, capName)
 		quota := capNS
 		if capConfig.QuotaSettings.Clusterwide {

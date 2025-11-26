@@ -160,6 +160,9 @@ var examplePaasConfig = v1alpha2.PaasConfig{
 					},
 				},
 			},
+			"capexternal": {
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{DefQuota: nil, MinQuotas: nil, MaxQuotas: nil},
+			},
 		},
 		ClusterWideArgoCDNamespace: "asns",
 		Debug:                      false,

@@ -98,6 +98,13 @@ For more information please check:
 - [api-guide on capability quota configuration](../development-guide/00_api.md#configcapability)
 - [api-guide on capability quota in the Paas](../development-guide/00_api.md#paascapability)
 
+#### External capabilities 
+
+In release <version_number> External capabilities were added. This enables the creation of Capabilities without quota or a namespace.
+An example use case of the external capability is the creation of a Harbor image registry. This is created outside the cluster that 
+the operator is running on but can be enabled as a capability by the customer team. A capability becomes external when all 3 quota 
+settings are set to nil.
+
 ### Configuring permissions
 
 For every capability the Paas operator can grant permissions to service accounts.
