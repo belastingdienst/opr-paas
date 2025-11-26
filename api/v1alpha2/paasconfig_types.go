@@ -163,11 +163,6 @@ type ConfigCapability struct {
 
 	// Settings to allow specific configuration specific to a capability
 	CustomFields map[string]ConfigCustomField `json:"custom_fields,omitempty"`
-
-	// external capabilities do not have quota, namespace, etc.
-	// +kubebuilder:default:=false
-	// +kubebuilder:validation:Optional
-	External bool `json:"external"`
 }
 
 // For each resource type go templating can be used to derive the labels to be set on the resource when created
@@ -229,7 +224,7 @@ type ConfigQuotaSettings struct {
 	Ratio float64 `json:"ratio"`
 
 	// The default quota which the enabled capability gets
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	DefQuota paasquota.Quota `json:"defaults"`
 
 	// The minimum quota which the enabled capability gets
@@ -239,6 +234,11 @@ type ConfigQuotaSettings struct {
 	// The maximum quota which the capability gets
 	// +kubebuilder:validation:Optional
 	MaxQuotas paasquota.Quota `json:"max"`
+}
+
+// External is true when no quota config is set
+func (cqs ConfigQuotaSettings) External() bool {
+	return len(cqs.DefQuota) == 0 && len(cqs.MaxQuotas) == 0 && len(cqs.MinQuotas) == 0
 }
 
 // This is an insoudeout representation of ConfigCapPerm, closer to rb representation

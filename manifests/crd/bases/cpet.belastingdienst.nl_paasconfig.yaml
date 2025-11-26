@@ -169,8 +169,6 @@ spec:
                           maximum: 1
                           minimum: 0
                           type: number
-                      required:
-                      - defaults
                       type: object
                   required:
                   - applicationset
@@ -425,11 +423,6 @@ spec:
                         type: array
                       description: Default permissions set for this capability
                       type: object
-                    external:
-                      default: false
-                      description: external capabilities do not have quota, namespace,
-                        etc.
-                      type: boolean
                     extra_permissions:
                       additionalProperties:
                         items:
@@ -480,8 +473,6 @@ spec:
                           maximum: 1
                           minimum: 0
                           type: number
-                      required:
-                      - defaults
                       type: object
                   required:
                   - quotas
