@@ -127,12 +127,10 @@ var _ = Describe("Rolebinding", Ordered, func() {
 			}
 		})
 		It("have set all expected labels", func() {
-			var (
-				expectedLabels = map[string]string{
-					lbl1Key: lbl1Value,
-					lbl2Key: lbl2Value,
-				}
-			)
+			expectedLabels := map[string]string{
+				lbl1Key: lbl1Value,
+				lbl2Key: lbl2Value,
+			}
 			var rb rbac.RoleBinding
 			err := reconciler.Get(ctx, types.NamespacedName{Namespace: ns1, Name: join("paas", tecRole1)}, &rb)
 			Expect(err).NotTo(HaveOccurred())

@@ -187,7 +187,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 						Message: "This config is the active config!",
 					},
 				},
-			}}
+			},
+		}
 
 		err := fakeClient.Create(ctx, &conf)
 		Expect(err).To(Not(HaveOccurred()))
