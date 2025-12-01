@@ -151,6 +151,10 @@ func (r *PaasReconciler) backendEnabledQuotas(
 		if capConfig, exists := myConfig.Spec.Capabilities[name]; !exists {
 			return nil, errors.New("a capability is requested, but not configured")
 		} else if !capConfig.QuotaSettings.Clusterwide {
+			// if capability is external, don't create quota's
+			if capConfig.QuotaSettings.External() {
+				continue
+			}
 			defaults := capConfig.QuotaSettings.DefQuota
 			quotaValues := capability.Quotas().MergeWith(defaults)
 			var capQuota *quotav1.ClusterResourceQuota

@@ -162,12 +162,10 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 		})
 
 		It("have set all expected labels", func() {
-			var (
-				expectedLabels = map[string]string{
-					lbl1Key: lbl1Value,
-					lbl2Key: lbl2Value,
-				}
-			)
+			expectedLabels := map[string]string{
+				lbl1Key: lbl1Value,
+				lbl2Key: lbl2Value,
+			}
 			for _, quotaName := range expectedQuotas {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Quota: %v\n", quotaName)
 				var quota quotav1.ClusterResourceQuota

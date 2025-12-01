@@ -11,19 +11,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
-var (
-	// PluginGeneratorRequestTotal is a prometheus metric which is a counter of
-	// the total processed plugin generator requests.
-	PluginGeneratorRequestTotal = func() *prometheus.CounterVec {
-		return prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "opr_paas_plugin_generator_requests_total",
-				Help: "Total number of plugin generator requests by HTTP status code.",
-			},
-			[]string{"code"},
-		)
-	}()
-)
+// PluginGeneratorRequestTotal is a prometheus metric which is a counter of
+// the total processed plugin generator requests.
+var PluginGeneratorRequestTotal = func() *prometheus.CounterVec {
+	return prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "opr_paas_plugin_generator_requests_total",
+			Help: "Total number of plugin generator requests by HTTP status code.",
+		},
+		[]string{"code"},
+	)
+}()
 
 func init() {
 	// Register custom metrics with the global prometheus registry
