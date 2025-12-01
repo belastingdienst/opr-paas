@@ -8,6 +8,7 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -15,6 +16,7 @@ import (
 var _ = Describe("NamespaceDef", func() {
 	const (
 		enabledCapName   = "enabled-cap1"
+		externalCapName  = "external-cap1"
 		disabledCapName1 = "disabled-cap1"
 		disabledCapName2 = "disabled-cap2"
 		paasName         = "my-paas"
@@ -68,7 +70,18 @@ var _ = Describe("NamespaceDef", func() {
 			},
 			Spec: v1alpha2.PaasConfigSpec{
 				Capabilities: map[string]v1alpha2.ConfigCapability{
-					enabledCapName:   {},
+					enabledCapName: {
+						QuotaSettings: v1alpha2.ConfigQuotaSettings{
+							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
+								corev1.ResourceLimitsCPU:       resourcev1.MustParse("6"),
+								corev1.ResourceLimitsMemory:    resourcev1.MustParse("7Gi"),
+								corev1.ResourceRequestsCPU:     resourcev1.MustParse("5"),
+								corev1.ResourceRequestsMemory:  resourcev1.MustParse("6Gi"),
+								corev1.ResourceRequestsStorage: resourcev1.MustParse("0"),
+							},
+						},
+					},
+					externalCapName:  {},
 					disabledCapName1: {},
 					disabledCapName2: {},
 				},
@@ -103,6 +116,9 @@ var _ = Describe("NamespaceDef", func() {
 			})
 			It("should return nsdefs for enabled capabilities", func() {
 				Expect(nsDefs).To(HaveKey(join(paasName, enabledCapName)))
+			})
+			It("should not return nsdefs for external capabilities", func() {
+				Expect(nsDefs).NotTo(HaveKey(join(paasName, externalCapName)))
 			})
 			It("should not return nsdefs for disabled capabilities", func() {
 				Expect(nsDefs).NotTo(HaveKey(join(paasName, disabledCapName1)))
