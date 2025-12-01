@@ -291,7 +291,8 @@ func setupMetricsTLS(f *flags, tlsOpts []func(*tls.Config)) (*certwatcher.CertWa
 }
 
 func createManager(f *flags, metricsServerOptions metricsserver.Options,
-	webhookTLSOpts []func(*tls.Config)) ctrl.Manager {
+	webhookTLSOpts []func(*tls.Config),
+) ctrl.Manager {
 	webhookServer := webhook.NewServer(webhook.Options{TLSOpts: webhookTLSOpts})
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{

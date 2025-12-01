@@ -167,7 +167,6 @@ type ConfigCapability struct {
 
 // For each resource type go templating can be used to derive the labels to be set on the resource when created
 type ConfigTemplatingItems struct {
-
 	// Templates to add fields to all capabilities
 	// +kubebuilder:validation:Optional
 	GenericCapabilityFields ConfigTemplatingItem `json:"genericCapabilityFields,omitempty"`

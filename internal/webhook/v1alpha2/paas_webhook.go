@@ -415,7 +415,8 @@ func validateCustomFields(
 
 // validateGroups returns a warning for any of the passed groups which contain both users and a query.
 func (*PaasCustomValidator) validateGroups(groups v1alpha2.PaasGroups,
-	groupUserFeatureFlag string) (warnings []string, errs []*field.Error) {
+	groupUserFeatureFlag string,
+) (warnings []string, errs []*field.Error) {
 	for key, grp := range groups {
 		if len(grp.Query) > 0 && len(grp.Users) > 0 {
 			warnings = append(warnings, fmt.Sprintf(
