@@ -128,14 +128,12 @@ var _ = Describe("Namespace", Ordered, func() {
 			}
 		})
 		It("have set all expected labels", func() {
-			var (
-				expectedLabels = map[string]string{
-					lbl1Key:           lbl1Value,
-					lbl2Key:           lbl2Value,
-					ManagedByLabelKey: paasName,
-					manByLbl:          join(manByPaas, manBySuffix),
-				}
-			)
+			expectedLabels := map[string]string{
+				lbl1Key:           lbl1Value,
+				lbl2Key:           lbl2Value,
+				ManagedByLabelKey: paasName,
+				manByLbl:          join(manByPaas, manBySuffix),
+			}
 			for nsName, nsDef := range nsDefs {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
 				var ns corev1.Namespace

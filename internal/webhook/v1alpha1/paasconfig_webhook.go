@@ -297,6 +297,10 @@ func validateConfigQuotaSettings(qs v1alpha1.ConfigQuotaSettings, rootPath *fiel
 	allErrs = append(allErrs, validateConfigDefQuota(qs, childPath)...)
 	allErrs = append(allErrs, validateConfigQuotaMinMax(qs, childPath)...)
 
+	if qs.External() {
+		return allErrs
+	}
+
 	// If DefQuota, MinQuotas, or MaxQuotas are provided, ensure they aren't empty maps.
 	if qs.DefQuota != nil && len(qs.DefQuota) == 0 {
 		allErrs = append(allErrs, field.Invalid(

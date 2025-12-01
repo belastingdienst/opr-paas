@@ -800,8 +800,10 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			}
 			err = reconciler.Get(
 				ctx,
-				types.NamespacedName{Namespace: join(paasName, ns1Name),
-					Name: ns1SecretHashedName},
+				types.NamespacedName{
+					Namespace: join(paasName, ns1Name),
+					Name:      ns1SecretHashedName,
+				},
 				&secret,
 			)
 			Expect(err).ToNot(HaveOccurred())
@@ -809,8 +811,10 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(secret.Data["sshPrivateKey"]).To(Equal([]byte(ns1SecretValue)))
 			err = reconciler.Get(
 				ctx,
-				types.NamespacedName{Namespace: join(paasName, ns2Name),
-					Name: ns2SecretHashedName},
+				types.NamespacedName{
+					Namespace: join(paasName, ns2Name),
+					Name:      ns2SecretHashedName,
+				},
 				&secret,
 			)
 			Expect(err).ToNot(HaveOccurred())
@@ -891,8 +895,10 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			var secret corev1.Secret
 			err := reconciler.Get(
 				ctx,
-				types.NamespacedName{Namespace: join(paasName, ns2Name),
-					Name: ns2SecretHashedName},
+				types.NamespacedName{
+					Namespace: join(paasName, ns2Name),
+					Name:      ns2SecretHashedName,
+				},
 				&secret,
 			)
 			Expect(err.Error()).To(Equal("secrets \"" + ns2SecretHashedName + "\" not found"))
