@@ -602,7 +602,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			latestConf.Spec.Capabilities["bar"] = v1alpha2.ConfigCapability{
 				QuotaSettings: v1alpha2.ConfigQuotaSettings{
 					DefQuota: map[corev1.ResourceName]resource.Quantity{"bar": resource.MustParse("1")},
-				}}
+				},
+			}
 			err = k8sClient.Update(ctx, latestConf)
 			Expect(err).To(Not(HaveOccurred()))
 
