@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -58,7 +57,6 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 
 	_ = getOrFail(ctx, fmt.Sprintf("%s-%s", paasWithCapabilityTekton, "tekton"),
 		cfg.Namespace(), &corev1.Namespace{}, t, cfg)
-	applicationSet := getOrFail(ctx, TektonApplicationSet, asTektonNamespace, &argo.ApplicationSet{}, t, cfg)
 	tektonQuota := getOrFail(ctx, paasTektonCRQ, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
 	// ClusterResource is created with the same name as the Paas
@@ -67,10 +65,7 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	// Tekton should be enabled
 	assert.Contains(t, paas.Spec.Capabilities, tektonCapName)
 
-	// ApplicationSet exist
-	assert.NotEmpty(t, applicationSet)
-
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
+	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(tektonCapName)
 
 	// List entries should not be empty
 	require.NoError(t, appSetListEntriesError)
@@ -113,8 +108,7 @@ func assertCapTektonDeleted(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	assert.NotContains(t, namespaceList.Items, paasWithCapabilityTekton)
 
 	// ApplicationSet is deleted
-	applicationSet := getOrFail(ctx, TektonApplicationSet, asTektonNamespace, &argo.ApplicationSet{}, t, cfg)
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
+	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(tektonCapName)
 
 	// List Entries should be empty
 	require.NoError(t, appSetListEntriesError)

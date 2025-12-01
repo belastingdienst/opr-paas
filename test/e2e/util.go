@@ -2,12 +2,12 @@ package e2e
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
 
 	paasapi "github.com/belastingdienst/opr-paas/v3/api"
-	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -88,22 +88,24 @@ func listOrFail[L k8s.ObjectList](ctx context.Context, namespace string, obj L, 
 // getApplicationSetListEntries returns the parsed elements of all list generators
 // (https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-List/)
 // which are present in the passed ApplicationSet.
-func getApplicationSetListEntries(applicationSet *argo.ApplicationSet) (allEntries fields.Entries, err error) {
-	allEntries = make(fields.Entries)
-	for _, generator := range applicationSet.Spec.Generators {
-		if generator.List != nil {
-			generatorEntries := fields.Entries{}
-			err = generatorEntries.FromJSON("paas", generator.List.Elements)
-			if err != nil {
-				return nil, err
-			}
-			for key, entry := range generatorEntries {
-				allEntries[key] = entry
+func getApplicationSetListEntries(capName string) (allEntries fields.Entries, err error) {
+	/*
+		allEntries = make(fields.Entries)
+		for _, generator := range applicationSet.Spec.Generators {
+			if generator.List != nil {
+				generatorEntries := fields.Entries{}
+				err = generatorEntries.FromJSON("paas", generator.List.Elements)
+				if err != nil {
+					return nil, err
+				}
+				for key, entry := range generatorEntries {
+					allEntries[key] = entry
+				}
 			}
 		}
-	}
+	*/
 
-	return allEntries, nil
+	return allEntries, errors.New("TODO: need plugin generator version of getApplicationSetListEntries")
 }
 
 // waitForStatus accepts a k8s object with a `.status.conditions` block, and waits until the resource has been updated

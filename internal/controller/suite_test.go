@@ -20,8 +20,6 @@ import (
 	"slices"
 	"testing"
 
-	appv1 "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
-
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -131,9 +129,6 @@ var _ = BeforeSuite(func() {
 	err = quotav1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = appv1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
 	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
@@ -148,26 +143,6 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
-
-func patchAppSet(ctx context.Context, newAppSet *appv1.ApplicationSet) {
-	oldAppSet := &appv1.ApplicationSet{}
-	namespacedName := types.NamespacedName{
-		Name:      newAppSet.Name,
-		Namespace: newAppSet.Namespace,
-	}
-	err := k8sClient.Get(ctx, namespacedName, oldAppSet)
-	if err == nil {
-		// Patch
-		patch := client.MergeFrom(oldAppSet.DeepCopy())
-		oldAppSet.Spec = newAppSet.Spec
-		err = k8sClient.Patch(ctx, oldAppSet, patch)
-		Expect(err).NotTo(HaveOccurred())
-	} else {
-		Expect(err.Error()).To(MatchRegexp(`applicationsets.argoproj.io .* not found`))
-		err = k8sClient.Create(ctx, newAppSet)
-		Expect(err).NotTo(HaveOccurred())
-	}
-}
 
 func createPaasPrivateKeySecret(ctx context.Context, ns string, name string, privateKey []byte) {
 	// Set up private key
@@ -283,18 +258,4 @@ func getPaas(ctx context.Context, paasName string) *v1alpha2.Paas {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(paas).NotTo(BeNil())
 	return paas
-}
-
-func assureAppSet(ctx context.Context, name string, namespace string) {
-	appSet := &appv1.ApplicationSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: appv1.ApplicationSetSpec{
-			Generators: []appv1.ApplicationSetGenerator{},
-		},
-	}
-	err := k8sClient.Create(ctx, appSet)
-	Expect(err).NotTo(HaveOccurred())
 }

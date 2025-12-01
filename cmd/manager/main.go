@@ -31,7 +31,6 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/controller"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	argoresources "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/internal/version"
 	webhookv1alpha1 "github.com/belastingdienst/opr-paas/v3/internal/webhook/v1alpha1"
 	webhookv1alpha2 "github.com/belastingdienst/opr-paas/v3/internal/webhook/v1alpha2"
@@ -72,7 +71,6 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(quotav1.AddToScheme(scheme))
 	utilruntime.Must(userv1.AddToScheme(scheme))
-	utilruntime.Must(argoresources.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -18,6 +17,7 @@ import (
 )
 
 const (
+	ssoCapName              = "sso"
 	paasWithCapabilitySSO   = "paasnaam"
 	paasSSO                 = "paasnaam-sso"
 	ssoApplicationSet       = "ssoas"
@@ -29,7 +29,7 @@ func TestCapabilitySSO(t *testing.T) {
 		Requestor: "paas-user",
 		Quota:     make(quota.Quota),
 		Capabilities: api.PaasCapabilities{
-			"sso": api.PaasCapability{},
+			ssoCapName: api.PaasCapability{},
 		},
 	}
 
@@ -47,7 +47,6 @@ func TestCapabilitySSO(t *testing.T) {
 func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapabilitySSO, t, cfg)
 	namespace := getOrFail(ctx, paasSSO, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
-	applicationSet := getOrFail(ctx, ssoApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
 	ssoQuota := getOrFail(ctx, paasSSO, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
 	// ClusterResource is created with the same name as the Paas
@@ -59,10 +58,7 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	// SSO should be enabled
 	assert.Contains(t, paas.Spec.Capabilities, "sso")
 
-	// ApplicationSet exist
-	assert.NotEmpty(t, applicationSet)
-
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
+	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(ssoCapName)
 
 	// List entries should not be empty
 	require.NoError(t, appSetListEntriesError)
@@ -109,8 +105,7 @@ func assertCapSSODeleted(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.NotContains(t, namespaceList.Items, paasWithCapabilitySSO)
 
 	// ApplicationSet is deleted
-	applicationSet := getOrFail(ctx, ssoApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
+	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(ssoCapName)
 
 	// List Entries should be empty
 	require.NoError(t, appSetListEntriesError)

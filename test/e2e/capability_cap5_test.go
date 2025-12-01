@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -18,6 +17,7 @@ import (
 )
 
 const (
+	cap5Name            = "cap5"
 	paasWithCapability5 = "cap5paas"
 	paasCap5Ns          = "cap5paas-cap5"
 	cap5ApplicationSet  = "cap5as"
@@ -28,7 +28,7 @@ func TestCapabilityCap5(t *testing.T) {
 		Requestor: "paas-user",
 		Quota:     make(quota.Quota),
 		Capabilities: api.PaasCapabilities{
-			"cap5": api.PaasCapability{},
+			cap5Name: api.PaasCapability{},
 		},
 	}
 
@@ -46,7 +46,6 @@ func TestCapabilityCap5(t *testing.T) {
 func assertCap5Created(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	paas := getPaas(ctx, paasWithCapability5, t, cfg)
 	namespace := getOrFail(ctx, paasCap5Ns, cfg.Namespace(), &corev1.Namespace{}, t, cfg)
-	applicationSet := getOrFail(ctx, cap5ApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
 	cap5Quota := getOrFail(ctx, paasCap5Ns, cfg.Namespace(), &quotav1.ClusterResourceQuota{}, t, cfg)
 
 	// ClusterResource is created with the same name as the PaaS
@@ -58,10 +57,7 @@ func assertCap5Created(ctx context.Context, t *testing.T, cfg *envconf.Config) c
 	// cap5 should be enabled
 	assert.Contains(t, paas.Spec.Capabilities, "cap5")
 
-	// ApplicationSet exist
-	assert.NotEmpty(t, applicationSet)
-
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
+	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(cap5Name)
 
 	// List entries should not be empty
 	require.NoError(t, appSetListEntriesError)
@@ -108,8 +104,7 @@ func assertCap5Deleted(ctx context.Context, t *testing.T, cfg *envconf.Config) c
 	assert.NotContains(t, namespaceList.Items, paasWithCapability5)
 
 	// ApplicationSet is deleted
-	applicationSet := getOrFail(ctx, cap5ApplicationSet, applicationSetNamespace, &argo.ApplicationSet{}, t, cfg)
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(applicationSet)
+	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(cap5Name)
 
 	// List Entries should be empty
 	require.NoError(t, appSetListEntriesError)

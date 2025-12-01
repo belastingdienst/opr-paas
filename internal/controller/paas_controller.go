@@ -230,8 +230,6 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		r.reconcileClusterWideQuota,
 		r.reconcileNamespacedResources,
 		r.reconcileGroups,
-		r.ensureAppSetCaps,
-		r.finalizeDisabledAppSetCaps,
 	}
 
 	for _, reconciler := range paasReconcilers {
@@ -404,7 +402,6 @@ func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha2.Paas) 
 		r.finalizeGroups,
 		r.finalizePaasClusterRoleBindings,
 		r.finalizeClusterWideQuotas,
-		r.finalizeAllAppSetCaps,
 	}
 
 	for _, reconciler := range paasReconcilers {
