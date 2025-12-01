@@ -127,13 +127,11 @@ var _ = Describe("Group controller", Ordered, func() {
 		})
 
 		It("have set all expected labels", func() {
-			var (
-				expectedLabels = map[string]string{
-					lbl1Key:           lbl1Value,
-					lbl2Key:           lbl2Value,
-					ManagedByLabelKey: paas.Name,
-				}
-			)
+			expectedLabels := map[string]string{
+				lbl1Key:           lbl1Value,
+				lbl2Key:           lbl2Value,
+				ManagedByLabelKey: paas.Name,
+			}
 			paas.Spec.Groups = v1alpha2.PaasGroups{
 				group.Name: v1alpha2.PaasGroup{Users: []string{"u1", "u2"}},
 			}
@@ -163,10 +161,11 @@ var _ = Describe("Group controller", Ordered, func() {
 				"warn":  {groups: true},
 				"block": {},
 			} {
-				paas = &v1alpha2.Paas{ObjectMeta: metav1.ObjectMeta{
-					Name: "my-paas",
-					UID:  "abc", // Needed or owner references fail
-				},
+				paas = &v1alpha2.Paas{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-paas",
+						UID:  "abc", // Needed or owner references fail
+					},
 					Spec: v1alpha2.PaasSpec{
 						Groups: v1alpha2.PaasGroups{
 							"some_group": v1alpha2.PaasGroup{
