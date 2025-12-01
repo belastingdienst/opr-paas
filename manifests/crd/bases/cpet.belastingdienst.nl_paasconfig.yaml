@@ -169,8 +169,6 @@ spec:
                           maximum: 1
                           minimum: 0
                           type: number
-                      required:
-                      - defaults
                       type: object
                   required:
                   - applicationset
@@ -475,8 +473,6 @@ spec:
                           maximum: 1
                           minimum: 0
                           type: number
-                      required:
-                      - defaults
                       type: object
                   required:
                   - quotas
