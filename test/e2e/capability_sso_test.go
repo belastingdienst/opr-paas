@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -58,14 +59,22 @@ func assertCapSSOCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	// SSO should be enabled
 	assert.Contains(t, paas.Spec.Capabilities, "sso")
 
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(ssoCapName)
+	applicationSetListEntries, appSetListEntriesError := getCapFieldsForPaas(
+		forwardPort,
+		ssoCapName,
+		paasWithCapabilitySSO,
+	)
 
 	// List entries should not be empty
 	require.NoError(t, appSetListEntriesError)
-	assert.Len(t, applicationSetListEntries, 1)
-
-	// At least one JSON object should have "paas": "paasnaam"
-	assert.Contains(t, applicationSetListEntries, paasWithCapabilitySSO)
+	assert.Equal(t, fields.ElementMap{
+		"paas":       paasWithCapabilitySSO,
+		"requestor":  "paas-user",
+		"service":    paasWithCapabilitySSO,
+		"subservice": "<no value>",
+	},
+		applicationSetListEntries,
+	)
 
 	// Check whether the LabelSelector is specific to the paasnaam-sso namespace
 	labelSelector := ssoQuota.Spec.Selector.LabelSelector
@@ -105,7 +114,11 @@ func assertCapSSODeleted(ctx context.Context, t *testing.T, cfg *envconf.Config)
 	assert.NotContains(t, namespaceList.Items, paasWithCapabilitySSO)
 
 	// ApplicationSet is deleted
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(ssoCapName)
+	applicationSetListEntries, appSetListEntriesError := getCapFieldsForPaas(
+		forwardPort,
+		ssoCapName,
+		paasWithCapabilitySSO,
+	)
 
 	// List Entries should be empty
 	require.NoError(t, appSetListEntriesError)

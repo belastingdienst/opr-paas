@@ -64,11 +64,9 @@ func TestCapabilityArgoCD(t *testing.T) {
 }
 
 func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	entries, err := getApplicationSetListEntries(argoCapName)
+	entries, err := getCapFieldsForPaas(forwardPort, argoCapName, paasWithArgo)
 	require.NoError(t, err)
 
-	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
-	assert.Contains(t, entries, paasWithArgo)
 	assert.Equal(t, fields.ElementMap{
 		"git_path":     paasArgoGitPath,
 		"git_revision": paasArgoGitRevision,
@@ -78,7 +76,7 @@ func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config
 		"requestor":  paasRequestor,
 		"service":    "paas",
 		"subservice": "capability",
-	}, entries[paasWithArgo])
+	}, entries)
 
 	assert.NotNil(
 		t,
@@ -141,13 +139,12 @@ func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config
 	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
-	entries, err := getApplicationSetListEntries(argoCapName)
+	entries, err := getCapFieldsForPaas(forwardPort, argoCapName, paasWithArgo)
 	require.NoError(t, err)
 
 	// For now this still applies, later we move the git_.. properties to the appSet as well
 	// Assert AppSet entry updated accordingly
-	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
-	assert.Equal(t,
+	assert.Equal(t, entries,
 		fields.ElementMap{
 			"git_path":     paasArgoGitPath,
 			"git_revision": updatedRevision,
@@ -157,7 +154,6 @@ func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config
 			"service":      "paas",
 			"subservice":   "capability",
 		},
-		entries[paasWithArgo],
 		"ApplicationSet List generator contains the correct parameters",
 	)
 

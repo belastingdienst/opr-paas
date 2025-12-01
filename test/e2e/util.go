@@ -1,13 +1,16 @@
 package e2e
 
 import (
+	"bytes"
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
 	paasapi "github.com/belastingdienst/opr-paas/v3/api"
+	"github.com/belastingdienst/opr-paas/v3/api/plugin"
 	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -23,6 +26,11 @@ const (
 	// Interval for polling k8s to wait for resource changes
 	waitInterval = 1 * time.Second
 	waitTimeout  = 1 * time.Minute
+)
+
+var (
+	forwardPort int
+	pluginToken string
 )
 
 // deleteResourceSync requests resource deletion and returns once k8s has successfully deleted it.
@@ -85,27 +93,52 @@ func listOrFail[L k8s.ObjectList](ctx context.Context, namespace string, obj L, 
 	return obj
 }
 
-// getApplicationSetListEntries returns the parsed elements of all list generators
+// getCapFieldsForPaas returns the parsed elements of all list generators
 // (https://argo-cd.readthedocs.io/en/stable/operator-manual/applicationset/Generators-List/)
 // which are present in the passed ApplicationSet.
-func getApplicationSetListEntries(capName string) (allEntries fields.Entries, err error) {
-	/*
-		allEntries = make(fields.Entries)
-		for _, generator := range applicationSet.Spec.Generators {
-			if generator.List != nil {
-				generatorEntries := fields.Entries{}
-				err = generatorEntries.FromJSON("paas", generator.List.Elements)
-				if err != nil {
-					return nil, err
-				}
-				for key, entry := range generatorEntries {
-					allEntries[key] = entry
-				}
-			}
-		}
-	*/
+func getCapFieldsForPaas(port int, capName string, paasName string) (allEntries fields.ElementMap, err error) {
+	url := fmt.Sprintf("http://localhost:%d/api/v1/getparams.execute", port)
+	pluginRequest := plugin.Request{
+		ApplicationSetName: capName,
+		Input:              plugin.Input{Parameters: fields.ElementMap{"capability": capName}},
+	}
+	body, err := json.Marshal(pluginRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	return allEntries, errors.New("TODO: need plugin generator version of getApplicationSetListEntries")
+	httpRequest, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpRequest.Header.Set("Content-Type", "application/json")
+
+	httpRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", pluginToken))
+
+	client := &http.Client{}
+	httpResponse, err := client.Do(httpRequest)
+	if err != nil {
+		return nil, err
+	}
+	defer httpResponse.Body.Close()
+
+	if httpResponse.StatusCode < http.StatusOK || httpResponse.StatusCode >= http.StatusMultipleChoices {
+		return nil, fmt.Errorf("server error: %s", httpResponse.Status)
+	}
+
+	var responseBody plugin.Response
+
+	if err = json.NewDecoder(httpResponse.Body).Decode(&responseBody); err != nil {
+		return nil, fmt.Errorf("cannot decode json: %w", err)
+	}
+	for _, customFields := range responseBody.Output.Parameters {
+		if value, ok := customFields["paas"]; ok && value == paasName {
+			return customFields, nil
+		}
+	}
+
+	return nil, nil
 }
 
 // waitForStatus accepts a k8s object with a `.status.conditions` block, and waits until the resource has been updated

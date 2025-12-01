@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -57,14 +58,15 @@ func assertCap5Created(ctx context.Context, t *testing.T, cfg *envconf.Config) c
 	// cap5 should be enabled
 	assert.Contains(t, paas.Spec.Capabilities, "cap5")
 
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(cap5Name)
-
-	// List entries should not be empty
+	applicationSetListEntries, appSetListEntriesError := getCapFieldsForPaas(forwardPort, cap5Name, paasWithCapability5)
 	require.NoError(t, appSetListEntriesError)
-	assert.Len(t, applicationSetListEntries, 1)
-
-	// At least one JSON object should have "paas": "cap5paas"
-	assert.Contains(t, applicationSetListEntries, paasWithCapability5)
+	assert.Equal(t, applicationSetListEntries, fields.ElementMap{
+		"paas":       paasWithCapability5,
+		"requestor":  "paas-user",
+		"service":    paasWithCapability5,
+		"subservice": "<no value>",
+	},
+	)
 
 	// Check whether the LabelSelector is specific to the cap5paas-cap5 namespace
 	labelSelector := cap5Quota.Spec.Selector.LabelSelector
@@ -104,7 +106,7 @@ func assertCap5Deleted(ctx context.Context, t *testing.T, cfg *envconf.Config) c
 	assert.NotContains(t, namespaceList.Items, paasWithCapability5)
 
 	// ApplicationSet is deleted
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(cap5Name)
+	applicationSetListEntries, appSetListEntriesError := getCapFieldsForPaas(forwardPort, cap5Name, paasWithCapability5)
 
 	// List Entries should be empty
 	require.NoError(t, appSetListEntriesError)

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -65,14 +66,22 @@ func assertCapTektonCreated(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	// Tekton should be enabled
 	assert.Contains(t, paas.Spec.Capabilities, tektonCapName)
 
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(tektonCapName)
+	applicationSetListEntries, appSetListEntriesError := getCapFieldsForPaas(
+		forwardPort,
+		tektonCapName,
+		paasWithCapabilityTekton,
+	)
 
 	// List entries should not be empty
 	require.NoError(t, appSetListEntriesError)
-	assert.Len(t, applicationSetListEntries, 1)
-
-	// At least one JSON object should have "paas": "paasnaam"
-	assert.Contains(t, applicationSetListEntries, paasWithCapabilityTekton)
+	assert.Equal(t, applicationSetListEntries,
+		fields.ElementMap{
+			"paas":       paasWithCapabilityTekton,
+			"requestor":  "paas-user",
+			"service":    paasWithCapabilityTekton,
+			"subservice": "<no value>",
+		},
+	)
 
 	// Check whether the LabelSelector is specific to the paasnaam-Tekton namespace
 	labelSelector := tektonQuota.Spec.Selector.LabelSelector
@@ -108,7 +117,11 @@ func assertCapTektonDeleted(ctx context.Context, t *testing.T, cfg *envconf.Conf
 	assert.NotContains(t, namespaceList.Items, paasWithCapabilityTekton)
 
 	// ApplicationSet is deleted
-	applicationSetListEntries, appSetListEntriesError := getApplicationSetListEntries(tektonCapName)
+	applicationSetListEntries, appSetListEntriesError := getCapFieldsForPaas(
+		forwardPort,
+		tektonCapName,
+		paasWithCapabilityTekton,
+	)
 
 	// List Entries should be empty
 	require.NoError(t, appSetListEntriesError)
