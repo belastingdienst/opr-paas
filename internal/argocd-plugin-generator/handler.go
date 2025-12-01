@@ -80,14 +80,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var input plugin.Input
-	if err = json.Unmarshal(body, &input); err != nil {
+	var request plugin.Request
+	if err = json.Unmarshal(body, &request); err != nil {
 		logger.Error().Bytes("body", body).Msg("invalid json")
 		http.Error(w, fmt.Sprintf("invalid json: %v", err), http.StatusBadRequest)
 		return
 	}
 
-	result, err := h.service.Generate(ctx, input.Input.Parameters)
+	result, err := h.service.Generate(ctx, request.Input.Parameters)
 	if err != nil {
 		logger.Error().AnErr("error", err).Msg("generation error")
 		http.Error(w, fmt.Sprintf("generation error: %v", err), http.StatusInternalServerError)
