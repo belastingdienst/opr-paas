@@ -64,8 +64,12 @@ plugins:
   - search
   - social
   - tags
-  - privacy
+  - privacy:
+      assets_exclude:
+        - kroki.io/*
+        - kroki:8000/*
   - kroki:
+      ServerURL: !ENV [KROKI_SERVER_URL, 'https://kroki.io']
       HttpMethod: POST
   - literate-nav:
       nav_file: README.md
