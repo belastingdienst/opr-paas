@@ -18,8 +18,19 @@ jobs:
   build:
     name: Build documentation
     runs-on: ubuntu-latest
+    
+    services:
+      kroki:
+        image: yuzutech/kroki:latest
+        ports:
+          - 8000:8000
+        options: >-
+          --health-cmd "curl -f http://localhost:8000/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
@@ -86,6 +97,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           STEPS_EXTRACT_SHORT_TAG_OUTPUTS_SHORT_TAG: ${{ steps.extract_short_tag.outputs.SHORT_TAG }}
+          KROKI_SERVER_URL: http://kroki:8000
         run: |
           SHORT_TAG=${STEPS_EXTRACT_SHORT_TAG_OUTPUTS_SHORT_TAG}
           mike deploy --update-aliases --push --branch=gh-pages "$SHORT_TAG" latest
