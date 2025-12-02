@@ -69,8 +69,8 @@ plugins:
         - kroki.io/*
         - kroki:8000/*
   - kroki:
-      ServerURL: !ENV [KROKI_SERVER_URL, 'https://kroki.io']
-      HttpMethod: POST
+      server_url: !ENV [KROKI_SERVER_URL, 'https://kroki.io']
+      http_method: POST
   - literate-nav:
       nav_file: README.md
       implicit_index: true
