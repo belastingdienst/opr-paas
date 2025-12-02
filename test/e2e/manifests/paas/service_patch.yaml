@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: opr-paas
+  name: webhook-service
+  namespace: paas-system
+spec:
+  ports:
+    - protocol: TCP
+      port: 4355
+      targetPort: 4355
+      name: plugin-generator
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      name: http
+    - port: 443
+      protocol: TCP
+      targetPort: 9443
+      name: webhook

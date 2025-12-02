@@ -207,7 +207,7 @@ jobs:
           sleep 10s
           kustomize build test/e2e/manifests/paas-context | kubectl apply -f -
       - name: Deploy operator
-        run: make deploy
+        run: make deploy_with_plugin_generator
       - name: Wait for operator deployment to be ready
         run: |
           kubectl wait --for=condition=Available deployment/paas-controller-manager -n paas-system --timeout=120s
