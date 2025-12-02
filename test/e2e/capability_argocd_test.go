@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	argo "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -64,11 +64,9 @@ func TestCapabilityArgoCD(t *testing.T) {
 }
 
 func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
-	entries, _ := getApplicationSetListEntries(argoAppSet)
+	entries, err := getCapFieldsForPaas(forwardPort, argoCapName, paasWithArgo)
+	require.NoError(t, err)
 
-	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
-	assert.Contains(t, entries, paasWithArgo)
 	assert.Equal(t, fields.ElementMap{
 		"git_path":     paasArgoGitPath,
 		"git_revision": paasArgoGitRevision,
@@ -78,7 +76,7 @@ func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config
 		"requestor":  paasRequestor,
 		"service":    "paas",
 		"subservice": "capability",
-	}, entries[paasWithArgo])
+	}, entries)
 
 	assert.NotNil(
 		t,
@@ -141,13 +139,12 @@ func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config
 	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
-	argoAppSet := getOrFail(ctx, "argoas", "asns", &argo.ApplicationSet{}, t, cfg)
-	entries, _ := getApplicationSetListEntries(argoAppSet)
+	entries, err := getCapFieldsForPaas(forwardPort, argoCapName, paasWithArgo)
+	require.NoError(t, err)
 
 	// For now this still applies, later we move the git_.. properties to the appSet as well
 	// Assert AppSet entry updated accordingly
-	assert.Len(t, entries, 1, "ApplicationSet contains one List generator")
-	assert.Equal(t,
+	assert.Equal(t, entries,
 		fields.ElementMap{
 			"git_path":     paasArgoGitPath,
 			"git_revision": updatedRevision,
@@ -157,7 +154,6 @@ func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config
 			"service":      "paas",
 			"subservice":   "capability",
 		},
-		entries[paasWithArgo],
 		"ApplicationSet List generator contains the correct parameters",
 	)
 

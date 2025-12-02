@@ -46,3 +46,5 @@ install.yaml
 !/bundle/manifests/opr-paas.clusterserviceversion.yaml
 !/bundle.Dockerfile
 !/bundle/metadata/
+
+test/e2e/manifests/paas/generator-secret.yaml
