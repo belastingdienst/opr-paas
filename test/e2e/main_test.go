@@ -7,33 +7,17 @@ See LICENSE.md for details.
 package e2e
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
-	"log"
-	"net/http"
 	"os"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/portforward"
-	"k8s.io/client-go/transport/spdy"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 
-	quotav1 "github.com/openshift/api/quota/v1"
-	userv1 "github.com/openshift/api/user/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/e2e-framework/klient/k8s"
-	"sigs.k8s.io/e2e-framework/klient/k8s/resources"
-	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
 	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
 
 	"sigs.k8s.io/e2e-framework/klient/conf"
@@ -43,8 +27,10 @@ import (
 
 const (
 	systemNamespace      = "paas-system"
+	tokenSecretName      = "generator-token"
+	tokenSecretKey       = "ARGOCD_GENERATOR_TOKEN"
 	generatorServiceName = "webhook-service"
-	pluginPort           = 4355
+	generatorServicePort = 4355
 )
 
 var (
@@ -206,36 +192,6 @@ var (
 
 // end examplePaasConfig
 
-func createPaasConfig(ctx context.Context, cfg *envconf.Config) error {
-	paasconfig := &v1alpha2.PaasConfig{}
-	*paasconfig = examplePaasConfig
-
-	// Create PaasConfig resource for testing
-	err := cfg.Client().Resources().Create(ctx, paasconfig)
-	if err != nil {
-		return err
-	}
-
-	waitUntilPaasConfigExists := conditions.New(cfg.Client().Resources()).
-		ResourceMatch(paasconfig, func(obj k8s.Object) bool {
-			return obj.(*v1alpha2.PaasConfig).Name == paasconfig.Name
-		})
-	return waitForDefaultOpts(ctx, waitUntilPaasConfigExists)
-}
-
-func retrieveBearerToken(ctx context.Context, cfg *envconf.Config) error {
-	var tokenSecret = &corev1.Secret{}
-	if err := cfg.Client().Resources().Get(ctx, "generator-token", systemNamespace, tokenSecret); err != nil {
-		return err
-	}
-	token, ok := tokenSecret.Data["ARGOCD_GENERATOR_TOKEN"]
-	if !ok {
-		return errors.New("ARGOCD_GENERATOR_TOKEN not in generator token data")
-	}
-	pluginToken = string(token)
-	return nil
-}
-
 func TestMain(m *testing.M) {
 	testenv = env.New()
 
@@ -262,15 +218,20 @@ func TestMain(m *testing.M) {
 	// Global setup
 	testenv.Setup(
 		func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-			err := createPaasConfig(ctx, cfg)
+			err := createPaasConfig(ctx, cfg, examplePaasConfig)
 			if err != nil {
 				return ctx, err
 			}
-			err = retrieveBearerToken(ctx, cfg)
+			err = retrieveBearerToken(ctx, cfg, systemNamespace, tokenSecretName, tokenSecretKey)
 			if err != nil {
 				return ctx, err
 			}
-			forwardPort, pfDone, err = startPortForward(cfg.Client().RESTConfig())
+			forwardPort, pfDone, err = startPortForward(
+				cfg.Client().RESTConfig(),
+				systemNamespace,
+				generatorServiceName,
+				generatorServicePort,
+			)
 			if err != nil {
 				return ctx, err
 			}
@@ -305,124 +266,4 @@ func TestMain(m *testing.M) {
 
 	// Run tests
 	os.Exit(testenv.Run(m))
-}
-
-func registerSchemes(cfg *envconf.Config) error {
-	r, err := resources.New(cfg.Client().RESTConfig())
-	if err != nil {
-		return err
-	}
-	scheme := r.GetScheme()
-
-	for _, install := range []func(*runtime.Scheme) error{
-		v1alpha1.AddToScheme,
-		v1alpha2.AddToScheme,
-		quotav1.Install,
-		userv1.Install,
-	} {
-		install(scheme)
-	}
-
-	return nil
-}
-
-func startPortForward(
-	config *rest.Config,
-) (int, func(), error) {
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return 0, nil, fmt.Errorf("Failed to create clientset: %v", err)
-	}
-	podName, err := GetPodNameForService(clientset, systemNamespace, generatorServiceName)
-	if err != nil {
-		return 0, nil, err
-	}
-	req := clientset.CoreV1().RESTClient().Post().
-		Resource("pods").
-		Namespace(systemNamespace).
-		Name(podName).
-		SubResource("portforward")
-
-	transport, upgrader, err := spdy.RoundTripperFor(config)
-	if err != nil {
-		return 0, nil, fmt.Errorf("error on round tripper: %w", err)
-	}
-
-	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", req.URL())
-
-	// 2. Setup communication channels
-	stopChan := make(chan struct{}, 1)
-	readyChan := make(chan struct{})
-
-	// Buffer for error logs
-	out, errOut := new(bytes.Buffer), new(bytes.Buffer)
-
-	// Port 0 makes OS select an open port
-	ports := []string{fmt.Sprintf("0:%d", pluginPort)}
-
-	pf, err := portforward.New(dialer, ports, stopChan, readyChan, out, errOut)
-	if err != nil {
-		return 0, nil, fmt.Errorf("error while creating portforwarder: %w", err)
-	}
-
-	// 3. Start the forwarder in a goroutine
-	go func() {
-		if fwdErr := pf.ForwardPorts(); fwdErr != nil {
-			log.Fatalf("PortForward error: %v", fwdErr)
-		}
-	}()
-
-	// 4. Wait for tunnel to be ready
-	<-readyChan
-
-	// 5. Read port
-	forwardedPorts, err := pf.GetPorts()
-	if err != nil {
-		return 0, nil, fmt.Errorf("cannot retrieve port: %w", err)
-	}
-	localPort := int(forwardedPorts[0].Local)
-
-	// Return port and cleanup func (so you can close the port forward)
-	cleanup := func() {
-		close(stopChan)
-	}
-
-	return localPort, cleanup, nil
-}
-
-// GetPodNameForService finds a pod belonging to a service
-func GetPodNameForService(clientset *kubernetes.Clientset, namespace, serviceName string) (string, error) {
-	// 1. get Service
-	svc, err := clientset.CoreV1().Services(namespace).Get(context.TODO(), serviceName, metav1.GetOptions{})
-	if err != nil {
-		return "", fmt.Errorf("cannot find service: %w", err)
-	}
-
-	// Check for selectors
-	if len(svc.Spec.Selector) == 0 {
-		return "", fmt.Errorf("service %s has no selector", serviceName)
-	}
-
-	// 2. change map to string
-	set := labels.Set(svc.Spec.Selector)
-	listOptions := metav1.ListOptions{LabelSelector: set.AsSelector().String()}
-
-	// 3. find pods
-	pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), listOptions)
-	if err != nil {
-		return "", fmt.Errorf("error searching for pods: %w", err)
-	}
-
-	if len(pods.Items) == 0 {
-		return "", fmt.Errorf("no pods for this service %s", serviceName)
-	}
-
-	// 4. Use first pod that is in a running state
-	for _, pod := range pods.Items {
-		if pod.Status.Phase == corev1.PodRunning {
-			return pod.Name, nil
-		}
-	}
-
-	return "", fmt.Errorf("no running pods for this service %s", serviceName)
 }
