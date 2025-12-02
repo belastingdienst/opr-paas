@@ -26,13 +26,13 @@ Additionally, the following optional settings can also be defined:
 
 - `capabilities`, which can be used to enable Paas extensions such as an ArgoCD to
   manage all Paas namespaces, Grafana to monitor Paas namespaces, etc. More information
-  can be found in our [capabilities](capabilities.yaml) documentation.
+  can be found in our [capabilities](capabilities.md) documentation.
 - `spec.secrets`, which can be used to seed secrets that ArgoCD requires for
-  accessing repositories. See [secrets](secrets.yaml) for more information.
-- `spec.groups`, which can be used to configure authorization. See [authorization](authorization.yaml)
+  accessing repositories. See [secrets](secrets.md) for more information.
+- `spec.groups`, which can be used to configure authorization. See [authorization](authorization.md)
   for more information.
 - `spec.namespaces`, which can be used to define namespaces as part of the Paas.
-  Alternatively, they can be manually defined as [PaasNs](PaasNs.yaml) resources.
+  Alternatively, they can be manually defined as [PaasNs](paasns.md) resources.
 
 ## Example Paas
 
@@ -65,5 +65,5 @@ Additionally, the following optional settings can also be defined:
 
     Labels defined on Paas resources are copied to child resources such as PaasNs,
     quotas, groups, ArgoApps, ArgoProjects, etc.
-      
+
     The only exception is the `app.kubernetes.io/instance`.

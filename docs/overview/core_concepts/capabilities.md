@@ -29,15 +29,15 @@ Therefore, it is designed a follows:
 
 - The available capabilities are all defined in the PaasConfig
   Per capability the following can be defined:
-    - the default quota to be used when no quota is set in the Paas
-    - if the cluster wide quota feature should be enabled for this capability
-    - the ApplicationSet that can be reconfigured (new entry in the list generator)
-      for each Paas with the capability defined
+  - the default quota to be used when no quota is set in the Paas
+  - if the cluster wide quota feature should be enabled for this capability
+  - the ApplicationSet that can be reconfigured (new entry in the list generator)
+    for each Paas with the capability defined
 - For every Paas where the capability is defined, the Paas controller will create:
-    - a [PaasNs](PaasNs.yaml)
-    - an entry in the ApplicationSet List Generator which in creates a new Application,
-      which in turn makes a cluster wide ArgoCD deployment read from the configured git
-      repo and create the required resources in the namespace as required
+  - a [PaasNs](paasns.md)
+  - an entry in the ApplicationSet List Generator which in creates a new Application,
+    which in turn makes a cluster wide ArgoCD deployment read from the configured git
+    repo and create the required resources in the namespace as required
 
 ## Example:
 
@@ -168,7 +168,7 @@ This would result in:
 
 - a `my-paas-argocd` `ClusterResourceQuota` and a `my-paas-grafana` `ClusterResourceQuota`;
   - `my-paas-argocd` has default quotas as specified in the configuration;
-     (`limits.cpu: "7"`, `requests.cpu: "3"`)
+    (`limits.cpu: "7"`, `requests.cpu: "3"`)
   - `my-paas-grafana` has `limits.cpu` overridden to "5", `requests.cpu` defaulting to "1" and `limits.memory` set to '2Gi';
 - a namespace called `my-paas-argocd` linked to the `my-paas-argocd` `ClusterResourceQuota`;
 - a namespace called `my-paas-grafana` linked to the `my-paas-grafana` `ClusterResourceQuota`;
