@@ -51,28 +51,26 @@ version-resolver:
       - 'test'
   default: patch
 autolabeler:
+  # Enforce breaking label
   - label: 'breaking'
     title:
       - '/!:/'
     body:
       - '/BREAKING CHANGE/'
+  # Enforce minor label if manifests are changed
+  - label: 'minor'
+    files:
+      - 'manifests/**/*'
+  # All labels below are set SOLELY on the basis of the title to prevent double labelling
   - label: 'chore'
     title:
       - '/^chore(\(.*\))?!?:/i'
   - label: 'ci'
     title:
       - '/^(ci|build)(\(.*\))?!?:/i'
-    files:
-      - '.github/*'
-      - '.github/**/*'
   - label: 'documentation'
     title:
       - '/^docs(\(.*\))?!?:/i'
-    files:
-      - 'docs/*'
-      - 'docs/**/*'
-      - '*.md'
-      - '**/*.md'
   - label: 'enhancement'
     title:
       - '/^(feat|perf)(\(.*\))?!?:/i'
@@ -91,9 +89,6 @@ autolabeler:
   - label: 'test'
     title:
       - '/^test(\(.*\))?!?:/i'
-  - label: 'minor'
-    files:
-      - 'manifests/**/*'
 template: |
   ## Changes
 
