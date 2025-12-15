@@ -133,7 +133,7 @@ jobs:
           config: .testcoverage.yaml
           profile: cover.out
       - name: Generate test results artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: unittests-coverage
           path: cover.out
@@ -220,7 +220,7 @@ jobs:
         run: kubectl logs deployment/paas-controller-manager -n paas-system > /tmp/e2e-deployed-operator-logs-${{ github.run_id }}.log
         if: ${{ failure() }}
       - name: Upload operator deployment log on failure
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: e2e-deployed-operator-logs-${{ github.run_id }}.log
           path: /tmp/e2e-deployed-operator-logs-${{ github.run_id }}.log
@@ -247,7 +247,7 @@ jobs:
       - name: Generate and print report
         run: go tool cover -func=cover.out > full-coverage
       - name: Upload test-coverage artifact
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: full-coverage-report
           path: full-coverage
