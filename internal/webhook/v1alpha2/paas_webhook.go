@@ -428,7 +428,7 @@ func (*PaasCustomValidator) validateGroups(groups v1alpha2.PaasGroups,
 			switch groupUserFeatureFlag {
 			case "warn":
 				warnings = append(warnings, fmt.Sprintf(
-					"group %s has users which is discouraged",
+					"group %s has users which is not allowed and needs to be changed",
 					field.NewPath("spec").Child("groups").Key(key).Child("users"),
 				))
 			case "block":

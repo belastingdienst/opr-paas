@@ -631,7 +631,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}{
 				"":      {},
 				"allow": {},
-				"warn":  {warn: "group spec.groups[foo].users has users which is discouraged"},
+				"warn":  {warn: "group spec.groups[foo].users has users which is not allowed and needs to be changed"},
 				"block": {err: "groups with users is a disabled feature"},
 			} {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %s: %s", setting, expects)
