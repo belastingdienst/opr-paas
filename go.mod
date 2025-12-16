@@ -16,8 +16,8 @@ require (
 require (
 	github.com/go-logr/zerologr v1.2.3
 	github.com/go-sprout/sprout v1.0.2
-	github.com/onsi/ginkgo/v2 v2.27.2
-	github.com/onsi/gomega v1.38.2
+	github.com/onsi/ginkgo/v2 v2.27.3
+	github.com/onsi/gomega v1.38.3
 	github.com/rs/zerolog v1.34.0
 	sigs.k8s.io/e2e-framework v0.6.0
 )
@@ -85,7 +85,7 @@ require (
 )
 
 require (
-	github.com/belastingdienst/opr-paas-crypttool v1.0.2
+	github.com/belastingdienst/opr-paas-crypttool v1.0.3
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
