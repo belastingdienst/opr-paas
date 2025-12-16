@@ -13,6 +13,7 @@ import (
 	"strings"
 )
 
+// Join can be used to join 2 or more parts of a name to return a full name. Parts are joined by dashes.
 func Join(argv ...string) string {
 	return strings.Join(argv, "-")
 }
