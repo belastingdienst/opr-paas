@@ -242,6 +242,14 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			Expect(err.Error()).To(ContainSubstring("paasns name should not contain dots"))
 		})
 		It("Should validate paasns name", func() {
+			const (
+				letters     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+				tooLongName = letters + letters
+			)
+			var (
+				validLength   = 63 - 1 - len(paasName)
+				validLongName = tooLongName[0:validLength]
+			)
 			for _, test := range []struct {
 				name       string
 				validation string
@@ -249,6 +257,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			}{
 				{name: "valid-name", validation: "^[a-z-]+$", valid: true},
 				{name: "invalid-name", validation: "^[a-z]+$", valid: false},
+				{name: validLongName, validation: "", valid: true},
+				{name: tooLongName, validation: "", valid: false},
 				{name: "", validation: "^.$", valid: false},
 			} {
 				conf.Spec.Validations = v1alpha2.PaasConfigValidations{"paasNs": {"name": test.validation}}

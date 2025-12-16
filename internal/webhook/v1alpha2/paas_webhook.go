@@ -18,6 +18,7 @@ import (
 	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
 	"github.com/belastingdienst/opr-paas/v3/internal/logging"
+	"github.com/belastingdienst/opr-paas/v3/internal/utils"
 	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -281,6 +282,15 @@ func validatePaasNamespaceNames(
 		return nil, nil
 	}
 	for namespace := range paas.Spec.Namespaces {
+		nsName := utils.Join(paas.Name, namespace)
+		if len(nsName) > 63 {
+			errs = append(errs, field.Invalid(
+				field.NewPath("metadata").Key("name"),
+				nsName,
+				"namespace name combined with paasns name too long",
+			))
+		}
+
 		if !nameValidationRE.Match([]byte(namespace)) {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("namespaces"),
