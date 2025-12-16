@@ -39,7 +39,6 @@ jobs:
               - '!docs/**'
               - '!examples/**'
               - '!.github/**'
-            ci:
               - '.github/workflows/ci-run-on-pr.yaml'
 
   check-go:
