@@ -16,7 +16,7 @@ require (
 require (
 	github.com/go-logr/zerologr v1.2.3
 	github.com/go-sprout/sprout v1.0.2
-	github.com/onsi/ginkgo/v2 v2.27.2
+	github.com/onsi/ginkgo/v2 v2.27.3
 	github.com/onsi/gomega v1.38.3
 	github.com/rs/zerolog v1.34.0
 	sigs.k8s.io/e2e-framework v0.6.0
