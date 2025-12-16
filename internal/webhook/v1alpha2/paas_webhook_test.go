@@ -179,14 +179,27 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 		})
 		It("Should validate namespace names", func() {
+			// 10 chars paas
+			obj.Name = "abcdefghij"
+			const (
+				letters     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+				tooLongName = letters + letters
+			)
+			var (
+				validLength   = 63 - 1 - len(obj.Name)
+				validLongName = tooLongName[0:validLength]
+			)
 			for _, test := range []struct {
 				name       string
 				validation string
 				valid      bool
 			}{
+
 				{name: "valid-name", validation: "^[a-z-]+$", valid: true},
 				{name: "invalid-name", validation: "^[a-z]+$", valid: false},
 				{name: "", validation: "^.$", valid: false},
+				{name: validLongName, validation: "", valid: true},
+				{name: tooLongName, validation: "", valid: false},
 			} {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
 

@@ -10,7 +10,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
+
+func Join(argv ...string) string {
+	return strings.Join(argv, "-")
+}
 
 // PathToFileList can be fed multiple paths, which it will walk and return a fill list of all files in the path /
 // subdirectories

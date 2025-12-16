@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	"github.com/belastingdienst/opr-paas/v3/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
@@ -186,7 +187,7 @@ func validatePaasNsName(
 	_ context.Context,
 	_ client.Client,
 	conf v1alpha2.PaasConfig,
-	_ v1alpha2.Paas,
+	paas v1alpha2.Paas,
 	paasns v1alpha2.PaasNS,
 ) ([]*field.Error, error) {
 	var fieldErrors []*field.Error
@@ -197,6 +198,16 @@ func validatePaasNsName(
 			"paasns name should not contain dots",
 		))
 	}
+
+	nsName := utils.Join(paas.Name, paasns.Name)
+	if len(nsName) > 63 {
+		fieldErrors = append(fieldErrors, field.Invalid(
+			field.NewPath("metadata").Key("name"),
+			nsName,
+			"paas name combined with paasns name too long",
+		))
+	}
+
 	nameValidationRE := conf.GetValidationRE("paasNs", "name")
 	if nameValidationRE == nil {
 		nameValidationRE = conf.GetValidationRE("paas", "namespaceName")
