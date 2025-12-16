@@ -15,7 +15,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/pkg/envfuncs"

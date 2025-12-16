@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/controller"
+	api "github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/controller"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 

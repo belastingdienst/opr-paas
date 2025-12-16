@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	"github.com/belastingdienst/opr-paas/v3/pkg/templating"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/logging"
+	"github.com/belastingdienst/opr-paas/v4/pkg/templating"
 	k8sv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"

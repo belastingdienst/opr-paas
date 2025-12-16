@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"strings"
 
-	paasapi "github.com/belastingdienst/opr-paas/v3/api"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	paasapi "github.com/belastingdienst/opr-paas/v4/api"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -23,8 +23,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/logging"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/logging"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"

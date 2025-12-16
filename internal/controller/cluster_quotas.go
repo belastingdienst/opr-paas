@@ -11,12 +11,12 @@ import (
 	"errors"
 	"maps"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
-	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
-	"github.com/belastingdienst/opr-paas/v3/pkg/templating"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	"github.com/belastingdienst/opr-paas/v4/internal/logging"
+	"github.com/belastingdienst/opr-paas/v4/pkg/fields"
+	paasquota "github.com/belastingdienst/opr-paas/v4/pkg/quota"
+	"github.com/belastingdienst/opr-paas/v4/pkg/templating"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	quotav1 "github.com/openshift/api/quota/v1"

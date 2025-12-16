@@ -14,9 +14,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
-	"github.com/belastingdienst/opr-paas/v3/pkg/groups"
-	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	"github.com/belastingdienst/opr-paas/v4/pkg/fields"
+	"github.com/belastingdienst/opr-paas/v4/pkg/groups"
+	paasquota "github.com/belastingdienst/opr-paas/v4/pkg/quota"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
