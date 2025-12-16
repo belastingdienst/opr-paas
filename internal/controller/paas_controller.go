@@ -49,15 +49,6 @@ func (r PaasReconciler) getScheme() *runtime.Scheme {
 	return r.Scheme
 }
 
-// Reconciler reconciles a Paas object
-type Reconciler interface {
-	Get(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error
-	Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
-	Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
-	getScheme() *runtime.Scheme
-	Delete(context.Context, client.Object, ...client.DeleteOption) error
-}
-
 //revive:disable:line-length-limit
 // +kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paas,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=cpet.belastingdienst.nl,resources=paas/status,verbs=get;update;patch
