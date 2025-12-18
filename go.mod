@@ -1,4 +1,4 @@
-module github.com/belastingdienst/opr-paas/v3
+module github.com/belastingdienst/opr-paas/v4
 
 go 1.25
 

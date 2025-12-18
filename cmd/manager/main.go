@@ -15,7 +15,7 @@ import (
 	"os"
 	"path/filepath"
 
-	argocdplugingenerator "github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator"
+	argocdplugingenerator "github.com/belastingdienst/opr-paas/v4/internal/argocd-plugin-generator"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -26,14 +26,14 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	"github.com/belastingdienst/opr-paas/v3/internal/controller"
-	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	"github.com/belastingdienst/opr-paas/v3/internal/version"
-	webhookv1alpha1 "github.com/belastingdienst/opr-paas/v3/internal/webhook/v1alpha1"
-	webhookv1alpha2 "github.com/belastingdienst/opr-paas/v3/internal/webhook/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	"github.com/belastingdienst/opr-paas/v4/internal/controller"
+	"github.com/belastingdienst/opr-paas/v4/internal/logging"
+	"github.com/belastingdienst/opr-paas/v4/internal/version"
+	webhookv1alpha1 "github.com/belastingdienst/opr-paas/v4/internal/webhook/v1alpha1"
+	webhookv1alpha2 "github.com/belastingdienst/opr-paas/v4/internal/webhook/v1alpha2"
 	"github.com/go-logr/zerologr"
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"

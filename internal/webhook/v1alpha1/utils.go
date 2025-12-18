@@ -10,8 +10,8 @@ import (
 	"context"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	"github.com/belastingdienst/opr-paas/v3/internal/logging"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	"github.com/belastingdienst/opr-paas/v4/internal/logging"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"

@@ -13,7 +13,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

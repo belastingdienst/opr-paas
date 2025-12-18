@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"reflect"
 
-	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	paasquota "github.com/belastingdienst/opr-paas/v4/pkg/quota"
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"sigs.k8s.io/controller-runtime/pkg/event"

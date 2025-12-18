@@ -11,8 +11,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

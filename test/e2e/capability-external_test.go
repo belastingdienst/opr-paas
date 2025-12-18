@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	api "github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/pkg/quota"
 	quotav1 "github.com/openshift/api/quota/v1"
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
