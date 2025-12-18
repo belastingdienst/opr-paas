@@ -190,6 +190,7 @@ func validatePaasNsName(
 	paas v1alpha2.Paas,
 	paasns v1alpha2.PaasNS,
 ) ([]*field.Error, error) {
+	const validNsNameLength = 63
 	var fieldErrors []*field.Error
 	if strings.Contains(paasns.Name, ".") {
 		fieldErrors = append(fieldErrors, field.Invalid(
@@ -200,7 +201,7 @@ func validatePaasNsName(
 	}
 
 	nsName := utils.Join(paas.Name, paasns.Name)
-	if len(nsName) > 63 {
+	if len(nsName) > validNsNameLength {
 		fieldErrors = append(fieldErrors, field.Invalid(
 			field.NewPath("metadata").Key("name"),
 			nsName,

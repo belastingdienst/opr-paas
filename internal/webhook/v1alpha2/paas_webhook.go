@@ -270,6 +270,7 @@ func validatePaasNamespaceNames(
 	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
+	const validNsNameLength = 63
 	var errs []*field.Error
 
 	// We use same value for paas.spec.namespaces and paasns.metadata.name validation.
@@ -283,7 +284,7 @@ func validatePaasNamespaceNames(
 	}
 	for namespace := range paas.Spec.Namespaces {
 		nsName := utils.Join(paas.Name, namespace)
-		if len(nsName) > 63 {
+		if len(nsName) > validNsNameLength {
 			errs = append(errs, field.Invalid(
 				field.NewPath("metadata").Key("name"),
 				nsName,
