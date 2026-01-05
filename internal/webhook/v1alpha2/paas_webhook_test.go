@@ -182,8 +182,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			// 10 chars paas
 			obj.Name = "abcdefghij"
 			const (
-				letters     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-				tooLongName = letters + letters
+				letters     = "abcdefghijklmnopqrstuvwxyz-"
+				tooLongName = letters + letters + letters + letters
 			)
 			var (
 				validLength   = 63 - 1 - len(obj.Name)
@@ -194,10 +194,13 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				validation string
 				valid      bool
 			}{
-
 				{name: "valid-name", validation: "^[a-z-]+$", valid: true},
 				{name: "invalid-name", validation: "^[a-z]+$", valid: false},
 				{name: "", validation: "^.$", valid: false},
+				// RFC 1123 Label Names
+				{name: "invalid_name", validation: "", valid: false},
+				{name: "Invalid-name", validation: "", valid: false},
+				{name: "1nvalid-name", validation: "", valid: false},
 				{name: validLongName, validation: "", valid: true},
 				{name: tooLongName, validation: "", valid: false},
 			} {

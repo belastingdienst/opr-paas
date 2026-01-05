@@ -10,6 +10,7 @@ package v1alpha1
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
@@ -258,6 +259,15 @@ func validatePaasallowedQuotas(
 	return errs, nil
 }
 
+// RFC 1123 Label Names
+// Some resource types require their names to follow the DNS label standard as defined in RFC 1123.
+// This means the name must:
+// - contain at most 63 characters
+// - contain only lowercase alphanumeric characters or '-'
+// - start with an alphabetic character
+// - end with an alphanumeric character
+var rfc1123LabelNamesRegex = regexp.MustCompile(`^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$`)
+
 // validatePaasNamespaceNames returns an error for every namespace that does not meet validations.
 func validatePaasNamespaceNames(
 	_ context.Context,
@@ -273,16 +283,23 @@ func validatePaasNamespaceNames(
 	if nameValidationRE == nil {
 		nameValidationRE = conf.GetValidationRE("paasNs", "name")
 	}
-	if nameValidationRE == nil {
-		return nil, nil
-	}
+
 	for index, namespace := range paas.Spec.Namespaces {
-		if !nameValidationRE.Match([]byte(namespace)) {
+		if !rfc1123LabelNamesRegex.MatchString(namespace) {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("namespaces").Index(index),
 				namespace,
-				fmt.Sprintf("paas name does not match configured validation regex `%s`", nameValidationRE.String()),
+				"paas name does not match with RFC 1123 Label Names",
 			))
+		}
+		if nameValidationRE != nil {
+			if !nameValidationRE.Match([]byte(namespace)) {
+				errs = append(errs, field.Invalid(
+					field.NewPath("spec").Child("namespaces").Index(index),
+					namespace,
+					fmt.Sprintf("paas name does not match configured validation regex `%s`", nameValidationRE.String()),
+				))
+			}
 		}
 	}
 
