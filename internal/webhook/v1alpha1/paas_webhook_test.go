@@ -169,6 +169,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}{
 				{name: "valid-name", validation: "^[a-z-]+$", valid: true},
 				{name: "invalid-name", validation: "^[a-z]+$", valid: false},
+				// RFC 1123 Label Names
+				{name: "invalid_name", validation: "", valid: false},
 				{name: "", validation: "^.$", valid: false},
 			} {
 				// Update PaasConfig

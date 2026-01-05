@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -263,6 +264,15 @@ func validatePaasallowedQuotas(
 	return errs, nil
 }
 
+// RFC 1123 Label Names
+// Some resource types require their names to follow the DNS label standard as defined in RFC 1123.
+// This means the name must:
+// contain at most 63 characters
+// contain only lowercase alphanumeric characters or '-'
+// start with an alphabetic character
+// end with an alphanumeric character
+var rfc1123LabelNamesRegex = regexp.MustCompile(`^[a-zA-Z0-9]([-a-zA-Z0-9]{0,61}[a-zA-Z0-9])?$`)
+
 // validatePaasNamespaceNames returns an error for every namespace that does not meet validations.
 func validatePaasNamespaceNames(
 	_ context.Context,
@@ -283,6 +293,13 @@ func validatePaasNamespaceNames(
 		return nil, nil
 	}
 	for namespace := range paas.Spec.Namespaces {
+		if !rfc1123LabelNamesRegex.MatchString(namespace) {
+			errs = append(errs, field.Invalid(
+				field.NewPath("spec").Child("namespaces").Key(namespace),
+				namespace,
+				fmt.Sprintf("paas name does not match with RFC 1123 Label Names`%s`", nameValidationRE.String()),
+			))
+		}
 		nsName := utils.Join(paas.Name, namespace)
 		if len(nsName) > validNsNameLength {
 			errs = append(errs, field.Invalid(
