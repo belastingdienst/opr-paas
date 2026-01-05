@@ -127,7 +127,7 @@ jobs:
         run: make test
       - name: check test coverage
         id: coverage
-        uses: vladopajic/go-test-coverage@cc5012c2cfa84542e02b079141958a885861d326 # v2.17.0
+        uses: vladopajic/go-test-coverage@679e6807f68f2440a4c43d386442a1d0041838a9 # v2.18.3
         continue-on-error: true # Should fail after coverage comment is posted
         with:
           config: .testcoverage.yaml
@@ -148,7 +148,7 @@ jobs:
             echo "No open pull request found for this branch."
           fi
       - name: create badge
-        uses: vladopajic/go-test-coverage@cc5012c2cfa84542e02b079141958a885861d326 # v2.17.0
+        uses: vladopajic/go-test-coverage@679e6807f68f2440a4c43d386442a1d0041838a9 # v2.18.3
         with:
           profile: cover.out
           threshold-total: 42
