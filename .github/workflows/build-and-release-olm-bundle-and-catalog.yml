@@ -9,7 +9,7 @@ jobs:
   version:
     name: Normalize version
     runs-on: ubuntu-latest
-    permissions: {}   # No permissions needed
+    permissions: {}
     outputs:
       version: ${{ steps.export.outputs.version }}
       test_mode: ${{ steps.export.outputs.test_mode }}
@@ -51,6 +51,18 @@ jobs:
           go-version: "1.25"
           cache: false
 
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: GHCR login (skip in test mode)
+        if: ${{ env.TEST_MODE != 'true' }}
+        run: |
+          podman login ghcr.io \
+            -u "${GITHUB_ACTOR}" \
+            -p "${{ secrets.GITHUB_TOKEN }}"
+
       - name: Install Build Dependencies
         run: |
           make operator-sdk
@@ -66,11 +78,11 @@ jobs:
         run: make bundle-validate
 
       - name: Build bundle image
-        run: make bundle-build VERSION=${VERSION}
+        run: make bundle-build VERSION=${VERSION} CONTAINER_TOOL=podman
 
       - name: Push bundle image (skip in test mode)
         if: ${{ env.TEST_MODE != 'true' }}
-        run: make bundle-push VERSION=${VERSION}
+        run: make bundle-push VERSION=${VERSION} CONTAINER_TOOL=podman
 
       - name: Upload bundle manifests to release (real releases only)
         if: ${{ env.TEST_MODE != 'true' }}
@@ -90,7 +102,6 @@ jobs:
       contents: read      # required by checkout
     env:
       VERSION: ${{ needs.version.outputs.version }}
-      TEST_MODE: ${{ needs.version.outputs.test_mode }}
 
     steps:
       - name: Checkout
@@ -113,7 +124,7 @@ jobs:
             -p "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Build catalog image
-        run: make catalog-build VERSION=${VERSION}
+        run: make catalog-build VERSION=${VERSION} CONTAINER_TOOL=podman
 
       - name: Push catalog image
-        run: make catalog-push VERSION=${VERSION}
+        run: make catalog-push VERSION=${VERSION} CONTAINER_TOOL=podman
