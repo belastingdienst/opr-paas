@@ -77,6 +77,12 @@ jobs:
       - name: Validate OLM bundle
         run: make bundle-validate
 
+      - name: Ensure bundle.Containerfile exists
+        run: |
+          if [ -f bundle.Dockerfile ] && [ ! -f bundle.Containerfile ]; then
+            cp bundle.Dockerfile bundle.Containerfile
+          fi
+
       - name: Build bundle image
         run: make bundle-build VERSION=${VERSION} CONTAINER_TOOL=podman
 
