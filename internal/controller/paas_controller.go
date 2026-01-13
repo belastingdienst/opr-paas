@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"strings"
 
-	paasapi "github.com/belastingdienst/opr-paas/v3/api"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	paasapi "github.com/belastingdienst/opr-paas/v4/api"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -23,8 +23,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/logging"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/logging"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -47,15 +47,6 @@ type PaasReconciler struct {
 // GetScheme is a simple getter for the Scheme of the Paas Controller logic
 func (r PaasReconciler) getScheme() *runtime.Scheme {
 	return r.Scheme
-}
-
-// Reconciler reconciles a Paas object
-type Reconciler interface {
-	Get(ctx context.Context, key types.NamespacedName, obj client.Object, opts ...client.GetOption) error
-	Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error
-	Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error
-	getScheme() *runtime.Scheme
-	Delete(context.Context, client.Object, ...client.DeleteOption) error
 }
 
 //revive:disable:line-length-limit
@@ -230,8 +221,6 @@ func (r *PaasReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		r.reconcileClusterWideQuota,
 		r.reconcileNamespacedResources,
 		r.reconcileGroups,
-		r.ensureAppSetCaps,
-		r.finalizeDisabledAppSetCaps,
 	}
 
 	for _, reconciler := range paasReconcilers {
@@ -249,11 +238,14 @@ func (r *PaasReconciler) reconcileNamespacedResources(
 ) (err error) {
 	_, logger := logging.GetLogComponent(ctx, logging.ControllerPaasComponent)
 	logger.Debug().Msg("inside namespaced resource reconciler")
+
 	nsDefs, err := r.nsDefsFromPaas(ctx, paas)
 	if err != nil {
+		logger.Err(err).Msg("could not get nsDefs from paas")
 		return err
 	}
 	logger.Debug().Msgf("Need to manage resources for %d namespaces", len(nsDefs))
+
 	paasNsReconcilers := []func(context.Context, *v1alpha2.Paas, namespaceDefs) error{
 		r.reconcileNamespaces,
 		r.finalizeObsoleteNamespaces,
@@ -401,7 +393,6 @@ func (r *PaasReconciler) finalizePaas(ctx context.Context, paas *v1alpha2.Paas) 
 		r.finalizeGroups,
 		r.finalizePaasClusterRoleBindings,
 		r.finalizeClusterWideQuotas,
-		r.finalizeAllAppSetCaps,
 	}
 
 	for _, reconciler := range paasReconcilers {

@@ -203,15 +203,25 @@ install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~
 uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build manifests/crd | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
 
-.PHONY: deploy
-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config. including certmanager and certs for webhook
+CERTMANAGER_VERSION ?= v1.18.2
+
+.PHONY: certmanager
+certmanager: kustomize
 	# Install certManager for generating certs to easily test webhooks
-	# TODO(portly-halicore-76) define version of certmanager externally
-	$(KUBECTL) apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml
+	$(KUBECTL) apply -f https://github.com/cert-manager/cert-manager/releases/download/$(CERTMANAGER_VERSION)/cert-manager.yaml
 	# Wait for certmanager to be ready else deploying Paas will fail
 	$(KUBECTL) wait --for=condition=Available deployment/cert-manager-webhook -n cert-manager --timeout=120s
+
+.PHONY: deploy
+deploy: manifests certmanager ## Deploy controller to the K8s cluster specified in ~/.kube/config. including certmanager and certs for webhook
 	cd manifests/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build manifests/default | $(KUBECTL) apply -f -
+
+.PHONY: deploy_with_plugin_generator
+deploy_with_plugin_generator: manifests certmanager ## Deploy controller to the K8s cluster specified in ~/.kube/config. including certmanager and certs for webhook
+	cd manifests/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd test/e2e/manifests/paas && $(KUBECTL) create secret generic generator-token -n paas-system --from-literal=ARGOCD_GENERATOR_TOKEN=$(shell openssl rand -base64 60 | tr -dc A-Za-z0-9 | head -c 45) --dry-run=client -o yaml > generator-secret.yaml
+	$(KUSTOMIZE) build test/e2e/manifests/paas | $(KUBECTL) apply -f -
 
 .PHONY: undeploy
 undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
@@ -337,12 +347,7 @@ setup-local-e2e:
 	kustomize build test/e2e/manifests/paas-context | kubectl apply -f -
 
 .PHONY: local-e2e
-local-e2e: refresh-kind setup-local-e2e manifests kustomize
-	# Install certManager for generating certs to easily test webhooks
-	# TODO(portly-halicore-76) define version of certmanager externally
-	$(KUBECTL) apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.18.2/cert-manager.yaml
-	# Wait for certmanager to be ready else deploying Paas will fail
-	$(KUBECTL) wait --for=condition=Available deployment/cert-manager-webhook -n cert-manager --timeout=120s
+local-e2e: refesh-kind setup-local-e2e manifests kustomize certmanager
 ifeq ($(CONTAINER_TOOL),podman)
 	cd manifests/manager && $(KUSTOMIZE) edit set image controller=localhost/$(IMG)
 endif
@@ -372,7 +377,7 @@ bundle-validate: operator-sdk
 
 .PHONY: bundle-build
 bundle-build: ## Build OLM bundle image
-	$(CONTAINER_TOOL) build -f bundle.Containerfile -t $(BUNDLE_IMG) .
+	$(CONTAINER_TOOL) build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 .PHONY: bundle-push
 bundle-push: ## Push OLM bundle image to registry

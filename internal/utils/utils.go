@@ -10,7 +10,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
+
+// Join can be used to join 2 or more parts of a name to return a full name. Parts are joined by dashes.
+func Join(argv ...string) string {
+	return strings.Join(argv, "-")
+}
 
 // PathToFileList can be fed multiple paths, which it will walk and return a fill list of all files in the path /
 // subdirectories

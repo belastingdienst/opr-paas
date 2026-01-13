@@ -15,7 +15,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/logging"
+	"github.com/belastingdienst/opr-paas/v4/internal/logging"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 )
 

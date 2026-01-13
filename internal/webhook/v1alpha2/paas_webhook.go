@@ -11,14 +11,16 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	"github.com/belastingdienst/opr-paas/v4/internal/logging"
+	"github.com/belastingdienst/opr-paas/v4/internal/utils"
+	"github.com/belastingdienst/opr-paas/v4/pkg/quota"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -141,6 +143,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		validateGroupNames,
 		validatePaasNamespaceNames,
 		validatePaasNamespaceGroups,
+		validateAppNamespaceQuota,
 	} {
 		if errs, validationErr := val(ctx, v.client, conf, paas); validationErr != nil {
 			return nil, apierrors.NewInternalError(validationErr)
@@ -261,6 +264,15 @@ func validatePaasallowedQuotas(
 	return errs, nil
 }
 
+// RFC 1123 Label Names
+// Some resource types require their names to follow the DNS label standard as defined in RFC 1123.
+// This means the name must:
+// - contain at most 63 characters
+// - contain only lowercase alphanumeric characters or '-'
+// - start with an alphabetic character
+// - end with an alphanumeric character
+var rfc1123LabelNamesRegex = regexp.MustCompile(`^[a-z]([-a-z0-9]{0,61}[a-z0-9])?$`)
+
 // validatePaasNamespaceNames returns an error for every namespace that does not meet validations.
 func validatePaasNamespaceNames(
 	_ context.Context,
@@ -268,6 +280,7 @@ func validatePaasNamespaceNames(
 	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
+	const validNsNameLength = 63
 	var errs []*field.Error
 
 	// We use same value for paas.spec.namespaces and paasns.metadata.name validation.
@@ -280,6 +293,22 @@ func validatePaasNamespaceNames(
 		return nil, nil
 	}
 	for namespace := range paas.Spec.Namespaces {
+		if !rfc1123LabelNamesRegex.MatchString(namespace) {
+			errs = append(errs, field.Invalid(
+				field.NewPath("spec").Child("namespaces").Key(namespace),
+				namespace,
+				"paas name does not match with RFC 1123 Label Names",
+			))
+		}
+		nsName := utils.Join(paas.Name, namespace)
+		if len(nsName) > validNsNameLength {
+			errs = append(errs, field.Invalid(
+				field.NewPath("metadata").Key("name"),
+				nsName,
+				"namespace name combined with paasns name too long",
+			))
+		}
+
 		if !nameValidationRE.Match([]byte(namespace)) {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("namespaces"),
@@ -414,7 +443,8 @@ func validateCustomFields(
 
 // validateGroups returns a warning for any of the passed groups which contain both users and a query.
 func (*PaasCustomValidator) validateGroups(groups v1alpha2.PaasGroups,
-	groupUserFeatureFlag string) (warnings []string, errs []*field.Error) {
+	groupUserFeatureFlag string,
+) (warnings []string, errs []*field.Error) {
 	for key, grp := range groups {
 		if len(grp.Query) > 0 && len(grp.Users) > 0 {
 			warnings = append(warnings, fmt.Sprintf(
@@ -532,4 +562,45 @@ func validateSecrets(
 		}
 	}
 	return errs
+}
+
+// validate quota of namespaces that are not linked to a capability
+func validateAppNamespaceQuota(
+	ctx context.Context,
+	k8sClient client.Client,
+	_ v1alpha2.PaasConfig,
+	paas *v1alpha2.Paas,
+) ([]*field.Error, error) {
+	var errs []*field.Error
+
+	if len(paas.Spec.Quota) > 0 {
+		return nil, nil
+	}
+
+	if len(paas.Spec.Namespaces) > 0 {
+		errs = append(errs, field.Invalid(
+			field.NewPath("spec", "namespaces"),
+			fmt.Sprintf("%d", len(paas.Spec.Namespaces)),
+			fmt.Sprintf("quota can not be empty when paas has namespaces (number of namespaces: %d)",
+				len(paas.Spec.Namespaces)),
+		))
+	}
+
+	for capName := range paas.Spec.Capabilities {
+		capNS := strings.Join([]string{paas.Name, capName}, "-")
+
+		pnsList := &v1alpha2.PaasNSList{}
+		if err := k8sClient.List(ctx, pnsList, &client.ListOptions{Namespace: capNS}); err != nil {
+			return errs, err
+		}
+		if len(pnsList.Items) > 0 {
+			errs = append(errs, field.Invalid(
+				field.NewPath("spec", "capabilities").Key(capName),
+				fmt.Sprintf("%d", len(pnsList.Items)),
+				"quota can not be empty when paas capability namespace has paasNs",
+			))
+		}
+	}
+
+	return errs, nil
 }

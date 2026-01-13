@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	api "github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	userv1 "github.com/openshift/api/user/v1"
 	"github.com/stretchr/testify/assert"
@@ -28,8 +29,11 @@ func TestGroupQuery(t *testing.T) {
 	paasSpec := api.PaasSpec{
 		Requestor:  "paas-user",
 		Namespaces: api.PaasNamespaces{paasGroupQueryNamespace: api.PaasNamespace{}},
-		Quota:      make(quota.Quota),
-		Groups:     api.PaasGroups{groupWithQueryName: api.PaasGroup{Query: groupQuery}},
+		Quota: map[corev1.ResourceName]resource.Quantity{
+			"cpu":    resource.MustParse("200m"),
+			"memory": resource.MustParse("256Mi"),
+		},
+		Groups: api.PaasGroups{groupWithQueryName: api.PaasGroup{Query: groupQuery}},
 	}
 
 	testenv.Test(

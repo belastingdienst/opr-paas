@@ -15,8 +15,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/belastingdienst/opr-paas/v3/api/plugin"
-	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
+	"github.com/belastingdienst/opr-paas/v4/api/plugin"
+	"github.com/belastingdienst/opr-paas/v4/pkg/fields"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -27,7 +27,8 @@ type mockGeneratorService struct {
 }
 
 func (m *mockGeneratorService) Generate(ctx context.Context, params fields.ElementMap) (
-	[]fields.ElementMap, error) {
+	[]fields.ElementMap, error,
+) {
 	return m.generateFunc(params)
 }
 
@@ -76,7 +77,8 @@ var _ = Describe("Handler", func() {
 
 		It("returns 400 if body cannot be read", func() {
 			mockService.generateFunc = func(params fields.ElementMap) (
-				[]fields.ElementMap, error) {
+				[]fields.ElementMap, error,
+			) {
 				return nil, nil
 			}
 
@@ -103,7 +105,8 @@ var _ = Describe("Handler", func() {
 
 		It("returns 500 if Service.Generate returns an error", func() {
 			mockService.generateFunc = func(params fields.ElementMap) (
-				[]fields.ElementMap, error) {
+				[]fields.ElementMap, error,
+			) {
 				return nil, errors.New("generation failed")
 			}
 
@@ -130,7 +133,8 @@ var _ = Describe("Handler", func() {
 				{"key2": "value2"},
 			}
 			mockService.generateFunc = func(params fields.ElementMap) (
-				[]fields.ElementMap, error) {
+				[]fields.ElementMap, error,
+			) {
 				Expect(params).To(HaveKeyWithValue("foo", "bar"))
 				return expectedResult, nil
 			}

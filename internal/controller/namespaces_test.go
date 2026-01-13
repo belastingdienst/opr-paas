@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	paasquota "github.com/belastingdienst/opr-paas/v4/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -128,14 +128,12 @@ var _ = Describe("Namespace", Ordered, func() {
 			}
 		})
 		It("have set all expected labels", func() {
-			var (
-				expectedLabels = map[string]string{
-					lbl1Key:           lbl1Value,
-					lbl2Key:           lbl2Value,
-					ManagedByLabelKey: paasName,
-					manByLbl:          join(manByPaas, manBySuffix),
-				}
-			)
+			expectedLabels := map[string]string{
+				lbl1Key:           lbl1Value,
+				lbl2Key:           lbl2Value,
+				ManagedByLabelKey: paasName,
+				manByLbl:          join(manByPaas, manBySuffix),
+			}
 			for nsName, nsDef := range nsDefs {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
 				var ns corev1.Namespace

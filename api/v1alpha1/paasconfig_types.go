@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"reflect"
 
-	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	paasquota "github.com/belastingdienst/opr-paas/v4/pkg/quota"
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -266,7 +266,7 @@ type ConfigQuotaSettings struct {
 	Ratio float64 `json:"ratio"`
 
 	// The default quota which the enabled capability gets
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	DefQuota paasquota.Quota `json:"defaults"`
 
 	// The minimum quota which the enabled capability gets
@@ -276,6 +276,11 @@ type ConfigQuotaSettings struct {
 	// The maximum quota which the capability gets
 	// +kubebuilder:validation:Optional
 	MaxQuotas paasquota.Quota `json:"max"`
+}
+
+// External is true when quota config is set to nil
+func (cqs ConfigQuotaSettings) External() bool {
+	return cqs.DefQuota == nil && cqs.MaxQuotas == nil && cqs.MinQuotas == nil
 }
 
 // This is an insoudeout representation of ConfigCapPerm, closer to rb representation

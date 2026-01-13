@@ -3,9 +3,9 @@ package controller
 import (
 	"context"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	paasquota "github.com/belastingdienst/opr-paas/v4/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -127,12 +127,10 @@ var _ = Describe("Rolebinding", Ordered, func() {
 			}
 		})
 		It("have set all expected labels", func() {
-			var (
-				expectedLabels = map[string]string{
-					lbl1Key: lbl1Value,
-					lbl2Key: lbl2Value,
-				}
-			)
+			expectedLabels := map[string]string{
+				lbl1Key: lbl1Value,
+				lbl2Key: lbl2Value,
+			}
 			var rb rbac.RoleBinding
 			err := reconciler.Get(ctx, types.NamespacedName{Namespace: ns1, Name: join("paas", tecRole1)}, &rb)
 			Expect(err).NotTo(HaveOccurred())

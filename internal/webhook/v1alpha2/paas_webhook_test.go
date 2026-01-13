@@ -17,8 +17,8 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -113,6 +113,19 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(warn, err).Error().NotTo(HaveOccurred())
 			Expect(err).Error().NotTo(HaveOccurred())
 		})
+		It("should allow creating a paas with namespaces", func() {
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{"cap5": v1alpha2.PaasCapability{}},
+					Namespaces:   v1alpha2.PaasNamespaces{"myns": v1alpha2.PaasNamespace{}},
+					Quota:        quota.Quota{"cpu.limits": resource.MustParse("10")},
+				},
+			}
+
+			warn, err := validator.ValidateCreate(ctx, obj)
+			Expect(warn, err).Error().NotTo(HaveOccurred())
+			Expect(err).Error().NotTo(HaveOccurred())
+		})
 		It("Should validate paas name", func() {
 			const paasNameValidation = "^([a-z0-9]{3})-([a-z0-9]{3})$"
 
@@ -166,6 +179,16 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 		})
 		It("Should validate namespace names", func() {
+			// 10 chars paas
+			obj.Name = "abcdefghij"
+			const (
+				letters     = "abcdefghijklmnopqrstuvwxyz-"
+				tooLongName = letters + letters + letters + letters
+			)
+			var (
+				validLength   = 63 - 1 - len(obj.Name)
+				validLongName = tooLongName[0:validLength]
+			)
 			for _, test := range []struct {
 				name       string
 				validation string
@@ -174,6 +197,12 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				{name: "valid-name", validation: "^[a-z-]+$", valid: true},
 				{name: "invalid-name", validation: "^[a-z]+$", valid: false},
 				{name: "", validation: "^.$", valid: false},
+				// RFC 1123 Label Names
+				{name: "invalid_name", validation: "", valid: false},
+				{name: "Invalid-name", validation: "", valid: false},
+				{name: "1nvalid-name", validation: "", valid: false},
+				{name: validLongName, validation: "", valid: true},
+				{name: tooLongName, validation: "", valid: false},
 			} {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
 
@@ -187,6 +216,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 
 				obj.Spec.Namespaces = v1alpha2.PaasNamespaces{
 					test.name: v1alpha2.PaasNamespace{},
+				}
+				obj.Spec.Quota = quota.Quota{
+					"limits.cpu": resource.MustParse("1"),
 				}
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn).To(BeNil())
@@ -435,6 +467,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 							Groups: []string{"group2", "group3"},
 						},
 					},
+					Quota: quota.Quota{
+						corev1.ResourceLimitsCPU: resource.MustParse("1"),
+					},
 				},
 			}
 			_, err := validator.ValidateCreate(ctx, obj)
@@ -583,7 +618,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			latestConf.Spec.Capabilities["bar"] = v1alpha2.ConfigCapability{
 				QuotaSettings: v1alpha2.ConfigQuotaSettings{
 					DefQuota: map[corev1.ResourceName]resource.Quantity{"bar": resource.MustParse("1")},
-				}}
+				},
+			}
 			err = k8sClient.Update(ctx, latestConf)
 			Expect(err).To(Not(HaveOccurred()))
 
@@ -747,7 +783,6 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(validator.ValidateUpdate(ctx, nil, obj)).Error().
 				To(MatchError(ContainSubstring("capability not configured")))
 		})
-
 		It(
 			"Should generate a warning when updating a Paas with a group that contains both users and a queries",
 			func() {
@@ -768,7 +803,6 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				).To(ContainElement("spec.groups[foo] contains both users and query, the users will be ignored"))
 			},
 		)
-
 		It("Should not warn when updating a Paas with a group that contains just users", func() {
 			obj = &v1alpha2.Paas{
 				Spec: v1alpha2.PaasSpec{
@@ -782,6 +816,65 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 
 			warnings, _ := validator.ValidateUpdate(ctx, nil, obj)
 			Expect(warnings).To(BeEmpty())
+		})
+		It("Should deny creation when a namespace is defined but no quota", func() {
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Namespaces: v1alpha2.PaasNamespaces{
+						"bobber": {},
+					},
+				},
+			}
+			_, err := validator.ValidateCreate(ctx, obj)
+
+			// We want to assert the actual message of the cause, which is packed in the StatusError object type.
+			// Therefore we type assert, unpack and assert that the Cause is exactly as expected
+			var serr *apierrors.StatusError
+			Expect(errors.As(err, &serr)).To(BeTrue())
+			causes := serr.Status().Details.Causes
+			Expect(causes).To(HaveLen(1))
+			Expect(causes).To(ContainElements(
+				metav1.StatusCause{
+					Type: "FieldValueInvalid",
+					Message: "Invalid value: \"1\": quota can not be empty when paas has namespaces" +
+						" (number of namespaces: 1)",
+					Field: "spec.namespaces",
+				},
+			))
+		})
+		It("Should deny modification when a capability with paasNS has been modified to have no quota", func() {
+			obj = &v1alpha2.Paas{
+				ObjectMeta: metav1.ObjectMeta{Name: paasName},
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{"cap5": v1alpha2.PaasCapability{}},
+					Quota:        quota.Quota{"limits.cpu": resource.MustParse("10")},
+				},
+			}
+			Expect(k8sClient.Create(ctx, obj)).Error().NotTo(HaveOccurred())
+
+			nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "my-paas-cap5"}}
+			Expect(k8sClient.Create(ctx, nsObj)).Error().NotTo(HaveOccurred())
+
+			paasNsObj := &v1alpha2.PaasNS{ObjectMeta: metav1.ObjectMeta{Name: "my-paasns", Namespace: "my-paas-cap5"}}
+			Expect(k8sClient.Create(ctx, paasNsObj)).Error().NotTo(HaveOccurred())
+
+			newObj := obj.DeepCopy()
+			newObj.Spec.Quota = nil
+			_, err := validator.ValidateUpdate(ctx, obj, newObj)
+
+			// We want to assert the actual message of the cause, which is packed in the StatusError object type.
+			// Therefore we type assert, unpack and assert that the Cause is exactly as expected
+			var serr *apierrors.StatusError
+			Expect(errors.As(err, &serr)).To(BeTrue())
+			causes := serr.Status().Details.Causes
+			Expect(causes).To(HaveLen(1))
+			Expect(causes).To(ContainElements(
+				metav1.StatusCause{
+					Type:    "FieldValueInvalid",
+					Message: `Invalid value: "1": quota can not be empty when paas capability namespace has paasNs`,
+					Field:   "spec.capabilities[cap5]",
+				},
+			))
 		})
 	})
 })

@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"maps"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	"github.com/belastingdienst/opr-paas/v3/internal/logging"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	"github.com/belastingdienst/opr-paas/v4/internal/logging"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -157,6 +157,11 @@ func (r *PaasReconciler) paasCapabilityNss(
 		if !ok {
 			return nil, fmt.Errorf("capability %s is not in PaasConfig", capName)
 		}
+		// check if External is true, if so the cap shouldn't get quota or ns
+		if capConfig.QuotaSettings.External() {
+			continue
+		}
+
 		capNS := join(paas.Name, capName)
 		quota := capNS
 		if capConfig.QuotaSettings.Clusterwide {

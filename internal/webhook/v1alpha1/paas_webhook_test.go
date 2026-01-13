@@ -16,9 +16,9 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -47,7 +47,6 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 		createNamespace("paas-system")
 		createPaasPrivateKeySecret("paas-system", "keys", pkey)
 	})
-
 	BeforeEach(func() {
 		obj = &v1alpha1.Paas{}
 		oldObj = &v1alpha1.Paas{}
@@ -170,6 +169,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}{
 				{name: "valid-name", validation: "^[a-z-]+$", valid: true},
 				{name: "invalid-name", validation: "^[a-z]+$", valid: false},
+				// RFC 1123 Label Names
+				{name: "invalid_name", validation: "", valid: false},
+				{name: "Invalid-name", validation: "", valid: false},
+				{name: "1nvalid-name", validation: "", valid: false},
 				{name: "", validation: "^.$", valid: false},
 			} {
 				// Update PaasConfig
@@ -482,7 +485,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			latestConf.Spec.Capabilities["foo"] = v1alpha2.ConfigCapability{
 				QuotaSettings: v1alpha2.ConfigQuotaSettings{
 					DefQuota: map[corev1.ResourceName]resource.Quantity{"foo": resource.MustParse("1")},
-				}}
+				},
+			}
 			err = k8sClient.Update(ctx, latestConf)
 			Expect(err).To(Not(HaveOccurred()))
 

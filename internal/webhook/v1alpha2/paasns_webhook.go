@@ -13,12 +13,13 @@ import (
 	"maps"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	"github.com/belastingdienst/opr-paas/v4/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/logging"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/logging"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -97,6 +98,7 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 		validatePaasNsName,
 		validatePaasNsGroups,
 		validatePaasNsSecrets,
+		validateQuota,
 	} {
 		var fieldErrs []*field.Error
 		fieldErrs, err = validator(ctx, v.client, myConfig, *paas, *paasns)
@@ -185,9 +187,10 @@ func validatePaasNsName(
 	_ context.Context,
 	_ client.Client,
 	conf v1alpha2.PaasConfig,
-	_ v1alpha2.Paas,
+	paas v1alpha2.Paas,
 	paasns v1alpha2.PaasNS,
 ) ([]*field.Error, error) {
+	const validNsNameLength = 63
 	var fieldErrors []*field.Error
 	if strings.Contains(paasns.Name, ".") {
 		fieldErrors = append(fieldErrors, field.Invalid(
@@ -196,6 +199,16 @@ func validatePaasNsName(
 			"paasns name should not contain dots",
 		))
 	}
+
+	nsName := utils.Join(paas.Name, paasns.Name)
+	if len(nsName) > validNsNameLength {
+		fieldErrors = append(fieldErrors, field.Invalid(
+			field.NewPath("metadata").Key("name"),
+			nsName,
+			"paas name combined with paasns name too long",
+		))
+	}
+
 	nameValidationRE := conf.GetValidationRE("paasNs", "name")
 	if nameValidationRE == nil {
 		nameValidationRE = conf.GetValidationRE("paas", "namespaceName")
@@ -269,6 +282,24 @@ func validatePaasNsSecrets(
 		}
 	}
 
+	return errs, nil
+}
+
+func validateQuota(
+	ctx context.Context,
+	k8sClient client.Client,
+	conf v1alpha2.PaasConfig,
+	paas v1alpha2.Paas,
+	paasns v1alpha2.PaasNS,
+) ([]*field.Error, error) {
+	var errs []*field.Error
+	if len(paas.Spec.Quota) == 0 || paas.Spec.Quota == nil {
+		errs = append(errs, field.Invalid(
+			field.NewPath("Paas").Child("spec").Child("quota"),
+			"{}",
+			"PaasNs cannot be created when there is no quota defined in the parent Paas",
+		))
+	}
 	return errs, nil
 }
 

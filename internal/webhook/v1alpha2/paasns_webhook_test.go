@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	"github.com/belastingdienst/opr-paas/v3/pkg/quota"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	"github.com/belastingdienst/opr-paas/v4/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -33,6 +33,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		paasSystem        = "paasnssystem"
 		paasPkSecret      = "paasns-pk-secret"
 		paasName          = "mypaasns-paas"
+		paasNameNQ        = "no-quota"
 		otherPaasName     = "myotherpaas"
 		nsWithoutOwnerRef = paasName + "-without-owner-ref"
 		groupName1        = "mygroup1"
@@ -40,10 +41,12 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		otherGroup        = "myothergroup"
 		paasNsName        = "mypaasns"
 		paasUID           = paasName + "-uid"
+		PaasNQUUID        = paasNameNQ + "-uid"
 	)
 	var (
 		privateKey      []byte
 		paas            *v1alpha2.Paas
+		noQuotaPaas     *v1alpha2.Paas
 		obj             *v1alpha2.PaasNS
 		oldObj          *v1alpha2.PaasNS
 		mycrypt         *crypt.Crypt
@@ -84,6 +87,28 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			},
 		}
 
+		noQuotaPaas = &v1alpha2.Paas{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Paas",
+				APIVersion: "v1alpha2",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: paasNameNQ,
+				UID:  PaasNQUUID,
+			},
+			Spec: v1alpha2.PaasSpec{
+				Requestor: "paasns-requestor",
+				Groups: v1alpha2.PaasGroups{
+					groupName1: v1alpha2.PaasGroup{},
+					groupName2: v1alpha2.PaasGroup{},
+				},
+				Secrets: map[string]string{
+					paasSecret: paasSecret,
+				},
+				Quota: quota.Quota{},
+			},
+		}
+
 		scheme = runtime.NewScheme()
 		Expect(v1alpha2.AddToScheme(scheme)).To(Succeed())
 		Expect(corev1.AddToScheme(scheme)).To(Succeed())
@@ -91,7 +116,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		// Create a fake client that already has the existing Paas
 		fakeClient = fake.NewClientBuilder().
 			WithScheme(scheme).
-			WithObjects(paas).
+			WithObjects(paas, noQuotaPaas).
 			Build()
 
 		validator = PaasNSCustomValidator{fakeClient}
@@ -110,6 +135,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		validSecret2, err = mycrypt.Encrypt([]byte("validSecretUpdated"))
 		Expect(err).NotTo(HaveOccurred())
 		createPaasNamespace(fakeClient, *paas, paasName)
+		createPaasNamespace(fakeClient, *noQuotaPaas, paasNameNQ)
 		// This is a namespace with Owner ref to mypaas and prefix set to myotherpaas-
 		createPaasNamespace(fakeClient, *paas, otherPaasName)
 		// This is a namespace without Owner ref
@@ -161,7 +187,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 						Message: "This config is the active config!",
 					},
 				},
-			}}
+			},
+		}
 
 		err := fakeClient.Create(ctx, &conf)
 		Expect(err).To(Not(HaveOccurred()))
@@ -215,6 +242,14 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			Expect(err.Error()).To(ContainSubstring("paasns name should not contain dots"))
 		})
 		It("Should validate paasns name", func() {
+			const (
+				letters     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+				tooLongName = letters + letters
+			)
+			var (
+				validLength   = 63 - 1 - len(paasName)
+				validLongName = tooLongName[0:validLength]
+			)
 			for _, test := range []struct {
 				name       string
 				validation string
@@ -222,6 +257,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			}{
 				{name: "valid-name", validation: "^[a-z-]+$", valid: true},
 				{name: "invalid-name", validation: "^[a-z]+$", valid: false},
+				{name: validLongName, validation: "", valid: true},
+				{name: tooLongName, validation: "", valid: false},
 				{name: "", validation: "^.$", valid: false},
 			} {
 				conf.Spec.Validations = v1alpha2.PaasConfigValidations{"paasNs": {"name": test.validation}}
@@ -309,6 +346,22 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			obj.DeletionTimestamp = &now
 			warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
 			Expect(warn, err).Error().ToNot(HaveOccurred())
+		})
+	})
+
+	Context("When creating a PaasNs but the parent paas doesn't have a quota defined, ", func() {
+		It("should not allow creation of a PaasNS", func() {
+			By("creating a PaasNS for a Paas without a defined Quota block")
+
+			newObj := obj.DeepCopy()
+
+			newObj.Namespace = "no-quota"
+			newObj.Spec.Paas = "no-quota"
+
+			_, err := validator.ValidateCreate(ctx, newObj)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("PaasNs cannot be created when there is no quota defined"))
 		})
 	})
 })

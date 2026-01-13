@@ -17,6 +17,7 @@ The concept works as follows:
 
 The operator creates an overview of all namespaces that should be there.
 These namespaces could be required by:
+
 - a capability
 - an entry in the paas.Spec.Namespaces block
 - a PaasNs
@@ -80,4 +81,4 @@ To add user namespaces, the following options are available:
 !!! note
 
     Note that besides creating the namespaces, the PaasNs controller also properly
-    sets up the namespace with the proper quota and the proper [authorization](authorization.yaml).
+    sets up the namespace with the proper quota and the proper [authorization](authorization.md).

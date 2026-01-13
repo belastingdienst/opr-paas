@@ -15,7 +15,7 @@ import (
 	"os"
 	"path/filepath"
 
-	argocdplugingenerator "github.com/belastingdienst/opr-paas/v3/internal/argocd-plugin-generator"
+	argocdplugingenerator "github.com/belastingdienst/opr-paas/v4/internal/argocd-plugin-generator"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
@@ -26,15 +26,14 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	"github.com/belastingdienst/opr-paas/v3/internal/controller"
-	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	argoresources "github.com/belastingdienst/opr-paas/v3/internal/stubs/argoproj/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v3/internal/version"
-	webhookv1alpha1 "github.com/belastingdienst/opr-paas/v3/internal/webhook/v1alpha1"
-	webhookv1alpha2 "github.com/belastingdienst/opr-paas/v3/internal/webhook/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha1"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	"github.com/belastingdienst/opr-paas/v4/internal/controller"
+	"github.com/belastingdienst/opr-paas/v4/internal/logging"
+	"github.com/belastingdienst/opr-paas/v4/internal/version"
+	webhookv1alpha1 "github.com/belastingdienst/opr-paas/v4/internal/webhook/v1alpha1"
+	webhookv1alpha2 "github.com/belastingdienst/opr-paas/v4/internal/webhook/v1alpha2"
 	"github.com/go-logr/zerologr"
 	quotav1 "github.com/openshift/api/quota/v1"
 	userv1 "github.com/openshift/api/user/v1"
@@ -72,7 +71,6 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(quotav1.AddToScheme(scheme))
 	utilruntime.Must(userv1.AddToScheme(scheme))
-	utilruntime.Must(argoresources.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
@@ -291,7 +289,8 @@ func setupMetricsTLS(f *flags, tlsOpts []func(*tls.Config)) (*certwatcher.CertWa
 }
 
 func createManager(f *flags, metricsServerOptions metricsserver.Options,
-	webhookTLSOpts []func(*tls.Config)) ctrl.Manager {
+	webhookTLSOpts []func(*tls.Config),
+) ctrl.Manager {
 	webhookServer := webhook.NewServer(webhook.Options{TLSOpts: webhookTLSOpts})
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{

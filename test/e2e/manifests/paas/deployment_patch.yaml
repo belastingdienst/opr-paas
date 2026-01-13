@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paas-controller-manager
+  namespace: paas-system
+  labels:
+    app.kubernetes.io/name: opr-paas
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  template:
+    spec:
+      containers:
+        - name: manager
+          args:
+            - --leader-elect
+            - --metrics-bind-address=:8080
+            - --argocd-plugin-generator-bind-address=:4355
+            - --metrics-secure=false
+          ports:
+            - containerPort: 4355
+              name: argocd
+              protocol: TCP
+            - containerPort: 9443
+              name: webhook-server
+              protocol: TCP
+            - containerPort: 8080
+              name: metrics
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: generator-token

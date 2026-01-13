@@ -11,12 +11,12 @@ import (
 	"errors"
 	"maps"
 
-	"github.com/belastingdienst/opr-paas/v3/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v3/internal/config"
-	"github.com/belastingdienst/opr-paas/v3/internal/logging"
-	"github.com/belastingdienst/opr-paas/v3/pkg/fields"
-	paasquota "github.com/belastingdienst/opr-paas/v3/pkg/quota"
-	"github.com/belastingdienst/opr-paas/v3/pkg/templating"
+	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	"github.com/belastingdienst/opr-paas/v4/internal/logging"
+	"github.com/belastingdienst/opr-paas/v4/pkg/fields"
+	paasquota "github.com/belastingdienst/opr-paas/v4/pkg/quota"
+	"github.com/belastingdienst/opr-paas/v4/pkg/templating"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -126,15 +126,35 @@ func (r *PaasReconciler) backendEnabledQuotas(
 	if err != nil {
 		return nil, err
 	}
-	quota, err := r.backendQuota(ctx, paas, "", paas.Spec.Quota)
+
+	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterQuotaComponent)
+
+	nsDefs, err := r.nsDefsFromPaas(ctx, paas)
 	if err != nil {
+		logger.Err(err).Msg("could not get nsDefs from paas")
 		return nil, err
 	}
-	quotas = append(quotas, quota)
+	logger.Debug().Msgf("Need to manage resources for %d namespaces", len(nsDefs))
+
+	// if the quota isn't empty, define a quota
+	if len(paas.Spec.Quota) > 0 {
+		var quota *quotav1.ClusterResourceQuota
+		quota, err = r.backendQuota(ctx, paas, "", paas.Spec.Quota)
+		if err != nil {
+			return nil, err
+		}
+		// add quota to the quota's definitions
+		quotas = append(quotas, quota)
+	}
+
 	for name, capability := range paas.Spec.Capabilities {
 		if capConfig, exists := myConfig.Spec.Capabilities[name]; !exists {
 			return nil, errors.New("a capability is requested, but not configured")
 		} else if !capConfig.QuotaSettings.Clusterwide {
+			// if capability is external, don't create quota's
+			if capConfig.QuotaSettings.External() {
+				continue
+			}
 			defaults := capConfig.QuotaSettings.DefQuota
 			quotaValues := capability.Quotas().MergeWith(defaults)
 			var capQuota *quotav1.ClusterResourceQuota
@@ -191,6 +211,7 @@ func (r *PaasReconciler) reconcileQuotas(
 ) (err error) {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterQuotaComponent)
 	logger.Info().Msg("creating quotas for Paas")
+
 	// Create quotas if needed
 	quotas, err := r.backendEnabledQuotas(ctx, paas)
 	if err != nil {
