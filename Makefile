@@ -367,9 +367,21 @@ check-coverage: install-go-test-coverage test
 	${GOBIN}/go-test-coverage --config=./.testcoverage.yaml
 
 .PHONY: bundle
-bundle: operator-sdk kustomize
+bundle: operator-sdk kustomize ## Generate OLM bundle manifests with correct operator image + relatedImages
+	@command -v yq >/dev/null 2>&1 || { echo "yq is required (brew install yq)"; exit 1; }
+
+	@echo "Setting operator image for bundle: $(IMG)"
+	cd manifests/default && $(KUSTOMIZE) edit set image controller=$(IMG)
+
 	$(KUSTOMIZE) build manifests/default | \
 	  $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
+
+	@CSV_FILE=$$(ls bundle/manifests/*.clusterserviceversion.yaml | grep -m1 '^bundle/manifests/opr-paas\.' || true); \
+	  [ -n "$$CSV_FILE" ] || CSV_FILE=$$(ls bundle/manifests/*.clusterserviceversion.yaml | head -n 1); \
+	  echo "Adding relatedImages to $$CSV_FILE -> $(IMG)"; \
+	  yq -i '.spec.relatedImages = [{"name":"opr-paas","image":"$(IMG)"}]' $$CSV_FILE
+
+	@cp -f bundle.Dockerfile bundle.Containerfile
 
 .PHONY: bundle-validate
 bundle-validate: operator-sdk
@@ -377,7 +389,10 @@ bundle-validate: operator-sdk
 
 .PHONY: bundle-build
 bundle-build: ## Build OLM bundle image
-	$(CONTAINER_TOOL) build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	@FILE=bundle.Containerfile; \
+	[ -f $$FILE ] || FILE=bundle.Dockerfile; \
+	echo "Building bundle image using $$FILE"; \
+	$(CONTAINER_TOOL) build -f $$FILE -t $(BUNDLE_IMG) .
 
 .PHONY: bundle-push
 bundle-push: ## Push OLM bundle image to registry

@@ -42,9 +42,8 @@ install.yaml
 
 .vscode/
 
-/bundle/manifests/*
-!/bundle/manifests/opr-paas.clusterserviceversion.yaml
-!/bundle.Dockerfile
-!/bundle/metadata/
+/bundle/
+/bundle.Dockerfile
+/bundle.Containerfile
 
 test/e2e/manifests/paas/generator-secret.yaml

@@ -41,12 +41,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           persist-credentials: false
 
       - name: Setup Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version: "1.25"
           cache: false
@@ -55,6 +55,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y podman
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
 
       - name: GHCR login (skip in test mode)
         if: ${{ env.TEST_MODE != 'true' }}
@@ -71,17 +76,12 @@ jobs:
       - name: Generate OLM bundle
         run: |
           make bundle VERSION=${VERSION} \
+            IMG=ghcr.io/belastingdienst/opr-paas:v${VERSION} \
             CHANNELS=stable \
             DEFAULT_CHANNEL=stable
 
       - name: Validate OLM bundle
         run: make bundle-validate
-
-      - name: Ensure bundle.Containerfile exists
-        run: |
-          if [ -f bundle.Dockerfile ] && [ ! -f bundle.Containerfile ]; then
-            cp bundle.Dockerfile bundle.Containerfile
-          fi
 
       - name: Build bundle image
         run: make bundle-build VERSION=${VERSION} CONTAINER_TOOL=podman
@@ -90,7 +90,7 @@ jobs:
         if: ${{ env.TEST_MODE != 'true' }}
         run: make bundle-push VERSION=${VERSION} CONTAINER_TOOL=podman
 
-      - name: Upload bundle manifests to release (real releases only)
+      - name: Upload bundle manifests to release (skip in test mode)
         if: ${{ env.TEST_MODE != 'true' }}
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
         with:
@@ -111,7 +111,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           persist-credentials: false
 
