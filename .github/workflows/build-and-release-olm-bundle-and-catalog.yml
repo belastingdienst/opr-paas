@@ -71,6 +71,7 @@ jobs:
       - name: Generate OLM bundle
         run: |
           make bundle VERSION=${VERSION} \
+            IMG=ghcr.io/belastingdienst/opr-paas:v${VERSION} \
             CHANNELS=stable \
             DEFAULT_CHANNEL=stable
 
@@ -90,7 +91,7 @@ jobs:
         if: ${{ env.TEST_MODE != 'true' }}
         run: make bundle-push VERSION=${VERSION} CONTAINER_TOOL=podman
 
-      - name: Upload bundle manifests to release (real releases only)
+      - name: Upload bundle manifests to release (skip in test mode)
         if: ${{ env.TEST_MODE != 'true' }}
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
         with:

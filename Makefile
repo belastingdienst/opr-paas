@@ -367,7 +367,12 @@ check-coverage: install-go-test-coverage test
 	${GOBIN}/go-test-coverage --config=./.testcoverage.yaml
 
 .PHONY: bundle
-bundle: operator-sdk kustomize
+bundle: operator-sdk kustomize ## Generate OLM bundle manifests with correct operator image + relatedImages
+	@echo "Setting operator image for bundle: $(IMG)"
+	# Update kustomize image before generating the bundle (so CSV install spec uses correct image)
+	cd manifests/default && $(KUSTOMIZE) edit set image controller=$(IMG)
+
+	# Generate the bundle from the rendered manifests
 	$(KUSTOMIZE) build manifests/default | \
 	  $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 
