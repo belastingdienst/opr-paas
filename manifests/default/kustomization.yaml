@@ -3,7 +3,6 @@ namespace: paas-system
 
 resources:
 - ../certmanager
-- ../config
 - ../crd
 - ../rbac
 - ../manager
