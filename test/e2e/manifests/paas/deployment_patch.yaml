@@ -16,6 +16,10 @@ spec:
             - --metrics-bind-address=:8080
             - --argocd-plugin-generator-bind-address=:4355
             - --metrics-secure=false
+          volumeMounts:
+            - name: example-keys
+              mountPath: /tmp/paas-e2e/secrets/priv
+              readOnly: true
           ports:
             - containerPort: 4355
               name: argocd
@@ -29,3 +33,8 @@ spec:
           envFrom:
             - secretRef:
                 name: generator-token
+      volumes:
+        - name: example-keys
+          secret:
+            secretName: example-keys
+            defaultMode: 420

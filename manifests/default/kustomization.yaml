@@ -2,15 +2,14 @@
 namespace: paas-system
 
 resources:
-- ../certmanager
-- ../config
-- ../crd
-- ../rbac
-- ../manager
-- ../webhook
+  - ../certmanager
+  - ../crd
+  - ../rbac
+  - ../manager
+  - ../webhook
 
 patches:
-- path: manager_webhook_patch.yaml
+  - path: manager_webhook_patch.yaml
 
 # Replacements to add the cert-manager CA injection annotations
 replacements:
