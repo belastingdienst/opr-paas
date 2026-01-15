@@ -90,14 +90,6 @@ jobs:
         if: ${{ env.TEST_MODE != 'true' }}
         run: make bundle-push VERSION=${VERSION} CONTAINER_TOOL=podman
 
-      - name: Upload bundle manifests to release (skip in test mode)
-        if: ${{ env.TEST_MODE != 'true' }}
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
-        with:
-          files: |
-            bundle/metadata/annotations.yaml
-            bundle/manifests/*
-
   catalog:
     if: ${{ needs.version.outputs.test_mode != 'true' }}
     name: Build & Push OLM Catalog (skip in test mode)
