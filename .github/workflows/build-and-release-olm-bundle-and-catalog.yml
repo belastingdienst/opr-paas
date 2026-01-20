@@ -76,7 +76,6 @@ jobs:
       - name: Generate OLM bundle
         run: |
           make bundle VERSION=${VERSION} \
-            IMG=ghcr.io/belastingdienst/opr-paas:v${VERSION} \
             CHANNELS=stable \
             DEFAULT_CHANNEL=stable
 

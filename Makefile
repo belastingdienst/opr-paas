@@ -373,6 +373,12 @@ bundle: operator-sdk kustomize ## Generate OLM bundle manifests with correct ope
 	@echo "Setting operator image for bundle: $(IMG)"
 	cd manifests/default && $(KUSTOMIZE) edit set image controller=$(IMG)
 
+bundle: operator-sdk kustomize ## Generate OLM bundle manifests with correct operator image + relatedImages
+	@echo "Setting operator image for bundle: $(IMG)"
+	# Update kustomize image before generating the bundle (so CSV install spec uses correct image)
+	cd manifests/default && $(KUSTOMIZE) edit set image controller=$(IMG)
+
+	# Generate the bundle from the rendered manifests
 	$(KUSTOMIZE) build manifests/default | \
 	  $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 
