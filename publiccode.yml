@@ -2,12 +2,12 @@
 # metadata file that makes public software easily discoverable.
 # More info at https://github.com/publiccodeyml/publiccode.yml
 
-publiccodeYmlVersion: "0.3"
+publiccodeYmlVersion: "0"
 
 name: Paas Operator
 url: "https://github.com/belastingdienst/opr-paas"
 softwareType: standalone/other
-releaseDate: "1970-01-01"
+releaseDate: "2026-01-14"
 platforms:
   - kubernetes
   - openshift
@@ -30,22 +30,22 @@ description:
       The PaaS operator delivers an opinionated 'Project as a Service' implementation
       where development teams can request a 'Project as a Service' by defining a PaaS
       resource.
-      
+
       A PaaS resource is used by the operator as an input to create namespaces
       limited by Cluster Resource Quota's, granting groups permissions and (together
       with a clusterwide ArgoCD) creating capabilities such as:
-      
+
       - a PaaS specific deployment of ArgoCD (continuous deployment);
       - Tekton (continuous integration);
       - Grafana (observability); and
       - KeyCloak (Application level Single Sign On);
-      
+
       A PaaS is all a team needs to hit the ground running.
 
     shortDescription: An operator providing a multi tenancy solution which allows DevOps teams to request a context for their project, called a 'Project as a service'.
-    
+
     documentation: https://belastingdienst.github.io/opr-paas/
-    
+
     features:
       - CRUD for Paas K8S Resources
       - Capabilities management
@@ -62,3 +62,5 @@ localisation:
 
 maintenance:
   type: internal
+  contacts:
+    - name: Karel Rietveld
