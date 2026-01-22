@@ -153,7 +153,7 @@ build: manifests generate fmt vet ## Build manager binary.
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
 	@kubectl get namespace paas-system >/dev/null 2>&1 || kubectl create namespace paas-system
-	kubectl apply -f manifests/config/example-keys.yaml
+	kubectl apply -f test/e2e/manifests/config/example-keys.yaml
 	export ENABLE_WEBHOOKS=false && \
 	go run ./cmd/manager/main.go
 
@@ -373,6 +373,12 @@ bundle: operator-sdk kustomize ## Generate OLM bundle manifests with correct ope
 	@echo "Setting operator image for bundle: $(IMG)"
 	cd manifests/default && $(KUSTOMIZE) edit set image controller=$(IMG)
 
+bundle: operator-sdk kustomize ## Generate OLM bundle manifests with correct operator image + relatedImages
+	@echo "Setting operator image for bundle: $(IMG)"
+	# Update kustomize image before generating the bundle (so CSV install spec uses correct image)
+	cd manifests/default && $(KUSTOMIZE) edit set image controller=$(IMG)
+
+	# Generate the bundle from the rendered manifests
 	$(KUSTOMIZE) build manifests/default | \
 	  $(OPERATOR_SDK) generate bundle $(BUNDLE_GEN_FLAGS)
 

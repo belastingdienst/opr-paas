@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - ./generator-secret.yaml
   - ../../../../manifests/default/
+  - ../config
 
 patches:
   - path: deployment_patch.yaml

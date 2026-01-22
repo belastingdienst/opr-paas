@@ -225,6 +225,12 @@ jobs:
           name: e2e-deployed-operator-logs-${{ github.run_id }}.log
           path: /tmp/e2e-deployed-operator-logs-${{ github.run_id }}.log
         if: ${{ failure() }}
+      - name: Debug pod on failure
+        if: ${{ failure() }}
+        run: |
+          kubectl get pods -n paas-system -o wide
+          kubectl describe pod -n paas-system -l control-plane=paas-controller-manager
+          kubectl get events -n paas-system --sort-by=.lastTimestamp | tail -n 80
       - name: Clean test fixtures
         run: rm -rf /tmp/paas-e2e
 
