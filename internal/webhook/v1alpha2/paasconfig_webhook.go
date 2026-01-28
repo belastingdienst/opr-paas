@@ -124,7 +124,6 @@ func (*PaasConfigCustomValidator) ValidateDelete(
 	ctx context.Context,
 	paasconfig *v1alpha2.PaasConfig,
 ) (admission.Warnings, error) {
-
 	_, logger := logging.SetWebhookLogger(ctx, paasconfig)
 	logger.Info().Msgf("validation for deletion of PaasConfig %s", paasconfig.GetName())
 
