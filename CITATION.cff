@@ -21,7 +21,7 @@ abstract: >-
   clusterwide ArgoCD) creating capabilities such as a PaaS
   specific deployment of ArgoCD (continuous deployment),
   Tekton (continuous integration), Grafana (observability),
-  and KeyCloak (Application level Signle Sign On).
+  and KeyCloak (Application level Single Sign On).
 keywords:
   - kubernetes
   - openshift
