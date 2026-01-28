@@ -181,5 +181,56 @@ var _ = Describe("Service", func() {
 			Expect(err.Error()).To(Equal("no PaasConfig found"))
 			Expect(results).To(BeEmpty())
 		})
+
+		It("generates elements even when custom fields don't match validation regex", func() {
+			By("Creating a Paas with custom fields that would fail validation")
+
+			// This git_url doesn't match the validation regex "^ssh://git@scm/[a-zA-Z0-9-./]*.git$"
+			// but the plugin generator should still return the values
+			invalidGitURL := "https://github.com/invalid/repo.git"
+			paas := &v1alpha2.Paas{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "paas-with-invalid-fields",
+				},
+				Spec: v1alpha2.PaasSpec{
+					Requestor: "test-requestor",
+					Quota:     quota.Quota{},
+					Capabilities: map[string]v1alpha2.PaasCapability{
+						"argocd": {
+							CustomFields: map[string]string{
+								"git_url":      invalidGitURL,
+								"git_path":     "path/",
+								"git_revision": "main",
+							},
+						},
+					},
+				},
+			}
+
+			Expect(k8sClient.Create(ctx, paas)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(k8sClient.Delete(ctx, paas)).To(Succeed())
+			})
+
+			By("Calling Generate - it should succeed without validation errors")
+
+			params := fields.ElementMap{
+				"capability": "argocd",
+			}
+			results, err := svc.Generate(ctx, params)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(results).NotTo(BeEmpty())
+
+			// Find our paas in results
+			var foundPaas fields.ElementMap
+			for _, r := range results {
+				if r["paas"] == "paas-with-invalid-fields" {
+					foundPaas = r
+					break
+				}
+			}
+			Expect(foundPaas).NotTo(BeNil())
+			Expect(foundPaas["git_url"]).To(Equal(invalidGitURL))
+		})
 	})
 })

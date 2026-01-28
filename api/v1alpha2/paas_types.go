@@ -86,11 +86,36 @@ func (pc PaasCapability) Quotas() (pq paasquota.Quota) {
 	return pc.Quota
 }
 
-// CapExtraFields returns all extra fields that are configured for a capability
+// CapExtraFields returns all extra fields that are configured for a capability.
+// This function only fetches and applies defaults, without performing validation.
+// Use ValidateCapExtraFields for validation during Paas create/update.
 func (pc *PaasCapability) CapExtraFields(
 	fieldConfig map[string]ConfigCustomField,
-) (elements fields.ElementMap, err error) {
-	elements = fields.ElementMap{}
+) fields.ElementMap {
+	elements := fields.ElementMap{}
+	for key, value := range pc.CustomFields {
+		if _, exists := fieldConfig[key]; exists {
+			elements[key] = value
+		}
+	}
+	for key, fieldConf := range fieldConfig {
+		if _, err := elements.TryGetElementAsString(key); err != nil {
+			// Value not set, apply default if available
+			if fieldConf.Template == "" || fieldConf.Default != "" {
+				elements[key] = fieldConf.Default
+			}
+		}
+	}
+	return elements
+}
+
+// ValidateCapExtraFields validates the custom fields for a capability against the config.
+// It checks for unknown fields, required fields, and regex validation.
+// This should be called during Paas create/update validation.
+func (pc *PaasCapability) ValidateCapExtraFields(
+	fieldConfig map[string]ConfigCustomField,
+) error {
+	elements := fields.ElementMap{}
 	var issues []error
 	for key, value := range pc.CustomFields {
 		if _, exists := fieldConfig[key]; !exists {
@@ -101,6 +126,7 @@ func (pc *PaasCapability) CapExtraFields(
 	}
 	for key, fieldConf := range fieldConfig {
 		var value string
+		var err error
 		if value, err = elements.TryGetElementAsString(key); err == nil {
 			var matched bool
 			if matched, err = regexp.Match(fieldConf.Validation, []byte(value)); err != nil {
@@ -112,14 +138,12 @@ func (pc *PaasCapability) CapExtraFields(
 			}
 		} else if fieldConf.Required {
 			issues = append(issues, fmt.Errorf("value %s is required", key))
-		} else if fieldConf.Template == "" || fieldConf.Default != "" {
-			elements[key] = fieldConf.Default
 		}
 	}
 	if len(issues) > 0 {
-		return nil, errors.Join(issues...)
+		return errors.Join(issues...)
 	}
-	return elements, nil
+	return nil
 }
 
 // PaasCapabilities holds all capabilities enabled in a Paas

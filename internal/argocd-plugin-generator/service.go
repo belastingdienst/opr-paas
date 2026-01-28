@@ -117,11 +117,7 @@ func capElementsFromPaas(
 		return nil, nil
 	}
 
-	capElements, err := capability.CapExtraFields(paasConfig.Spec.Capabilities[capName].CustomFields)
-	if err != nil {
-		logger.Error().AnErr("error", err).Msg("getting capability custom fields failed")
-		return nil, err
-	}
+	capElements := capability.CapExtraFields(paasConfig.Spec.Capabilities[capName].CustomFields)
 	logger.Debug().Str("paas", paas.Name).Any("cap.elements", capElements).Msg("after getting cap. elements")
 	elements = templatedElements.Merge(capElements)
 	logger.Debug().Str("paas", paas.Name).Any("merged", templatedElements).Msg("after merge with cap elements")

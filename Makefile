@@ -347,7 +347,7 @@ setup-local-e2e:
 	kustomize build test/e2e/manifests/paas-context | kubectl apply -f -
 
 .PHONY: local-e2e
-local-e2e: refesh-kind setup-local-e2e manifests kustomize certmanager
+local-e2e: refresh-kind setup-local-e2e manifests kustomize certmanager
 ifeq ($(CONTAINER_TOOL),podman)
 	cd manifests/manager && $(KUSTOMIZE) edit set image controller=localhost/$(IMG)
 endif
@@ -415,4 +415,3 @@ catalog-build: opm ## Build catalog image using OPM
 .PHONY: catalog-push
 catalog-push: ## Push catalog image to container registry
 	$(CONTAINER_TOOL) push $(CATALOG_IMG)
-
