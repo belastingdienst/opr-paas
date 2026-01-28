@@ -20,13 +20,11 @@ import (
 	"github.com/belastingdienst/opr-paas/v4/pkg/quota"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
@@ -38,7 +36,7 @@ const (
 
 // SetupPaasWebhookWithManager registers the webhook for Paas in the manager.
 func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(&v1alpha1.Paas{}).
+	return ctrl.NewWebhookManagedBy(mgr, &v1alpha1.Paas{}).
 		WithValidator(&PaasCustomValidator{client: mgr.GetClient()}).
 		Complete()
 }
@@ -63,14 +61,10 @@ type PaasCustomValidator struct {
 	client client.Client
 }
 
-var _ webhook.CustomValidator = &PaasCustomValidator{}
+var _ admission.Validator[*v1alpha1.Paas] = &PaasCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
-func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	paas, ok := obj.(*v1alpha1.Paas)
-	if !ok {
-		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
-	}
+func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, paas *v1alpha1.Paas) (admission.Warnings, error) {
 	ctx, logger := logging.SetWebhookLogger(ctx, paas)
 
 	myConf, err := config.GetConfigV1(ctx, v.client)
@@ -87,14 +81,10 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
 func (v *PaasCustomValidator) ValidateUpdate(
 	ctx context.Context,
-	_, newObj runtime.Object,
+	_, nPaas *v1alpha1.Paas,
 ) (admission.Warnings, error) {
-	paas, ok := newObj.(*v1alpha1.Paas)
-	if !ok {
-		return nil, fmt.Errorf("expected a Paas object for the newObj but got %T", newObj)
-	}
-	ctx, logger := logging.SetWebhookLogger(ctx, paas)
-	if paas.GetDeletionTimestamp() != nil {
+	ctx, logger := logging.SetWebhookLogger(ctx, nPaas)
+	if nPaas.GetDeletionTimestamp() != nil {
 		logger.Info().Msg("paas is being deleted")
 		return nil, nil
 	}
@@ -106,15 +96,11 @@ func (v *PaasCustomValidator) ValidateUpdate(
 	}
 	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConf)
 
-	return v.validate(ctx, paas)
+	return v.validate(ctx, nPaas)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Paas.
-func (*PaasCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	paas, ok := obj.(*v1alpha1.Paas)
-	if !ok {
-		return nil, fmt.Errorf("expected a Paas object but got %T", obj)
-	}
+func (*PaasCustomValidator) ValidateDelete(ctx context.Context, paas *v1alpha1.Paas) (admission.Warnings, error) {
 	_, logger := logging.SetWebhookLogger(ctx, paas)
 	logger.Info().Msg("starting validation webhook for deletion")
 

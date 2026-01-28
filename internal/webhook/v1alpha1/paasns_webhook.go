@@ -19,7 +19,6 @@ import (
 	"github.com/belastingdienst/opr-paas/v4/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v4/internal/config"
 	"github.com/belastingdienst/opr-paas/v4/internal/logging"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -29,7 +28,7 @@ import (
 
 // SetupPaasNsWebhookWithManager registers the webhook for PaasNs in the manager.
 func SetupPaasNsWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(&v1alpha1.PaasNS{}).
+	return ctrl.NewWebhookManagedBy(mgr, &v1alpha1.PaasNS{}).
 		WithValidator(&PaasNSCustomValidator{client: mgr.GetClient()}).
 		Complete()
 }
@@ -49,20 +48,13 @@ type PaasNSCustomValidator struct {
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
 func (v *PaasNSCustomValidator) ValidateCreate(
 	ctx context.Context,
-	obj runtime.Object,
+	paasns *v1alpha1.PaasNS,
 ) (w admission.Warnings, err error) {
 	var errs field.ErrorList
-	paasns, ok := obj.(*v1alpha1.PaasNS)
 	ctx, _ = logging.SetWebhookLogger(ctx, paasns)
 	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasNSComponentV1)
 	logger.Info().Msgf("starting validation webhook for create")
 
-	if !ok {
-		return nil, &field.Error{
-			Type:   field.ErrorTypeTypeInvalid,
-			Detail: fmt.Errorf("expected a PaasNS object but got %T", obj).Error(),
-		}
-	}
 	myConf, err := config.GetConfigV1(ctx, v.client)
 	if err != nil {
 		return nil, err
@@ -104,19 +96,12 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
 func (v *PaasNSCustomValidator) ValidateUpdate(
 	ctx context.Context,
-	oldObj,
-	newObj runtime.Object,
+	oPaasNS,
+	nPaasNS *v1alpha1.PaasNS,
 ) (w admission.Warnings, err error) {
 	var errs field.ErrorList
-	oldPaasns, ok := oldObj.(*v1alpha1.PaasNS)
-	if !ok {
-		return nil, &field.Error{
-			Type:   field.ErrorTypeTypeInvalid,
-			Detail: fmt.Errorf("expected a PaasNS object but got %T", oldObj).Error(),
-		}
-	}
 
-	ctx, _ = logging.SetWebhookLogger(ctx, oldPaasns)
+	ctx, _ = logging.SetWebhookLogger(ctx, oPaasNS)
 	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasNSComponentV1)
 
 	myConf, err := config.GetConfigV1(ctx, v.client)
@@ -125,47 +110,39 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 	}
 	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConf)
 
-	newPaasns, ok := newObj.(*v1alpha1.PaasNS)
-	if !ok {
-		return nil, &field.Error{
-			Type:   field.ErrorTypeTypeInvalid,
-			Detail: fmt.Errorf("expected a PaasNS object but got %T", newObj).Error(),
-		}
-	}
-
-	if newPaasns.GetDeletionTimestamp() != nil {
+	if nPaasNS.GetDeletionTimestamp() != nil {
 		logger.Info().Msg("paasns is being deleted")
 		return nil, nil
 	}
 	logger.Info().Msg("starting validation webhook for update")
 
-	if oldPaasns.Spec.Paas != newPaasns.Spec.Paas {
+	if oPaasNS.Spec.Paas != nPaasNS.Spec.Paas {
 		return w, &field.Error{
 			Type:     field.ErrorTypeNotSupported,
 			Field:    field.NewPath("spec").Child("paas").String(),
-			BadValue: newPaasns.Spec.Paas,
+			BadValue: nPaasNS.Spec.Paas,
 			Detail:   "field is immutable",
 		}
 	}
 
-	paas, _ := paasNStoPaas(ctx, v.client, newPaasns)
+	paas, _ := paasNStoPaas(ctx, v.client, nPaasNS)
 
-	if !reflect.DeepEqual(oldPaasns.Spec.Groups, newPaasns.Spec.Groups) {
+	if !reflect.DeepEqual(oPaasNS.Spec.Groups, nPaasNS.Spec.Groups) {
 		// Raise errors when groups are not in paas
-		errs = append(errs, compareGroups(newPaasns.Spec.Groups, paas.Spec.Groups.Keys())...)
+		errs = append(errs, compareGroups(nPaasNS.Spec.Groups, paas.Spec.Groups.Keys())...)
 	}
 
 	// Err when an sshSecret can't be decrypted
-	if !reflect.DeepEqual(oldPaasns.Spec.SSHSecrets, newPaasns.Spec.SSHSecrets) {
+	if !reflect.DeepEqual(oPaasNS.Spec.SSHSecrets, nPaasNS.Spec.SSHSecrets) {
 		var validated validatedSecrets
 		// We don't have to validate what is in the Paas (already validated by Paas webhook)
 		validated.appendFromPaas(*paas)
 		// We don't have to validate what is in the previous PaasNs definition (already validated before)
-		validated.appendFromPaasNS(*oldPaasns)
+		validated.appendFromPaasNS(*oPaasNS)
 		getRsaFunc := func() (cr *crypt.Crypt, err error) {
-			return getRsa(ctx, v.client, newPaasns.Spec.Paas)
+			return getRsa(ctx, v.client, nPaasNS.Spec.Paas)
 		}
-		errs = append(errs, validated.compareSecrets(newPaasns.Spec.SSHSecrets, getRsaFunc)...)
+		errs = append(errs, validated.compareSecrets(nPaasNS.Spec.SSHSecrets, getRsaFunc)...)
 	}
 
 	if len(errs) > 0 {
@@ -175,7 +152,7 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
-func (*PaasNSCustomValidator) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*PaasNSCustomValidator) ValidateDelete(_ context.Context, _ *v1alpha1.PaasNS) (admission.Warnings, error) {
 	return nil, nil
 }
 
