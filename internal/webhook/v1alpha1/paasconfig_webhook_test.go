@@ -440,14 +440,6 @@ var _ = Describe("Deleting a PaasConfig", Ordered, func() {
 		validator = PaasConfigCustomValidator{client: k8sClient}
 	})
 
-	It("should not accept another resource type", func() {
-		obj := &corev1.Secret{}
-		warn, err := validator.ValidateDelete(ctx, obj)
-
-		Expect(warn).To(BeEmpty())
-		Expect(err).Error().To(MatchError("expected a PaasConfig object but got *v1.Secret"))
-	})
-
 	It("should not return warnings nor an error", func() {
 		warn, err := validator.ValidateDelete(ctx, obj)
 

@@ -20,7 +20,6 @@ import (
 	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v4/internal/logging"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -30,7 +29,7 @@ import (
 
 // SetupPaasNsWebhookWithManager registers the webhook for PaasNs in the manager.
 func SetupPaasNsWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(&v1alpha2.PaasNS{}).
+	return ctrl.NewWebhookManagedBy(mgr, &v1alpha2.PaasNS{}).
 		WithValidator(&PaasNSCustomValidator{client: mgr.GetClient()}).
 		Complete()
 }
@@ -58,20 +57,13 @@ type paasNsSpecValidator func(
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
 func (v *PaasNSCustomValidator) ValidateCreate(
 	ctx context.Context,
-	obj runtime.Object,
+	paasns *v1alpha2.PaasNS,
 ) (w admission.Warnings, err error) {
 	var errs field.ErrorList
-	paasns, ok := obj.(*v1alpha2.PaasNS)
+
 	ctx, _ = logging.SetWebhookLogger(ctx, paasns)
 	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasNSComponentV2)
 	logger.Info().Msgf("starting validation webhook for create")
-
-	if !ok {
-		return nil, &field.Error{
-			Type:   field.ErrorTypeTypeInvalid,
-			Detail: fmt.Errorf("expected a PaasNS object but got %T", obj).Error(),
-		}
-	}
 
 	paas, err := paasNStoPaas(ctx, v.client, paasns)
 	if err != nil {
@@ -118,37 +110,22 @@ func (v *PaasNSCustomValidator) ValidateCreate(
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
 func (v *PaasNSCustomValidator) ValidateUpdate(
 	ctx context.Context,
-	oldObj,
-	newObj runtime.Object,
+	oPaasNS,
+	nPaasNS *v1alpha2.PaasNS,
 ) (w admission.Warnings, err error) {
 	var errs field.ErrorList
-	oldPaasns, ok := oldObj.(*v1alpha2.PaasNS)
-	if !ok {
-		return nil, &field.Error{
-			Type:   field.ErrorTypeTypeInvalid,
-			Detail: fmt.Errorf("expected a PaasNS object but got %T", oldObj).Error(),
-		}
-	}
 
-	ctx, _ = logging.SetWebhookLogger(ctx, oldPaasns)
+	ctx, _ = logging.SetWebhookLogger(ctx, oPaasNS)
 	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasNSComponentV2)
 
-	newPaasns, ok := newObj.(*v1alpha2.PaasNS)
-	if !ok {
-		return nil, &field.Error{
-			Type:   field.ErrorTypeTypeInvalid,
-			Detail: fmt.Errorf("expected a PaasNS object but got %T", newObj).Error(),
-		}
-	}
-
-	if newPaasns.GetDeletionTimestamp() != nil {
+	if nPaasNS.GetDeletionTimestamp() != nil {
 		logger.Info().Msg("paasns is being deleted")
 		return nil, nil
 	}
 	logger.Info().Msg("starting validation webhook for update")
 
 	// This will not occur.
-	paas, _ := paasNStoPaas(ctx, v.client, newPaasns)
+	paas, _ := paasNStoPaas(ctx, v.client, nPaasNS)
 
 	myConfig, err := config.GetConfig(ctx, v.client)
 	if err != nil {
@@ -164,7 +141,7 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 		validatePaasNsSecrets,
 	} {
 		var fieldErrs []*field.Error
-		fieldErrs, err = validator(ctx, v.client, myConfig, *paas, *newPaasns)
+		fieldErrs, err = validator(ctx, v.client, myConfig, *paas, *nPaasNS)
 		if err != nil {
 			return nil, err
 		}
@@ -178,7 +155,7 @@ func (v *PaasNSCustomValidator) ValidateUpdate(
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasNS.
-func (*PaasNSCustomValidator) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+func (*PaasNSCustomValidator) ValidateDelete(_ context.Context, _ *v1alpha2.PaasNS) (admission.Warnings, error) {
 	return nil, nil
 }
 
