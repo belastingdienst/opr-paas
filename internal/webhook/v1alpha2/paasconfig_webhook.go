@@ -17,18 +17,16 @@ import (
 	k8sv1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // SetupPaasConfigWebhookWithManager registers the webhook for PaasConfig in the manager.
 func SetupPaasConfigWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).For(&v1alpha2.PaasConfig{}).
+	return ctrl.NewWebhookManagedBy(mgr, &v1alpha2.PaasConfig{}).
 		WithValidator(&PaasConfigCustomValidator{client: mgr.GetClient()}).
 		Complete()
 }
@@ -52,19 +50,14 @@ type PaasConfigCustomValidator struct {
 	client client.Client
 }
 
-var _ webhook.CustomValidator = &PaasConfigCustomValidator{}
+var _ admission.Validator[*v1alpha2.PaasConfig] = &PaasConfigCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
 func (v *PaasConfigCustomValidator) ValidateCreate(
 	ctx context.Context,
-	obj runtime.Object,
+	paasconfig *v1alpha2.PaasConfig,
 ) (warn admission.Warnings, err error) {
 	var allErrs field.ErrorList
-
-	paasconfig, ok := obj.(*v1alpha2.PaasConfig)
-	if !ok {
-		return nil, fmt.Errorf("expected a PaasConfig object but got %T", obj)
-	}
 
 	_, logger := logging.SetWebhookLogger(ctx, paasconfig)
 	logger.Info().Msgf("validation for creation of PaasConfig %s", paasconfig.GetName())
@@ -100,29 +93,25 @@ func (v *PaasConfigCustomValidator) ValidateCreate(
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
 func (v *PaasConfigCustomValidator) ValidateUpdate(
 	ctx context.Context,
-	oldObj, newObj runtime.Object,
+	oPaasconfig, nPaasconfig *v1alpha2.PaasConfig,
 ) (warn admission.Warnings, err error) {
 	var allErrs field.ErrorList
-	paasconfig, ok := newObj.(*v1alpha2.PaasConfig)
-	if !ok {
-		return nil, fmt.Errorf("expected a PaasConfig object but got %T", newObj)
-	}
 
-	_, logger := logging.SetWebhookLogger(ctx, paasconfig)
-	logger.Info().Msgf("validation for updating of PaasConfig %s", paasconfig.GetName())
+	_, logger := logging.SetWebhookLogger(ctx, nPaasconfig)
+	logger.Info().Msgf("validation for updating of PaasConfig %s", nPaasconfig.GetName())
 
 	// Ensure all required fields and values are there
-	if warnings, flderr := validatePaasConfigSpec(ctx, v.client, paasconfig.Spec); flderr != nil || len(warnings) > 0 {
+	if warnings, flderr := validatePaasConfigSpec(ctx, v.client, nPaasconfig.Spec); flderr != nil || len(warnings) > 0 {
 		warn = append(warn, warnings...)
 		allErrs = append(allErrs, flderr...)
 	}
 
-	logger.Debug().Msgf("old PaasConfig: %v", oldObj.(*v1alpha2.PaasConfig))
+	logger.Debug().Msgf("old PaasConfig: %v", oPaasconfig)
 
 	if len(allErrs) > 0 {
 		return warn, apierrors.NewInvalid(
 			schema.GroupKind{Group: v1alpha2.GroupVersion.Group, Kind: "PaasConfig"},
-			paasconfig.Name,
+			nPaasconfig.Name,
 			allErrs,
 		)
 	}
@@ -133,13 +122,8 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type PaasConfig.
 func (*PaasConfigCustomValidator) ValidateDelete(
 	ctx context.Context,
-	obj runtime.Object,
+	paasconfig *v1alpha2.PaasConfig,
 ) (admission.Warnings, error) {
-	paasconfig, ok := obj.(*v1alpha2.PaasConfig)
-	if !ok {
-		return nil, fmt.Errorf("expected a PaasConfig object but got %T", obj)
-	}
-
 	_, logger := logging.SetWebhookLogger(ctx, paasconfig)
 	logger.Info().Msgf("validation for deletion of PaasConfig %s", paasconfig.GetName())
 
