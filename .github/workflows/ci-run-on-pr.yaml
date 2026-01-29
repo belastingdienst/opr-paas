@@ -189,8 +189,7 @@ jobs:
         # https://github.com/marketplace/actions/kubernetes-kind-cluster#example-workflow
       - name: Kubernetes KinD Cluster
         run: |
-          go install sigs.k8s.io/kind@v0.30.0
-          kind create cluster
+          make kind-create-cluster
       - name: Test kind setup successfully
         run: |
           kubectl cluster-info
@@ -207,7 +206,7 @@ jobs:
           sleep 10s
           kustomize build test/e2e/manifests/paas-context | kubectl apply -f -
       - name: Deploy operator
-        run: make deploy_with_plugin_generator
+        run: make gh-e2e-with-plugin-generator
       - name: Wait for operator deployment to be ready
         run: |
           kubectl wait --for=condition=Available deployment/paas-controller-manager -n paas-system --timeout=120s

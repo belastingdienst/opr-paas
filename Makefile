@@ -99,14 +99,6 @@ help: ## Display this help.
 
 ##@ Development
 
-.PHONY: manifests
-manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=paas-manager-role crd:allowDangerousTypes=true webhook paths="./..." output:crd:artifacts:config=manifests/crd/bases output:rbac:artifacts:config=manifests/rbac output:webhook:artifacts:config=manifests/webhook
-
-.PHONY: generate
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
-
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
@@ -114,15 +106,6 @@ fmt: ## Run go fmt against code.
 .PHONY: vet
 vet: ## Run go vet against code.
 	go vet ./...
-
-.PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out -coverpkg=./...
-
-
-.PHONY: test-e2e
-test-e2e:
-	go test -count=1 -v ./test/e2e
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter & yamllint
@@ -132,19 +115,76 @@ lint: golangci-lint ## Run golangci-lint linter & yamllint
 lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 	$(GOLANGCI_LINT) run --fix
 
+.PHONY: test
+test: manifests generate fmt vet envtest ## Run unit tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out -coverpkg=./...
+
+.PHONY: test-e2e
+test-e2e:
+	go test -count=1 -v ./test/e2e
+
+.PHONY: install-go-test-coverage
+install-go-test-coverage:
+	go install github.com/vladopajic/go-test-coverage/v2@latest
+
+.PHONY: check-coverage
+check-coverage: install-go-test-coverage test ## check unittest coverage
+	${GOBIN}/go-test-coverage --config=./.testcoverage.yaml
+
 # Setup e2e
 .PHONY: setup-e2e
-setup-e2e: kustomize ## Setup test environment in the K8s cluster specified in ~/.kube/config.
+setup-e2e: kustomize
 	# Create GitOps operator mocks
-	$(KUSTOMIZE) build test/e2e/manifests/gitops-operator | kubectl apply --server-side -f -
+	$(KUSTOMIZE) build test/e2e/manifests/gitops-operator | ${KUBECTL} apply --server-side -f -
 	# Apply OpenShift mocks
-	$(KUSTOMIZE) build test/e2e/manifests/openshift | kubectl apply -f -
+	$(KUSTOMIZE) build test/e2e/manifests/openshift | ${KUBECTL} apply -f -
 	# Apply context needed by operator
-	$(KUSTOMIZE) build test/e2e/manifests/paas-context | kubectl apply -f -
+	$(KUSTOMIZE) build test/e2e/manifests/paas-context | ${KUBECTL} apply -f -
 	# Apply opr-paas crds
-	$(KUSTOMIZE) build manifests/crd | kubectl apply -f -
+	$(KUSTOMIZE) build manifests/crd | ${KUBECTL} apply -f -
+
+.PHONY: refresh-kind
+refresh-kind: $(KIND) kind-delete-cluster kind-create-cluster
+
+.PHONY: kind-create-cluster
+kind-create-cluster: $(KIND)
+	kind create cluster
+
+.PHONY: kind-delete-cluster
+kind-delete-cluster: $(KIND)
+	kind delete cluster || echo "no existing kind cluster"
+
+.PHONY: setup-local-e2e
+setup-local-e2e: ${KIND}
+	$(CONTAINER_TOOL) build -t ${IMG} .
+	${KIND} load image-archive <(${CONTAINER_TOOL} save controller:latest)
+
+	${KUSTOMIZE} build test/e2e/manifests/gitops-operator | ${KUBECTL} create -f -
+	${KUSTOMIZE} build test/e2e/manifests/openshift | ${KUBECTL} apply -f -
+
+	# Wait a bit as the paas-context files rely on the previous deployed mocks
+	sleep 10
+	$(KUSTOMIZE) build test/e2e/manifests/paas-context | ${KUBECTL} apply -f -
+
+.PHONY: local-e2e
+local-e2e: refresh-kind setup-local-e2e manifests kustomize certmanager ## Run local e2e test (use CONTAINER_TOOL=podman when using podman over docker)
+ifeq ($(CONTAINER_TOOL),podman)
+	$(KUSTOMIZE) build test/e2e/manifests/local-e2e-podman | ${KUBECTL} apply -f -
+else
+	$(KUSTOMIZE) build manifests/default | ${KUBECTL} apply -f -
+endif
+	${KUBECTL} wait --for=condition=Available deployment/paas-controller-manager -n paas-system --timeout=120s
+	go test -v ./test/e2e
 
 ##@ Build
+
+.PHONY: manifests
+manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+	$(CONTROLLER_GEN) rbac:roleName=paas-manager-role crd:allowDangerousTypes=true webhook paths="./..." output:crd:artifacts:config=manifests/crd/bases output:rbac:artifacts:config=manifests/rbac output:webhook:artifacts:config=manifests/webhook
+
+.PHONY: generate
+generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 .PHONY: build
 build: manifests generate fmt vet ## Build manager binary.
@@ -152,8 +192,7 @@ build: manifests generate fmt vet ## Build manager binary.
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
-	@kubectl get namespace paas-system >/dev/null 2>&1 || kubectl create namespace paas-system
-	kubectl apply -f test/e2e/manifests/config/example-keys.yaml
+	@${KUBECTL} get namespace paas-system >/dev/null 2>&1 || ${KUBECTL} create namespace paas-system
 	export ENABLE_WEBHOOKS=false && \
 	go run ./cmd/manager/main.go
 
@@ -217,11 +256,11 @@ deploy: manifests certmanager ## Deploy controller to the K8s cluster specified 
 	cd manifests/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build manifests/default | $(KUBECTL) apply -f -
 
-.PHONY: deploy_with_plugin_generator
-deploy_with_plugin_generator: manifests certmanager ## Deploy controller to the K8s cluster specified in ~/.kube/config. including certmanager and certs for webhook
+.PHONY: e2e-with-plugin-generator
+gh-e2e-with-plugin-generator: manifests certmanager ## Deploy controller to the K8s cluster specified in ~/.kube/config. including certmanager and certs for webhook
 	cd manifests/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	cd test/e2e/manifests/paas && $(KUBECTL) create secret generic generator-token -n paas-system --from-literal=ARGOCD_GENERATOR_TOKEN=$(shell openssl rand -base64 60 | tr -dc A-Za-z0-9 | head -c 45) --dry-run=client -o yaml > generator-secret.yaml
-	$(KUSTOMIZE) build test/e2e/manifests/paas | $(KUBECTL) apply -f -
+	cd test/e2e/manifests/e2e-with-plugingenerator && $(KUBECTL) create secret generic generator-token -n paas-system --from-literal=ARGOCD_GENERATOR_TOKEN=$(shell openssl rand -base64 60 | tr -dc A-Za-z0-9 | head -c 45) --dry-run=client -o yaml > generator-secret.yaml
+	$(KUSTOMIZE) build test/e2e/manifests/e2e-with-plugingenerator | $(KUBECTL) apply -f -
 
 .PHONY: undeploy
 undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
@@ -236,12 +275,14 @@ $(LOCALBIN):
 
 ## Tool Binaries
 KUBECTL ?= kubectl
+KIND ?= $(LOCALBIN)/kind
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
+KIND_VERSION ?= v0.30.0
 KUSTOMIZE_VERSION ?= v5.7.0
 CONTROLLER_TOOLS_VERSION ?= v0.18.0
 ENVTEST_VERSION ?= release-0.21
@@ -251,6 +292,11 @@ GOLANGCI_LINT_VERSION ?= v2.4.0
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
 	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v5,$(KUSTOMIZE_VERSION))
+
+.PHONY: kind
+kind: $(KIND) ## Download kustomize locally if necessary.
+$(KIND): $(LOCALBIN)
+	$(call go-install-tool,$(KIND),sigs.k8s.io/kind,$(KIND_VERSION))
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
@@ -329,54 +375,14 @@ ifneq ($(origin CATALOG_BASE_IMG), undefined)
 FROM_INDEX_OPT := --from-index $(CATALOG_BASE_IMG)
 endif
 
-.PHONY: refresh-kind
-refresh-kind:
-	kind delete cluster
-	kind create cluster
-
-.PHONY: setup-local-e2e
-setup-local-e2e:
-	$(CONTAINER_TOOL) build -t ${IMG} .
-	kind load image-archive <(${CONTAINER_TOOL} save controller:latest)
-
-	${KUSTOMIZE} build test/e2e/manifests/gitops-operator | kubectl create -f -
-	${KUSTOMIZE} build test/e2e/manifests/openshift | kubectl apply -f -
-
-	# Wait a bit as the paas-context files rely on the previous deployed mocks
-	sleep 10
-	kustomize build test/e2e/manifests/paas-context | kubectl apply -f -
-
-.PHONY: local-e2e
-local-e2e: refesh-kind setup-local-e2e manifests kustomize certmanager
-ifeq ($(CONTAINER_TOOL),podman)
-	cd manifests/manager && $(KUSTOMIZE) edit set image controller=localhost/$(IMG)
-endif
-	$(KUSTOMIZE) build manifests/default | $(KUBECTL) apply -f -
-ifeq ($(CONTAINER_TOOL),podman)
-	cd manifests/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-endif
-	kubectl wait --for=condition=Available deployment/paas-controller-manager -n paas-system --timeout=120s
-	go test -v ./test/e2e
-
-.PHONY: install-go-test-coverage
-install-go-test-coverage:
-	go install github.com/vladopajic/go-test-coverage/v2@latest
-
-.PHONY: check-coverage
-check-coverage: install-go-test-coverage test
-	${GOBIN}/go-test-coverage --config=./.testcoverage.yaml
+.PHONY: bundle-image
+bundle-image: operator-sdk kustomize ## Generate correct operator image for OLM bundle
+	@echo "Setting operator image for bundle: $(IMG)"
+	cd manifests/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 
 .PHONY: bundle
-bundle: operator-sdk kustomize ## Generate OLM bundle manifests with correct operator image + relatedImages
+bundle: bundle-image ## Generate OLM bundle manifests
 	@command -v yq >/dev/null 2>&1 || { echo "yq is required (brew install yq)"; exit 1; }
-
-	@echo "Setting operator image for bundle: $(IMG)"
-	cd manifests/default && $(KUSTOMIZE) edit set image controller=$(IMG)
-
-bundle: operator-sdk kustomize ## Generate OLM bundle manifests with correct operator image + relatedImages
-	@echo "Setting operator image for bundle: $(IMG)"
-	# Update kustomize image before generating the bundle (so CSV install spec uses correct image)
-	cd manifests/default && $(KUSTOMIZE) edit set image controller=$(IMG)
 
 	# Generate the bundle from the rendered manifests
 	$(KUSTOMIZE) build manifests/default | \
@@ -415,4 +421,3 @@ catalog-build: opm ## Build catalog image using OPM
 .PHONY: catalog-push
 catalog-push: ## Push catalog image to container registry
 	$(CONTAINER_TOOL) push $(CATALOG_IMG)
-
