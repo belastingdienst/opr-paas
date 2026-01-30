@@ -264,7 +264,7 @@ deploy: manifests certmanager ## Deploy controller to the K8s cluster specified 
 	cd manifests/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build manifests/default | $(KUBECTL) apply -f -
 
-.PHONY: e2e-with-plugin-generator
+.PHONY: gh-e2e-with-plugin-generator
 gh-e2e-with-plugin-generator: manifests certmanager ## Deploy controller to the K8s cluster specified in ~/.kube/config. including certmanager and certs for webhook
 	cd manifests/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	cd test/e2e/manifests/e2e-with-plugingenerator && $(KUBECTL) create secret generic generator-token -n paas-system --from-literal=ARGOCD_GENERATOR_TOKEN=$(shell openssl rand -base64 60 | tr -dc A-Za-z0-9 | head -c 45) --dry-run=client -o yaml > generator-secret.yaml
