@@ -330,7 +330,7 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 		"git_revision": {},
 		"git_path":     {},
 		"default_key":  {Default: "default_value"},
-	})
+	}, true)
 	require.NoError(t, err, "we should have no errors returned")
 	assert.Equal(t, fields.ElementMap{
 		"git_url":      "https://github.com/org/other-repo",
@@ -345,7 +345,7 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 			"not_in_config": "breaks",
 		},
 	}
-	elements, err = pc.CapExtraFields(map[string]ConfigCustomField{})
+	elements, err = pc.CapExtraFields(map[string]ConfigCustomField{}, true)
 	assert.Equal(t, "custom field not_in_config is not configured in capability config", err.Error())
 	assert.Nil(t, elements, "not_in_config should return nilmap for fields")
 
@@ -355,7 +355,7 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 	}
 	elements, err = pc.CapExtraFields(map[string]ConfigCustomField{
 		"required_key": {Required: true},
-	})
+	}, true)
 	assert.Equal(t, "value required_key is required", err.Error())
 	assert.Nil(t, elements, "required_field should return nilmap for fields")
 
@@ -369,7 +369,7 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 		"invalid_key": {
 			Validation: "^valid_value$",
 		},
-	})
+	}, true)
 	assert.Equal(t, "invalid value invalid_value (does not match ^valid_value$)", err.Error())
 	assert.Nil(t, elements, "invalid_value should return nilmap for fields")
 }

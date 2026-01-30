@@ -117,7 +117,7 @@ func capElementsFromPaas(
 		return nil, nil
 	}
 
-	capElements, err := capability.CapExtraFields(paasConfig.Spec.Capabilities[capName].CustomFields)
+	capElements, err := capability.CapExtraFields(paasConfig.Spec.Capabilities[capName].CustomFields, false)
 	if err != nil {
 		logger.Error().AnErr("error", err).Msg("getting capability custom fields failed")
 		return nil, err
