@@ -169,7 +169,7 @@ var (
 			Debug:                      false,
 			DecryptKeysSecret: v1alpha2.NamespacedName{
 				Name:      "example-keys",
-				Namespace: "paas-system",
+				Namespace: systemNamespace,
 			},
 			ManagedByLabel:  "argocd.argoproj.io/manby",
 			ManagedBySuffix: "argocd",
