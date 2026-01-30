@@ -369,7 +369,8 @@ func TestPaasCapabilities_CapExtraFields(t *testing.T) {
 		},
 	})
 	assert.NotNil(t, elements, "CapExtraFields should return an ElementMap")
-	assert.Equal(t, "invalid_value", elements["invalid_key"], "CapExtraFields should return the value without validation")
+	assert.Equal(t, "invalid_value", elements["invalid_key"],
+		"CapExtraFields should return the value without validation")
 }
 
 func TestPaasCapabilities_ValidateCapExtraFields(t *testing.T) {
