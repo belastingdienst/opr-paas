@@ -159,7 +159,8 @@ setup-local-e2e: kind kustomize
 	$(CONTAINER_TOOL) build -t ${IMG} .
 	${KIND} load image-archive <(${CONTAINER_TOOL} save controller:latest)
 
-	${KUSTOMIZE} build test/e2e/manifests/gitops-operator | ${KUBECTL} create -f -
+	# Using server-side apply to support re-running and to avoid annotation size limits on CRDs
+	${KUSTOMIZE} build test/e2e/manifests/gitops-operator | ${KUBECTL} apply --server-side -f -
 	${KUSTOMIZE} build test/e2e/manifests/openshift | ${KUBECTL} apply -f -
 
 	# Wait a bit as the paas-context files rely on the previous deployed mocks
