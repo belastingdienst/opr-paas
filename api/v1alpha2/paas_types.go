@@ -86,15 +86,24 @@ func (pc PaasCapability) Quotas() (pq paasquota.Quota) {
 	return pc.Quota
 }
 
-// CapExtraFields returns all extra fields that are configured for a capability
+// CapExtraFields returns all extra fields that are configured for a capability.
+// When validate is true, fields are checked against the fieldConfig: unknown fields,
+// regex validation failures, and missing required fields all produce errors.
+// When validate is false, all custom fields are returned as-is without validation,
+// and defaults are still applied for missing non-template fields.
 func (pc *PaasCapability) CapExtraFields(
 	fieldConfig map[string]ConfigCustomField,
+	validate bool,
 ) (elements fields.ElementMap, err error) {
 	elements = fields.ElementMap{}
 	var issues []error
 	for key, value := range pc.CustomFields {
-		if _, exists := fieldConfig[key]; !exists {
-			issues = append(issues, fmt.Errorf("custom field %s is not configured in capability config", key))
+		if validate {
+			if _, exists := fieldConfig[key]; !exists {
+				issues = append(issues, fmt.Errorf("custom field %s is not configured in capability config", key))
+			} else {
+				elements[key] = value
+			}
 		} else {
 			elements[key] = value
 		}
@@ -102,15 +111,17 @@ func (pc *PaasCapability) CapExtraFields(
 	for key, fieldConf := range fieldConfig {
 		var value string
 		if value, err = elements.TryGetElementAsString(key); err == nil {
-			var matched bool
-			if matched, err = regexp.Match(fieldConf.Validation, []byte(value)); err != nil {
-				issues = append(issues, fmt.Errorf("could not validate value %s: %w", value, err))
-			} else if !matched {
-				issues = append(issues,
-					fmt.Errorf("invalid value %s (does not match %s)", value, fieldConf.Validation),
-				)
+			if validate {
+				var matched bool
+				if matched, err = regexp.Match(fieldConf.Validation, []byte(value)); err != nil {
+					issues = append(issues, fmt.Errorf("could not validate value %s: %w", value, err))
+				} else if !matched {
+					issues = append(issues,
+						fmt.Errorf("invalid value %s (does not match %s)", value, fieldConf.Validation),
+					)
+				}
 			}
-		} else if fieldConf.Required {
+		} else if validate && fieldConf.Required {
 			issues = append(issues, fmt.Errorf("value %s is required", key))
 		} else if fieldConf.Template == "" || fieldConf.Default != "" {
 			elements[key] = fieldConf.Default

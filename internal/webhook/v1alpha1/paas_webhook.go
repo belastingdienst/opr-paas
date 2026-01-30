@@ -391,7 +391,7 @@ func validateCustomFields(
 
 	for cname, c := range paas.Spec.Capabilities {
 		// validateCaps() has already ensured the capability configuration exists
-		if _, err := c.CapExtraFields(conf.Spec.Capabilities[cname].CustomFields); err != nil {
+		if _, err := c.CapExtraFields(conf.Spec.Capabilities[cname].CustomFields, true); err != nil {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("capabilities").Key(cname),
 				"custom_fields",
