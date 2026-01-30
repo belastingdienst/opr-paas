@@ -144,18 +144,18 @@ setup-e2e: kustomize
 	$(KUSTOMIZE) build manifests/crd | ${KUBECTL} apply -f -
 
 .PHONY: refresh-kind
-refresh-kind: $(KIND) kind-delete-cluster kind-create-cluster
+refresh-kind: kind kind-delete-cluster kind-create-cluster
 
 .PHONY: kind-create-cluster
-kind-create-cluster: $(KIND)
-	kind create cluster
+kind-create-cluster: kind
+	$(KIND) create cluster
 
 .PHONY: kind-delete-cluster
-kind-delete-cluster: $(KIND)
-	kind delete cluster || echo "no existing kind cluster"
+kind-delete-cluster: kind
+	$(KIND) delete cluster || echo "no existing kind cluster"
 
 .PHONY: setup-local-e2e
-setup-local-e2e: ${KIND}
+setup-local-e2e: kind kustomize
 	$(CONTAINER_TOOL) build -t ${IMG} .
 	${KIND} load image-archive <(${CONTAINER_TOOL} save controller:latest)
 
@@ -248,8 +248,16 @@ CERTMANAGER_VERSION ?= v1.18.2
 certmanager: kustomize
 	# Install certManager for generating certs to easily test webhooks
 	$(KUBECTL) apply -f https://github.com/cert-manager/cert-manager/releases/download/$(CERTMANAGER_VERSION)/cert-manager.yaml
-	# Wait for certmanager to be ready else deploying Paas will fail
+	# Wait for certmanager webhook to be ready else deploying Paas will fail
+	$(KUBECTL) wait --for=condition=Available deployment/cert-manager -n cert-manager --timeout=120s
+	$(KUBECTL) wait --for=condition=Available deployment/cert-manager-cainjector -n cert-manager --timeout=120s
 	$(KUBECTL) wait --for=condition=Available deployment/cert-manager-webhook -n cert-manager --timeout=120s
+	# Wait for the webhook TLS to be ready by testing it with a dry-run
+	@echo "Waiting for cert-manager webhook TLS to be ready..."
+	@until echo '{"apiVersion":"cert-manager.io/v1","kind":"Issuer","metadata":{"name":"test"},"spec":{"selfSigned":{}}}' \
+		| $(KUBECTL) create --dry-run=server -n cert-manager -f - 2>/dev/null; do \
+		sleep 2; \
+	done
 
 .PHONY: deploy
 deploy: manifests certmanager ## Deploy controller to the K8s cluster specified in ~/.kube/config. including certmanager and certs for webhook
