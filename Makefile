@@ -424,6 +424,7 @@ catalog-build: opm ## Build catalog image using OPM
 	$(OPM) index add \
 		--mode semver \
 		--bundles $(BUNDLE_IMGS) \
+		$(FROM_INDEX_OPT) \
 		--tag $(CATALOG_IMG) \
 		--container-tool $(CONTAINER_TOOL)
 

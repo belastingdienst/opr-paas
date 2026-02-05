@@ -1,0 +1,205 @@
+name: Build and release image + OLM and add to ghcr.io upon release
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Normalize version
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      version: ${{ steps.export.outputs.version }}
+
+    steps:
+      - name: Determine version
+        id: export
+        run: |
+          CLEANED="${GITHUB_REF_NAME#v}"
+          echo "version=${CLEANED}" >> $GITHUB_OUTPUT
+
+  operator_image:
+    name: Push operator image to ghcr.io
+    runs-on: ubuntu-latest
+    needs: [version]
+    permissions:
+      packages: write
+      contents: write
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      # https://github.com/docker/setup-qemu-action
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+
+      # https://github.com/docker/setup-buildx-action
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Login to GHCR
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: opr-paas-meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
+        with:
+          images: |
+            name=ghcr.io/belastingdienst/opr-paas,enable=true
+          tags: |
+            type=raw,value=v${{ env.VERSION }}
+            type=raw,value=latest
+            type=sha
+
+      - name: Build and push operator image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          push: true
+          platforms: 'linux/amd64,linux/arm64'
+          tags: ${{ steps.opr-paas-meta.outputs.tags }}
+          labels: ${{ steps.opr-paas-meta.outputs.labels }}
+          build-args: VERSION=${{ env.VERSION }}
+
+      - name: Generate opr-paas image SBOM
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
+        with:
+          image-ref: 'ghcr.io/belastingdienst/opr-paas:v${{ env.VERSION }}'
+          scan-type: image
+          format: 'github'
+          output: 'opr-paas_image.sbom.json'
+          github-pat: ${{ secrets.GITHUB_TOKEN }}
+          severity: 'MEDIUM,HIGH,CRITICAL'
+          scanners: 'vuln'
+        env:
+          TRIVY_SKIP_DB_UPDATE: true
+          TRIVY_SKIP_JAVA_DB_UPDATE: true
+
+      - name: Add SBOM to release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          files: '${{ github.workspace }}/opr-paas_image.sbom.json'
+
+  bundle:
+    name: Generate, validate, and publish OLM bundle
+    runs-on: ubuntu-latest
+    needs: [version, operator_image]
+    permissions:
+      contents: write     # Only needed for uploading assets in real releases
+      packages: write     # Needed for pushing the bundle image
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "1.25"
+          cache: false
+
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: GHCR login
+        run: |
+          podman login ghcr.io \
+            -u "${GITHUB_ACTOR}" \
+            -p "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Install Build Dependencies
+        run: |
+          make operator-sdk
+          make kustomize
+
+      - name: Generate OLM bundle
+        run: |
+          make bundle VERSION=${VERSION} \
+            IMG=ghcr.io/belastingdienst/opr-paas:v${VERSION} \
+            CHANNELS=stable \
+            DEFAULT_CHANNEL=stable
+
+      - name: Validate OLM bundle
+        run: make bundle-validate
+
+      - name: Build bundle image
+        run: make bundle-build VERSION=${VERSION} CONTAINER_TOOL=podman
+
+      - name: Push bundle image
+        run: make bundle-push VERSION=${VERSION} CONTAINER_TOOL=podman
+
+  catalog:
+    name: Build & Push OLM Catalog (skip in test mode)
+    runs-on: ubuntu-latest
+    needs: [version, bundle]
+    permissions:
+      packages: write
+      contents: read
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Install operator-sdk
+        run: make operator-sdk
+
+      - name: GHCR login
+        run: |
+          podman login ghcr.io \
+            -u "${GITHUB_ACTOR}" \
+            -p "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Build catalog image
+        run: |
+          set -euo pipefail
+          BASE="ghcr.io/belastingdienst/opr-paas-catalog:stable"
+          
+          if podman pull "$BASE" >/dev/null 2>&1; then
+            echo "Using existing base catalog: $BASE"
+            make catalog-build VERSION=${VERSION} CONTAINER_TOOL=podman CATALOG_BASE_IMG="$BASE"
+          else
+            echo "No stable catalog exists yet; creating new catalog"
+            make catalog-build VERSION=${VERSION} CONTAINER_TOOL=podman
+          fi
+
+      - name: Push catalog image
+        run: make catalog-push VERSION=${VERSION} CONTAINER_TOOL=podman
+
+      - name: Tag & push stable catalog tag
+        run: |
+          podman tag ghcr.io/belastingdienst/opr-paas-catalog:v${VERSION} ghcr.io/belastingdienst/opr-paas-catalog:stable
+          podman push ghcr.io/belastingdienst/opr-paas-catalog:stable
