@@ -111,6 +111,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 						rbac.Subject{Kind: "ServiceAccount", APIGroup: "", Name: capName, Namespace: capNSName}))
 				}
 			})
+
 			It("should create clusterRoleBindings for extra permissions", func() {
 				for _, crbRole := range extraCapPerms {
 					crbName := join("paas", crbRole)
@@ -222,6 +223,45 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring(
 						fmt.Sprintf("clusterrolebindings.rbac.authorization.k8s.io \"%s\" not found", crbName)))
+				}
+			})
+		})
+		Context("when removing default permissions from capability in paas config", func() {
+			It("should remove related CRBs", func() {
+				// make a paas with default permissions first
+				err := reconciler.reconcileClusterRoleBindings(ctx, paas, paasNsDefs)
+				Expect(err).NotTo(HaveOccurred())
+
+				// verify defualt permissions were created
+				for _, crbRole := range defaultCapPerms {
+					crbName := join("paas", crbRole)
+					var crb rbac.ClusterRoleBinding
+					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(crb.RoleRef).To(Equal(
+						rbac.RoleRef{APIGroup: "rbac.authorization.k8s.io", Kind: "ClusterRole", Name: crbRole}))
+					Expect(crb.Subjects).To(ContainElement(
+						rbac.Subject{Kind: "ServiceAccount", APIGroup: "", Name: capName, Namespace: capNSName}))
+				}
+
+				// update existing PaasConfig to remove default permissions from capability
+				capConfig = v1alpha2.ConfigCapability{
+					AppSet:             capAppSetName,
+					DefaultPermissions: v1alpha2.ConfigCapPerm{},
+				}
+				paasConfigFromContext, _ := config.GetConfigFromContext(ctx)
+				paasConfigFromContext.Spec.Capabilities[capName] = capConfig
+				context.WithValue(context.Background(), config.ContextKeyPaasConfig, paasConfigFromContext)
+
+				err = reconciler.reconcileClusterRoleBindings(ctx, paas, paasNsDefs)
+				Expect(err).NotTo(HaveOccurred())
+
+				for _, crbRole := range defaultCapPerms {
+					crbName := join("paas", crbRole)
+					var crb rbac.ClusterRoleBinding
+					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("clusterrolebindings.rbac.authorization.k8s.io \"%s\" not found", crbName)))
 				}
 			})
 		})

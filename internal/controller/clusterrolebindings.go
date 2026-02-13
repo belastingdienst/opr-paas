@@ -15,14 +15,20 @@ import (
 	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v4/internal/config"
 	"github.com/belastingdienst/opr-paas/v4/internal/logging"
-
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const crbNamePrefix string = "paas"
+
+// TODO are these labels still correct?
+var labels = map[string]string{
+	"app.kubernetes.io/created-by": "opr-paas",
+	"app.kubernetes.io/part-of":    "opr-paas",
+}
 
 func (r *PaasReconciler) getClusterRoleBinding(
 	ctx context.Context,
@@ -37,6 +43,19 @@ func (r *PaasReconciler) getClusterRoleBinding(
 		return nil, err
 	}
 	return found, nil
+}
+
+func (r *PaasReconciler) getClusterRoleBindingsWithLabel(
+	ctx context.Context,
+	labelMatcher client.MatchingLabels,
+) (crbs *rbac.ClusterRoleBindingList, err error) {
+	list := &rbac.ClusterRoleBindingList{}
+
+	err = r.List(ctx, list, labelMatcher)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
 }
 
 func (r *PaasReconciler) updateClusterRoleBinding(
@@ -63,12 +82,8 @@ func backendClusterRoleBinding(
 	crbName := join(crbNamePrefix, role)
 	rb := &rbac.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: crbName,
-			// TODO are these labels still correct?
-			Labels: map[string]string{
-				"app.kubernetes.io/created-by": "opr-paas",
-				"app.kubernetes.io/part-of":    "opr-paas",
-			},
+			Name:   crbName,
+			Labels: labels,
 		},
 		RoleRef: rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
@@ -136,6 +151,7 @@ func addOrUpdateCrb(
 			logger.Info().Msgf("sa %s in ns %s already added to crb %v", sa, nsName, crbName)
 		} else {
 			nsRe := *regexp.MustCompile(fmt.Sprintf("^%s$", nsName))
+			logger.Info().Msgf(">>>>>>>>>>>>>> in add or update crb for crb %s in ns %s for sa %s", crbName, nsName, crbName)
 			if isRemoved := updateClusterRoleBindingForRemovedSA(crb, nsRe, sa); isRemoved {
 				logger.Info().Msgf("deleting sa %s for ns %s from crb %s", sa, nsName, crbName)
 				changed = true
@@ -173,6 +189,48 @@ func (r *PaasReconciler) reconcileClusterRoleBinding(
 		if addOrUpdateCrb(ctx, crb, nsName, sas) {
 			if err = r.updateClusterRoleBinding(ctx, crb); err != nil {
 				return err
+			}
+		}
+	}
+
+	err = r.checkForRemovedPermissionsInPaasConfig(ctx, capConfig, permissions)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *PaasReconciler) checkForRemovedPermissionsInPaasConfig(
+	ctx context.Context,
+	capConfig v1alpha2.ConfigCapability,
+	permissions v1alpha2.ConfigRolesSas,
+) error {
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerClusterRoleBindingsComponent)
+
+	if len(capConfig.DefaultPermissions.AsConfigRolesSas(true)) == 0 {
+		logger.Info().Msg("Default permissions for capability in PaasConfig are empty, checking if any CRBs need to be removed")
+
+		var crbs *rbac.ClusterRoleBindingList
+		crbs, err := r.getClusterRoleBindingsWithLabel(ctx, labels)
+		if err != nil {
+			return err
+		}
+
+		for _, crbFromList := range crbs.Items {
+			keepItem := false
+			for role := range permissions {
+				expectedCrbName := crbNamePrefix + role
+				if crbFromList.Name == expectedCrbName {
+					keepItem = true
+				}
+			}
+			if !keepItem {
+				logger.Info().Msgf("Deleting ClusterRoleBinding with name %s as it is no longer present in PaasConfig", crbFromList.Name)
+				err = r.Delete(ctx, &crbFromList)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
