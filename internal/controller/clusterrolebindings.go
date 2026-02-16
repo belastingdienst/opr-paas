@@ -225,7 +225,7 @@ func (r *PaasReconciler) checkForRemovedPermissionsInPaasConfig(
 					keepItem = true
 				}
 			}
-			if !keepItem {
+			if !keepItem && crbFromList.Name != "paas-manager-rolebinding" {
 				logger.Info().Msgf("Deleting ClusterRoleBinding with name %s as it is no longer present in PaasConfig",
 					crbFromList.Name)
 				err = r.Delete(ctx, &crbFromList)
