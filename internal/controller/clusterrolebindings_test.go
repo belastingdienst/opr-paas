@@ -109,6 +109,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 						rbac.RoleRef{APIGroup: "rbac.authorization.k8s.io", Kind: "ClusterRole", Name: crbRole}))
 					Expect(crb.Subjects).To(ContainElement(
 						rbac.Subject{Kind: "ServiceAccount", APIGroup: "", Name: capName, Namespace: capNSName}))
+					Expect(crb.Labels).To(ContainElement("capability"))
 				}
 			})
 
@@ -122,6 +123,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 						rbac.RoleRef{APIGroup: "rbac.authorization.k8s.io", Kind: "ClusterRole", Name: crbRole}))
 					Expect(crb.Subjects).To(ContainElement(
 						rbac.Subject{Kind: "ServiceAccount", APIGroup: "", Name: capName, Namespace: capNSName}))
+					Expect(crb.Labels).To(ContainElement("capability"))
 				}
 			})
 		})

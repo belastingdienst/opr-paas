@@ -26,8 +26,9 @@ const crbNamePrefix string = "paas"
 
 // TODO are these labels still correct?
 var defaultCRBLabels = map[string]string{
-	"app.kubernetes.io/created-by": "opr-paas",
-	"app.kubernetes.io/part-of":    "opr-paas",
+	"app.kubernetes.io/created-by":     "opr-paas",
+	"app.kubernetes.io/part-of":        "opr-paas",
+	"paas.belastingdienst.nl/crb-type": "capability",
 }
 
 func (r *PaasReconciler) getClusterRoleBinding(
@@ -225,7 +226,7 @@ func (r *PaasReconciler) checkForRemovedPermissionsInPaasConfig(
 					keepItem = true
 				}
 			}
-			if !keepItem && crbFromList.Name != "paas-manager-rolebinding" {
+			if !keepItem {
 				logger.Info().Msgf("Deleting ClusterRoleBinding with name %s as it is no longer present in PaasConfig",
 					crbFromList.Name)
 				err = r.Delete(ctx, &crbFromList)
