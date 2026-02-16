@@ -76,7 +76,7 @@ jobs:
           build-args: VERSION=${{ env.VERSION }}
 
       - name: Generate opr-paas image SBOM
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1
+        uses: aquasecurity/trivy-action@c1824fd6edce30d7ab345a9989de00bbd46ef284 # v0.34.0
         with:
           image-ref: 'ghcr.io/belastingdienst/opr-paas:v${{ env.VERSION }}'
           scan-type: image
