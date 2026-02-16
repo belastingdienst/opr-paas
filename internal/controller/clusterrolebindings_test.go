@@ -232,11 +232,11 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 				err := reconciler.reconcileClusterRoleBindings(ctx, paas, paasNsDefs)
 				Expect(err).NotTo(HaveOccurred())
 
-				// verify defualt permissions were created
+				// verify default permissions were created
 				for _, crbRole := range defaultCapPerms {
 					crbName := join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
-					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
+					err = reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(crb.RoleRef).To(Equal(
 						rbac.RoleRef{APIGroup: "rbac.authorization.k8s.io", Kind: "ClusterRole", Name: crbRole}))
@@ -251,7 +251,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 				}
 				paasConfigFromContext, _ := config.GetConfigFromContext(ctx)
 				paasConfigFromContext.Spec.Capabilities[capName] = capConfig
-				context.WithValue(context.Background(), config.ContextKeyPaasConfig, paasConfigFromContext)
+				ctx = context.WithValue(context.Background(), config.ContextKeyPaasConfig, paasConfigFromContext)
 
 				err = reconciler.reconcileClusterRoleBindings(ctx, paas, paasNsDefs)
 				Expect(err).NotTo(HaveOccurred())
@@ -259,9 +259,10 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 				for _, crbRole := range defaultCapPerms {
 					crbName := join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
-					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
+					err = reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
 					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("clusterrolebindings.rbac.authorization.k8s.io \"%s\" not found", crbName)))
+					Expect(err.Error()).To(ContainSubstring(
+						fmt.Sprintf("clusterrolebindings.rbac.authorization.k8s.io \"%s\" not found", crbName)))
 				}
 			})
 		})

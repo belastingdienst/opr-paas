@@ -25,7 +25,7 @@ import (
 const crbNamePrefix string = "paas"
 
 // TODO are these labels still correct?
-var labels = map[string]string{
+var defaultCRBLabels = map[string]string{
 	"app.kubernetes.io/created-by": "opr-paas",
 	"app.kubernetes.io/part-of":    "opr-paas",
 }
@@ -83,7 +83,7 @@ func backendClusterRoleBinding(
 	rb := &rbac.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   crbName,
-			Labels: labels,
+			Labels: defaultCRBLabels,
 		},
 		RoleRef: rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
@@ -151,7 +151,6 @@ func addOrUpdateCrb(
 			logger.Info().Msgf("sa %s in ns %s already added to crb %v", sa, nsName, crbName)
 		} else {
 			nsRe := *regexp.MustCompile(fmt.Sprintf("^%s$", nsName))
-			logger.Info().Msgf(">>>>>>>>>>>>>> in add or update crb for crb %s in ns %s for sa %s", crbName, nsName, crbName)
 			if isRemoved := updateClusterRoleBindingForRemovedSA(crb, nsRe, sa); isRemoved {
 				logger.Info().Msgf("deleting sa %s for ns %s from crb %s", sa, nsName, crbName)
 				changed = true
@@ -209,10 +208,11 @@ func (r *PaasReconciler) checkForRemovedPermissionsInPaasConfig(
 	_, logger := logging.GetLogComponent(ctx, logging.ControllerClusterRoleBindingsComponent)
 
 	if len(capConfig.DefaultPermissions.AsConfigRolesSas(true)) == 0 {
-		logger.Info().Msg("Default permissions for capability in PaasConfig are empty, checking if any CRBs need to be removed")
+		logger.Info().Msg("Default permissions for capability in PaasConfig are empty, " +
+			"checking if any CRBs need to be removed")
 
 		var crbs *rbac.ClusterRoleBindingList
-		crbs, err := r.getClusterRoleBindingsWithLabel(ctx, labels)
+		crbs, err := r.getClusterRoleBindingsWithLabel(ctx, defaultCRBLabels)
 		if err != nil {
 			return err
 		}
@@ -226,7 +226,8 @@ func (r *PaasReconciler) checkForRemovedPermissionsInPaasConfig(
 				}
 			}
 			if !keepItem {
-				logger.Info().Msgf("Deleting ClusterRoleBinding with name %s as it is no longer present in PaasConfig", crbFromList.Name)
+				logger.Info().Msgf("Deleting ClusterRoleBinding with name %s as it is no longer present in PaasConfig",
+					crbFromList.Name)
 				err = r.Delete(ctx, &crbFromList)
 				if err != nil {
 					return err
