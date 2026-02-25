@@ -93,8 +93,12 @@ func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec.Capabilities = make(v1alpha2.PaasCapabilities)
 	dst.Spec.Groups = make(v1alpha2.PaasGroups)
 	dst.Spec.Namespaces = make(v1alpha2.PaasNamespaces)
-	dst.Spec.Secrets = p.Spec.SSHSecrets
 	dst.Spec.ManagedByPaas = p.Spec.ManagedByPaas
+
+	secrets := make(map[string]string)
+	for k, v := range p.Spec.SSHSecrets {
+		secrets[k] = v
+	}
 
 	for name, capability := range p.Spec.Capabilities {
 		if capability.Enabled {
@@ -112,13 +116,20 @@ func (p *Paas) ConvertTo(dstRaw conversion.Hub) error {
 				fields[gitPathKey] = capability.GitPath
 			}
 
+			for k, v := range capability.SSHSecrets {
+				secrets[k] = v
+			}
+
 			dst.Spec.Capabilities[name] = v1alpha2.PaasCapability{
 				CustomFields:     fields,
 				Quota:            capability.Quota.DeepCopy(),
-				Secrets:          capability.SSHSecrets,
 				ExtraPermissions: capability.ExtraPermissions,
 			}
 		}
+	}
+
+	if len(secrets) > 0 {
+		dst.Spec.Secrets = secrets
 	}
 
 	for name, group := range p.Spec.Groups {

@@ -99,11 +99,11 @@ var exV1Alpha2 = &v1alpha2.Paas{
 				Quota: quota.Quota{
 					corev1.ResourceRequestsCPU: resource.MustParse("250m"),
 				},
-				Secrets: map[string]string{
-					"secret1": "ZW5jcnlwdGVkIHZhbHVlCg==",
-				},
 				ExtraPermissions: true,
 			},
+		},
+		Secrets: map[string]string{
+			"secret1": "ZW5jcnlwdGVkIHZhbHVlCg==",
 		},
 		Groups: v1alpha2.PaasGroups{
 			"some-group": v1alpha2.PaasGroup{
@@ -144,6 +144,12 @@ func TestConvertTo(t *testing.T) {
 	expectedFields["git_url"] = "ssh://git@example.com/some-repo.git"
 	expectedFields["git_revision"] = "main"
 	expectedFields["git_path"] = "."
+	expectedV1Alpha1.Spec.SSHSecrets = map[string]string{
+		"secret1": "ZW5jcnlwdGVkIHZhbHVlCg==",
+	}
+	argocd := expectedV1Alpha1.Spec.Capabilities["argocd"]
+	argocd.SSHSecrets = nil
+	expectedV1Alpha1.Spec.Capabilities["argocd"] = argocd
 	assert.NoError(t, err)
 	assert.Equal(t, expectedV1Alpha1, dst)
 }
@@ -157,4 +163,35 @@ func TestConvertFrom(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, exV1Alpha2, dst)
+}
+
+// Test that ConvertTo merges both spec-level and capability-level secrets
+func TestConvertToMergesSecrets(t *testing.T) {
+	src := &Paas{
+		ObjectMeta: metav1.ObjectMeta{Name: "merge-test"},
+		Spec: PaasSpec{
+			Requestor: "test-user",
+			SSHSecrets: map[string]string{
+				"spec-secret": "c3BlYy12YWx1ZQ==",
+			},
+			Capabilities: PaasCapabilities{
+				"argocd": {
+					Enabled: true,
+					SSHSecrets: map[string]string{
+						"cap-secret": "Y2FwLXZhbHVl",
+					},
+				},
+			},
+		},
+	}
+	dst := &v1alpha2.Paas{}
+
+	err := src.ConvertTo(dst)
+
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{
+		"spec-secret": "c3BlYy12YWx1ZQ==",
+		"cap-secret":  "Y2FwLXZhbHVl",
+	}, dst.Spec.Secrets)
+	assert.Nil(t, dst.Spec.Capabilities["argocd"].Secrets)
 }

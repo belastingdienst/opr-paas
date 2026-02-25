@@ -99,7 +99,7 @@ func assertV2Conversion(ctx context.Context, t *testing.T, cfg *envconf.Config) 
 		map[string]string{
 			paasArgoGitURL: paasArgoSecret,
 		},
-		paas.Spec.Capabilities["tekton"].Secrets,
+		paas.Spec.Secrets,
 	)
 
 	assert.Len(t, paas.Spec.Namespaces, 2)
