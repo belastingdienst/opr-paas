@@ -26,13 +26,11 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/belastingdienst/opr-paas/v4/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v4/internal/config"
 	"github.com/belastingdienst/opr-paas/v4/internal/controller"
 	"github.com/belastingdienst/opr-paas/v4/internal/logging"
 	"github.com/belastingdienst/opr-paas/v4/internal/version"
-	webhookv1alpha1 "github.com/belastingdienst/opr-paas/v4/internal/webhook/v1alpha1"
 	webhookv1alpha2 "github.com/belastingdienst/opr-paas/v4/internal/webhook/v1alpha2"
 	"github.com/go-logr/zerologr"
 	quotav1 "github.com/openshift/api/quota/v1"
@@ -71,7 +69,6 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(quotav1.AddToScheme(scheme))
 	utilruntime.Must(userv1.AddToScheme(scheme))
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1alpha2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
@@ -353,20 +350,11 @@ func setupHealthChecks(mgr ctrl.Manager) {
 
 func setupWebhooks(mgr ctrl.Manager) {
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err := webhookv1alpha1.SetupPaasWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "Paas").Msg(webhookErrMsg)
-		}
 		if err := webhookv1alpha2.SetupPaasWebhookWithManager(mgr); err != nil {
 			log.Fatal().Err(err).Str("webhook", "Paas").Msg(webhookErrMsg)
 		}
-		if err := webhookv1alpha1.SetupPaasConfigWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "PaasConfig").Msg(webhookErrMsg)
-		}
 		if err := webhookv1alpha2.SetupPaasConfigWebhookWithManager(mgr); err != nil {
 			log.Fatal().Err(err).Str("webhook", "PaasConfig").Msg(webhookErrMsg)
-		}
-		if err := webhookv1alpha1.SetupPaasNsWebhookWithManager(mgr); err != nil {
-			log.Fatal().Err(err).Str("webhook", "PaasNS").Msg(webhookErrMsg)
 		}
 		if err := webhookv1alpha2.SetupPaasNsWebhookWithManager(mgr); err != nil {
 			log.Fatal().Err(err).Str("webhook", "PaasNS").Msg(webhookErrMsg)
