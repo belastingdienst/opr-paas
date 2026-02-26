@@ -10,66 +10,6 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-cpet-belastingdienst-nl-v1alpha1-paas
-  failurePolicy: Fail
-  name: vpaas-v1alpha1.kb.io
-  rules:
-  - apiGroups:
-    - cpet.belastingdienst.nl
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - paas
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
-      path: /validate-cpet-belastingdienst-nl-v1alpha1-paasconfig
-  failurePolicy: Fail
-  name: vpaasconfig-v1alpha1.kb.io
-  rules:
-  - apiGroups:
-    - cpet.belastingdienst.nl
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - paasconfig
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
-      path: /validate-cpet-belastingdienst-nl-v1alpha1-paasns
-  failurePolicy: Fail
-  name: vpaasns-v1alpha1.kb.io
-  rules:
-  - apiGroups:
-    - cpet.belastingdienst.nl
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - paasns
-  sideEffects: None
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
       path: /validate-cpet-belastingdienst-nl-v1alpha2-paas
   failurePolicy: Fail
   name: vpaas-v1alpha2.kb.io

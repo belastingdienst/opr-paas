@@ -22,7 +22,7 @@ When specifying `allow` (or leave empty), the operator reports no errors / warni
 !!! example
 
     ```yml
-    apiVersion: cpet.belastingdienst.nl/v1alpha1
+    apiVersion: cpet.belastingdienst.nl/v1alpha2
     kind: PaasConfig
     metadata:
       name: opr-paas-config

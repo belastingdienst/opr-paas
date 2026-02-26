@@ -10,7 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	api "github.com/belastingdienst/opr-paas/v4/api/v1alpha1"
+	api "github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,9 +34,11 @@ func TestPaasNS(t *testing.T) {
 }
 
 func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	thisPaas := "this-paas"
-	thisNamespace := "this-namespace"
-	generatedName := thisPaas + "-" + thisNamespace
+	const (
+		thisPaas      = "this-paas"
+		thisNamespace = "this-namespace"
+		generatedName = thisPaas + "-" + thisNamespace
+	)
 
 	// setup: create paas to link to
 	paas := &api.Paas{
@@ -45,7 +47,7 @@ func assertPaasNSCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 		},
 		Spec: api.PaasSpec{
 			Requestor:  paasRequestor,
-			Namespaces: []string{thisNamespace}, // define suffixes to use for namespace names
+			Namespaces: api.PaasNamespaces{thisNamespace: api.PaasNamespace{}},
 			Quota: map[corev1.ResourceName]resource.Quantity{
 				"cpu":    resource.MustParse("2"),
 				"memory": resource.MustParse("2Gi"),

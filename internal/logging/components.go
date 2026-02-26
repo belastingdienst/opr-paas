@@ -16,14 +16,6 @@ const (
 	// Note: As the runtime logger is only fetched once, changing debuglevel with PaasConfix has no effect.
 	ApiComponent Component = iota
 
-	// WebhookPaasConfigComponentV1 represents a logging component for the v1alpha1 code for the PaasConfig webhook
-	WebhookPaasConfigComponentV1 Component = iota
-	// WebhookPaasComponentV1 represents a logging component for the v1alpha1 code for the Paas webhook
-	WebhookPaasComponentV1 Component = iota
-	// WebhookPaasNSComponentV1 represents a logging component for the v1alpha1 code for the PaasNS webhook
-	WebhookPaasNSComponentV1 Component = iota
-	// WebhookUtilsComponentV1 represents a logging component for the v1alpha1 utils code
-	WebhookUtilsComponentV1 Component = iota
 	// WebhookPaasConfigComponentV2 represents a logging component for the v1alpha2 code for the PaasConfig webhook
 	WebhookPaasConfigComponentV2 Component = iota
 	// WebhookPaasComponentV2 represents a logging component for the v1alpha2 code for the Paas webhook
@@ -69,10 +61,6 @@ var (
 		"runtime": RuntimeComponent,
 		"api":     ApiComponent,
 
-		"paasconfig_webhook_v1": WebhookPaasConfigComponentV1,
-		"paas_webhook_v1":       WebhookPaasComponentV1,
-		"paasns_webhook_v1":     WebhookPaasNSComponentV1,
-		"utils_webhook_v1":      WebhookUtilsComponentV1,
 		"paasconfig_webhook_v2": WebhookPaasConfigComponentV2,
 		"paas_webhook_v2":       WebhookPaasComponentV2,
 		"paasns_webhook_v2":     WebhookPaasNSComponentV2,

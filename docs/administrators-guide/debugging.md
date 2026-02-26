@@ -40,11 +40,6 @@ We currently have implemented debug-mode for the following components:
 - Api (conversion code):
   - api
 - Webhooks:
-  - v1alpha1:
-    - paasconfig_webhook_v1
-    - paas_webhook_v1
-    - paasns_webhook_v1
-    - utils_webhook_v1
   - v1alpha2:
     - paasconfig_webhook_v2
     - paas_webhook_v2
@@ -67,7 +62,7 @@ To enable component debugging from the commandine, you can use the `-component-d
 all components as one comma separated string 
 
 !!! example
-    -component-debug secret_controller,plugin_generator,paasconfig_webhook_v1
+    -component-debug secret_controller,plugin_generator,paasconfig_webhook_v2
 
 Alternately you can enable or disable component debugging `PaasConfig.spec.components_debug` by specifying the name of 
 the component as key and either `true` or `false` for either `on` or `of` respectively.
@@ -93,8 +88,6 @@ Precedence is as follows:
   `PaasConfig.spec.components_debug`, but is added in `-component-debug` the component will also run in debug-mode.
 
 An example of how you could utilize these options:
-- For auditing reasons you might want to have more info on v1alpha1 requests. Therefore you set the following 
-  commandline argument: `-component-debug paasconfig_webhook_v1,paas_webhook_v1,paasns_webhook_v1,utils_webhook_v1`.
 - Then something unexpected happens. To investigate the issue, you enable debug-mode for all components by setting:
   `PaasConfig.spec.debug=true`.
 - You soon find out the specific components you want to further investigate. You disable `PaasConfig.spec.debug=true`
@@ -109,11 +102,10 @@ An example of how you could utilize these options:
       components_debug:
         paas_controller: true
         secret_controller: true
-        paasconfig_webhook_v1: false
-        paas_webhook_v1: false
-        paasns_webhook_v1: false
-        utils_webhook_v1: false
+        paasconfig_webhook_v2: false
+        paas_webhook_v2: false
+        paasns_webhook_v2: false
+        utils_webhook_v2: false
   ```
-- The issues is resolved and to swotch back to normal operation you remove the `PaasConfig.spec.components_debug`.
-  - all v1alpha1 webhooks are back in ebug-mode
+- The issues is resolved and to switch back to normal operation you remove the `PaasConfig.spec.components_debug`.
   - all other components are not in debug-mode anymore
