@@ -561,7 +561,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(warnings).To(BeEmpty())
 		})
 
-		It("Should raise an error if non-existent roles are defines in a paas", func() {
+		It("Should raise an error if non-existent roles are defined in a paas", func() {
 			latestConf := &v1alpha2.PaasConfig{}
 			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
 			Expect(err).To(Not(HaveOccurred()))
