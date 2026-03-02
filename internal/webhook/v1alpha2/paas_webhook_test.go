@@ -561,6 +561,24 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(warnings).To(BeEmpty())
 		})
 
+		It("Should raise an error if non-existent roles are defines in a paas", func() {
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			latestConf.Spec.RoleMappings = v1alpha2.ConfigRoleMappings{
+				"existing": []string{"admin"},
+			}
+			err = k8sClient.Update(ctx, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			obj = &v1alpha2.Paas{Spec: v1alpha2.PaasSpec{Groups: map[string]v1alpha2.PaasGroup{}}}
+			obj.Spec.Groups["foo"] = v1alpha2.PaasGroup{Roles: []string{"non-existing"}}
+			_, err = validator.ValidateCreate(ctx, obj)
+			Expect(err).To(HaveOccurred())
+			obj.Spec.Groups["foo"] = v1alpha2.PaasGroup{Roles: []string{"existing"}}
+			_, err = validator.ValidateCreate(ctx, obj)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 		It("Should warn when quota limits are set higher than requests", func() {
 			// Update PaasConfig
 			latestConf := &v1alpha2.PaasConfig{}
