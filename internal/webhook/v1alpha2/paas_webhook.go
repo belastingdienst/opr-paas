@@ -137,7 +137,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		}
 	}
 
-	groupWarnings, groupErrors := v.validateGroups(paas.Spec.Groups, conf.Spec.FeatureFlags.GroupUserManagement)
+	groupWarnings, groupErrors := v.validateGroups(conf, paas.Spec.Groups, conf.Spec.FeatureFlags.GroupUserManagement)
 	warnings = append(warnings, groupWarnings...)
 	allErrs = append(allErrs, groupErrors...)
 	warnings = append(warnings, v.validateQuota(paas)...)
@@ -427,7 +427,9 @@ func validateCustomFields(
 }
 
 // validateGroups returns a warning for any of the passed groups which contain both users and a query.
-func (*PaasCustomValidator) validateGroups(groups v1alpha2.PaasGroups,
+func (*PaasCustomValidator) validateGroups(
+	conf v1alpha2.PaasConfig,
+	groups v1alpha2.PaasGroups,
 	groupUserFeatureFlag string,
 ) (warnings []string, errs []*field.Error) {
 	for key, grp := range groups {
@@ -449,6 +451,15 @@ func (*PaasCustomValidator) validateGroups(groups v1alpha2.PaasGroups,
 					field.NewPath("spec").Child("groups").Key(key).Child("users"),
 					grp.Users,
 					"groups with users is a disabled feature",
+				))
+			}
+		}
+		for i, role := range grp.Roles {
+			if _, exists := conf.Spec.RoleMappings[role]; !exists {
+				errs = append(errs, field.Invalid(
+					field.NewPath("spec").Child("groups").Key(key).Child("roles").Index(i),
+					role,
+					"role is not defined in PaasConfig",
 				))
 			}
 		}
