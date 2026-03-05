@@ -12,7 +12,6 @@ import (
 
 	paasapi "github.com/belastingdienst/opr-paas/v4/api"
 	"github.com/belastingdienst/opr-paas/v4/api/plugin"
-	"github.com/belastingdienst/opr-paas/v4/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v4/pkg/fields"
 	corev1 "k8s.io/api/core/v1"
@@ -253,7 +252,7 @@ func retrieveBearerToken(
 	secretName string,
 	key string,
 ) error {
-	var tokenSecret = &corev1.Secret{}
+	tokenSecret := &corev1.Secret{}
 	if err := cfg.Client().Resources().Get(ctx, secretName, namespace, tokenSecret); err != nil {
 		return err
 	}
@@ -273,7 +272,6 @@ func registerSchemes(cfg *envconf.Config) error {
 	scheme := r.GetScheme()
 
 	for _, install := range []func(*runtime.Scheme) error{
-		v1alpha1.AddToScheme,
 		v1alpha2.AddToScheme,
 		quotav1.Install,
 		userv1.Install,

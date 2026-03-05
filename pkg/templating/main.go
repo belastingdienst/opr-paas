@@ -8,14 +8,14 @@ import (
 	"github.com/go-sprout/sprout/group/all"
 
 	"github.com/belastingdienst/opr-paas/v4/api"
-	"github.com/belastingdienst/opr-paas/v4/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v4/pkg/fields"
 )
 
 // PaasUnion is an interface representing either a v1alpha1.Paas or a v1alpha2.Paas
 type PaasUnion interface {
-	v1alpha1.Paas | v1alpha2.Paas
+	// v1alpha1.Paas | v1alpha2.Paas
+	v1alpha2.Paas
 }
 
 // Templater is a struct that can hold a Paas and a PaasConfig and can run go-templates using these as input

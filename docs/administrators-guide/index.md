@@ -37,9 +37,6 @@ the Paas Operator in production environments.
 - [Validations](validations/)  
   Built‑in checks to ensure correct configurations and prevent misconfigurations.
 
-- [API Version migration](v1alph1-conversion/)
-  Docs regarding migrating v1alpha1 resources to v1alpha2
-
 _For development workflows, release procedures, and contributor guidelines, see the [Developer’s Guide](../development-guide/index.md)._
 
 ---

@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/v4/api/v1alpha1"
 	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -50,19 +49,6 @@ func GetConfig(ctx context.Context, c client.Client) (v1alpha2.PaasConfig, error
 	return activeConfigs.Items[0], nil
 }
 
-// GetConfigV1 retrieves the active configuration from the
-// connected k8s cluster, via the passed Client. It returns
-// the config as a v1alpha1.PaasConfig
-func GetConfigV1(ctx context.Context, c client.Client) (v1alpha1.PaasConfig, error) {
-	v2config, err := GetConfig(ctx, c)
-	if err != nil {
-		return v1alpha1.PaasConfig{}, err
-	}
-	var v1conf v1alpha1.PaasConfig
-	err = v1conf.ConvertFrom(&v2config)
-	return v1conf, err
-}
-
 // GetConfigFromContext returns the PaasConfig object from the config, using the
 // config.ContextKeyPaasConfig. If the returned value cannot be parsed to the latest
 // api version PaasConfig, it returns an error.
@@ -70,17 +56,6 @@ func GetConfigFromContext(ctx context.Context) (v1alpha2.PaasConfig, error) {
 	myConfig, ok := ctx.Value(ContextKeyPaasConfig).(v1alpha2.PaasConfig)
 	if !ok {
 		return v1alpha2.PaasConfig{}, errors.New("could not get config from context")
-	}
-	return myConfig, nil
-}
-
-// GetConfigFromContextV1 returns the PaasConfig object from the config, using the
-// config.ContextKeyPaasConfig. If the returned value cannot be parsed to the v1alpha1
-// api version PaasConfig, it returns an error.
-func GetConfigFromContextV1(ctx context.Context) (v1alpha1.PaasConfig, error) {
-	myConfig, ok := ctx.Value(ContextKeyPaasConfig).(v1alpha1.PaasConfig)
-	if !ok {
-		return v1alpha1.PaasConfig{}, errors.New("could not get v1 config from context")
 	}
 	return myConfig, nil
 }
