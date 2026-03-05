@@ -129,7 +129,7 @@ func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config
 	paas.Spec.Groups = api.PaasGroups{
 		"mygroup": api.PaasGroup{
 			Users: []string{"user1"},
-			Roles: []string{"view"},
+			Roles: []string{"viewer"},
 		},
 	}
 
