@@ -48,37 +48,37 @@ type PaasSpec struct {
 	// Groups define k8s groups, based on an LDAP query or a list of LDAP users, which get access to the namespaces
 	// belonging to this Paas. Per group, RBAC roles can be defined.
 	// +kubebuilder:validation:Optional
-	Groups PaasGroups `json:"groups"`
+	Groups PaasGroups `json:"groups,omitempty"`
 
 	// Namespaces can be used to define extra namespaces to be created as part of this Paas project
 	// +kubebuilder:validation:Optional
-	Namespaces PaasNamespaces `json:"namespaces"`
+	Namespaces PaasNamespaces `json:"namespaces,omitempty"`
 
 	// Secrets must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
 	// +kubebuilder:validation:Optional
-	Secrets map[string]string `json:"secrets"`
+	Secrets map[string]string `json:"secrets,omitempty"`
 
 	// Deprecated, the managedByPaas implementation will be replaced by an annotation and go template functionality
 	// Indicated by which 3rd party Paas this Paas is managed
 	// +kubebuilder:validation:Optional
-	ManagedByPaas string `json:"managedByPaas"`
+	ManagedByPaas string `json:"managedByPaas,omitempty"`
 }
 
 // PaasCapability holds all information for a capability
 type PaasCapability struct {
 	// Custom fields to configure this specific Capability
 	// +kubebuilder:validation:Optional
-	CustomFields map[string]string `json:"custom_fields"`
+	CustomFields map[string]string `json:"custom_fields,omitempty"`
 	// This project has its own ClusterResourceQuota settings
 	// +kubebuilder:validation:Optional
-	Quota paasquota.Quota `json:"quota"`
+	Quota paasquota.Quota `json:"quota,omitempty"`
 	// Secrets must be encrypted with a public key, for which the private key should be added to the DecryptKeySecret
 	// +kubebuilder:validation:Optional
-	Secrets map[string]string `json:"secrets"`
+	Secrets map[string]string `json:"secrets,omitempty"`
 	// You can enable extra permissions for the service accounts belonging to this capability
 	// Exact definitions is configured in Paas Configmap
 	// +kubebuilder:validation:Optional
-	ExtraPermissions bool `json:"extra_permissions"`
+	ExtraPermissions bool `json:"extra_permissions,omitempty"`
 }
 
 // Quotas returns the quota for this capability
@@ -143,16 +143,16 @@ type PaasGroup struct {
 	// When set in combination with `users`, the Group Sync Operator will overwrite the manually assigned users.
 	// Therefore, this field is mutually exclusive with `group.users`.
 	// +kubebuilder:validation:Optional
-	Query string `json:"query"`
+	Query string `json:"query,omitempty"`
 	// A list of LDAP users which are added to the defined group.
 	//
 	// When set in combination with `users`, the Group Sync Operator will overwrite the manually assigned users.
 	// Therefore, this field is mutually exclusive with `group.query`.
 	// +kubebuilder:validation:Optional
-	Users []string `json:"users"`
+	Users []string `json:"users,omitempty"`
 	// List of roles, as defined in the `PaasConfig` which the users in this group get assigned via a rolebinding.
 	// +kubebuilder:validation:Optional
-	Roles []string `json:"roles"`
+	Roles []string `json:"roles,omitempty"`
 }
 
 // PaasGroups hold all groups in a paas.spec.groups
@@ -166,18 +166,18 @@ type PaasNamespace struct {
 	// Keys of groups which should get access to this namespace. When not set it defaults to all groups listed in
 	// `spec.groups`.
 	// +kubebuilder:validation:Optional
-	Groups []string `json:"groups"`
+	Groups []string `json:"groups,omitempty"`
 	// Secrets which should exist in this namespace, the values must be encrypted with a key pair referenced by
 	// `spec.decryptKeySecret` from the active PaasConfig.
 	// +kubebuilder:validation:Optional
-	Secrets map[string]string `json:"secrets"`
+	Secrets map[string]string `json:"secrets,omitempty"`
 }
 
 // PaasStatus defines the observed state of Paas
 type PaasStatus struct {
 	// +kubebuilder:validation:Optional
 	//revive:disable-next-line
-	Conditions []metav1.Condition `json:"conditions" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
 
 // +kubebuilder:object:root=true
