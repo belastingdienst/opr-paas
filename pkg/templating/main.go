@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-sprout/sprout"
 	"github.com/go-sprout/sprout/group/all"
+	"github.com/go-sprout/sprout/registry/backward"
 
 	"github.com/belastingdienst/opr-paas/v4/api"
 	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
@@ -33,8 +34,15 @@ func NewTemplater[P PaasUnion, C api.PaasConfig[S], S any](paas P, config C) Tem
 }
 
 func (t Templater[P, C, S]) getSproutFuncs() (template.FuncMap, error) {
+	var err error
 	handler := sprout.New()
-	err := handler.AddGroups(all.RegistryGroup())
+	// TODO: fail is currently deprecated. We need to check the community.
+	// For using the fail function
+	err = handler.AddRegistry(backward.NewRegistry())
+	if err != nil {
+		return nil, err
+	}
+	err = handler.AddGroups(all.RegistryGroup())
 	if err != nil {
 		return nil, err
 	}
