@@ -455,6 +455,53 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			))
 		})
 
+		It("Should deny creation when a custom field template fails", func() {
+			const (
+				capName   = "templateerror"
+				fieldName = "errorfield"
+			)
+			// Update PaasConfig
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			latestConf.Spec.Capabilities[capName] = v1alpha2.ConfigCapability{
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
+					DefQuota: map[corev1.ResourceName]resource.Quantity{"foo": resource.MustParse("1")},
+				},
+				CustomFields: map[string]v1alpha2.ConfigCustomField{
+					fieldName: {Template: `{{- fail "this just always fails" -}}`},
+				},
+			}
+			err = k8sClient.Update(ctx, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{
+						capName: v1alpha2.PaasCapability{
+							CustomFields: map[string]string{
+								fieldName: "whatever",
+							},
+						},
+					},
+				},
+			}
+			_, err = validator.ValidateCreate(ctx, obj)
+
+			var serr *apierrors.StatusError
+			Expect(errors.As(err, &serr)).To(BeTrue())
+			causes := serr.Status().Details.Causes
+			Expect(causes).To(HaveLen(1))
+			Expect(causes).To(ContainElements(
+				metav1.StatusCause{
+					Type: metav1.CauseTypeFieldValueInvalid,
+					Message: "Invalid value: \"errorfield\": template: errorfield:1:4: executing \"errorfield\" at " +
+						"<fail \"this just always fails\">: error calling fail: this just always fails",
+					Field: "spec.capabilities[templateerror].custom_fields",
+				},
+			))
+		})
+
 		It("Should deny creation when a namespace group does not match any Paas group", func() {
 			obj = &v1alpha2.Paas{
 				Spec: v1alpha2.PaasSpec{

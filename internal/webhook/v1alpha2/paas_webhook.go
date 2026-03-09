@@ -21,6 +21,7 @@ import (
 	"github.com/belastingdienst/opr-paas/v4/internal/logging"
 	"github.com/belastingdienst/opr-paas/v4/internal/utils"
 	"github.com/belastingdienst/opr-paas/v4/pkg/quota"
+	"github.com/belastingdienst/opr-paas/v4/pkg/templating"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -172,13 +173,19 @@ func validateCaps(
 	}
 
 	for name, capability := range paas.Spec.Capabilities {
-		if _, ok := conf.Spec.Capabilities[name]; !ok {
+		templater := templating.NewTemplater(*paas, conf)
+		if capConfig, ok := conf.Spec.Capabilities[name]; !ok {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("capabilities"),
 				name,
 				"capability not configured",
 			))
 		} else {
+			errs = append(errs, applyCustomFieldTemplates(
+				field.NewPath("spec").Child("capabilities").Key(name).Child("custom_fields"),
+				capConfig.CustomFields,
+				templater,
+			)...)
 			errs = append(errs, validateSecrets(
 				capability.Secrets,
 				rsa,
@@ -188,6 +195,27 @@ func validateCaps(
 	}
 
 	return errs, nil
+}
+
+func applyCustomFieldTemplates(
+	fieldPath *field.Path,
+	ccfields map[string]v1alpha2.ConfigCustomField,
+	templater templating.Templater[v1alpha2.Paas, v1alpha2.PaasConfig, v1alpha2.PaasConfigSpec],
+) (errs []*field.Error) {
+	for name, fieldConfig := range ccfields {
+		if fieldConfig.Template != "" {
+			_, err := templater.TemplateToMap(name, fieldConfig.Template)
+			if err != nil {
+				errs = append(errs, field.Invalid(
+					fieldPath,
+					name,
+					err.Error(),
+				))
+			}
+		}
+	}
+
+	return errs
 }
 
 // validatePaasName returns an error if the name of the paas does not meet validations.
