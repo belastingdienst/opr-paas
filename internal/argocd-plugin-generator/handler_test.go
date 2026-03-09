@@ -15,8 +15,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/belastingdienst/opr-paas/v4/api/plugin"
-	"github.com/belastingdienst/opr-paas/v4/pkg/fields"
+	"github.com/belastingdienst/opr-paas/v5/api/plugin"
+	"github.com/belastingdienst/opr-paas/v5/pkg/fields"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
