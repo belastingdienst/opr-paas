@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v5/internal/config"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	rbac "k8s.io/api/rbac/v1"
