@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

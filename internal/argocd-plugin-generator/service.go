@@ -11,15 +11,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/belastingdienst/opr-paas/v4/internal/logging"
-	"github.com/belastingdienst/opr-paas/v4/pkg/fields"
+	"github.com/belastingdienst/opr-paas/v5/internal/logging"
+	"github.com/belastingdienst/opr-paas/v5/pkg/fields"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/belastingdienst/opr-paas/v4/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/config"
 
-	"github.com/belastingdienst/opr-paas/v4/pkg/templating"
+	"github.com/belastingdienst/opr-paas/v5/pkg/templating"
 
-	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 )
 
 // Service provides the business logic for the plug-in generator.

@@ -40,7 +40,7 @@ jobs:
 
       # https://github.com/docker/setup-qemu-action
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
 
       # https://github.com/docker/setup-buildx-action
       - name: Set up Docker Buildx
@@ -66,7 +66,7 @@ jobs:
             type=sha
 
       - name: Build and push operator image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           context: .
           push: true
@@ -76,7 +76,7 @@ jobs:
           build-args: VERSION=${{ env.VERSION }}
 
       - name: Generate opr-paas image SBOM
-        uses: aquasecurity/trivy-action@e368e328979b113139d6f9068e03accaed98a518 # v0.34.1
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: 'ghcr.io/belastingdienst/opr-paas:v${{ env.VERSION }}'
           scan-type: image

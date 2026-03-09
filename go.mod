@@ -1,4 +1,4 @@
-module github.com/belastingdienst/opr-paas/v4
+module github.com/belastingdienst/opr-paas/v5
 
 go 1.25.0
 
@@ -29,7 +29,6 @@ require (
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -79,6 +78,7 @@ require (
 )
 
 require (
+	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
 )
