@@ -33,7 +33,10 @@ Below snippet shows how validations can be configured for the complete set of va
           requestor: "^[a-z0-9-]*$"
           # (v3.6) Allow quotas (by default all is allowed, by setting a regular expressions you can limit 
           # allowed quotas). Below example disallows limits.cpu (a.o.) and only allows the 4 types as stated.
-          # This option has effect on a Paas, but also all quota's in PaasConfig.spec.capabilities[*].quotas.
+          # This option has effect on:
+          # - Quotas in a Paas resource
+          # - Quotas in PaasConfig.spec.capabilities[*].quotas
+          # - Quotas in PaasConfig.spec.maxAllowedSubmittedQuota.maxQuota
           allowedQuotas: "^(limits.memory|requests.cpu|requests.memory|requests.storage)$"
         paasConfig:
           # (v1.12) Validate name of capability in config
@@ -48,3 +51,6 @@ Below snippet shows how validations can be configured for the complete set of va
 
     If only one of `PaasConfig.spec.validations.paas.namespaceName`, and `PaasConfig.validations.paasNs.name` is set,
     both PaasNs names and Paas.Spec.Namespaces are validated with the same validation rule.
+
+!!! tip "See Also"
+    For details on how to enforce maximum limits on these quotas, see the [Max Allowed Submitted Quota](max-allowed-submitted-quota.md) guide.

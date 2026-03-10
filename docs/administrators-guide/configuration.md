@@ -29,6 +29,24 @@ Alternatively, if you prefer, you could use [doc.crds.dev](https://doc.crds.dev/
 
 For an example, see below.
 
+MaxAllowedSubmittedQuota (v1alpha2)
+----------------------------------
+
+!!! note
+    `MaxAllowedSubmittedQuota` is only available in `PaasConfig` **v1alpha2**.
+
+The operator can enforce an upper bound on the quota that users are allowed to submit in a `Paas` resource (`.spec.quota`).
+
+This is configured via `PaasConfig.spec.maxAllowedSubmittedQuota.maxQuota`.
+
+If a user submits a `Paas` with a quota value that is higher than the configured maximum for a given resource (for example `limits.cpu`), the request will be denied by the validating webhook.
+
+Notes:
+
+- The comparison is done per resource key (e.g. `limits.cpu`, `requests.memory`) using Kubernetes `resource.Quantity` semantics.
+- The keys in `maxQuota` must match the allowed quota keys validation. Invalid keys are rejected when creating/updating the `PaasConfig`.
+- This is a guardrail for submitted `Paas` quota requests. It does not replace cluster-level enforcement such as `ResourceQuota` / `LimitRange`.
+
 Example PaasConfig
 ------------------
 
@@ -40,6 +58,13 @@ Example PaasConfig
     metadata:
       name: opr-paas-config
     spec:
+      maxAllowedSubmittedQuota:
+        maxQuota:
+          limits.cpu: "8"
+          limits.memory: 8Gi
+          requests.cpu: "4"
+          requests.memory: 5Gi
+          requests.storage: "100Gi"
       validations:
         paas:
           groupNames: "^[a-z0-9-]*$"
@@ -146,3 +171,11 @@ Example PaasConfig
     .spec.decryptKeySecret.name points to a secret `example-keys`.
     An example secret can be found [here](../../examples/resources/example-keys.yaml).
     For generating a new secret, please checkout our [crypttool](https://github.com/belastingdienst/opr-paas-crypttool/).
+
+Example denial:
+
+- Configured max: `limits.cpu: "8"`
+- User submits: `Paas.spec.quota.limits.cpu: "10"`
+- Result: admission denied with an error similar to:
+
+    `quota (limits.cpu) cannot be larger than MaxAllowedSubmittedQuota (8)`
