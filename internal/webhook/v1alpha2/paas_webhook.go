@@ -24,6 +24,7 @@ import (
 	"github.com/belastingdienst/opr-paas/v5/pkg/templating"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -130,6 +131,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		validatePaasNamespaceNames,
 		validatePaasNamespaceGroups,
 		validateAppNamespaceQuota,
+		validateSubmittedQuotaAgainstMaxAllowed,
 	} {
 		if errs, validationErr := val(ctx, v.client, conf, paas); validationErr != nil {
 			return nil, apierrors.NewInternalError(validationErr)
@@ -622,6 +624,44 @@ func validateAppNamespaceQuota(
 				field.NewPath("spec", "capabilities").Key(capName),
 				fmt.Sprintf("%d", len(pnsList.Items)),
 				"quota can not be empty when paas capability namespace has paasNs",
+			))
+		}
+	}
+
+	return errs, nil
+}
+
+// validate quota against maxAllowedSubmittedQuota
+func validateSubmittedQuotaAgainstMaxAllowed(
+	ctx context.Context,
+	k8sClient client.Client,
+	conf v1alpha2.PaasConfig,
+	paas *v1alpha2.Paas,
+) ([]*field.Error, error) {
+	var errs []*field.Error
+
+	if len(paas.Spec.Quota) == 0 {
+		return nil, nil
+	}
+
+	// No MaxQuota configured = no restriction
+	if len(conf.Spec.MaxAllowedSubmittedQuota.MaxQuota) == 0 {
+		return nil, nil
+	}
+
+	for resource, aQty := range paas.Spec.Quota {
+		bQty, ok := conf.Spec.MaxAllowedSubmittedQuota.MaxQuota[resource]
+		if !ok {
+			// A has a resource B doesn't — treat B's value as zero
+			bQty = resourcev1.MustParse("0")
+		}
+
+		// If A (paas.Spec.Quota) > B (conf.Spec.MaxAllowedSubmittedQuota.MaxQuota)
+		if aQty.Cmp(bQty) > 0 {
+			errs = append(errs, field.Invalid(
+				field.NewPath("spec", "quota"),
+				bQty.String(),
+				fmt.Sprintf("quota (%s) cannot be larger than MaxAllowedSubmittedQuota (%s)", resource, bQty.String()),
 			))
 		}
 	}
