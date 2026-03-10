@@ -187,6 +187,22 @@ spec:
                   once available
                   Suffix to be appended to the managed-by-label
                 type: string
+              maxAllowedSubmittedQuota:
+                description: The maximum quota allowed to be submitted for approval
+                  by a paas in this cluster
+                properties:
+                  maxQuota:
+                    additionalProperties:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                    description: |-
+                      Quota holds a map of resource quantities
+                      The main reason for having this as a separate type is to add methods
+                    type: object
+                type: object
               quota_label:
                 default: clusterquotagroup
                 description: Label which is added to clusterquotas

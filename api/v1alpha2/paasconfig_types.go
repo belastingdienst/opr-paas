@@ -96,6 +96,10 @@ type PaasConfigSpec struct {
 	// +kubebuilder:validation:Optional
 	ManagedBySuffix string `json:"managed_by_suffix"`
 
+	// The maximum quota allowed to be submitted for approval by a paas in this cluster
+	// +kubebuilder:validation:Optional
+	MaxAllowedSubmittedQuota ConfigMaxAllowedSubmittedQuota `json:"maxAllowedSubmittedQuota"`
+
 	// Grant permissions to all groups according to config in configmap and role selected per group in paas.
 	// +kubebuilder:validation:Optional
 	RoleMappings ConfigRoleMappings `json:"rolemappings"`
@@ -228,6 +232,14 @@ type ConfigQuotaSettings struct {
 	// The maximum quota which the capability gets
 	// +kubebuilder:validation:Optional
 	MaxQuotas paasquota.Quota `json:"max"`
+}
+
+// ConfigMaxAllowedSubmittedQuota allows an administrator to configure an absolute maximum
+// quota that any Paas is allowed to try to submit. Anything higher will be denied
+// by the webhook.
+type ConfigMaxAllowedSubmittedQuota struct {
+	// +kubebuilder:validation:Optional
+	MaxQuota paasquota.Quota `json:"maxQuota"`
 }
 
 // External is true when no quota config is set

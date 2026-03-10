@@ -164,10 +164,20 @@ func validatePaasConfigSpec(
 	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasConfigComponentV2)
 	childPath := field.NewPath("spec")
 
+	// Validate MaxAllowedSubmittedQuota
+	quotaRE := spec.Validations.GetValidationRE("paas", "allowedQuotas")
+	if quotaRE != nil {
+		allErrs = append(allErrs, validateMapKeysAgainstRegex(
+			spec.MaxAllowedSubmittedQuota.MaxQuota,
+			quotaRE,
+			childPath.Child("maxAllowedSubmittedQuota").Child("maxQuota"),
+		)...)
+	}
+
 	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, k8sClient, spec.DecryptKeysSecret, childPath)...)
 	allErrs = append(allErrs, validateValidationFields(spec.Validations, childPath)...)
 	allErrs = append(allErrs, validateConfigCapabilityNames(spec, childPath)...)
-	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, spec.Validations, childPath)...)
+	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, quotaRE, childPath)...)
 	allErrs = append(allErrs, validateTemplatingFields(spec.Templating, childPath)...)
 
 	if len(allErrs) > 0 {
@@ -182,7 +192,7 @@ func validatePaasConfigSpec(
 
 func validateConfigCapabilities(
 	capabilities v1alpha2.ConfigCapabilities,
-	validations v1alpha2.PaasConfigValidations,
+	quotaRE *regexp.Regexp,
 	rootPath *field.Path,
 ) field.ErrorList {
 	childPath := rootPath.Child("capabilities")
@@ -190,7 +200,7 @@ func validateConfigCapabilities(
 	var allErrs field.ErrorList
 
 	for name, capability := range capabilities {
-		allErrs = append(allErrs, validateConfigCapability(name, capability, validations, childPath)...)
+		allErrs = append(allErrs, validateConfigCapability(name, capability, quotaRE, childPath)...)
 	}
 
 	return allErrs
@@ -221,13 +231,13 @@ func validateConfigCapabilityNames(spec v1alpha2.PaasConfigSpec, rootPath *field
 }
 
 func validateConfigCapability(name string, capability v1alpha2.ConfigCapability,
-	validations v1alpha2.PaasConfigValidations,
+	quotaRE *regexp.Regexp,
 	rootPath *field.Path,
 ) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Key(name)
 
-	allErrs = append(allErrs, validateAllowedQuotas(capability.QuotaSettings, validations, childPath)...)
+	allErrs = append(allErrs, validateAllowedQuotas(capability.QuotaSettings, quotaRE, childPath)...)
 	allErrs = append(allErrs, validateConfigQuotaSettings(capability.QuotaSettings, childPath)...)
 	allErrs = append(allErrs, validateConfigCustomFields(capability.CustomFields, childPath)...)
 
@@ -273,30 +283,18 @@ func validateConfigQuotaSettings(
 
 func validateAllowedQuotas(
 	qs v1alpha2.ConfigQuotaSettings,
-	validations v1alpha2.PaasConfigValidations,
+	quotaRE *regexp.Regexp,
 	childPath *field.Path,
 ) field.ErrorList {
-	var allErrs field.ErrorList
-	childPath = childPath.Child("quotas")
-	nameValidationRE := validations.GetValidationRE("paas", "allowedQuotas")
-	if nameValidationRE == nil {
+	if quotaRE == nil {
 		return nil
 	}
-	for kind, quotas := range map[string]map[k8sv1.ResourceName]resourcev1.Quantity{
-		"defaults": qs.DefQuota,
-		"min":      qs.MinQuotas,
-		"max":      qs.MaxQuotas,
-	} {
-		for quotaKey := range quotas {
-			if !nameValidationRE.Match([]byte(quotaKey)) {
-				allErrs = append(allErrs, field.Invalid(
-					childPath.Child(kind),
-					quotaKey,
-					fmt.Sprintf("quota is not allowed (allowed quotas: %s)", nameValidationRE.String()),
-				))
-			}
-		}
-	}
+	var allErrs field.ErrorList
+	childPath = childPath.Child("quotas")
+
+	allErrs = append(allErrs, validateMapKeysAgainstRegex(qs.DefQuota, quotaRE, childPath.Child("defaults"))...)
+	allErrs = append(allErrs, validateMapKeysAgainstRegex(qs.MinQuotas, quotaRE, childPath.Child("min"))...)
+	allErrs = append(allErrs, validateMapKeysAgainstRegex(qs.MaxQuotas, quotaRE, childPath.Child("max"))...)
 
 	return allErrs
 }
@@ -515,7 +513,7 @@ func validateDecryptKeysSecretExists(
 	return allErrs
 }
 
-// validateDecryptKeysSecret ensures that the referenced Secret exists in the cluster.
+// validateValidationFields ensures all validation regexes in the spec are compilable.
 func validateValidationFields(
 	validations v1alpha2.PaasConfigValidations,
 	rootPath *field.Path,
@@ -547,4 +545,23 @@ func formatFieldErrors(allErrs field.ErrorList) []string {
 		errs = append(errs, err.Error())
 	}
 	return errs
+}
+
+// helper function
+func validateMapKeysAgainstRegex(
+	kv map[k8sv1.ResourceName]resourcev1.Quantity,
+	re *regexp.Regexp,
+	path *field.Path,
+) field.ErrorList {
+	var allErrs field.ErrorList
+	for quotaKey := range kv {
+		if !re.MatchString(string(quotaKey)) {
+			allErrs = append(allErrs, field.Invalid(
+				path,
+				quotaKey,
+				fmt.Sprintf("quota key is not allowed (allowed quotas: %s)", re.String()),
+			))
+		}
+	}
+	return allErrs
 }
