@@ -33,6 +33,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
+const pathSpec string = "spec"
+
 // SetupPaasWebhookWithManager registers the webhook for Paas in the manager.
 func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr, &v1alpha2.Paas{}).
@@ -178,20 +180,20 @@ func validateCaps(
 		templater := templating.NewTemplater(*paas, conf)
 		if capConfig, ok := conf.Spec.Capabilities[name]; !ok {
 			errs = append(errs, field.Invalid(
-				field.NewPath("spec").Child("capabilities"),
+				field.NewPath(pathSpec).Child("capabilities"),
 				name,
 				"capability not configured",
 			))
 		} else {
 			errs = append(errs, applyCustomFieldTemplates(
-				field.NewPath("spec").Child("capabilities").Key(name).Child("custom_fields"),
+				field.NewPath(pathSpec).Child("capabilities").Key(name).Child("custom_fields"),
 				capConfig.CustomFields,
 				templater,
 			)...)
 			errs = append(errs, validateSecrets(
 				capability.Secrets,
 				rsa,
-				field.NewPath("spec").Child("capabilities").Key(name).Child("secrets"),
+				field.NewPath(pathSpec).Child("capabilities").Key(name).Child("secrets"),
 			)...)
 		}
 	}
@@ -258,9 +260,9 @@ func validatePaasallowedQuotas(
 	}
 
 	quotas := map[*field.Path]quota.Quota{
-		field.NewPath("spec", "quota"): paas.Spec.Quota,
+		field.NewPath(pathSpec, "quota"): paas.Spec.Quota,
 	}
-	cf := field.NewPath("spec", "capabilities")
+	cf := field.NewPath(pathSpec, "capabilities")
 	for name, c := range paas.Spec.Capabilities {
 		quotas[cf.Key(name).Child("quota")] = c.Quota
 	}
@@ -310,7 +312,7 @@ func validatePaasNamespaceNames(
 	for namespace := range paas.Spec.Namespaces {
 		if !rfc1123LabelNamesRegex.MatchString(namespace) {
 			errs = append(errs, field.Invalid(
-				field.NewPath("spec").Child("namespaces").Key(namespace),
+				field.NewPath(pathSpec).Child("namespaces").Key(namespace),
 				namespace,
 				"paas name does not match with RFC 1123 Label Names",
 			))
@@ -326,7 +328,7 @@ func validatePaasNamespaceNames(
 
 		if !nameValidationRE.Match([]byte(namespace)) {
 			errs = append(errs, field.Invalid(
-				field.NewPath("spec").Child("namespaces"),
+				field.NewPath(pathSpec).Child("namespaces"),
 				namespace,
 				fmt.Sprintf("paas name does not match configured validation regex `%s`", nameValidationRE.String()),
 			))
@@ -351,7 +353,7 @@ func validatePaasNamespaceGroups(
 				slices.Sort(groups)
 				ferrs = append(ferrs, &field.Error{
 					Type:     field.ErrorTypeInvalid,
-					Field:    field.NewPath("spec").Child("namespaces").Key(nsname).Child("groups").String(),
+					Field:    field.NewPath(pathSpec).Child("namespaces").Key(nsname).Child("groups").String(),
 					BadValue: g,
 					Detail:   fmt.Errorf("does not exist in paas groups (%v)", strings.Join(groups, ", ")).Error(),
 				})
@@ -377,7 +379,7 @@ func validatePaasRequestor(
 	}
 	if !nameValidationRE.Match([]byte(paas.Spec.Requestor)) {
 		errs = append(errs, field.Invalid(
-			field.NewPath("spec").Key("requestor"),
+			field.NewPath(pathSpec).Key("requestor"),
 			paas.Name,
 			fmt.Sprintf("paas requestor does not match configured validation regex `%s`", nameValidationRE.String()),
 		))
@@ -402,7 +404,7 @@ func validateGroupNames(
 	for groupName := range paas.Spec.Groups {
 		if !groupNameValidationRE.Match([]byte(groupName)) {
 			errs = append(errs, field.Invalid(
-				field.NewPath("spec").Child("groups").Key(groupName),
+				field.NewPath(pathSpec).Child("groups").Key(groupName),
 				groupName,
 				fmt.Sprintf("group name does not match configured validation regex `%s`",
 					groupNameValidationRE.String()),
@@ -424,7 +426,7 @@ func validatePaasSecrets(
 		return nil, err
 	}
 
-	return validateSecrets(paas.Spec.Secrets, rsa, field.NewPath("spec").Child("secrets")), nil
+	return validateSecrets(paas.Spec.Secrets, rsa, field.NewPath(pathSpec).Child("secrets")), nil
 }
 
 // validateCustomFields ensures that for a given capability in the Paas:
@@ -444,7 +446,7 @@ func validateCustomFields(
 		// validateCaps() has already ensured the capability configuration exists
 		if _, err := c.CapExtraFields(conf.Spec.Capabilities[cname].CustomFields, true); err != nil {
 			errs = append(errs, field.Invalid(
-				field.NewPath("spec").Child("capabilities").Key(cname),
+				field.NewPath(pathSpec).Child("capabilities").Key(cname),
 				"custom_fields",
 				err.Error(),
 			))
@@ -466,7 +468,7 @@ func (*PaasCustomValidator) validateGroups(
 		if len(grp.Query) > 0 && len(grp.Users) > 0 {
 			warnings = append(warnings, fmt.Sprintf(
 				"%s contains both users and query, the users will be ignored",
-				field.NewPath("spec").Child("groups").Key(key),
+				field.NewPath(pathSpec).Child("groups").Key(key),
 			))
 		}
 		if len(grp.Users) > 0 {
@@ -474,11 +476,11 @@ func (*PaasCustomValidator) validateGroups(
 			case "warn":
 				warnings = append(warnings, fmt.Sprintf(
 					"group %s has users which is discouraged",
-					field.NewPath("spec").Child("groups").Key(key).Child("users"),
+					field.NewPath(pathSpec).Child("groups").Key(key).Child("users"),
 				))
 			case "block":
 				errs = append(errs, field.Invalid(
-					field.NewPath("spec").Child("groups").Key(key).Child("users"),
+					field.NewPath(pathSpec).Child("groups").Key(key).Child("users"),
 					grp.Users,
 					"groups with users is a disabled feature",
 				))
@@ -487,7 +489,7 @@ func (*PaasCustomValidator) validateGroups(
 		for i, role := range grp.Roles {
 			if _, exists := conf.Spec.RoleMappings[role]; !exists {
 				errs = append(errs, field.Invalid(
-					field.NewPath("spec").Child("groups").Key(key).Child("roles").Index(i),
+					field.NewPath(pathSpec).Child("groups").Key(key).Child("roles").Index(i),
 					role,
 					"role is not defined in PaasConfig",
 				))
@@ -501,9 +503,9 @@ func (*PaasCustomValidator) validateGroups(
 // validateQuota returns a warning when higher limits are configured than requests for the Paas / capability quotas.
 func (v *PaasCustomValidator) validateQuota(paas *v1alpha2.Paas) (warnings []string) {
 	quotas := map[*field.Path]quota.Quota{
-		field.NewPath("spec", "quota"): paas.Spec.Quota,
+		field.NewPath(pathSpec, "quota"): paas.Spec.Quota,
 	}
-	cf := field.NewPath("spec", "capabilities")
+	cf := field.NewPath(pathSpec, "capabilities")
 	for name, c := range paas.Spec.Capabilities {
 		quotas[cf.Key(name).Child("quota")] = c.Quota
 	}
@@ -535,7 +537,7 @@ func (v *PaasCustomValidator) validateExtraPerm(conf v1alpha2.PaasConfig, paas *
 		if c.ExtraPermissions && conf.Spec.Capabilities[cname].ExtraPermissions == nil {
 			warnings = append(warnings, fmt.Sprintf(
 				"%s capability does not have extra permissions configured",
-				field.NewPath("spec", "capabilities").Key(cname).Child("extra_permissions"),
+				field.NewPath(pathSpec, "capabilities").Key(cname).Child("extra_permissions"),
 			))
 		}
 	}
@@ -605,7 +607,7 @@ func validateAppNamespaceQuota(
 
 	if len(paas.Spec.Namespaces) > 0 {
 		errs = append(errs, field.Invalid(
-			field.NewPath("spec", "namespaces"),
+			field.NewPath(pathSpec, "namespaces"),
 			fmt.Sprintf("%d", len(paas.Spec.Namespaces)),
 			fmt.Sprintf("quota can not be empty when paas has namespaces (number of namespaces: %d)",
 				len(paas.Spec.Namespaces)),
@@ -621,7 +623,7 @@ func validateAppNamespaceQuota(
 		}
 		if len(pnsList.Items) > 0 {
 			errs = append(errs, field.Invalid(
-				field.NewPath("spec", "capabilities").Key(capName),
+				field.NewPath(pathSpec, "capabilities").Key(capName),
 				fmt.Sprintf("%d", len(pnsList.Items)),
 				"quota can not be empty when paas capability namespace has paasNs",
 			))
@@ -659,7 +661,7 @@ func validateSubmittedQuotaAgainstMaxAllowed(
 		// If A (paas.Spec.Quota) > B (conf.Spec.MaxAllowedSubmittedQuota.MaxQuota)
 		if aQty.Cmp(bQty) > 0 {
 			errs = append(errs, field.Invalid(
-				field.NewPath("spec", "quota"),
+				field.NewPath(pathSpec, "quota"),
 				bQty.String(),
 				fmt.Sprintf("quota (%s) cannot be larger than MaxAllowedSubmittedQuota (%s)", resource, bQty.String()),
 			))
