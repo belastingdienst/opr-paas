@@ -21,6 +21,8 @@ the Paas Operator in production environments.
 
 - [Configuration](configuration/)  
   Guidance on customizing system behavior via `PaasConfig`.
+    - [Max Allowed Submitted Quota](configuration/max-allowed-submitted-quota.md)  
+      How to configure `PaasConfig` to set a maximum allowed quota globally.
 
 - [Cluster‑Wide Quotas](cluster-wide-quotas/)  
   Instructions for enforcing resource usage limits across namespaces.
