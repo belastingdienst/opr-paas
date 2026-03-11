@@ -379,7 +379,7 @@ func validatePaasRequestor(
 	if !nameValidationRE.Match([]byte(paas.Spec.Requestor)) {
 		errs = append(errs, field.Invalid(
 			field.NewPath(pathSpec).Key("requestor"),
-			paas.Name,
+			paas.Spec.Requestor,
 			fmt.Sprintf("paas requestor does not match configured validation regex `%s`", nameValidationRE.String()),
 		))
 	}
