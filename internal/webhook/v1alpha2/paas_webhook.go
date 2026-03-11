@@ -313,7 +313,7 @@ func validatePaasNamespaceNames(
 			errs = append(errs, field.Invalid(
 				field.NewPath(pathSpec).Child("namespaces").Key(namespace),
 				namespace,
-				"paas name does not match with RFC 1123 Label Names",
+				"namespace name does not match with RFC 1123 Label Names",
 			))
 		}
 		nsName := utils.Join(paas.Name, namespace)
@@ -329,7 +329,8 @@ func validatePaasNamespaceNames(
 			errs = append(errs, field.Invalid(
 				field.NewPath(pathSpec).Child("namespaces"),
 				namespace,
-				fmt.Sprintf("paas name does not match configured validation regex `%s`", nameValidationRE.String()),
+				fmt.Sprintf("namespace name does not match configured validation regex `%s`",
+					nameValidationRE.String()),
 			))
 		}
 	}
