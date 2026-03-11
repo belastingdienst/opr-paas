@@ -42,6 +42,67 @@ go install github.com/elastic/crd-ref-docs
 crd-ref-docs --config=./crd-ref-docs-config.yml --source-path=./api --renderer=markdown --output-path=./docs/development-guide/00_api.md
 ```
 
+## Viewing the documentation locally
+
+To preview documentation changes locally, you can run MkDocs in “serve” mode. This
+builds the site and starts a local web server with live reload.
+
+### Prerequisites
+
+Documentation tooling is Python-based. We recommend using a virtual environment
+so you don’t need to install packages system-wide (and to avoid `externally-managed-environment` errors on macOS/Homebrew Python).
+
+### Create and use a virtual environment
+
+From the repository root:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+Install the documentation dependencies:
+
+```bash
+pip3 install -r requirements.txt
+```
+
+!!! tip
+    If you previously tried `pip3 install -r requirements.txt` without a virtual
+    environment and saw an error like `externally-managed-environment`, this is
+    expected on some systems. Using a virtual environment is the recommended fix.
+
+### Serve the docs
+
+Start the local docs server:
+
+```bash
+python -m mkdocs serve
+```
+
+MkDocs will print the local URL to open in your browser (for example `http://127.0.0.1:8000/opr-paas/`).
+
+!!! tip
+    Use `python -m mkdocs serve` instead of `mkdocs serve`. This ensures you run
+    MkDocs from the currently activated virtual environment, so installed plugins
+    (for example the `kroki` plugin) are found correctly.
+
+### Stopping and re-running
+
+- Stop the server with `Ctrl+C`
+- Leave the virtual environment with:
+
+```bash
+deactivate
+```
+
+- Next time you want to preview docs again:
+
+```bash
+source venv/bin/activate
+python -m mkdocs serve
+```
+
 ## Writing Clear and Effective Documentation
 
 When contributing to the documentation, please aim to keep your writing simple

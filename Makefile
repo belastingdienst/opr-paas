@@ -64,7 +64,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 # Sets the toolchain to the version of go from this project's go.mod.
-GOTOOLCHAIN=$(shell go env GOVERSION)
+export GOTOOLCHAIN=$(shell go env GOVERSION)
 
 # CONTAINER_TOOL defines the container tool to be used for building images.
 # Be aware that the target commands are only tested with Docker which is

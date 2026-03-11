@@ -126,6 +126,32 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(warn, err).Error().NotTo(HaveOccurred())
 			Expect(err).Error().NotTo(HaveOccurred())
 		})
+		It("Should deny Paas with requested quotas larger than MaxAllowedSubmittedQuota", func() {
+			// Set the Paas object with a large quota
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Quota: quota.Quota{
+						corev1.ResourceLimitsCPU: resource.MustParse("10"),
+					},
+				},
+			}
+
+			// Update PaasConfig
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+
+			// Set a very small max
+			latestConf.Spec.MaxAllowedSubmittedQuota = v1alpha2.ConfigMaxAllowedSubmittedQuota{
+				MaxQuota: quota.Quota{
+					corev1.ResourceLimitsCPU: resource.MustParse("1m"),
+				},
+			}
+			Expect(k8sClient.Update(ctx, latestConf)).To(Succeed())
+
+			Expect(validator.ValidateCreate(ctx, obj)).Error().
+				To(MatchError(ContainSubstring("cannot be larger than MaxAllowedSubmittedQuota")))
+		})
 		It("Should validate paas name", func() {
 			const paasNameValidation = "^([a-z0-9]{3})-([a-z0-9]{3})$"
 
