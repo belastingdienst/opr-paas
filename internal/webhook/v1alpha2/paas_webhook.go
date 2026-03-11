@@ -661,7 +661,9 @@ func validateSubmittedQuotaAgainstMaxAllowed(
 			errs = append(errs, field.Invalid(
 				field.NewPath(pathSpec, "quota"),
 				paasQty.String(),
-				fmt.Sprintf("quota (%s) cannot be larger than MaxAllowedSubmittedQuota (%s)", resource, paasConfigMaxQty.String()),
+				fmt.Sprintf("quota (%s) cannot be larger than MaxAllowedSubmittedQuota (%s)",
+					resource,
+					paasConfigMaxQty.String()),
 			))
 		}
 	}
