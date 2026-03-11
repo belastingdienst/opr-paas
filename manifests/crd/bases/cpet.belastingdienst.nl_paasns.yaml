@@ -11,6 +11,8 @@ spec:
     kind: PaasNS
     listKind: PaasNSList
     plural: paasns
+    shortNames:
+    - pns
     singular: paasns
   scope: Namespaced
   versions:
