@@ -83,12 +83,15 @@ jobs:
 
       - name: Extract short tag
         id: extract_short_tag
-        run: |
-          TAG="${GITHUB_EVENT_RELEASE_TAG_NAME}"
-          SHORT_TAG="$(echo "$TAG" | sed 's/\([0-9]*\.[0-9]*\).*/\1\.x/')"
-          echo "SHORT_TAG=$SHORT_TAG" >> $GITHUB_OUTPUT
         env:
-          GITHUB_EVENT_RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
+        run: |
+          SHORT_TAG="$(echo "$RELEASE_TAG" | sed 's/\([0-9]*\.[0-9]*\).*/\1\.x/')"
+          if [[ -z "$SHORT_TAG" ]]; then
+            echo "ERROR: Could not extract short tag from RELEASE_TAG='$RELEASE_TAG'"
+            exit 1
+          fi
+          echo "SHORT_TAG=$SHORT_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Deploy with mike 🚀
         # note that "mike set-default latest" was run manually in initial docs setup
