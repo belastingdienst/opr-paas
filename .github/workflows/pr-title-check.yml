@@ -10,18 +10,22 @@ permissions: {}
 # workflow being trigger a number of times. This limits it
 # to one run per PR.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  # Using github.ref is more robust across different event types
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   validate:
-    permissions:
-      contents: read
-      pull-requests: read
     name: Validate PR Title
     runs-on: ubuntu-latest
+    timeout-minutes: 5 # PR linting should be near-instant
+    permissions:
+      contents: read      # Required to read the config file
+      pull-requests: read # Required to fetch the PR title
     steps:
-      - uses: thehanimo/pr-title-checker@7fbfe05602bdd86f926d3fb3bccb6f3aed43bc70 # v1.4.3
+      - name: Check PR Title
+        uses: thehanimo/pr-title-checker@7fbfe05602bdd86f926d3fb3bccb6f3aed43bc70 # v1.4.3
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Use the built-in github.token context
+          GITHUB_TOKEN: ${{ github.token }}
           configuration_path: ".github/pr-title-checker-config.json"
