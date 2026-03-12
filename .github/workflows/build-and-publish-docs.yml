@@ -21,7 +21,7 @@ jobs:
     
     services:
       kroki:
-        image: yuzutech/kroki:latest
+        image: yuzutech/kroki@sha256:4cfb9d48a1d9e18c346d505fd85c9ad16121d1691602b0e580db904b00c04320
         ports:
           - 8000:8000
         options: >-
