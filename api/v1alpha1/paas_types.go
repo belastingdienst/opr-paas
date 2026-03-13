@@ -447,6 +447,7 @@ func (ps *PaasStatus) GetMessages() []string {
 // +kubebuilder:deprecatedversion:warning="please upgrade to v1alpha2"
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=paas,scope=Cluster
+// +kubebuilder:unservedversion
 
 // Paas is the Schema for the paas API
 type Paas struct {

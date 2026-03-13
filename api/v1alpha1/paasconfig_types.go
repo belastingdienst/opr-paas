@@ -37,6 +37,7 @@ const (
 // +kubebuilder:subresource:status
 // +kubebuilder:deprecatedversion:warning="please upgrade to v1alpha2"
 // +kubebuilder:resource:path=paasconfig,scope=Cluster
+// +kubebuilder:unservedversion
 type PaasConfig struct {
 	metav1.TypeMeta   `json:""`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
