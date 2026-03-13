@@ -48,6 +48,7 @@ type PaasNSSpec struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:deprecatedversion:warning="please upgrade to v1alpha2"
 // +kubebuilder:resource:path=paasns,scope=Namespaced
+// +kubebuilder:unservedversion
 
 // PaasNS is the Schema for the PaasNS API
 type PaasNS struct {
