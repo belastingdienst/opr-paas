@@ -21,6 +21,9 @@ jobs:
   autolabeler:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      # write permission is required for autolabeler
+      pull-requests: write
     steps:
       # Run autolabeler (separate actions since v7)
       - uses: release-drafter/release-drafter/autolabeler@3a7fb5c85b80b1dda66e1ccb94009adbbd32fce3 # v7.0.0
@@ -29,8 +32,6 @@ jobs:
     permissions:
       # write permission is required to create a GitHub release
       contents: write
-      # write permission is required for autolabeler
-      pull-requests: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
