@@ -7,7 +7,7 @@ on:
 env:
   PYTHON_VERSION: 3.x
   # Golang version to use across CI steps
-  GOLANG_VERSION: '1.25'
+  GOLANG_VERSION: '1.26'
   
 permissions:
   contents: write
