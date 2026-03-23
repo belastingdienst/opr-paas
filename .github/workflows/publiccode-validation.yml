@@ -30,6 +30,6 @@ jobs:
           fetch-depth: 1 # Only need the latest commit for validation
 
       - name: Validate publiccode.yml
-        uses: italia/publiccode-parser-action@44a711e642b242be0cfc042b49f870ad2f9464fb # v1
+        uses: italia/publiccode-parser-action@56e1200cba853b1efa73ee871600284d0705ab4d # v1
         with:
           publiccode: "publiccode.yml"
