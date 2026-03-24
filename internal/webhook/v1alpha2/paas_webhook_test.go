@@ -16,7 +16,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
+	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"

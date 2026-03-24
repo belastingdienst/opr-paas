@@ -170,7 +170,7 @@ Example PaasConfig
 !!! note
     .spec.decryptKeySecret.name points to a secret `example-keys`.
     An example secret can be found [here](../../examples/resources/example-keys.yaml).
-    For generating a new secret, please checkout our [crypttool](https://github.com/belastingdienst/opr-paas-crypttool/).
+    For generating a new secret, please checkout our [kubectl-paas](https://github.com/belastingdienst/opr-paas-cli/) tool.
 
 Example denial:
 
