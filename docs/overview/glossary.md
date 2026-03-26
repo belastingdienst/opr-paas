@@ -25,9 +25,9 @@ This brings down over commit at the expense of the risk of resource sharing.
 
 For more details, see the [relevant details in the administrators section](administrators-guide/cluster-wide-quotas/basic-usage.md)
 
-## Crypttool
+## Kubectl-paas
 
-The crypttool is a small command-line utility that allows a user to perform some
+Kubectl-paas is a small command-line utility that allows a user to perform some
 simple operations in regard to secrets in a Paas.
 
 Basic functionality includes sub-commands for `encrypt`, `decrypt` and `re-encrypt`
@@ -41,7 +41,7 @@ This will allow for key rotation.
 
 It can also be used to `generate` a new public/private key pair.
 
-The crypttool is managed from its own repository on GitHub at [https://github.com/belastingdienst/opr-paas-crypttool](https://github.com/belastingdienst/opr-paas-crypttool).
+The kubectl-paas tool is managed from its own repository on GitHub at [https://github.com/belastingdienst/opr-paas-cli](https://github.com/belastingdienst/opr-paas-cli).
 
 ## Groups [openshift]
 
