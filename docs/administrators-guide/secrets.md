@@ -18,16 +18,16 @@ or through the web service).
 
 ## Generating new secrets
 
-New keys can be easily generated using the crypttool. You can download the crypttool
-from the [Downloads section of its repository](https://github.com/belastingdienst/opr-paas-crypttool/releases).
+New keys can be easily generated using kubectl-paas. You can download kubectl-paas
+from the [Downloads section of its repository](https://github.com/belastingdienst/opr-paas-cli/releases).
 
-Once downloaded, the crypttool can be used to generate a keypair as follows:
+Once downloaded, kubectl-paas can be used to generate a keypair as follows:
 
 !!! example
 
     ```bash
     cd $(mktemp -d)
-    crypttool generate --privateKeyFile private.bin --publicKeyFile public.bin
+    kubectl-paas generate --privateKeyFile private.bin --publicKeyFile public.bin
     ```
 
 ## Deploying new secrets
@@ -49,7 +49,7 @@ will (also) be tried for decryption.
 ### Directly
 
 Once generated, the public key should be supplied to users that encrypt secrets.
-They can be supplied directly, so that users can use the crypttool for encryption.
+They can be supplied directly, so that users can use kubectl-paas for encryption.
 For more info, please refer to [user docs on Secrets](../user-guide/02_secrets.md).
 
 ### Running the webservice
@@ -83,8 +83,7 @@ k8s changes the mount and the webservice automatically picks up the file changes
 ### Reencryption
 
 A proper encryption product also has options to cycle the encrypted data.
-With the secrets implementation in the operator, this is implemented with the
-crypttool.
+With the secrets implementation in the operator, this is implemented with kubectl-paas.
 
 Steps are:
 
@@ -107,9 +106,9 @@ Steps are:
     cd $(mktemp -d)
     kubectl get paas -o name | while read -r PAAS; do
       kubectl get paas "${PAAS}" > "${PAAS}.yaml"
-      crypttool check-paas --privateKeyFiles ~/Downloads/oldpriv > "${PAAS}.pre.out"
-      crypttool reencrypt --privateKeyFiles ~/Downloads/oldpriv --publicKeyFile ~/Downloads/newpublicKey "${PAAS}.yaml"
-      crypttool check-paas --privateKeyFiles ~/Downloads/oldpriv > "${PAAS}.post.out"
+      kubectl-paas check-paas --privateKeyFiles ~/Downloads/oldpriv > "${PAAS}.pre.out"
+      kubectl-paas reencrypt --privateKeyFiles ~/Downloads/oldpriv --publicKeyFile ~/Downloads/newpublicKey "${PAAS}.yaml"
+      kubectl-paas check-paas --privateKeyFiles ~/Downloads/oldpriv > "${PAAS}.post.out"
       kubectl apply -f "${PAAS}.yaml"
     done
     ```

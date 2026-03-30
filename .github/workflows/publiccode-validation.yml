@@ -24,12 +24,12 @@ jobs:
       contents: read # Explicitly allow reading the repository content
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
           fetch-depth: 1 # Only need the latest commit for validation
 
       - name: Validate publiccode.yml
-        uses: italia/publiccode-parser-action@44a711e642b242be0cfc042b49f870ad2f9464fb # v1
+        uses: italia/publiccode-parser-action@56e1200cba853b1efa73ee871600284d0705ab4d # v1
         with:
           publiccode: "publiccode.yml"
