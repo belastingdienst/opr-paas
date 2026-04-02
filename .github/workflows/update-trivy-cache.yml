@@ -49,5 +49,4 @@ jobs:
         uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: ${{ github.workspace }}/.cache/trivy
-          # Added a 'v1' prefix to allow for easy cache busting if you change the logic
-          key: v1-trivy-db-${{ steps.date.outputs.date }}
+          key: cache-trivy-${{ steps.date.outputs.date }}
