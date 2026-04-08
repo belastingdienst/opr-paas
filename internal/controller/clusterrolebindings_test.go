@@ -97,8 +97,16 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			},
 		}
 		paasNsDefs = namespaceDefs{
-			capNSName:              namespaceDef{nsName: capNSName, capName: capName, capConfig: capConfig, quotaName: capNSName},
-			crbNotDeletedCapNSName: namespaceDef{nsName: crbNotDeletedCapNSName, capName: crbNotDeletedCapName, capConfig: capConfig, quotaName: crbNotDeletedCapNSName},
+			capNSName: namespaceDef{
+				nsName:    capNSName,
+				capName:   capName,
+				capConfig: capConfig,
+				quotaName: capNSName},
+			crbNotDeletedCapNSName: namespaceDef{
+				nsName:    crbNotDeletedCapNSName,
+				capName:   crbNotDeletedCapName,
+				capConfig: capConfig,
+				quotaName: crbNotDeletedCapNSName},
 		}
 		secondNsDefs = namespaceDefs{
 			secondCapNSName: namespaceDef{
@@ -246,7 +254,6 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 		})
 		Context("when removing default permissions from capability in paas config", func() {
 			var originalUid types.UID
-
 			BeforeAll(func() {
 				// make a paas with default permissions first
 				err := reconciler.reconcileClusterRoleBindings(ctx, paas, paasNsDefs)
@@ -254,7 +261,8 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 
 				// save the UID of a created CRB for future assertions
 				var moreCrb rbac.ClusterRoleBinding
-				err = reconciler.Get(ctx, types.NamespacedName{Name: "paas-" + crbNotDeletedCapName + "-view"}, &moreCrb)
+				err = reconciler.Get(ctx, types.NamespacedName{Name: "paas-" + crbNotDeletedCapName + "-view"},
+					&moreCrb)
 				Expect(err).NotTo(HaveOccurred())
 				originalUid = moreCrb.UID
 			})
@@ -296,7 +304,8 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			})
 			It("should not remove CRBs from other capabilities", func() {
 				var currentMoreCrb rbac.ClusterRoleBinding
-				err := reconciler.Get(ctx, types.NamespacedName{Name: "paas-" + crbNotDeletedCapName + "-view"}, &currentMoreCrb)
+				err := reconciler.Get(ctx, types.NamespacedName{Name: "paas-" + crbNotDeletedCapName + "-view"},
+					&currentMoreCrb)
 
 				Expect(err).NotTo(HaveOccurred())
 				currentUid := currentMoreCrb.UID

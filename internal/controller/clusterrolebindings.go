@@ -206,7 +206,6 @@ func (r *PaasReconciler) checkForRemovedPermissionsInPaasConfig(
 	capConfig v1alpha2.ConfigCapability,
 	permissions v1alpha2.ConfigRolesSas,
 ) error {
-
 	// determine a full list of default permissions of all capabilities
 	allDefaultPermissions, err := r.collectAllDefaultPermissions(ctx)
 	if err != nil {
@@ -246,7 +245,7 @@ func (r *PaasReconciler) checkForRemovedPermissionsInPaasConfig(
 				crbFromList.Name,
 			)
 
-			if err := r.Delete(ctx, &crbFromList); err != nil {
+			if err = r.Delete(ctx, &crbFromList); err != nil {
 				return err
 			}
 		}
@@ -277,7 +276,9 @@ func (r *PaasReconciler) collectAllDefaultPermissions(ctx context.Context) (v1al
 	return allDefaultPermissions, nil
 }
 
-func (r *PaasReconciler) mergeRoles(permissions v1alpha2.ConfigRolesSas, allDefaultPermissions v1alpha2.ConfigRolesSas) map[string]struct{} {
+func (r *PaasReconciler) mergeRoles(
+	permissions v1alpha2.ConfigRolesSas,
+	allDefaultPermissions v1alpha2.ConfigRolesSas) map[string]struct{} {
 	rolesToKeep := make(map[string]struct{})
 	for role := range permissions {
 		rolesToKeep[role] = struct{}{}
