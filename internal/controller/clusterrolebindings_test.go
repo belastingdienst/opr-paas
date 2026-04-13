@@ -15,15 +15,19 @@ import (
 
 var _ = Describe("Clusterrolebindings", Ordered, func() {
 	const (
-		serviceName        = "crb"
-		capName            = serviceName
-		capAppSetName      = capName + "-as"
-		capAppSetNamespace = "asns"
-		paasName           = capName + "-test"
-		capNSName          = paasName + "-" + capName
-		secondPaasName     = capName + "-other"
-		secondCapNSName    = secondPaasName + "-" + capName
+		serviceName            = "crb"
+		capName                = serviceName
+		capAppSetName          = capName + "-as"
+		capAppSetNamespace     = "asns"
+		paasName               = capName + "-test"
+		capNSName              = paasName + "-" + capName
+		secondPaasName         = capName + "-other"
+		secondCapNSName        = secondPaasName + "-" + capName
+		crbNotDeletedCapName   = "not-deleted"
+		crbNotDeleteAppSetName = crbNotDeletedCapName + "-as"
+		crbNotDeletedCapNSName = crbNotDeletedCapName + "-ns"
 	)
+
 	var (
 		ctx             context.Context
 		paas            *v1alpha2.Paas
@@ -46,6 +50,13 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 				capName: extraCapPerms,
 			},
 		}
+		permissionNotDeletedCap := v1alpha2.ConfigCapability{
+			AppSet: crbNotDeletedCapName,
+			DefaultPermissions: v1alpha2.ConfigCapPerm{
+				capName: []string{crbNotDeletedCapName + "-view"},
+			},
+		}
+
 		paasConfig = v1alpha2.PaasConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "paas-config",
@@ -53,7 +64,8 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			Spec: v1alpha2.PaasConfigSpec{
 				ClusterWideArgoCDNamespace: capAppSetNamespace,
 				Capabilities: map[string]v1alpha2.ConfigCapability{
-					capName: capConfig,
+					capName:              capConfig,
+					crbNotDeletedCapName: permissionNotDeletedCap,
 				},
 			},
 		}
@@ -78,11 +90,23 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 					capName: v1alpha2.PaasCapability{
 						ExtraPermissions: true,
 					},
+					crbNotDeleteAppSetName: v1alpha2.PaasCapability{
+						ExtraPermissions: true,
+					},
 				},
 			},
 		}
 		paasNsDefs = namespaceDefs{
-			capNSName: namespaceDef{nsName: capNSName, capName: capName, capConfig: capConfig, quotaName: capNSName},
+			capNSName: namespaceDef{
+				nsName:    capNSName,
+				capName:   capName,
+				capConfig: capConfig,
+				quotaName: capNSName},
+			crbNotDeletedCapNSName: namespaceDef{
+				nsName:    crbNotDeletedCapNSName,
+				capName:   crbNotDeletedCapName,
+				capConfig: capConfig,
+				quotaName: crbNotDeletedCapNSName},
 		}
 		secondNsDefs = namespaceDefs{
 			secondCapNSName: namespaceDef{
@@ -229,16 +253,26 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			})
 		})
 		Context("when removing default permissions from capability in paas config", func() {
-			It("should remove related CRBs", func() {
+			var originalUid types.UID
+			BeforeAll(func() {
 				// make a paas with default permissions first
 				err := reconciler.reconcileClusterRoleBindings(ctx, paas, paasNsDefs)
 				Expect(err).NotTo(HaveOccurred())
 
+				// save the UID of a created CRB for future assertions
+				var moreCrb rbac.ClusterRoleBinding
+				err = reconciler.Get(ctx, types.NamespacedName{Name: "paas-" + crbNotDeletedCapName + "-view"},
+					&moreCrb)
+				Expect(err).NotTo(HaveOccurred())
+				originalUid = moreCrb.UID
+			})
+
+			It("should remove related CRBs", func() {
 				// verify default permissions were created
 				for _, crbRole := range defaultCapPerms {
 					crbName := join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
-					err = reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
+					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(crb.RoleRef).To(Equal(
 						rbac.RoleRef{APIGroup: "rbac.authorization.k8s.io", Kind: "ClusterRole", Name: crbRole}))
@@ -255,9 +289,10 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 				paasConfigFromContext.Spec.Capabilities[capName] = capConfig
 				ctx = context.WithValue(context.Background(), config.ContextKeyPaasConfig, paasConfigFromContext)
 
-				err = reconciler.reconcileClusterRoleBindings(ctx, paas, paasNsDefs)
+				err := reconciler.reconcileClusterRoleBindings(ctx, paas, paasNsDefs)
 				Expect(err).NotTo(HaveOccurred())
 
+				// check whether default permissions of this capability were deleted
 				for _, crbRole := range defaultCapPerms {
 					crbName := join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
@@ -266,6 +301,16 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 					Expect(err.Error()).To(ContainSubstring(
 						fmt.Sprintf("clusterrolebindings.rbac.authorization.k8s.io \"%s\" not found", crbName)))
 				}
+			})
+			It("should not remove CRBs from other capabilities", func() {
+				var currentMoreCrb rbac.ClusterRoleBinding
+				err := reconciler.Get(ctx, types.NamespacedName{Name: "paas-" + crbNotDeletedCapName + "-view"},
+					&currentMoreCrb)
+
+				Expect(err).NotTo(HaveOccurred())
+				currentUid := currentMoreCrb.UID
+				// if UIDs are equal, we can be sure that this CRB wasn't deleted and re-created in the meantime.
+				Expect(originalUid).To(Equal(currentUid))
 			})
 		})
 	})

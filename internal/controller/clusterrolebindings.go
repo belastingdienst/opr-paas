@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
@@ -206,37 +207,94 @@ func (r *PaasReconciler) checkForRemovedPermissionsInPaasConfig(
 	capConfig v1alpha2.ConfigCapability,
 	permissions v1alpha2.ConfigRolesSas,
 ) error {
+	// determine a full list of default permissions of all capabilities
+	allDefaultPermissions, err := r.collectAllDefaultPermissions(ctx)
+	if err != nil {
+		return err
+	}
+
+	rolesToKeep := r.mergeRoles(permissions, allDefaultPermissions)
+
 	_, logger := logging.GetLogComponent(ctx, logging.ControllerClusterRoleBindingsComponent)
 
+	// only check for deletion if the current capability doesn't have any default permissions
 	if len(capConfig.DefaultPermissions.AsConfigRolesSas(true)) == 0 {
 		logger.Info().Msg("Default permissions for capability in PaasConfig are empty, " +
 			"checking if any CRBs need to be removed")
 
 		var crbs *rbac.ClusterRoleBindingList
-		crbs, err := r.getClusterRoleBindingsWithLabel(ctx, defaultCRBLabels)
+		crbs, err = r.getClusterRoleBindingsWithLabel(ctx, defaultCRBLabels)
 		if err != nil {
 			return err
 		}
 
 		for _, crbFromList := range crbs.Items {
-			keepItem := false
-			for role := range permissions {
-				expectedCrbName := crbNamePrefix + role
-				if crbFromList.Name == expectedCrbName {
-					keepItem = true
-				}
+			// skip any crbs that don't have the default prefix
+			if !strings.HasPrefix(crbFromList.Name, crbNamePrefix) {
+				continue
 			}
-			if !keepItem {
-				logger.Info().Msgf("Deleting ClusterRoleBinding with name %s as it is no longer present in PaasConfig",
-					crbFromList.Name)
-				err = r.Delete(ctx, &crbFromList)
-				if err != nil {
-					return err
-				}
+
+			roleName := strings.TrimPrefix(crbFromList.Name, fmt.Sprintf("%v-", crbNamePrefix))
+
+			// if the role is still defined somewhere in paasconfig, we assume we shouldn't delete it
+			if keep := slices.Contains(rolesToKeep, roleName); keep {
+				continue
+			}
+
+			logger.Info().Msgf(
+				"Deleting ClusterRoleBinding with name %s as it is no longer present in PaasConfig",
+				crbFromList.Name,
+			)
+
+			if err = r.Delete(ctx, &crbFromList); err != nil {
+				return err
 			}
 		}
 	}
 	return nil
+}
+
+func (r *PaasReconciler) collectAllDefaultPermissions(ctx context.Context) (v1alpha2.ConfigRolesSas, error) {
+	paasConfig, err := config.GetConfigFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	allDefaultPermissions := make(v1alpha2.ConfigRolesSas)
+	for _, capability := range paasConfig.Spec.Capabilities {
+		perms := capability.DefaultPermissions.AsConfigRolesSas(true)
+
+		for role, sas := range perms {
+			if existingSas, exists := allDefaultPermissions[role]; exists {
+				for sa, enabled := range sas {
+					existingSas[sa] = enabled
+				}
+			} else {
+				allDefaultPermissions[role] = sas
+			}
+		}
+	}
+	return allDefaultPermissions, nil
+}
+
+func (r *PaasReconciler) mergeRoles(
+	permissions v1alpha2.ConfigRolesSas,
+	allDefaultPermissions v1alpha2.ConfigRolesSas,
+) []string {
+	rolesToKeep := map[string]bool{}
+	var rolesToKeepSlice []string
+
+	for role := range permissions {
+		rolesToKeepSlice = append(rolesToKeepSlice, role)
+		rolesToKeep[role] = true
+	}
+
+	for role := range allDefaultPermissions {
+		rolesToKeepSlice = append(rolesToKeepSlice, role)
+		rolesToKeep[role] = true
+	}
+
+	return slices.Compact(rolesToKeepSlice)
 }
 
 func (r *PaasReconciler) reconcileClusterRoleBindings(
