@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
@@ -236,7 +237,7 @@ func (r *PaasReconciler) checkForRemovedPermissionsInPaasConfig(
 			roleName := strings.TrimPrefix(crbFromList.Name, fmt.Sprintf("%v-", crbNamePrefix))
 
 			// if the role is still defined somewhere in paasconfig, we assume we shouldn't delete it
-			if _, keep := rolesToKeep[roleName]; keep {
+			if keep := slices.Contains(rolesToKeep, roleName); keep {
 				continue
 			}
 
@@ -278,16 +279,22 @@ func (r *PaasReconciler) collectAllDefaultPermissions(ctx context.Context) (v1al
 
 func (r *PaasReconciler) mergeRoles(
 	permissions v1alpha2.ConfigRolesSas,
-	allDefaultPermissions v1alpha2.ConfigRolesSas) map[string]struct{} {
-	rolesToKeep := make(map[string]struct{})
+	allDefaultPermissions v1alpha2.ConfigRolesSas,
+) []string {
+	rolesToKeep := map[string]bool{}
+	var rolesToKeepSlice []string
+
 	for role := range permissions {
-		rolesToKeep[role] = struct{}{}
+		rolesToKeepSlice = append(rolesToKeepSlice, role)
+		rolesToKeep[role] = true
 	}
 
 	for role := range allDefaultPermissions {
-		rolesToKeep[role] = struct{}{}
+		rolesToKeepSlice = append(rolesToKeepSlice, role)
+		rolesToKeep[role] = true
 	}
-	return rolesToKeep
+
+	return slices.Compact(rolesToKeepSlice)
 }
 
 func (r *PaasReconciler) reconcileClusterRoleBindings(
