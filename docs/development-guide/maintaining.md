@@ -68,7 +68,7 @@ The rollout semantics for OLM do **not** come from image tags. They come from
 OLM channel subscriptions:
 
 - `candidate` for development clusters;
-- `fast` for OTA or pre-production clusters; and
+- `fast` for pre-production clusters; and
 - `stable` for production clusters.
 
 #### OLM promotion flow
@@ -95,7 +95,7 @@ The intended release flow is:
    to `candidate`.
 4. Development clusters subscribed to `candidate` can upgrade.
 5. After validation, run the promotion workflow to add the same bundle version to `fast`.
-6. After validation in OTA, run the promotion workflow again to add the same bundle
+6. After validation in pre-production, run the promotion workflow again to add the same bundle
    version to `stable`.
 
 No new bundle is built during promotion. Promotion changes catalog metadata only.

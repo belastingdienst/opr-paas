@@ -18,7 +18,7 @@ This installation model is intended for environments where you want:
 The project uses the following OLM channels:
 
 - `candidate`: intended for development clusters;
-- `fast`: intended for OTA or pre-production clusters;
+- `fast`: intended for pre-production clusters;
 - `stable`: intended for production clusters.
 
 New releases are first added to `candidate`. Promotion to `fast` and `stable`
@@ -39,7 +39,7 @@ to different channels.
 This means:
 
 - development clusters subscribe to `candidate`;
-- OTA clusters subscribe to `fast`;
+- pre-production clusters subscribe to `fast`;
 - production clusters subscribe to `stable`.
 
 # Catalog image
@@ -107,7 +107,7 @@ spec:
   sourceNamespace: openshift-marketplace
 ```
 
-For OTA clusters, change the channel to `fast`.
+For pre-production clusters, change the channel to `fast`.
 For production clusters, change the channel to `stable`.
 
 # Airgapped environments
