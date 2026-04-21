@@ -421,7 +421,7 @@ bundle-push: ## Push OLM bundle image to registry
 .PHONY: catalog-update
 catalog-update: opm ## Update the source-controlled file-based catalog with BUNDLE_IMG in CATALOG_CHANNEL
 	@command -v yq >/dev/null 2>&1 || { echo "yq is required (brew install yq)"; exit 1; }
-	bash ./hack/update-fbc-catalog-source.sh $(CATALOG_CHANNEL) $(BUNDLE_IMG) $(CATALOG_ROOT) $(CATALOG_DEFAULT_CHANNEL)
+	OPM_BIN="$(OPM)" bash ./hack/update-fbc-catalog-source.sh $(CATALOG_CHANNEL) $(BUNDLE_IMG) $(CATALOG_ROOT) $(CATALOG_DEFAULT_CHANNEL)
 
 .PHONY: catalog-validate
 catalog-validate: opm ## Validate the source-controlled file-based catalog
@@ -429,7 +429,7 @@ catalog-validate: opm ## Validate the source-controlled file-based catalog
 
 .PHONY: catalog-build
 catalog-build: opm ## Build catalog image from the source-controlled file-based catalog
-	bash ./hack/build-fbc-catalog-from-source.sh $(CATALOG_ROOT) $(CATALOG_IMG)
+	OPM_BIN="$(OPM)" bash ./hack/build-fbc-catalog-from-source.sh $(CATALOG_ROOT) $(CATALOG_IMG)
 
 .PHONY: catalog-push
 catalog-push: ## Push source-built catalog image to registry
