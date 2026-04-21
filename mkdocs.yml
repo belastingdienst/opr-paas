@@ -81,7 +81,10 @@ plugins:
 # Navigation
 nav:
   - Overview: overview/
-  - Administrator Guide: administrators-guide/
+  - Administrator Guide:
+    - administrators-guide/
+    - Installing the Operator: administrators-guide/install.md
+    - OLM Installation: administrators-guide/olm-installation.md
   - User Guide: user-guide/
   - Developer Guide: development-guide/
   - About:

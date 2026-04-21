@@ -1,0 +1,163 @@
+name: Promote OLM catalog
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to promote, without leading v"
+        required: true
+      target_phase:
+        description: "Target OLM channel"
+        required: true
+        type: choice
+        options:
+          - fast
+          - stable
+
+concurrency:
+  group: promote-catalog-${{ inputs.version }}-${{ inputs.target_phase }}
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Promote catalog to ${{ inputs.target_phase }}
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: write
+    env:
+      VERSION: ${{ inputs.version }}
+      TARGET_PHASE: ${{ inputs.target_phase }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      BUNDLE_IMG: ghcr.io/belastingdienst/opr-paas-bundle:v${{ inputs.version }}
+      CATALOG_IMG: ghcr.io/belastingdienst/opr-paas-catalog:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          ref: ${{ env.DEFAULT_BRANCH }}
+
+      - name: Setup Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "1.25"
+          cache: false
+
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Install OPM
+        run: make opm
+
+      - name: Login to GHCR
+        run: |
+          podman login ghcr.io \
+            -u "${GITHUB_ACTOR}" \
+            -p "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Verify source bundle exists
+        run: |
+          podman pull "${BUNDLE_IMG}"
+
+      - name: Resolve bundle metadata
+        id: bundle_meta
+        run: |
+          set -euo pipefail
+          TMP_FILE="$(mktemp)"
+          trap 'rm -f "$TMP_FILE"' EXIT
+
+          opm render "${BUNDLE_IMG}" -o yaml | yq eval 'select(.schema == "olm.bundle")' - > "$TMP_FILE"
+
+          echo "package_name=$(yq -r '.package' "$TMP_FILE")" >> "$GITHUB_OUTPUT"
+          echo "bundle_name=$(yq -r '.name' "$TMP_FILE")" >> "$GITHUB_OUTPUT"
+
+      - name: Verify promotion prerequisites
+        env:
+          PACKAGE_NAME: ${{ steps.bundle_meta.outputs.package_name }}
+          BUNDLE_NAME: ${{ steps.bundle_meta.outputs.bundle_name }}
+        run: |
+          set -euo pipefail
+
+          REQUIRED_PREVIOUS_CHANNEL=""
+          case "${TARGET_PHASE}" in
+            fast)
+              REQUIRED_PREVIOUS_CHANNEL="candidate"
+              ;;
+            stable)
+              REQUIRED_PREVIOUS_CHANNEL="fast"
+              ;;
+          esac
+
+          if [[ -z "${REQUIRED_PREVIOUS_CHANNEL}" ]]; then
+            echo "No previous-channel prerequisite configured for ${TARGET_PHASE}"
+            exit 0
+          fi
+
+          CHANNEL_FILE="catalog/${PACKAGE_NAME}/channels/${REQUIRED_PREVIOUS_CHANNEL}.yaml"
+          if [[ ! -f "${CHANNEL_FILE}" ]]; then
+            echo "Required previous channel file not found: ${CHANNEL_FILE}" >&2
+            exit 1
+          fi
+
+          if ! BUNDLE_NAME="${BUNDLE_NAME}" yq -e '.entries[]? | select(.name == strenv(BUNDLE_NAME))' "${CHANNEL_FILE}" >/dev/null 2>&1; then
+            echo "Cannot promote ${BUNDLE_NAME} to ${TARGET_PHASE}: it is not present in ${REQUIRED_PREVIOUS_CHANNEL}" >&2
+            exit 1
+          fi
+
+      - name: Update catalog source
+        run: |
+          make catalog-update \
+            BUNDLE_IMG="${BUNDLE_IMG}" \
+            CATALOG_CHANNEL="${TARGET_PHASE}" \
+            CATALOG_DEFAULT_CHANNEL=candidate
+
+      - name: Commit catalog source
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet -- catalog; then
+            echo "No catalog source changes to commit"
+          else
+            git add catalog
+            git commit -m "chore(olm): promote opr-paas v${VERSION} to ${TARGET_PHASE}"
+            git push origin HEAD:${DEFAULT_BRANCH}
+          fi
+
+      - name: Capture catalog revision
+        id: revision
+        run: |
+          echo "sha=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build promoted catalog image from source
+        env:
+          CATALOG_IMMUTABLE_IMG: ghcr.io/belastingdienst/opr-paas-catalog:git-${{ steps.revision.outputs.sha }}
+        run: |
+          make catalog-build \
+            CATALOG_IMG="${CATALOG_IMMUTABLE_IMG}"
+
+      - name: Push immutable catalog image
+        env:
+          CATALOG_IMMUTABLE_IMG: ghcr.io/belastingdienst/opr-paas-catalog:git-${{ steps.revision.outputs.sha }}
+        run: |
+          podman push "${CATALOG_IMMUTABLE_IMG}"
+
+      - name: Push latest catalog tag
+        env:
+          CATALOG_IMMUTABLE_IMG: ghcr.io/belastingdienst/opr-paas-catalog:git-${{ steps.revision.outputs.sha }}
+        run: |
+          podman tag \
+            "${CATALOG_IMMUTABLE_IMG}" \
+            "${CATALOG_IMG}"
+          podman push "${CATALOG_IMG}"
