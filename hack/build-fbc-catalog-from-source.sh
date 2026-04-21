@@ -19,7 +19,9 @@ fi
 CATALOG_ROOT="$1"
 CATALOG_IMAGE="$2"
 
-for bin in opm podman; do
+OPM_BIN="${OPM_BIN:-opm}"
+
+for bin in "$OPM_BIN" podman; do
   command -v "$bin" >/dev/null 2>&1 || {
     echo "$bin is required" >&2
     exit 1
@@ -35,7 +37,7 @@ trap cleanup EXIT
 CATALOG_NAME="$(basename "$CATALOG_ROOT")"
 cp -R "$CATALOG_ROOT" "$TMP_DIR/$CATALOG_NAME"
 
-opm validate "$TMP_DIR/$CATALOG_NAME"
-opm generate dockerfile "$TMP_DIR/$CATALOG_NAME"
+"$OPM_BIN" validate "$TMP_DIR/$CATALOG_NAME"
+"$OPM_BIN" generate dockerfile "$TMP_DIR/$CATALOG_NAME"
 
 podman build -f "$TMP_DIR/${CATALOG_NAME}.Dockerfile" -t "$CATALOG_IMAGE" "$TMP_DIR"

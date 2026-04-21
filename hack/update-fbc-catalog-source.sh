@@ -24,7 +24,9 @@ BUNDLE_IMAGE="$2"
 CATALOG_ROOT="${3:-catalog}"
 DEFAULT_CHANNEL="${4:-candidate}"
 
-for bin in opm yq; do
+OPM_BIN="${OPM_BIN:-opm}"
+
+for bin in "$OPM_BIN" yq; do
   command -v "$bin" >/dev/null 2>&1 || {
     echo "$bin is required" >&2
     exit 1
@@ -40,7 +42,7 @@ trap cleanup EXIT
 RENDER_FILE="$TMP_DIR/render.yaml"
 BUNDLE_FILE_TMP="$TMP_DIR/bundle.yaml"
 
-opm render "$BUNDLE_IMAGE" -o yaml > "$RENDER_FILE"
+"$OPM_BIN" render "$BUNDLE_IMAGE" -o yaml > "$RENDER_FILE"
 yq eval 'select(.schema == "olm.bundle")' "$RENDER_FILE" > "$BUNDLE_FILE_TMP"
 
 PACKAGE_NAME="$(yq -r '.package' "$BUNDLE_FILE_TMP")"

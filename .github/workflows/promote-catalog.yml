@@ -71,12 +71,14 @@ jobs:
 
       - name: Resolve bundle metadata
         id: bundle_meta
+        env:
+          OPM_BIN: ${{ github.workspace }}/bin/opm
         run: |
           set -euo pipefail
           TMP_FILE="$(mktemp)"
           trap 'rm -f "$TMP_FILE"' EXIT
 
-          opm render "${BUNDLE_IMG}" -o yaml | yq eval 'select(.schema == "olm.bundle")' - > "$TMP_FILE"
+          "${OPM_BIN}" render "${BUNDLE_IMG}" -o yaml | yq eval 'select(.schema == "olm.bundle")' - > "$TMP_FILE"
 
           echo "package_name=$(yq -r '.package' "$TMP_FILE")" >> "$GITHUB_OUTPUT"
           echo "bundle_name=$(yq -r '.name' "$TMP_FILE")" >> "$GITHUB_OUTPUT"
