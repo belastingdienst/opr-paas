@@ -69,6 +69,51 @@ jobs:
         run: |
           podman pull "${BUNDLE_IMG}"
 
+      - name: Resolve bundle metadata
+        id: bundle_meta
+        run: |
+          set -euo pipefail
+          TMP_FILE="$(mktemp)"
+          trap 'rm -f "$TMP_FILE"' EXIT
+
+          opm render "${BUNDLE_IMG}" -o yaml | yq eval 'select(.schema == "olm.bundle")' - > "$TMP_FILE"
+
+          echo "package_name=$(yq -r '.package' "$TMP_FILE")" >> "$GITHUB_OUTPUT"
+          echo "bundle_name=$(yq -r '.name' "$TMP_FILE")" >> "$GITHUB_OUTPUT"
+
+      - name: Verify promotion prerequisites
+        env:
+          PACKAGE_NAME: ${{ steps.bundle_meta.outputs.package_name }}
+          BUNDLE_NAME: ${{ steps.bundle_meta.outputs.bundle_name }}
+        run: |
+          set -euo pipefail
+
+          REQUIRED_PREVIOUS_CHANNEL=""
+          case "${TARGET_PHASE}" in
+            fast)
+              REQUIRED_PREVIOUS_CHANNEL="candidate"
+              ;;
+            stable)
+              REQUIRED_PREVIOUS_CHANNEL="fast"
+              ;;
+          esac
+
+          if [[ -z "${REQUIRED_PREVIOUS_CHANNEL}" ]]; then
+            echo "No previous-channel prerequisite configured for ${TARGET_PHASE}"
+            exit 0
+          fi
+
+          CHANNEL_FILE="catalog/${PACKAGE_NAME}/channels/${REQUIRED_PREVIOUS_CHANNEL}.yaml"
+          if [[ ! -f "${CHANNEL_FILE}" ]]; then
+            echo "Required previous channel file not found: ${CHANNEL_FILE}" >&2
+            exit 1
+          fi
+
+          if ! BUNDLE_NAME="${BUNDLE_NAME}" yq -e '.entries[]? | select(.name == strenv(BUNDLE_NAME))' "${CHANNEL_FILE}" >/dev/null 2>&1; then
+            echo "Cannot promote ${BUNDLE_NAME} to ${TARGET_PHASE}: it is not present in ${REQUIRED_PREVIOUS_CHANNEL}" >&2
+            exit 1
+          fi
+
       - name: Update catalog source
         run: |
           make catalog-update \
