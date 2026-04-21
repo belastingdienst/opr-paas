@@ -4,6 +4,7 @@ summary: Introduction to contributing to the Paas operator.
 authors:
   - devotional-phoenix-97
   - hikarukin
+  - CtrlShiftOps
 date: 2024-07-04
 ---
 
@@ -47,6 +48,57 @@ The process to create a release is mostly automated. To start it:
 * Merge one or more PRs to `main`;
 * Ensure completeness;
 * Edit the draft release and publish it.
+
+Publishing the release triggers the automated release workflows. In particular:
+
+- the operator image is built and published as `ghcr.io/belastingdienst/opr-paas:vX.Y.Z`;
+- the `install.yaml` artifact is generated and attached to the GitHub release;
+- one immutable OLM bundle image is built and published as `ghcr.io/belastingdienst/opr-paas-bundle:vX.Y.Z`;
+- the source-controlled file-based catalog under `catalog/` is updated to add
+  the release to the `candidate` channel;
+- that catalog change is committed back to the default branch;
+- a catalog image is built from the committed catalog source and published.
+
+The catalog image is published using:
+
+- an immutable `git-<sha>` tag for traceability; and
+- the moving `latest` tag as the current catalog delivery reference.
+
+The rollout semantics for OLM do **not** come from image tags. They come from
+OLM channel subscriptions:
+
+- `candidate` for development clusters;
+- `fast` for OTA or pre-production clusters; and
+- `stable` for production clusters.
+
+#### OLM promotion flow
+
+OLM promotion is handled through the `Promote OLM catalog` workflow.
+
+This workflow:
+
+- reuses the already published immutable bundle image for the requested release;
+- updates the source-controlled catalog metadata in `catalog/`;
+- promotes that version into `fast` or `stable`;
+- commits the catalog change back to the default branch; and
+- rebuilds and republishes the catalog image from that committed source.
+
+Promotion does not rebuild the bundle. It only changes catalog metadata.
+
+#### Operational model
+
+The intended release flow is:
+
+1. Publish a GitHub release.
+2. The release workflow publishes the immutable operator and bundle images.
+3. The same workflow updates the source-controlled catalog and adds the new release
+   to `candidate`.
+4. Development clusters subscribed to `candidate` can upgrade.
+5. After validation, run the promotion workflow to add the same bundle version to `fast`.
+6. After validation in OTA, run the promotion workflow again to add the same bundle
+   version to `stable`.
+
+No new bundle is built during promotion. Promotion changes catalog metadata only.
 
 #### Important: No Backports Policy
 

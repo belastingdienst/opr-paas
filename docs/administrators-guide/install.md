@@ -3,10 +3,18 @@ title: Installing the Operator
 summary: A simple guide on installing the Paas Operator
 authors:
   - hikarukin
+  - CtrlShiftOps
 date: 2024-10-14
 ---
 
 # Introduction
+
+This page documents the direct installation path using the generated `install.yaml`
+artifact attached to every GitHub release.
+
+If you want to install the operator through Operator Lifecycle Manager (OLM),
+including staged rollout using the `candidate`, `fast`, and `stable` channels,
+see the [OLM Installation](./olm-installation.md) page.
 
 Deploy the operator using the following command:
 

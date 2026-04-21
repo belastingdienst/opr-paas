@@ -141,41 +141,63 @@ jobs:
         run: |
           make bundle VERSION=${VERSION} \
             IMG=ghcr.io/belastingdienst/opr-paas:v${VERSION} \
-            CHANNELS=stable \
-            DEFAULT_CHANNEL=stable
+            CHANNELS=candidate \
+            DEFAULT_CHANNEL=candidate
 
       - name: Validate OLM bundle
         run: make bundle-validate
 
       - name: Build bundle image
-        run: make bundle-build VERSION=${VERSION} CONTAINER_TOOL=podman
+        run: |
+          make bundle-build VERSION=${VERSION} \
+            CONTAINER_TOOL=podman \
+            BUNDLE_IMG=ghcr.io/belastingdienst/opr-paas-bundle:v${VERSION}
 
       - name: Push bundle image
-        run: make bundle-push VERSION=${VERSION} CONTAINER_TOOL=podman
+        run: |
+          make bundle-push VERSION=${VERSION} \
+            CONTAINER_TOOL=podman \
+            BUNDLE_IMG=ghcr.io/belastingdienst/opr-paas-bundle:v${VERSION}
 
   catalog:
-    name: Build & Push OLM Catalog (skip in test mode)
+    name: Update catalog source and publish OLM catalog
     runs-on: ubuntu-latest
     needs: [version, bundle]
     permissions:
       packages: write
-      contents: read
+      contents: write
     env:
       VERSION: ${{ needs.version.outputs.version }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      BUNDLE_IMG: ghcr.io/belastingdienst/opr-paas-bundle:v${{ needs.version.outputs.version }}
+      CATALOG_IMG: ghcr.io/belastingdienst/opr-paas-catalog:latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          persist-credentials: false
+          fetch-depth: 0
+          persist-credentials: true
+          ref: ${{ env.DEFAULT_BRANCH }}
 
       - name: Install Podman
         run: |
           sudo apt-get update
           sudo apt-get install -y podman
 
-      - name: Install operator-sdk
-        run: make operator-sdk
+      - name: Setup Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "1.25"
+          cache: false
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Install OPM
+        run: make opm
 
       - name: GHCR login
         run: |
@@ -183,23 +205,57 @@ jobs:
             -u "${GITHUB_ACTOR}" \
             -p "${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Build catalog image
+      - name: Verify source bundle exists
+        run: |
+          podman pull "${BUNDLE_IMG}"
+
+      - name: Update catalog source
+        run: |
+          make catalog-update \
+            BUNDLE_IMG="${BUNDLE_IMG}" \
+            CATALOG_CHANNEL=candidate \
+            CATALOG_DEFAULT_CHANNEL=candidate
+
+      - name: Commit catalog source
+        id: commit
         run: |
           set -euo pipefail
-          BASE="ghcr.io/belastingdienst/opr-paas-catalog:stable"
-          
-          if podman pull "$BASE" >/dev/null 2>&1; then
-            echo "Using existing base catalog: $BASE"
-            make catalog-build VERSION=${VERSION} CONTAINER_TOOL=podman CATALOG_BASE_IMG="$BASE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet -- catalog; then
+            echo "No catalog source changes to commit"
+            echo "committed=false" >> "$GITHUB_OUTPUT"
           else
-            echo "No stable catalog exists yet; creating new catalog"
-            make catalog-build VERSION=${VERSION} CONTAINER_TOOL=podman
+            git add catalog
+            git commit -m "chore(olm): add opr-paas v${VERSION} to candidate channel"
+            git push origin HEAD:${DEFAULT_BRANCH}
+            echo "committed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Push catalog image
-        run: make catalog-push VERSION=${VERSION} CONTAINER_TOOL=podman
-
-      - name: Tag & push stable catalog tag
+      - name: Capture catalog revision
+        id: revision
         run: |
-          podman tag ghcr.io/belastingdienst/opr-paas-catalog:v${VERSION} ghcr.io/belastingdienst/opr-paas-catalog:stable
-          podman push ghcr.io/belastingdienst/opr-paas-catalog:stable
+          echo "sha=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build catalog image from source
+        env:
+          CATALOG_IMMUTABLE_IMG: ghcr.io/belastingdienst/opr-paas-catalog:git-${{ steps.revision.outputs.sha }}
+        run: |
+          make catalog-build \
+            CATALOG_IMG="${CATALOG_IMMUTABLE_IMG}"
+
+      - name: Push immutable catalog image
+        env:
+          CATALOG_IMMUTABLE_IMG: ghcr.io/belastingdienst/opr-paas-catalog:git-${{ steps.revision.outputs.sha }}
+        run: |
+          podman push "${CATALOG_IMMUTABLE_IMG}"
+
+      - name: Push latest catalog tag
+        env:
+          CATALOG_IMMUTABLE_IMG: ghcr.io/belastingdienst/opr-paas-catalog:git-${{ steps.revision.outputs.sha }}
+        run: |
+          podman tag \
+            "${CATALOG_IMMUTABLE_IMG}" \
+            "${CATALOG_IMG}"
+          podman push "${CATALOG_IMG}"
