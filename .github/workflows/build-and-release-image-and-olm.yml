@@ -4,6 +4,13 @@ on:
   release:
     types: [published]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: belastingdienst
+  OPERATOR_IMAGE: ghcr.io/belastingdienst/opr-paas
+  BUNDLE_IMAGE: ghcr.io/belastingdienst/opr-paas-bundle
+  CATALOG_IMAGE: ghcr.io/belastingdienst/opr-paas-catalog
+
 concurrency:
   group: release-${{ github.ref_name }}
   cancel-in-progress: false
@@ -50,7 +57,7 @@ jobs:
       - name: Login to GHCR
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -59,7 +66,7 @@ jobs:
         uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
         with:
           images: |
-            name=ghcr.io/belastingdienst/opr-paas,enable=true
+            name=${{ env.OPERATOR_IMAGE }},enable=true
           tags: |
             type=raw,value=v${{ env.VERSION }}
             type=raw,value=latest
@@ -78,7 +85,7 @@ jobs:
       - name: Generate opr-paas image SBOM
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
-          image-ref: 'ghcr.io/belastingdienst/opr-paas:v${{ env.VERSION }}'
+          image-ref: '${{ env.OPERATOR_IMAGE }}:v${{ env.VERSION }}'
           scan-type: image
           format: 'github'
           output: 'opr-paas_image.sbom.json'
@@ -103,6 +110,7 @@ jobs:
       packages: write     # Needed for pushing the bundle image
     env:
       VERSION: ${{ needs.version.outputs.version }}
+      BUNDLE_IMG: ${{ env.BUNDLE_IMAGE }}:v${{ needs.version.outputs.version }}
 
     steps:
       - name: Checkout
@@ -128,7 +136,7 @@ jobs:
 
       - name: GHCR login
         run: |
-          podman login ghcr.io \
+          podman login "${REGISTRY}" \
             -u "${GITHUB_ACTOR}" \
             -p "${{ secrets.GITHUB_TOKEN }}"
 
@@ -140,7 +148,7 @@ jobs:
       - name: Generate OLM bundle
         run: |
           make bundle VERSION=${VERSION} \
-            IMG=ghcr.io/belastingdienst/opr-paas:v${VERSION} \
+            IMG=${OPERATOR_IMAGE}:v${VERSION} \
             CHANNELS=candidate \
             DEFAULT_CHANNEL=candidate
 
@@ -151,13 +159,13 @@ jobs:
         run: |
           make bundle-build VERSION=${VERSION} \
             CONTAINER_TOOL=podman \
-            BUNDLE_IMG=ghcr.io/belastingdienst/opr-paas-bundle:v${VERSION}
+            BUNDLE_IMG="${BUNDLE_IMG}"
 
       - name: Push bundle image
         run: |
           make bundle-push VERSION=${VERSION} \
             CONTAINER_TOOL=podman \
-            BUNDLE_IMG=ghcr.io/belastingdienst/opr-paas-bundle:v${VERSION}
+            BUNDLE_IMG="${BUNDLE_IMG}"
 
   catalog:
     name: Update catalog source and publish OLM catalog
@@ -169,8 +177,8 @@ jobs:
     env:
       VERSION: ${{ needs.version.outputs.version }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-      BUNDLE_IMG: ghcr.io/belastingdienst/opr-paas-bundle:v${{ needs.version.outputs.version }}
-      CATALOG_IMG: ghcr.io/belastingdienst/opr-paas-catalog:latest
+      BUNDLE_IMG: ${{ env.BUNDLE_IMAGE }}:v${{ needs.version.outputs.version }}
+      CATALOG_IMG: ${{ env.CATALOG_IMAGE }}:latest
 
     steps:
       - name: Checkout
@@ -201,7 +209,7 @@ jobs:
 
       - name: GHCR login
         run: |
-          podman login ghcr.io \
+          podman login "${REGISTRY}" \
             -u "${GITHUB_ACTOR}" \
             -p "${{ secrets.GITHUB_TOKEN }}"
 
@@ -240,20 +248,20 @@ jobs:
 
       - name: Build catalog image from source
         env:
-          CATALOG_IMMUTABLE_IMG: ghcr.io/belastingdienst/opr-paas-catalog:git-${{ steps.revision.outputs.sha }}
+          CATALOG_IMMUTABLE_IMG: ${{ env.CATALOG_IMAGE }}:git-${{ steps.revision.outputs.sha }}
         run: |
           make catalog-build \
             CATALOG_IMG="${CATALOG_IMMUTABLE_IMG}"
 
       - name: Push immutable catalog image
         env:
-          CATALOG_IMMUTABLE_IMG: ghcr.io/belastingdienst/opr-paas-catalog:git-${{ steps.revision.outputs.sha }}
+          CATALOG_IMMUTABLE_IMG: ${{ env.CATALOG_IMAGE }}:git-${{ steps.revision.outputs.sha }}
         run: |
           podman push "${CATALOG_IMMUTABLE_IMG}"
 
       - name: Push latest catalog tag
         env:
-          CATALOG_IMMUTABLE_IMG: ghcr.io/belastingdienst/opr-paas-catalog:git-${{ steps.revision.outputs.sha }}
+          CATALOG_IMMUTABLE_IMG: ${{ env.CATALOG_IMAGE }}:git-${{ steps.revision.outputs.sha }}
         run: |
           podman tag \
             "${CATALOG_IMMUTABLE_IMG}" \
