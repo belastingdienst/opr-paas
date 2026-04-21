@@ -110,7 +110,6 @@ jobs:
       packages: write     # Needed for pushing the bundle image
     env:
       VERSION: ${{ needs.version.outputs.version }}
-      BUNDLE_IMG: ${{ env.BUNDLE_IMAGE }}:v${{ needs.version.outputs.version }}
 
     steps:
       - name: Checkout
@@ -159,13 +158,13 @@ jobs:
         run: |
           make bundle-build VERSION=${VERSION} \
             CONTAINER_TOOL=podman \
-            BUNDLE_IMG="${BUNDLE_IMG}"
+            BUNDLE_IMG="${BUNDLE_IMAGE}:v${VERSION}"
 
       - name: Push bundle image
         run: |
           make bundle-push VERSION=${VERSION} \
             CONTAINER_TOOL=podman \
-            BUNDLE_IMG="${BUNDLE_IMG}"
+            BUNDLE_IMG="${BUNDLE_IMAGE}:v${VERSION}"
 
   catalog:
     name: Update catalog source and publish OLM catalog
@@ -177,8 +176,6 @@ jobs:
     env:
       VERSION: ${{ needs.version.outputs.version }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-      BUNDLE_IMG: ${{ env.BUNDLE_IMAGE }}:v${{ needs.version.outputs.version }}
-      CATALOG_IMG: ${{ env.CATALOG_IMAGE }}:latest
 
     steps:
       - name: Checkout
@@ -215,12 +212,12 @@ jobs:
 
       - name: Verify source bundle exists
         run: |
-          podman pull "${BUNDLE_IMG}"
+          podman pull "${BUNDLE_IMAGE}:v${VERSION}"
 
       - name: Update catalog source
         run: |
           make catalog-update \
-            BUNDLE_IMG="${BUNDLE_IMG}" \
+            BUNDLE_IMG="${BUNDLE_IMAGE}:v${VERSION}" \
             CATALOG_CHANNEL=candidate \
             CATALOG_DEFAULT_CHANNEL=candidate
 
@@ -265,5 +262,5 @@ jobs:
         run: |
           podman tag \
             "${CATALOG_IMMUTABLE_IMG}" \
-            "${CATALOG_IMG}"
-          podman push "${CATALOG_IMG}"
+            "${CATALOG_IMAGE}:latest"
+          podman push "${CATALOG_IMAGE}:latest"
