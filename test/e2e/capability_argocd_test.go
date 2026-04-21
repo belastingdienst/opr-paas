@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	api "github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v4/pkg/fields"
-	"github.com/belastingdienst/opr-paas/v4/pkg/quota"
+	api "github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v5/pkg/fields"
+	"github.com/belastingdienst/opr-paas/v5/pkg/quota"
 
 	quotav1 "github.com/openshift/api/quota/v1"
 	"github.com/stretchr/testify/assert"
@@ -129,7 +129,7 @@ func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config
 	paas.Spec.Groups = api.PaasGroups{
 		"mygroup": api.PaasGroup{
 			Users: []string{"user1"},
-			Roles: []string{"view"},
+			Roles: []string{"viewer"},
 		},
 	}
 

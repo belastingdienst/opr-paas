@@ -46,7 +46,7 @@ type PaasNSSpec struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:storageversion
 // +kubebuilder:conversion:hub
-// +kubebuilder:resource:path=paasns,scope=Namespaced
+// +kubebuilder:resource:path=paasns,shortName=pns,scope=Namespaced
 
 // PaasNS is the Schema for the PaasNS API
 type PaasNS struct {

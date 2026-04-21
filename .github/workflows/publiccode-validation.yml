@@ -1,22 +1,35 @@
 name: publiccode.yml validation
 
-permissions: {}
-
 on:
   pull_request:
     paths:
       - publiccode.yml
   push:
+    branches: [main] # Usually best to restrict push triggers to your default branch
     paths:
       - publiccode.yml
+
+# Prevent redundant runs on the same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
 
 jobs:
   publiccode_yml_validation:
     runs-on: ubuntu-latest
+    timeout-minutes: 5 # Validation should be very fast
+    permissions:
+      contents: read # Explicitly allow reading the repository content
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - uses: italia/publiccode-parser-action@44a711e642b242be0cfc042b49f870ad2f9464fb # v1
+          fetch-depth: 1 # Only need the latest commit for validation
+
+      - name: Validate publiccode.yml
+        uses: italia/publiccode-parser-action@21086c73ec0563e14c6748787efa1b34b025ad8c # v1
         with:
           publiccode: "publiccode.yml"

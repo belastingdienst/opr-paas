@@ -13,7 +13,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -332,6 +333,49 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					warn, err := validator.ValidateCreate(ctx, obj)
 					Expect(warn, err).Error().To(HaveOccurred())
 				}
+			})
+		})
+		Context("max allowed submitted quota validation", func() {
+			var (
+				validResourceKeys = []string{
+					"limits\\.cpu",
+					"limits\\.memory",
+					"requests\\.cpu",
+					"requests\\.memory",
+					"requests\\.storage",
+				}
+				validQuotas = quota.Quota{
+					corev1.ResourceLimitsCPU:       resourcev1.MustParse("1"),
+					corev1.ResourceLimitsMemory:    resourcev1.MustParse("1M"),
+					corev1.ResourceRequestsCPU:     resourcev1.MustParse("0.5"),
+					corev1.ResourceRequestsMemory:  resourcev1.MustParse("1M"),
+					corev1.ResourceRequestsStorage: resourcev1.MustParse("1G"),
+				}
+				// Use ^ and $ to ensure the regex matches the WHOLE string, not just a part
+				validation = fmt.Sprintf("^(%s)$", strings.Join(validResourceKeys, "|"))
+			)
+			It("should allow standard Kubernetes quota names that meet the regex", func() {
+				obj.Spec.Validations["paas"]["allowedQuotas"] = validation
+				obj.Spec.MaxAllowedSubmittedQuota = v1alpha2.ConfigMaxAllowedSubmittedQuota{
+					MaxQuota: validQuotas,
+				}
+				warn, err := validator.ValidateCreate(ctx, obj)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(warn).To(BeEmpty())
+			})
+			It("should reject resource names not matching the regex", func() {
+				obj.Spec.Validations["paas"]["allowedQuotas"] = "^(limits\\.cpu|limits\\.memory)$"
+
+				obj.Spec.MaxAllowedSubmittedQuota = v1alpha2.ConfigMaxAllowedSubmittedQuota{
+					MaxQuota: quota.Quota{
+						"limitsXcpu": resourcev1.MustParse("1"),
+					},
+				}
+
+				_, err := validator.ValidateCreate(ctx, obj)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("limitsXcpu"))
 			})
 		})
 	})

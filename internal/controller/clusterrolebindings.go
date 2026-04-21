@@ -10,19 +10,27 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v4/internal/config"
-	"github.com/belastingdienst/opr-paas/v4/internal/logging"
-
+	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/logging"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const crbNamePrefix string = "paas"
+
+// TODO are these labels still correct?
+var defaultCRBLabels = map[string]string{
+	"app.kubernetes.io/created-by":     "opr-paas",
+	"app.kubernetes.io/part-of":        "opr-paas",
+	"paas.belastingdienst.nl/crb-type": "capability",
+}
 
 func (r *PaasReconciler) getClusterRoleBinding(
 	ctx context.Context,
@@ -37,6 +45,19 @@ func (r *PaasReconciler) getClusterRoleBinding(
 		return nil, err
 	}
 	return found, nil
+}
+
+func (r *PaasReconciler) getClusterRoleBindingsWithLabel(
+	ctx context.Context,
+	labelMatcher client.MatchingLabels,
+) (crbs *rbac.ClusterRoleBindingList, err error) {
+	list := &rbac.ClusterRoleBindingList{}
+
+	err = r.List(ctx, list, labelMatcher)
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
 }
 
 func (r *PaasReconciler) updateClusterRoleBinding(
@@ -63,12 +84,8 @@ func backendClusterRoleBinding(
 	crbName := join(crbNamePrefix, role)
 	rb := &rbac.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: crbName,
-			// TODO are these labels still correct?
-			Labels: map[string]string{
-				"app.kubernetes.io/created-by": "opr-paas",
-				"app.kubernetes.io/part-of":    "opr-paas",
-			},
+			Name:   crbName,
+			Labels: defaultCRBLabels,
 		},
 		RoleRef: rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
@@ -176,7 +193,108 @@ func (r *PaasReconciler) reconcileClusterRoleBinding(
 			}
 		}
 	}
+
+	err = r.checkForRemovedPermissionsInPaasConfig(ctx, capConfig, permissions)
+	if err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func (r *PaasReconciler) checkForRemovedPermissionsInPaasConfig(
+	ctx context.Context,
+	capConfig v1alpha2.ConfigCapability,
+	permissions v1alpha2.ConfigRolesSas,
+) error {
+	// determine a full list of default permissions of all capabilities
+	allDefaultPermissions, err := r.collectAllDefaultPermissions(ctx)
+	if err != nil {
+		return err
+	}
+
+	rolesToKeep := r.mergeRoles(permissions, allDefaultPermissions)
+
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerClusterRoleBindingsComponent)
+
+	// only check for deletion if the current capability doesn't have any default permissions
+	if len(capConfig.DefaultPermissions.AsConfigRolesSas(true)) == 0 {
+		logger.Info().Msg("Default permissions for capability in PaasConfig are empty, " +
+			"checking if any CRBs need to be removed")
+
+		var crbs *rbac.ClusterRoleBindingList
+		crbs, err = r.getClusterRoleBindingsWithLabel(ctx, defaultCRBLabels)
+		if err != nil {
+			return err
+		}
+
+		for _, crbFromList := range crbs.Items {
+			// skip any crbs that don't have the default prefix
+			if !strings.HasPrefix(crbFromList.Name, crbNamePrefix) {
+				continue
+			}
+
+			roleName := strings.TrimPrefix(crbFromList.Name, fmt.Sprintf("%v-", crbNamePrefix))
+
+			// if the role is still defined somewhere in paasconfig, we assume we shouldn't delete it
+			if keep := slices.Contains(rolesToKeep, roleName); keep {
+				continue
+			}
+
+			logger.Info().Msgf(
+				"Deleting ClusterRoleBinding with name %s as it is no longer present in PaasConfig",
+				crbFromList.Name,
+			)
+
+			if err = r.Delete(ctx, &crbFromList); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r *PaasReconciler) collectAllDefaultPermissions(ctx context.Context) (v1alpha2.ConfigRolesSas, error) {
+	paasConfig, err := config.GetConfigFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	allDefaultPermissions := make(v1alpha2.ConfigRolesSas)
+	for _, capability := range paasConfig.Spec.Capabilities {
+		perms := capability.DefaultPermissions.AsConfigRolesSas(true)
+
+		for role, sas := range perms {
+			if existingSas, exists := allDefaultPermissions[role]; exists {
+				for sa, enabled := range sas {
+					existingSas[sa] = enabled
+				}
+			} else {
+				allDefaultPermissions[role] = sas
+			}
+		}
+	}
+	return allDefaultPermissions, nil
+}
+
+func (r *PaasReconciler) mergeRoles(
+	permissions v1alpha2.ConfigRolesSas,
+	allDefaultPermissions v1alpha2.ConfigRolesSas,
+) []string {
+	rolesToKeep := map[string]bool{}
+	var rolesToKeepSlice []string
+
+	for role := range permissions {
+		rolesToKeepSlice = append(rolesToKeepSlice, role)
+		rolesToKeep[role] = true
+	}
+
+	for role := range allDefaultPermissions {
+		rolesToKeepSlice = append(rolesToKeepSlice, role)
+		rolesToKeep[role] = true
+	}
+
+	return slices.Compact(rolesToKeepSlice)
 }
 
 func (r *PaasReconciler) reconcileClusterRoleBindings(

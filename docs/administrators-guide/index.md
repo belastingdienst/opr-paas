@@ -21,6 +21,8 @@ the Paas Operator in production environments.
 
 - [Configuration](configuration/)  
   Guidance on customizing system behavior via `PaasConfig`.
+    - [Max Allowed Submitted Quota](configuration/max-allowed-submitted-quota.md)  
+      How to configure `PaasConfig` to set a maximum allowed quota globally.
 
 - [Cluster‑Wide Quotas](cluster-wide-quotas/)  
   Instructions for enforcing resource usage limits across namespaces.
@@ -36,9 +38,6 @@ the Paas Operator in production environments.
 
 - [Validations](validations/)  
   Built‑in checks to ensure correct configurations and prevent misconfigurations.
-
-- [API Version migration](v1alph1-conversion/)
-  Docs regarding migrating v1alpha1 resources to v1alpha2
 
 _For development workflows, release procedures, and contributor guidelines, see the [Developer’s Guide](../development-guide/index.md)._
 

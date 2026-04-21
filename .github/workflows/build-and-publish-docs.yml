@@ -7,12 +7,10 @@ on:
 env:
   PYTHON_VERSION: 3.x
   # Golang version to use across CI steps
-  GOLANG_VERSION: '1.25'
+  GOLANG_VERSION: '1.26'
   
 permissions:
   contents: write
-  id-token: write
-  pages: write
 
 jobs:
   build:
@@ -21,7 +19,7 @@ jobs:
     
     services:
       kroki:
-        image: yuzutech/kroki:latest
+        image: yuzutech/kroki@sha256:4cfb9d48a1d9e18c346d505fd85c9ad16121d1691602b0e580db904b00c04320
         ports:
           - 8000:8000
         options: >-
@@ -33,14 +31,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
         
       - name: Fetch gh-pages branch
         run: git fetch origin gh-pages --depth=1
 
       - name: Set up Go for generating API doc
-        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version: ${{ env.GOLANG_VERSION }}
       
@@ -61,7 +57,7 @@ jobs:
             requirements.txt
 
       - name: Set up build cache
-        uses: actions/cache/restore@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           key: mkdocs-material-${{ hashfiles('.cache/**') }}
           path: .cache
@@ -85,12 +81,15 @@ jobs:
 
       - name: Extract short tag
         id: extract_short_tag
-        run: |
-          TAG="${GITHUB_EVENT_RELEASE_TAG_NAME}"
-          SHORT_TAG="$(echo "$TAG" | sed 's/\([0-9]*\.[0-9]*\).*/\1\.x/')"
-          echo "SHORT_TAG=$SHORT_TAG" >> $GITHUB_OUTPUT
         env:
-          GITHUB_EVENT_RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
+        run: |
+          SHORT_TAG="$(echo "$RELEASE_TAG" | sed 's/\([0-9]*\.[0-9]*\).*/\1\.x/')"
+          if [[ -z "$SHORT_TAG" ]]; then
+            echo "ERROR: Could not extract short tag from RELEASE_TAG='$RELEASE_TAG'"
+            exit 1
+          fi
+          echo "SHORT_TAG=$SHORT_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Deploy with mike 🚀
         # note that "mike set-default latest" was run manually in initial docs setup
@@ -104,7 +103,7 @@ jobs:
           mike --version
           
       - name: Save build cache
-        uses: actions/cache/save@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           key: mkdocs-material-${{ hashfiles('.cache/**') }}
           path: .cache

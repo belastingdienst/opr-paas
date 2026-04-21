@@ -20,8 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/belastingdienst/opr-paas/v4/api/v1alpha1"
-	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/go-logr/zerologr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -89,9 +88,6 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	err = corev1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = v1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = v1alpha2.AddToScheme(scheme.Scheme)

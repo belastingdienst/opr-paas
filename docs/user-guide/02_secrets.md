@@ -26,24 +26,24 @@ the [Admin guide on configuring secret encryption](../administrators-guide/secre
 
 ## Encrypting secrets
 
-You can download the crypttool from the
-[Downloads section of its repository](https://github.com/belastingdienst/opr-paas-crypttool/releases).
-Once downloaded, the crypttool has two options for encrypting content:
+You can download the kubectl-paas tool from the
+[Downloads section of its repository](https://github.com/belastingdienst/opr-paas-cli/releases).
+Once downloaded, kubectl-paas has two options for encrypting content:
 
-### Encrypting a file with crypttool
+### Encrypting a file with kubectl-paas
 
 !!! example
 
     ```bash
-    ./crypttool --encrypt-from-file ~/.ssh/id_rsa -paas-name tst-tst -key ~/Downloads/public.bin
+    ./kubectl-paas --encrypt-from-file ~/.ssh/id_rsa -paas-name tst-tst -key ~/Downloads/public.bin
     ```
 
-### Encrypting from stdin with crypttool
+### Encrypting from stdin with kubectl-paas
 
 !!! example
 
     ```bash
-    echo -e 'private investigations' | ./crypttool --encrypt-from-stdin -paas-name tst-tst -key ~/Downloads/public.bin
+    echo -e 'private investigations' | ./kubectl-paas --encrypt-from-stdin -paas-name tst-tst -key ~/Downloads/public.bin
     ```
 
 ### Using cURL against the webservice api

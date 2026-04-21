@@ -85,8 +85,9 @@ func TestSetWebhookLogger(t *testing.T) {
 		},
 	}
 	obj.SetGroupVersionKind(schema.GroupVersionKind{
-		Kind:    "Paas",
-		Version: "v1alpha1",
+		Kind: "Paas",
+		// Setting this to v1alpha0 to make it very distinct from whatever we actually use
+		Version: "v1alpha0",
 		Group:   "cpet.belastingdienst.nl",
 	})
 

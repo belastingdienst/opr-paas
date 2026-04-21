@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/v4/pkg/quota"
+	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
+	"github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	k8sv1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	api "github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
+	api "github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"

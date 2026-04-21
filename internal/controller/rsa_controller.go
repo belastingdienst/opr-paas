@@ -3,9 +3,9 @@ package controller
 import (
 	"context"
 
-	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/v4/internal/config"
-	"github.com/belastingdienst/opr-paas/v4/internal/logging"
+	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
+	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/logging"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 )

@@ -34,7 +34,7 @@ comes with additional tooling:
 - A crypt tool, available from a separate repository, that can be used to
   encrypt, re-encrypt, generate key pairs, and inspect encrypted keys;
 
-  You can find the crypt tool at [https://github.com/belastingdienst/opr-paas-crypttool](https://github.com/belastingdienst/opr-paas-crypttool)
+  You can find the crypt tool at [https://github.com/belastingdienst/opr-paas-cli](https://github.com/belastingdienst/opr-paas-cli)
 
 !!! note
 
@@ -42,7 +42,7 @@ comes with additional tooling:
     separately. It was moved into a separate repository after the release of version
     v1.12.0 of the operator.
 
-`opr-paas-crypttool` requires access to the private key to be usable...
+`opr-paas-cli` requires access to the private key to be usable...
 
 ## How it works
 
@@ -59,22 +59,22 @@ comes with additional tooling:
 
 ```kroki-blockdiag
 blockdiag {
-  "decrypted" -> crypttool -> Paas -> operator;
-  "Public key" -> crypttool;
+  "decrypted" -> kubectl-paas -> Paas -> operator;
+  "Public key" -> kubectl-paas;
   "Private key" -> operator;
   operator -> namespace -> secret;
   "decrypted" [color = "greenyellow", shape = flowchart.input, stacked];
   "secret" [color = "greenyellow", stacked];
   "Public key" [color = "pink", shape = flowchart.input];
   "Private key" [color = "pink", shape = flowchart.input];
-  "crypttool" [color = "lightblue"];
+  "kubectl-paas" [color = "lightblue"];
   "operator" [color = "lightblue"];
   group {
       color = "#FF0000";
       shape = line;
       style = dashed;
       orientation = portrait
-      "decrypted", crypttool, Paas, "Public key";
+      "decrypted", kubectl-paas, Paas, "Public key";
    }
   group {
       orientation = portrait
@@ -195,8 +195,8 @@ One option (the most common use case) is to add git credentials for argocd.
 
 ```kroki-blockdiag
 blockdiag {
-  "ssh private key" -> crypttool -> Paas -> operator;
-  "Public key" -> crypttool;
+  "ssh private key" -> kubectl-paas -> Paas -> operator;
+  "Public key" -> kubectl-paas;
   "Private key" -> operator;
   operator -> "ArgoCD quota";
   operator -> "ArgoCD namespace" -> secret -> "ArgoCD repo (secret)";
@@ -206,14 +206,14 @@ blockdiag {
   "secret" [color = "greenyellow", stacked];
   "Public key" [color = "pink", shape = flowchart.input];
   "Private key" [color = "pink", shape = flowchart.input];
-  "crypttool" [color = "lightblue"];
+  "kubectl-paas" [color = "lightblue"];
   "operator" [color = "lightblue"];
   group input {
       color = "#FF0000";
       shape = line;
       style = dashed;
       orientation = portrait
-      "ssh private key", crypttool, Paas, "Public key";
+      "ssh private key", kubectl-paas, Paas, "Public key";
   }
   group operator {
       orientation = portrait

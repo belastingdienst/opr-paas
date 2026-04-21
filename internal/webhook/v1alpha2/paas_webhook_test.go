@@ -16,9 +16,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas-crypttool/pkg/crypt"
-	"github.com/belastingdienst/opr-paas/v4/api/v1alpha2"
-	"github.com/belastingdienst/opr-paas/v4/pkg/quota"
+	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
+	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -125,6 +125,32 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			warn, err := validator.ValidateCreate(ctx, obj)
 			Expect(warn, err).Error().NotTo(HaveOccurred())
 			Expect(err).Error().NotTo(HaveOccurred())
+		})
+		It("Should deny Paas with requested quotas larger than MaxAllowedSubmittedQuota", func() {
+			// Set the Paas object with a large quota
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Quota: quota.Quota{
+						corev1.ResourceLimitsCPU: resource.MustParse("10"),
+					},
+				},
+			}
+
+			// Update PaasConfig
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+
+			// Set a very small max
+			latestConf.Spec.MaxAllowedSubmittedQuota = v1alpha2.ConfigMaxAllowedSubmittedQuota{
+				MaxQuota: quota.Quota{
+					corev1.ResourceLimitsCPU: resource.MustParse("1m"),
+				},
+			}
+			Expect(k8sClient.Update(ctx, latestConf)).To(Succeed())
+
+			Expect(validator.ValidateCreate(ctx, obj)).Error().
+				To(MatchError(ContainSubstring("cannot be larger than MaxAllowedSubmittedQuota")))
 		})
 		It("Should validate paas name", func() {
 			const paasNameValidation = "^([a-z0-9]{3})-([a-z0-9]{3})$"
@@ -455,6 +481,53 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			))
 		})
 
+		It("Should deny creation when a custom field template fails", func() {
+			const (
+				capName   = "templateerror"
+				fieldName = "errorfield"
+			)
+			// Update PaasConfig
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			latestConf.Spec.Capabilities[capName] = v1alpha2.ConfigCapability{
+				QuotaSettings: v1alpha2.ConfigQuotaSettings{
+					DefQuota: map[corev1.ResourceName]resource.Quantity{"foo": resource.MustParse("1")},
+				},
+				CustomFields: map[string]v1alpha2.ConfigCustomField{
+					fieldName: {Template: `{{- fail "this just always fails" -}}`},
+				},
+			}
+			err = k8sClient.Update(ctx, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+
+			obj = &v1alpha2.Paas{
+				Spec: v1alpha2.PaasSpec{
+					Capabilities: v1alpha2.PaasCapabilities{
+						capName: v1alpha2.PaasCapability{
+							CustomFields: map[string]string{
+								fieldName: "whatever",
+							},
+						},
+					},
+				},
+			}
+			_, err = validator.ValidateCreate(ctx, obj)
+
+			var serr *apierrors.StatusError
+			Expect(errors.As(err, &serr)).To(BeTrue())
+			causes := serr.Status().Details.Causes
+			Expect(causes).To(HaveLen(1))
+			Expect(causes).To(ContainElements(
+				metav1.StatusCause{
+					Type: metav1.CauseTypeFieldValueInvalid,
+					Message: "Invalid value: \"errorfield\": template: errorfield:1:4: executing \"errorfield\" at " +
+						"<fail \"this just always fails\">: error calling fail: this just always fails",
+					Field: "spec.capabilities[templateerror].custom_fields",
+				},
+			))
+		})
+
 		It("Should deny creation when a namespace group does not match any Paas group", func() {
 			obj = &v1alpha2.Paas{
 				Spec: v1alpha2.PaasSpec{
@@ -559,6 +632,24 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 
 			warnings, _ := validator.ValidateCreate(ctx, obj)
 			Expect(warnings).To(BeEmpty())
+		})
+
+		It("Should raise an error if non-existent roles are defined in a paas", func() {
+			latestConf := &v1alpha2.PaasConfig{}
+			err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			latestConf.Spec.RoleMappings = v1alpha2.ConfigRoleMappings{
+				"existing": []string{"admin"},
+			}
+			err = k8sClient.Update(ctx, latestConf)
+			Expect(err).To(Not(HaveOccurred()))
+			obj = &v1alpha2.Paas{Spec: v1alpha2.PaasSpec{Groups: map[string]v1alpha2.PaasGroup{}}}
+			obj.Spec.Groups["foo"] = v1alpha2.PaasGroup{Roles: []string{"non-existing"}}
+			_, err = validator.ValidateCreate(ctx, obj)
+			Expect(err).To(HaveOccurred())
+			obj.Spec.Groups["foo"] = v1alpha2.PaasGroup{Roles: []string{"existing"}}
+			_, err = validator.ValidateCreate(ctx, obj)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("Should warn when quota limits are set higher than requests", func() {

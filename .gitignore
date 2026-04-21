@@ -30,6 +30,7 @@ go.work*
 *~
 /manager
 /crypttool*
+/kubectl-paas*
 /webservice
 
 site/
