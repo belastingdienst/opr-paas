@@ -10,8 +10,6 @@ on:
       - 'catalog/**'
   pull_request:
     types: [opened, reopened, synchronize]
-    paths-ignore:
-      - 'catalog/**'
 
 # Prevent overlapping runs from corrupting the draft release
 concurrency:
