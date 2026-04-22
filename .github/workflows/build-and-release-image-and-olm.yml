@@ -167,12 +167,12 @@ jobs:
             BUNDLE_IMG="${BUNDLE_IMAGE}:v${VERSION}"
 
   catalog:
-    name: Update catalog source and publish OLM catalog
+    name: Update catalog source and open OLM catalog PR
     runs-on: ubuntu-latest
     needs: [version, bundle]
     permissions:
-      packages: write
       contents: write
+      pull-requests: write
     env:
       VERSION: ${{ needs.version.outputs.version }}
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
@@ -204,14 +204,11 @@ jobs:
       - name: Install OPM
         run: make opm
 
-      - name: GHCR login
+      - name: Verify source bundle exists
         run: |
           podman login "${REGISTRY}" \
             -u "${GITHUB_ACTOR}" \
             -p "${{ secrets.GITHUB_TOKEN }}"
-
-      - name: Verify source bundle exists
-        run: |
           podman pull "${BUNDLE_IMAGE}:v${VERSION}"
 
       - name: Update catalog source
@@ -221,46 +218,22 @@ jobs:
             CATALOG_CHANNEL=candidate \
             CATALOG_DEFAULT_CHANNEL=candidate
 
-      - name: Commit catalog source
-        id: commit
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Create catalog PR
+        id: create_pr
+        uses: peter-evans/create-pull-request@7f1a08a85d93f09967d49d2f2d1d2f8f24b0f6f3 # v7.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore(olm): add opr-paas v${{ env.VERSION }} to candidate channel'
+          committer: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+          author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+          signoff: true
+          branch: automation/olm-candidate-v${{ env.VERSION }}
+          delete-branch: true
+          base: ${{ env.DEFAULT_BRANCH }}
+          title: 'chore(olm): add opr-paas v${{ env.VERSION }} to candidate channel'
+          body: |
+            Adds `opr-paas` bundle `v${{ env.VERSION }}` to the `candidate` OLM channel.
 
-          if [[ -z "$(git status --porcelain -- catalog)" ]]; then
-            echo "No catalog source changes to commit"
-            echo "committed=false" >> "$GITHUB_OUTPUT"
-          else
-            git add catalog
-            git commit -m "chore(olm): add opr-paas v${VERSION} to candidate channel"
-            git push origin HEAD:${DEFAULT_BRANCH}
-            echo "committed=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Capture catalog revision
-        id: revision
-        run: |
-          echo "sha=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
-
-      - name: Build catalog image from source
-        env:
-          CATALOG_IMMUTABLE_IMG: ${{ env.CATALOG_IMAGE }}:git-${{ steps.revision.outputs.sha }}
-        run: |
-          make catalog-build \
-            CATALOG_IMG="${CATALOG_IMMUTABLE_IMG}"
-
-      - name: Push immutable catalog image
-        env:
-          CATALOG_IMMUTABLE_IMG: ${{ env.CATALOG_IMAGE }}:git-${{ steps.revision.outputs.sha }}
-        run: |
-          podman push "${CATALOG_IMMUTABLE_IMG}"
-
-      - name: Push latest catalog tag
-        env:
-          CATALOG_IMMUTABLE_IMG: ${{ env.CATALOG_IMAGE }}:git-${{ steps.revision.outputs.sha }}
-        run: |
-          podman tag \
-            "${CATALOG_IMMUTABLE_IMG}" \
-            "${CATALOG_IMAGE}:latest"
-          podman push "${CATALOG_IMAGE}:latest"
+            This PR was created automatically by the release workflow.
+          labels: |
+            dependencies

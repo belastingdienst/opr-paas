@@ -40,6 +40,7 @@ jobs:
               - '!docs/**'
               - '!examples/**'
               - '!.github/**'
+              - '!catalog/**'
             ci:
               - '.github/workflows/ci-run-on-pr.yaml'
 
