@@ -220,13 +220,14 @@ jobs:
 
       - name: Create catalog PR
         id: create_pr
-        uses: peter-evans/create-pull-request@7f1a08a85d93f09967d49d2f2d1d2f8f24b0f6f3 # v7.0.8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: 'chore(olm): add opr-paas v${{ env.VERSION }} to candidate channel'
           committer: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
           author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
           signoff: true
+          sign-commits: true
           branch: automation/olm-candidate-v${{ env.VERSION }}
           delete-branch: true
           base: ${{ env.DEFAULT_BRANCH }}
