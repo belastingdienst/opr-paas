@@ -6,8 +6,12 @@ on:
     # branches to consider in the event; optional, defaults to all
     branches:
       - main
+    paths-ignore:
+      - 'catalog/**'
   pull_request:
     types: [opened, reopened, synchronize]
+    paths-ignore:
+      - 'catalog/**'
 
 # Prevent overlapping runs from corrupting the draft release
 concurrency:

@@ -23,8 +23,8 @@ jobs:
     name: Promote catalog to ${{ inputs.target_phase }}
     runs-on: ubuntu-latest
     permissions:
-      packages: write
       contents: write
+      pull-requests: write
     env:
       VERSION: ${{ inputs.version }}
       TARGET_PHASE: ${{ inputs.target_phase }}
@@ -59,14 +59,11 @@ jobs:
       - name: Install OPM
         run: make opm
 
-      - name: Login to GHCR
+      - name: Verify source bundle exists
         run: |
           podman login ghcr.io \
             -u "${GITHUB_ACTOR}" \
             -p "${{ secrets.GITHUB_TOKEN }}"
-
-      - name: Verify source bundle exists
-        run: |
           podman pull "${BUNDLE_IMG}"
 
       - name: Resolve bundle metadata
@@ -123,43 +120,22 @@ jobs:
             CATALOG_CHANNEL="${TARGET_PHASE}" \
             CATALOG_DEFAULT_CHANNEL=candidate
 
-      - name: Commit catalog source
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Create promotion PR
+        id: create_pr
+        uses: peter-evans/create-pull-request@7f1a08a85d93f09967d49d2f2d1d2f8f24b0f6f3 # v7.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore(olm): promote opr-paas v${{ env.VERSION }} to ${{ env.TARGET_PHASE }}'
+          committer: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+          author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+          signoff: true
+          branch: automation/olm-${{ env.TARGET_PHASE }}-v${{ env.VERSION }}
+          delete-branch: true
+          base: ${{ env.DEFAULT_BRANCH }}
+          title: 'chore(olm): promote opr-paas v${{ env.VERSION }} to ${{ env.TARGET_PHASE }}'
+          body: |
+            Promotes `opr-paas` bundle `v${{ env.VERSION }}` to the `${{ env.TARGET_PHASE }}` OLM channel.
 
-          if [[ -z "$(git status --porcelain -- catalog)" ]]; then
-            echo "No catalog source changes to commit"
-          else
-            git add catalog
-            git commit -m "chore(olm): promote opr-paas v${VERSION} to ${TARGET_PHASE}"
-            git push origin HEAD:${DEFAULT_BRANCH}
-          fi
-
-      - name: Capture catalog revision
-        id: revision
-        run: |
-          echo "sha=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
-
-      - name: Build promoted catalog image from source
-        env:
-          CATALOG_IMMUTABLE_IMG: ghcr.io/belastingdienst/opr-paas-catalog:git-${{ steps.revision.outputs.sha }}
-        run: |
-          make catalog-build \
-            CATALOG_IMG="${CATALOG_IMMUTABLE_IMG}"
-
-      - name: Push immutable catalog image
-        env:
-          CATALOG_IMMUTABLE_IMG: ghcr.io/belastingdienst/opr-paas-catalog:git-${{ steps.revision.outputs.sha }}
-        run: |
-          podman push "${CATALOG_IMMUTABLE_IMG}"
-
-      - name: Push latest catalog tag
-        env:
-          CATALOG_IMMUTABLE_IMG: ghcr.io/belastingdienst/opr-paas-catalog:git-${{ steps.revision.outputs.sha }}
-        run: |
-          podman tag \
-            "${CATALOG_IMMUTABLE_IMG}" \
-            "${CATALOG_IMG}"
-          podman push "${CATALOG_IMG}"
+            This PR was created automatically by the promotion workflow.
+          labels: |
+            dependencies
