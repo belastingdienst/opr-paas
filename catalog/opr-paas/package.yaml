@@ -1,0 +1,3 @@
+schema: olm.package
+name: opr-paas
+defaultChannel: candidate

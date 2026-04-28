@@ -1,0 +1,5 @@
+schema: olm.channel
+package: opr-paas
+name: candidate
+entries:
+  - name: opr-paas.v5.4.5
