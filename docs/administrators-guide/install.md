@@ -3,10 +3,18 @@ title: Installing the Operator
 summary: A simple guide on installing the Paas Operator
 authors:
   - hikarukin
+  - CtrlShiftOps
 date: 2024-10-14
 ---
 
 # Introduction
+
+This page documents the direct installation path using the generated `install.yaml`
+artifact attached to every GitHub release.
+
+If you want to install the operator through Operator Lifecycle Manager (OLM),
+including staged rollout using the `candidate`, `fast`, and `stable` channels,
+see the [OLM Installation](./olm-installation.md) page.
 
 ## Installation via CLI
 
@@ -34,59 +42,3 @@ latest release. It will create:
 - a deployment running the operator;
 
 Feel free to change config as required.
-
-## Installation via OLM
-
-For installation on Red Hat OpenShift you can also use the Operator Lifecycle Manager (OLM).
-
-First, create the `CatalogSource` to add the operator to the operator catalog on the cluster.
-
-```yaml
----
-apiVersion: operators.coreos.com/v1alpha1
-kind: CatalogSource
-metadata:
-  name: opr-paas-catalog
-  namespace: openshift-marketplace
-spec:
-  displayName: opr-paas catalog
-  image: ghcr.io/belastingdienst/opr-paas-catalog:stable
-  publisher: Belastingdienst
-  sourceType: grpc
-```
-
-To install the operator into its own namespace, create the namespace and allow installation of operators:
-
-```yaml
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: paas-system
-spec: {}
----
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: paas-system
-  namespace: paas-system
-spec:
-  upgradeStrategy: Default
-```
-
-Finally, create a `Subscription` to install the operator:
-
-```yaml
----
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: opr-paas
-  namespace: paas-system
-spec:
-  channel: stable
-  installPlanApproval: Automatic
-  name: opr-paas
-  source: opr-paas-catalog
-  sourceNamespace: openshift-marketplace
-```

@@ -4,6 +4,13 @@ on:
   release:
     types: [published]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: belastingdienst
+  OPERATOR_IMAGE: ghcr.io/belastingdienst/opr-paas
+  BUNDLE_IMAGE: ghcr.io/belastingdienst/opr-paas-bundle
+  CATALOG_IMAGE: ghcr.io/belastingdienst/opr-paas-catalog
+
 concurrency:
   group: release-${{ github.ref_name }}
   cancel-in-progress: false
@@ -50,7 +57,7 @@ jobs:
       - name: Login to GHCR
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
-          registry: ghcr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -59,7 +66,7 @@ jobs:
         uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
         with:
           images: |
-            name=ghcr.io/belastingdienst/opr-paas,enable=true
+            name=${{ env.OPERATOR_IMAGE }},enable=true
           tags: |
             type=raw,value=v${{ env.VERSION }}
             type=raw,value=latest
@@ -78,7 +85,7 @@ jobs:
       - name: Generate opr-paas image SBOM
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
-          image-ref: 'ghcr.io/belastingdienst/opr-paas:v${{ env.VERSION }}'
+          image-ref: '${{ env.OPERATOR_IMAGE }}:v${{ env.VERSION }}'
           scan-type: image
           format: 'github'
           output: 'opr-paas_image.sbom.json'
@@ -128,7 +135,7 @@ jobs:
 
       - name: GHCR login
         run: |
-          podman login ghcr.io \
+          podman login "${REGISTRY}" \
             -u "${GITHUB_ACTOR}" \
             -p "${{ secrets.GITHUB_TOKEN }}"
 
@@ -140,66 +147,94 @@ jobs:
       - name: Generate OLM bundle
         run: |
           make bundle VERSION=${VERSION} \
-            IMG=ghcr.io/belastingdienst/opr-paas:v${VERSION} \
-            CHANNELS=stable \
-            DEFAULT_CHANNEL=stable
+            IMG=${OPERATOR_IMAGE}:v${VERSION} \
+            CHANNELS=candidate \
+            DEFAULT_CHANNEL=candidate
 
       - name: Validate OLM bundle
         run: make bundle-validate
 
       - name: Build bundle image
-        run: make bundle-build VERSION=${VERSION} CONTAINER_TOOL=podman
+        run: |
+          make bundle-build VERSION=${VERSION} \
+            CONTAINER_TOOL=podman \
+            BUNDLE_IMG="${BUNDLE_IMAGE}:v${VERSION}"
 
       - name: Push bundle image
-        run: make bundle-push VERSION=${VERSION} CONTAINER_TOOL=podman
+        run: |
+          make bundle-push VERSION=${VERSION} \
+            CONTAINER_TOOL=podman \
+            BUNDLE_IMG="${BUNDLE_IMAGE}:v${VERSION}"
 
   catalog:
-    name: Build & Push OLM Catalog (skip in test mode)
+    name: Update catalog source and open OLM catalog PR
     runs-on: ubuntu-latest
     needs: [version, bundle]
     permissions:
-      packages: write
-      contents: read
+      contents: write
+      pull-requests: write
     env:
       VERSION: ${{ needs.version.outputs.version }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          persist-credentials: false
+          fetch-depth: 0
+          persist-credentials: true
+          ref: ${{ env.DEFAULT_BRANCH }}
 
       - name: Install Podman
         run: |
           sudo apt-get update
           sudo apt-get install -y podman
 
-      - name: Install operator-sdk
-        run: make operator-sdk
+      - name: Setup Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "1.25"
+          cache: false
 
-      - name: GHCR login
+      - name: Install yq
         run: |
-          podman login ghcr.io \
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Install OPM
+        run: make opm
+
+      - name: Verify source bundle exists
+        run: |
+          podman login "${REGISTRY}" \
             -u "${GITHUB_ACTOR}" \
             -p "${{ secrets.GITHUB_TOKEN }}"
+          podman pull "${BUNDLE_IMAGE}:v${VERSION}"
 
-      - name: Build catalog image
+      - name: Update catalog source
         run: |
-          set -euo pipefail
-          BASE="ghcr.io/belastingdienst/opr-paas-catalog:stable"
-          
-          if podman pull "$BASE" >/dev/null 2>&1; then
-            echo "Using existing base catalog: $BASE"
-            make catalog-build VERSION=${VERSION} CONTAINER_TOOL=podman CATALOG_BASE_IMG="$BASE"
-          else
-            echo "No stable catalog exists yet; creating new catalog"
-            make catalog-build VERSION=${VERSION} CONTAINER_TOOL=podman
-          fi
+          make catalog-update \
+            BUNDLE_IMG="${BUNDLE_IMAGE}:v${VERSION}" \
+            CATALOG_CHANNEL=candidate \
+            CATALOG_DEFAULT_CHANNEL=candidate
 
-      - name: Push catalog image
-        run: make catalog-push VERSION=${VERSION} CONTAINER_TOOL=podman
+      - name: Create catalog PR
+        id: create_pr
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore(olm): add opr-paas v${{ env.VERSION }} to candidate channel'
+          committer: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+          author: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+          signoff: true
+          sign-commits: true
+          branch: automation/olm-candidate-v${{ env.VERSION }}
+          delete-branch: true
+          base: ${{ env.DEFAULT_BRANCH }}
+          title: 'chore(olm): add opr-paas v${{ env.VERSION }} to candidate channel'
+          body: |
+            Adds `opr-paas` bundle `v${{ env.VERSION }}` to the `candidate` OLM channel.
 
-      - name: Tag & push stable catalog tag
-        run: |
-          podman tag ghcr.io/belastingdienst/opr-paas-catalog:v${VERSION} ghcr.io/belastingdienst/opr-paas-catalog:stable
-          podman push ghcr.io/belastingdienst/opr-paas-catalog:stable
+            This PR was created automatically by the release workflow.
+          labels: |
+            dependencies

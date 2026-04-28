@@ -24,16 +24,27 @@ BUNDLE_DEFAULT_CHANNEL := --default-channel=$(DEFAULT_CHANNEL)
 endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
-# IMAGE_TAG_BASE defines the docker.io namespace and part of the image name for remote images.
+# IMAGE_TAG_BASE defines the registry and base name for remote images.
 # This variable is used to construct full image tags for bundle and catalog images.
-#
-# For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
-# belastingdienst/opr-paas:$VERSION and my.domain/opr-paas-catalog:$VERSION.
+# The catalog image is built from the source-controlled file-based catalog under ./catalog.
 IMAGE_TAG_BASE ?= ghcr.io/belastingdienst/opr-paas
 
-# BUNDLE_IMG defines the image:tag used for the bundle.
+# BUNDLE_IMG defines the image:tag used for the immutable bundle image.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
+
+# CATALOG_ROOT defines the source-controlled file-based catalog directory.
+CATALOG_ROOT ?= catalog
+
+# CATALOG_CHANNEL defines the channel to update in the file-based catalog.
+CATALOG_CHANNEL ?= candidate
+
+# CATALOG_DEFAULT_CHANNEL defines the package default channel written into the file-based catalog.
+# The helper script preserves the current default unless stable is being introduced.
+CATALOG_DEFAULT_CHANNEL ?= candidate
+
+# CATALOG_IMG defines the image tag given to the resulting catalog image.
+CATALOG_IMG ?= $(IMAGE_TAG_BASE)-catalog:latest
 
 # BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
 BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
@@ -372,18 +383,6 @@ OPM = $(shell which opm)
 endif
 endif
 
-# A comma-separated list of bundle images (e.g. make catalog-build BUNDLE_IMGS=example.com/operator-bundle:v0.1.0,example.com/operator-bundle:v0.2.0).
-# These images MUST exist in a registry and be pull-able.
-BUNDLE_IMGS ?= $(BUNDLE_IMG)
-
-# The image tag given to the resulting catalog image (e.g. make catalog-build CATALOG_IMG=example.com/operator-catalog:v0.2.0).
-CATALOG_IMG ?= $(IMAGE_TAG_BASE)-catalog:v$(VERSION)
-
-# Set CATALOG_BASE_IMG to an existing catalog image tag to add $BUNDLE_IMGS to that image.
-ifneq ($(origin CATALOG_BASE_IMG), undefined)
-FROM_INDEX_OPT := --from-index $(CATALOG_BASE_IMG)
-endif
-
 .PHONY: bundle-image
 bundle-image: operator-sdk kustomize ## Generate correct operator image for OLM bundle
 	@echo "Setting operator image for bundle: $(IMG)"
@@ -419,15 +418,19 @@ bundle-build: ## Build OLM bundle image
 bundle-push: ## Push OLM bundle image to registry
 	$(CONTAINER_TOOL) push $(BUNDLE_IMG)
 
+.PHONY: catalog-update
+catalog-update: opm ## Update the source-controlled file-based catalog with BUNDLE_IMG in CATALOG_CHANNEL
+	@command -v yq >/dev/null 2>&1 || { echo "yq is required (brew install yq)"; exit 1; }
+	OPM_BIN="$(OPM)" bash ./hack/update-fbc-catalog-source.sh $(CATALOG_CHANNEL) $(BUNDLE_IMG) $(CATALOG_ROOT) $(CATALOG_DEFAULT_CHANNEL)
+
+.PHONY: catalog-validate
+catalog-validate: opm ## Validate the source-controlled file-based catalog
+	$(OPM) validate $(CATALOG_ROOT)
+
 .PHONY: catalog-build
-catalog-build: opm ## Build catalog image using OPM
-	$(OPM) index add \
-		--mode semver \
-		--bundles $(BUNDLE_IMGS) \
-		$(FROM_INDEX_OPT) \
-		--tag $(CATALOG_IMG) \
-		--container-tool $(CONTAINER_TOOL)
+catalog-build: opm ## Build catalog image from the source-controlled file-based catalog
+	OPM_BIN="$(OPM)" bash ./hack/build-fbc-catalog-from-source.sh $(CATALOG_ROOT) $(CATALOG_IMG)
 
 .PHONY: catalog-push
-catalog-push: ## Push catalog image to container registry
+catalog-push: ## Push source-built catalog image to registry
 	$(CONTAINER_TOOL) push $(CATALOG_IMG)
