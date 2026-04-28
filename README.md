@@ -41,6 +41,17 @@ latest release. It will create:
 
 Feel free to change config as required.
 
+## Installation models
+
+The project currently supports two installation models:
+
+- Direct installation using the generated `install.yaml` attached to each GitHub release.
+- OLM-based installation using the published catalog image and channel subscriptions.
+
+The direct installation path above remains the simplest way to get started.
+If you want staged rollout through OLM, see the administrator documentation for
+the OLM installation model and channel usage.
+
 ## Background information
 
 - [build-kubernetes-operator-six-steps](https://developers.redhat.com/articles/2021/09/07/build-kubernetes-operator-six-steps#setup_and_prerequisites)

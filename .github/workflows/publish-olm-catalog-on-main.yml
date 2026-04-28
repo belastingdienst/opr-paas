@@ -1,0 +1,79 @@
+name: Publish OLM catalog from main
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'catalog/**'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: belastingdienst
+  CATALOG_IMAGE: ghcr.io/belastingdienst/opr-paas-catalog
+
+concurrency:
+  group: publish-olm-catalog-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and publish OLM catalog from merged source
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+
+      - name: Setup Go
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+        with:
+          go-version: "1.25"
+          cache: false
+
+      - name: Install OPM
+        run: make opm
+
+      - name: Login to GHCR
+        run: |
+          podman login "${REGISTRY}" \
+            -u "${GITHUB_ACTOR}" \
+            -p "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Capture catalog revision
+        id: revision
+        run: |
+          echo "sha=$(git rev-parse --short=12 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Build catalog image from source
+        env:
+          CATALOG_IMMUTABLE_IMG: ${{ env.CATALOG_IMAGE }}:git-${{ steps.revision.outputs.sha }}
+        run: |
+          make catalog-build \
+            CATALOG_IMG="${CATALOG_IMMUTABLE_IMG}"
+
+      - name: Push immutable catalog image
+        env:
+          CATALOG_IMMUTABLE_IMG: ${{ env.CATALOG_IMAGE }}:git-${{ steps.revision.outputs.sha }}
+        run: |
+          podman push "${CATALOG_IMMUTABLE_IMG}"
+
+      - name: Push latest catalog tag
+        env:
+          CATALOG_IMMUTABLE_IMG: ${{ env.CATALOG_IMAGE }}:git-${{ steps.revision.outputs.sha }}
+        run: |
+          podman tag \
+            "${CATALOG_IMMUTABLE_IMG}" \
+            "${CATALOG_IMAGE}:latest"
+          podman push "${CATALOG_IMAGE}:latest"
