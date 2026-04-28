@@ -63,9 +63,7 @@ BUNDLE_FILE="$BUNDLES_DIR/$BUNDLE_NAME.yaml"
 mkdir -p "$CHANNELS_DIR" "$BUNDLES_DIR"
 
 PACKAGE_DEFAULT_CHANNEL="$DEFAULT_CHANNEL"
-if [[ "$CHANNEL" == "stable" ]]; then
-  PACKAGE_DEFAULT_CHANNEL="stable"
-elif [[ -f "$PACKAGE_FILE" ]]; then
+if [[ -f "$PACKAGE_FILE" ]]; then
   CURRENT_DEFAULT_CHANNEL="$(yq -r '.defaultChannel // ""' "$PACKAGE_FILE")"
   if [[ -n "$CURRENT_DEFAULT_CHANNEL" && "$CURRENT_DEFAULT_CHANNEL" != "null" ]]; then
     PACKAGE_DEFAULT_CHANNEL="$CURRENT_DEFAULT_CHANNEL"
