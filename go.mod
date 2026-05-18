@@ -8,7 +8,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	k8s.io/api v0.36.0
 	k8s.io/apiextensions-apiserver v0.36.0
-	k8s.io/apimachinery v0.36.0
+	k8s.io/apimachinery v0.36.1
 	k8s.io/client-go v0.36.0
 	sigs.k8s.io/controller-runtime v0.24.0
 )
@@ -90,7 +90,7 @@ require (
 	github.com/go-openapi/swag/yamlutils v0.26.0 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
 	k8s.io/kube-openapi v0.0.0-20260502001324-b7f5293f4787 // indirect
-	k8s.io/streaming v0.36.0 // indirect
+	k8s.io/streaming v0.36.1 // indirect
 )
 
 require (
