@@ -7,12 +7,12 @@ on:
       - main
     paths-ignore:
       - 'catalog/**'
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, synchronize]
 
 # Prevent overlapping runs from corrupting the draft release
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 # Workflow-level minimal permissions
@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   autolabeler:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     permissions:
       # autolabeler needs issues: write to add labels
@@ -32,6 +32,7 @@ jobs:
       - uses: release-drafter/release-drafter/autolabeler@3a7fb5c85b80b1dda66e1ccb94009adbbd32fce3 # v7.0.0
 
   update_release_draft:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     permissions:
       # write permission is required to create/update a GitHub release
       contents: write
