@@ -56,8 +56,9 @@ Publishing the release triggers the automated release workflows. In particular:
 - one immutable OLM bundle image is built and published as `ghcr.io/belastingdienst/opr-paas-bundle:vX.Y.Z`;
 - the source-controlled file-based catalog under `catalog/` is updated to add
   the release to the `candidate` channel;
-- that catalog change is committed back to the default branch;
-- a catalog image is built from the committed catalog source and published.
+- a pull request is opened with that catalog change; and
+- after that PR is merged, a separate workflow builds a catalog image from the
+  merged catalog source and publishes it.
 
 The catalog image is published using:
 
@@ -80,10 +81,13 @@ This workflow:
 - reuses the already published immutable bundle image for the requested release;
 - updates the source-controlled catalog metadata in `catalog/`;
 - promotes that version into `fast` or `stable`;
-- commits the catalog change back to the default branch; and
-- rebuilds and republishes the catalog image from that committed source.
+- opens a pull request with that catalog promotion; and
+- after that PR is merged, the catalog publish workflow rebuilds and republishes
+  the catalog image from the merged source.
 
 Promotion does not rebuild the bundle. It only changes catalog metadata.
+Promotion is sequential: a version must first be promoted from `candidate` to
+`fast` before it can be promoted from `fast` to `stable`.
 
 #### Operational model
 
@@ -91,12 +95,17 @@ The intended release flow is:
 
 1. Publish a GitHub release.
 2. The release workflow publishes the immutable operator and bundle images.
-3. The same workflow updates the source-controlled catalog and adds the new release
-   to `candidate`.
-4. Development clusters subscribed to `candidate` can upgrade.
-5. After validation, run the promotion workflow to add the same bundle version to `fast`.
-6. After validation in pre-production, run the promotion workflow again to add the same bundle
-   version to `stable`.
+3. The same workflow updates the source-controlled catalog and opens a PR that adds
+   the new release to `candidate`.
+4. Merge that catalog PR.
+5. The catalog publish workflow rebuilds and publishes the catalog image from `main`.
+6. Development clusters subscribed to `candidate` can upgrade.
+7. After validation, run the promotion workflow to open a PR that adds the same
+   bundle version to `fast`.
+8. Merge that promotion PR so the catalog is republished from `main`.
+9. After validation in pre-production, run the promotion workflow again to open a
+   PR that adds the same bundle version to `stable`.
+10. Merge that promotion PR so the catalog is republished again.
 
 No new bundle is built during promotion. Promotion changes catalog metadata only.
 
