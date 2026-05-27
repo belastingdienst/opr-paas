@@ -26,7 +26,7 @@ dependsOn:
       optional: false
 description:
   en:
-    longDescription: >
+    longDescription: |
       The PaaS operator delivers an opinionated 'Project as a Service' implementation
       where development teams can request a 'Project as a Service' by defining a PaaS
       resource.
