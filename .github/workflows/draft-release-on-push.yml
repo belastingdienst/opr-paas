@@ -3,7 +3,6 @@ name: Draft release on push to main
 on:
   workflow_dispatch:
   push:
-    # branches to consider in the event; optional, defaults to all
     branches:
       - main
     paths-ignore:
@@ -16,6 +15,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Workflow-level minimal permissions
 permissions:
   contents: read
 
@@ -24,20 +24,20 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
-      # write permission is required for autolabeler
+      # autolabeler needs issues: write to add labels
+      contents: read
+      issues: write
       pull-requests: write
     steps:
-      # Run autolabeler (separate actions since v7)
       - uses: release-drafter/release-drafter/autolabeler@3a7fb5c85b80b1dda66e1ccb94009adbbd32fce3 # v7.0.0
 
   update_release_draft:
     permissions:
-      # write permission is required to create a GitHub release
+      # write permission is required to create/update a GitHub release
       contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-
       # Drafts your next Release notes as Pull Requests are merged into "main"
       - uses: release-drafter/release-drafter@3a7fb5c85b80b1dda66e1ccb94009adbbd32fce3 # v7.0.0
         with:
