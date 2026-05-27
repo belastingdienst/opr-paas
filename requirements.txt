@@ -11,7 +11,7 @@ babel~=2.18
 colorama~=0.4
 paginate~=0.5
 regex>=2026.5.9
-requests~=2.33
+requests~=2.34
 
 mkdocs-kroki-plugin
 mkdocs-literate-nav
