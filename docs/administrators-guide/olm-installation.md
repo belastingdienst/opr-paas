@@ -23,6 +23,8 @@ The project uses the following OLM channels:
 
 New releases are first added to `candidate`. Promotion to `fast` and `stable`
 is performed later, after validation in the earlier environment.
+Promotion is sequential: a version must first be promoted to `fast` before it
+can be promoted to `stable`.
 
 # How rollout works
 
@@ -32,8 +34,7 @@ The operator publishes:
 - one immutable OLM bundle image per release; and
 - one catalog image built from the source-controlled file-based catalog in this repository.
 
-Rollout is controlled by OLM channel membership, not by separate catalog tags per
-environment. All clusters can use the same catalog image reference while subscribing
+Rollout is controlled by OLM channel membership. All clusters can use the same catalog image reference while subscribing
 to different channels.
 
 This means:
