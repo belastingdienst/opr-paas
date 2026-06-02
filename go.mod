@@ -14,7 +14,7 @@ require (
 )
 
 require (
-	github.com/belastingdienst/opr-paas-cli/v2 v2.0.1
+	github.com/belastingdienst/opr-paas-cli/v2 v2.0.4
 	github.com/go-logr/zerologr v1.2.3
 	github.com/go-sprout/sprout v1.0.3
 	github.com/onsi/ginkgo/v2 v2.29.0
@@ -89,7 +89,7 @@ require (
 	github.com/go-openapi/swag/typeutils v0.26.0 // indirect
 	github.com/go-openapi/swag/yamlutils v0.26.0 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
-	k8s.io/kube-openapi v0.0.0-20260502001324-b7f5293f4787 // indirect
+	k8s.io/kube-openapi v0.0.0-20260504175024-7bfe71ffdc10 // indirect
 	k8s.io/streaming v0.36.1 // indirect
 )
 
