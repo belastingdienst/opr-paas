@@ -1,0 +1,12 @@
+# Template decrypt key secret.
+#
+# Do not apply this file as-is. Generate your own keypair and create a Secret
+# with the generated private key. See docs/administrators-guide/secrets.md.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: example-keys
+  namespace: paas-system
+type: Opaque
+data:
+  privateKey0: <base64-encoded-rsa-private-key>

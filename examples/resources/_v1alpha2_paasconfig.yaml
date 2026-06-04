@@ -86,6 +86,7 @@ spec:
     secret_controller: false
   debug: false
   decryptKeySecret:
+    # Create this Secret with your own private decrypt key before applying this PaasConfig.
     name: example-keys
     namespace: paas-system
   feature_flags:

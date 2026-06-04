@@ -20,14 +20,34 @@ see the [OLM Installation](./olm-installation.md) page.
 
 Deploy the operator using the following command:
 
-```
+```bash
 kubectl apply -f https://github.com/belastingdienst/opr-paas/releases/latest/download/install.yaml
+```
+
+Create a decrypt key Secret before applying the example PaasConfig. The
+PaasConfig admission webhook validates that this Secret exists. If needed,
+download `kubectl-paas` from the
+[opr-paas-cli releases](https://github.com/belastingdienst/opr-paas-cli/releases).
+
+```bash
+cd "$(mktemp -d)"
+kubectl-paas generate --privateKeyFile private.bin --publicKeyFile public.bin
+kubectl create secret generic example-keys \
+  --namespace paas-system \
+  --from-file=privateKey0=private.bin \
+  --dry-run=client \
+  -o yaml | kubectl apply -f -
+```
+
+Then apply the example PaasConfig:
+
+```bash
 kubectl apply -f https://raw.githubusercontent.com/belastingdienst/opr-paas/refs/heads/main/examples/resources/_v1alpha2_paasconfig.yaml
 ```
 
-The second command will load an example PaasConfig resource from the main branch
-to get you going. Feel free to replace this with your own or a release specific
-version instead.
+The PaasConfig command will load an example PaasConfig resource from the main
+branch to get you going. Feel free to replace this with your own or a release
+specific version instead.
 
 This will install the operator using the `install.yaml` that was generated for the
 latest release. It will create:

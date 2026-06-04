@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
@@ -22,6 +21,7 @@ const (
 	paasCap1        = "sso"
 	paasCap1Ns      = paasName + "-" + paasCap1
 	paasCap2        = "tekton"
+	e2ePublicKey    = "./.generated/crypt/publicKey0"
 	argoLabelKey    = "argocd.argoproj.io/secret-type"
 	argoLabelValue  = "repo-creds"
 	secretTypeKey   = "type"
@@ -51,18 +51,23 @@ func ResetCapSSHSecret(t *testing.T, spec *api.PaasSpec, capabilityName string) 
 	spec.Capabilities[capabilityName] = capability
 }
 
-func TestSecrets(t *testing.T) {
-	privateKeys, err := crypt.NewPrivateKeysFromFiles([]string{})
-	if err != nil {
-		panic(fmt.Errorf("unable to create an empty list of private keys: %w", err))
-	}
-	c, err := crypt.NewCryptFromKeys(privateKeys, "./fixtures/crypt/pub/publicKey0", paasName)
-	if err != nil {
-		panic(fmt.Errorf("unable to create a crypt: %w", err))
-	}
+func encryptE2ESecret(t *testing.T, paasName string, value string) string {
+	t.Helper()
 
-	encrypted, err := c.Encrypt([]byte("rolled"))
+	privateKeys, err := crypt.NewPrivateKeysFromFiles([]string{})
+	require.NoError(t, err, "create an empty list of private keys")
+
+	c, err := crypt.NewCryptFromKeys(privateKeys, e2ePublicKey, paasName)
+	require.NoError(t, err, "create a crypt")
+
+	encrypted, err := c.Encrypt([]byte(value))
 	require.NoError(t, err)
+
+	return encrypted
+}
+
+func TestSecrets(t *testing.T) {
+	encrypted := encryptE2ESecret(t, paasName, "rolled")
 
 	toBeDecryptedPaas := api.PaasSpec{
 		Requestor: "paas-user",
@@ -121,30 +126,20 @@ func assertSecretCreated(ctx context.Context, t *testing.T, cfg *envconf.Config)
 }
 
 func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	privateKeys, err := crypt.NewPrivateKeysFromFiles([]string{})
-	if err != nil {
-		panic(fmt.Errorf("unable to create an empty list of private keys: %w", err))
-	}
-	c, err := crypt.NewCryptFromKeys(privateKeys, "./fixtures/crypt/pub/publicKey0", paasName)
-	if err != nil {
-		panic(fmt.Errorf("unable to create a crypt: %w", err))
-	}
-
-	encrypted, err := c.Encrypt([]byte(unencrypted))
-	require.NoError(t, err)
+	encrypted := encryptE2ESecret(t, paasName, unencrypted)
 
 	paas := getPaas(ctx, paasName, t, cfg)
 	paas.Spec.Secrets = map[string]string{"ssh://git@scm/some-repo.git": encrypted}
 	ResetCapSSHSecret(t, &paas.Spec, paasCap1)
 	AddCapSSHSecret(t, &paas.Spec, paasCap1, "ssh://git@scm/some-other-repo.git", encrypted)
 
-	if err = updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
+	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
 
 	// List secrets in namespace to be sure
 	secrets := &corev1.SecretList{}
-	err = cfg.Client().
+	err := cfg.Client().
 		Resources().
 		List(ctx, secrets, func(opts *k8sv1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
 	require.NoError(t, err)
@@ -174,30 +169,20 @@ func assertSecretValueUpdated(ctx context.Context, t *testing.T, cfg *envconf.Co
 }
 
 func assertSecretKeyUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-	privateKeys, err := crypt.NewPrivateKeysFromFiles([]string{})
-	if err != nil {
-		panic(fmt.Errorf("unable to create an empty list of private keys: %w", err))
-	}
-	c, err := crypt.NewCryptFromKeys(privateKeys, "./fixtures/crypt/pub/publicKey0", paasName)
-	if err != nil {
-		panic(fmt.Errorf("unable to create a crypt: %w", err))
-	}
-
-	encrypted, err := c.Encrypt([]byte(unencrypted))
-	require.NoError(t, err)
+	encrypted := encryptE2ESecret(t, paasName, unencrypted)
 
 	paas := getPaas(ctx, paasName, t, cfg)
 	paas.Spec.Secrets = map[string]string{"ssh://git@scm/some-second-repo.git": encrypted}
 	ResetCapSSHSecret(t, &paas.Spec, paasCap1)
 	AddCapSSHSecret(t, &paas.Spec, paasCap1, "ssh://git@scm/some-other-second-repo.git", encrypted)
 
-	if err = updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
+	if err := updateSync(ctx, cfg, paas, api.TypeReadyPaas); err != nil {
 		t.Fatal(err)
 	}
 
 	// List secrets in namespace to be sure
 	secrets := &corev1.SecretList{}
-	err = cfg.Client().
+	err := cfg.Client().
 		Resources().
 		List(ctx, secrets, func(opts *k8sv1.ListOptions) { opts.FieldSelector = "metadata.namespace=sshpaas-sso" })
 	require.NoError(t, err)
