@@ -3,6 +3,7 @@ title: End to end testing
 summary: How we do end to end testing.
 authors:
   - hikarukin
+  - CtrlShiftOps
 date: 2024-08-21
 ---
 
@@ -27,6 +28,11 @@ recommend using [kind](https://kind.sigs.k8s.io).
   This will apply mocks, etc. needed to run the operator.
 2. Start the operator: `make run`
 3. Finally, run the actual e2e tests: `make test-e2e`
+
+The `make setup-e2e` and `make local-e2e` targets generate temporary decrypt
+keys for the tests. These files are written below `test/e2e/.generated` and are
+not committed to the repository. The plugin-generator e2e manifests use a static
+non-secret example token.
 
 ## Design considerations
 

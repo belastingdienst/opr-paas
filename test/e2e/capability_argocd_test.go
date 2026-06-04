@@ -27,12 +27,11 @@ const (
 	paasArgoGitPath     = "foo/"
 	paasArgoGitRevision = "main"
 	paasRequestor       = "paas-requestor"
-	// String `dummysecret` encrypted with fixtures/crypt/pub/publicKey0
-	// revive:disable-next-line
-	paasArgoSecret = "mPNADW4KlAYmiBSXfgyoP6G0h/8prFQNH7VBFXB3xiZ8wij2sRIgKekVUC3N9cHk73wkuewoH2fyM0BH2P1xKvSP4v4wwzq+fJC6qxx+d/lucrfnBHWCpsAr646OVYyoH8Er6PpBrPxM+OXCjVsXhd/8CGA32VzcUKSrAWBVWTgXpJ4/X/9gez865AmZkfFf2WBImYgs5Q/rH/mPP1jxl3WP10g51FLi4XG1qn2XdLRzBKXRKluh+PvMRYgqZ8QKl2Yd2HWj1SkzXrtayB7197r0fQ6t4cwpn8mqy30GQhsw6NEPSkcYakukOX2PYeRIVCwmMl3uEe9X1y7fesQVBMnq1loQJRpd7kBUj6EErnKNZ9Qa8tOXYLMME2tzsaYWz+rxhczCaMv9r55EGBENRB0K6VMY4jfC4NKkcVwgZm182/Z1wzOnPbhSKAoaSYUXVrsNfjuzlvQGJmaNF4onDgJdVpqJxkEH98E3q+NMlSYhIzZDph1RDjHmUm2aoAhx2W9zle+LsOWHLgogPHRwY+N7NRII5SBEnw99miCAQVqHnpEk0uITzny0G5AuoS9aKmVhbUNNR1TgZ6u2dFjrkbnZB0GKilJhVENM+oE8Fbq7Q4Qa9wtk/GK1myPNvY7ARbw1tfvbcpJT/NtKnEKsho/OVzfHn15W3niNVpXrZgs=" //nolint:gosec
 )
 
 func TestCapabilityArgoCD(t *testing.T) {
+	paasArgoSecret := encryptE2ESecret(t, paasWithArgo, "dummysecret")
+
 	paasSpec := api.PaasSpec{
 		Requestor: paasRequestor,
 		Quota: quota.Quota{
@@ -115,6 +114,8 @@ func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config
 func assertArgoCapUpdated(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 	updatedRevision := "updatedRevision"
 	paas := getPaas(ctx, paasWithArgo, t, cfg)
+	paasArgoSecret := paas.Spec.Capabilities[argoCapName].Secrets[paasArgoGitURL]
+
 	paas.Spec.Capabilities = api.PaasCapabilities{
 		argoCapName: api.PaasCapability{
 			Secrets:          map[string]string{paasArgoGitURL: paasArgoSecret},

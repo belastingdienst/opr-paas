@@ -132,6 +132,7 @@ test: manifests generate fmt vet envtest ## Run unit tests.
 
 .PHONY: test-e2e
 test-e2e:
+	test -f test/e2e/.generated/crypt/publicKey0 || (echo "Missing generated e2e keys. Run 'make setup-e2e' or 'make local-e2e' first." && exit 1)
 	go test -count=1 -v ./test/e2e
 
 .PHONY: install-go-test-coverage
@@ -143,8 +144,16 @@ check-coverage: install-go-test-coverage test ## check unittest coverage
 	${GOBIN}/go-test-coverage --config=./.testcoverage.yaml
 
 # Setup e2e
+.PHONY: generate-e2e-cryptkeys
+generate-e2e-cryptkeys:
+	./hack/generate-e2e-cryptkeys.sh
+
 .PHONY: setup-e2e
-setup-e2e: kustomize
+setup-e2e: kustomize generate-e2e-cryptkeys
+	# Create namespace for generated e2e decrypt keys
+	${KUBECTL} create namespace paas-system --dry-run=client -o yaml | ${KUBECTL} apply -f -
+	# Apply generated e2e decrypt keys
+	$(KUSTOMIZE) build test/e2e/manifests/cryptkeys | ${KUBECTL} apply -f -
 	# Create GitOps operator mocks
 	$(KUSTOMIZE) build test/e2e/manifests/gitops-operator | ${KUBECTL} apply --server-side -f -
 	# Apply OpenShift mocks
@@ -166,7 +175,7 @@ kind-delete-cluster: kind
 	$(KIND) delete cluster || echo "no existing kind cluster"
 
 .PHONY: setup-local-e2e
-setup-local-e2e: kind kustomize
+setup-local-e2e: kind kustomize generate-e2e-cryptkeys
 	$(CONTAINER_TOOL) build -t ${IMG} .
 	${KIND} load image-archive <(${CONTAINER_TOOL} save controller:latest)
 
@@ -184,6 +193,7 @@ ifeq ($(CONTAINER_TOOL),podman)
 	$(KUSTOMIZE) build test/e2e/manifests/local-e2e-podman | ${KUBECTL} apply -f -
 else
 	$(KUSTOMIZE) build manifests/default | ${KUBECTL} apply -f -
+	$(KUSTOMIZE) build test/e2e/manifests/cryptkeys | ${KUBECTL} apply -f -
 endif
 	${KUBECTL} wait --for=condition=Available deployment/paas-controller-manager -n paas-system --timeout=120s
 	go test -v ./test/e2e
@@ -277,7 +287,7 @@ deploy: manifests certmanager ## Deploy controller to the K8s cluster specified 
 	$(KUSTOMIZE) build manifests/default | $(KUBECTL) apply -f -
 
 .PHONY: gh-e2e-with-plugin-generator
-gh-e2e-with-plugin-generator: manifests certmanager ## Deploy controller to the K8s cluster specified in ~/.kube/config. including certmanager and certs for webhook
+gh-e2e-with-plugin-generator: manifests certmanager generate-e2e-cryptkeys ## Deploy controller to the K8s cluster specified in ~/.kube/config. including certmanager and certs for webhook
 	cd manifests/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	cd test/e2e/manifests/e2e-with-plugingenerator && $(KUBECTL) create secret generic generator-token -n paas-system --from-literal=ARGOCD_GENERATOR_TOKEN=$(shell openssl rand -base64 60 | tr -dc A-Za-z0-9 | head -c 45) --dry-run=client -o yaml > generator-secret.yaml
 	$(KUSTOMIZE) build test/e2e/manifests/e2e-with-plugingenerator | $(KUBECTL) apply -f -

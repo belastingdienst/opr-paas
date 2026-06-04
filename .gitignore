@@ -48,3 +48,5 @@ install.yaml
 /bundle.Containerfile
 
 test/e2e/manifests/paas/generator-secret.yaml
+test/e2e/.generated/
+test/e2e/manifests/cryptkeys/generated-*.yaml

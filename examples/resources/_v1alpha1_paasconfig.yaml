@@ -85,6 +85,7 @@ spec:
         ratio: 0
   debug: false
   decryptKeySecret:
+    # Create this Secret with your own private decrypt key before applying this PaasConfig.
     namespace: paas-system
     name: example-keys
   ldap:

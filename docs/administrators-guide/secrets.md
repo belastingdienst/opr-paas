@@ -12,7 +12,7 @@ The Paas operator includes features to manage secrets in namespaces of a Paas.
 
 Secrets are encrypted using asymmetric encryption and therefore require a public
 and private keypair. Keypairs must be generated, after which the Private Keys must
-be added to the k8s secret configured in the `PaasConfig.spec.privateKeySecret`, and
+be added to the k8s secret configured in the `PaasConfig.spec.decryptKeySecret`, and
 the public key must be provided to Users for encrypting the ssh Secrets (either directly,
 or through the web service).
 
@@ -32,11 +32,22 @@ Once downloaded, kubectl-paas can be used to generate a keypair as follows:
 
 ## Deploying new secrets
 
-Once generated, the private key should be added to the secret configured in the `PaasConfig.spec.privateKeySecret`.
+Once generated, the private key should be added to the secret configured in the
+`PaasConfig.spec.decryptKeySecret`.
+
+!!! example
+
+    ```bash
+    kubectl create secret generic example-keys \
+      --namespace paas-system \
+      --from-file=privateKey0=private.bin \
+      --dry-run=client \
+      -o yaml | kubectl apply -f -
+    ```
 
 !!! note
 
-    The secret as configured in the `PaasConfig.spec.privateKeySecret` can hold multiple keys.
+    The secret as configured in the `PaasConfig.spec.decryptKeySecret` can hold multiple keys.
     This feature is implemented so that key rotation (generating, deploying and reencryption)
     do not need to be performed instantly. The Paas operator tries to decrypt with all secrets
     and detects a successful decryption from one of the supplied keys.
