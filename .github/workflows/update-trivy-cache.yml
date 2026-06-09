@@ -7,7 +7,7 @@ name: Update Trivy Cache
 
 on:
   schedule:
-    - cron: '23 0 * * *'  # Run daily at 23 past midnight UTC (23 chosen randomly)
+    - cron: '15 0 * * *'  # Run daily at 15 past midnight UTC (15 chosen randomly)
   workflow_dispatch: # Allow manual triggering
 
 # Set default permissions to none and only grant what is strictly needed
