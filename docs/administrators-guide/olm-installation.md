@@ -85,9 +85,7 @@ kind: OperatorGroup
 metadata:
   name: opr-paas
   namespace: paas-system
-spec:
-  targetNamespaces:
-    - paas-system
+spec: {}
 ```
 
 ## Subscription
