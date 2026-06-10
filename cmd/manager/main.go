@@ -45,7 +45,10 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-const webhookErrMsg = "unable to create webhook"
+const (
+	argocdPluginGeneratorBindAddressEnv = "ARGOCD_PLUGIN_GENERATOR_BIND_ADDRESS"
+	webhookErrMsg                       = "unable to create webhook"
+)
 
 var scheme = runtime.NewScheme()
 
@@ -110,7 +113,7 @@ func configureFlags() *flags {
 	flag.StringVar(&f.metricsCertName, "metrics-cert-name", "tls.crt",
 		"The name of the metrics server certificate file.")
 	flag.StringVar(&f.metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
-	flag.StringVar(&f.argocdPluginGenAddr, "argocd-plugin-generator-bind-address", "0", "The address the argocd plugin generator endpoint binds to. Use :4355 for HTTP, or leave as 0 to disable the argocd plugin generator service.") // nolint:revive
+	flag.StringVar(&f.argocdPluginGenAddr, "argocd-plugin-generator-bind-address", defaultArgocdPluginGeneratorBindAddress(), "The address the argocd plugin generator endpoint binds to. Use :4355 for HTTP, or leave as 0 to disable the argocd plugin generator service.") // nolint:revive
 	flag.BoolVar(&f.enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	flag.BoolVar(&f.pretty, "pretty", false, "Pretty-print logging output")
@@ -125,6 +128,14 @@ func configureFlags() *flags {
 	flag.Parse()
 
 	return f
+}
+
+func defaultArgocdPluginGeneratorBindAddress() string {
+	if value := os.Getenv(argocdPluginGeneratorBindAddressEnv); value != "" {
+		return value
+	}
+
+	return "0"
 }
 
 func configureLogging(pretty bool, debug bool, componentDebugList string, splitLogOutput bool) {

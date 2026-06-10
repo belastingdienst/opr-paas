@@ -111,6 +111,11 @@ spec:
 For pre-production clusters, change the channel to `fast`.
 For production clusters, change the channel to `stable`.
 
+To enable the ArgoCD plugin generator when installing through OLM, set
+`ARGOCD_PLUGIN_GENERATOR_BIND_ADDRESS` through `spec.config.env` on the
+`Subscription`, and provide `ARGOCD_GENERATOR_TOKEN` through the operator pod
+environment.
+
 # Airgapped environments
 
 In airgapped environments, mirror the following images into the registry that
