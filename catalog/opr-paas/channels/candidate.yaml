@@ -2,6 +2,8 @@ schema: olm.channel
 package: opr-paas
 name: candidate
 entries:
+  - name: opr-paas.v5.8.0
+    replaces: opr-paas.v5.7.0
   - name: opr-paas.v5.7.0
     replaces: opr-paas.v5.6.0
   - name: opr-paas.v5.6.0
