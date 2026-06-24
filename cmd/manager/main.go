@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	argocdplugingenerator "github.com/belastingdienst/opr-paas/v5/internal/argocd-plugin-generator"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
@@ -47,6 +48,8 @@ import (
 
 const (
 	argocdPluginGeneratorBindAddressEnv = "ARGOCD_PLUGIN_GENERATOR_BIND_ADDRESS"
+	metricsBindAddressEnv               = "METRICS_BIND_ADDRESS"
+	metricsSecureEnv                    = "METRICS_SECURE"
 	webhookErrMsg                       = "unable to create webhook"
 )
 
@@ -96,14 +99,19 @@ func main() {
 
 func configureFlags() *flags {
 	f := &flags{}
-	flag.StringVar(&f.metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
-		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
+	flag.StringVar(
+		&f.metricsAddr,
+		"metrics-bind-address",
+		defaultMetricsBindAddress(),
+		"The address the metrics endpoint binds to. "+
+			"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.",
+	)
 	flag.StringVar(&f.probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&f.getVersion, "version", false, "Print version and quit")
 	flag.BoolVar(&f.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.BoolVar(&f.secureMetrics, "metrics-secure", true,
+	flag.BoolVar(&f.secureMetrics, "metrics-secure", defaultMetricsSecure(),
 		"If set, the metrics endpoint is served securely via HTTPS. Use --metrics-secure=false to use HTTP instead.")
 	flag.StringVar(&f.webhookCertPath, "webhook-cert-path", "", "The directory that contains the webhook certificate.")
 	flag.StringVar(&f.webhookCertName, "webhook-cert-name", "tls.crt", "The name of the webhook certificate file.")
@@ -136,6 +144,28 @@ func defaultArgocdPluginGeneratorBindAddress() string {
 	}
 
 	return "0"
+}
+
+func defaultMetricsBindAddress() string {
+	if value := os.Getenv(metricsBindAddressEnv); value != "" {
+		return value
+	}
+
+	return "0"
+}
+
+func defaultMetricsSecure() bool {
+	value := os.Getenv(metricsSecureEnv)
+	if value == "" {
+		return true
+	}
+
+	secure, err := strconv.ParseBool(value)
+	if err != nil {
+		return true
+	}
+
+	return secure
 }
 
 func configureLogging(pretty bool, debug bool, componentDebugList string, splitLogOutput bool) {

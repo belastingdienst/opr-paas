@@ -15,7 +15,7 @@ spec:
   selector:
     matchLabels:
       control-plane: paas-controller-manager
-  replicas: 1
+  replicas: 2 # HA for the admission webhooks
   template:
     metadata:
       annotations:

@@ -114,6 +114,22 @@ To enable the ArgoCD plugin generator when installing through OLM, set
 `Subscription`, and provide `ARGOCD_GENERATOR_TOKEN` through the operator pod
 environment.
 
+Metrics remain disabled by default. For a secure HTTPS endpoint, set
+`METRICS_BIND_ADDRESS=:8443` and `METRICS_SECURE=true` through
+`spec.config.env` on the `Subscription`. The scraper must be configured for
+TLS and Kubernetes authentication and authorization. When no metrics
+certificate is configured, controller-runtime generates a self-signed
+certificate.
+
+For a trusted in-cluster scraper, metrics can instead be exposed over HTTP by
+setting `METRICS_BIND_ADDRESS=:8080` and `METRICS_SECURE=false`. Do not expose
+this endpoint outside the trusted cluster network. Command-line flags continue
+to take precedence over these environment-backed defaults.
+
+The OLM-managed operator runs two replicas by default to keep the admission
+webhooks available during pod disruptions and rolling updates. Leader election
+ensures that only one replica actively runs the controllers at a time.
+
 # Airgapped environments
 
 In airgapped environments, mirror the following images into the registry that
