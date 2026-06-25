@@ -536,7 +536,6 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		ns2SecretName            = "my-ns2-secret"
 		ns2SecretHashedName      = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(ns2SecretName)[:8]))
 		userGroupName            = join(paasName, paasGroupName)
-		rolebindings             = []string{techRoleName1, techRoleName2}
 		clusterRolebindings      = map[string][]string{
 			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR},
 		}
@@ -716,7 +715,13 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			}
 		})
 		It("should have created paas rolebindings", func() {
-			for _, nsName := range namespaces {
+			expectedRolebindings := map[string][]string{
+				join(paasName, ns1Name):    {techRoleName1},
+				join(paasName, ns2Name):    {techRoleName1, techRoleName2},
+				join(paasName, capName):    {techRoleName1, techRoleName2},
+				join(paasName, paasNSName): {techRoleName1, techRoleName2},
+			}
+			for nsName, rolebindings := range expectedRolebindings {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
 				for _, rbName := range rolebindings {
 					var rb rbac.RoleBinding

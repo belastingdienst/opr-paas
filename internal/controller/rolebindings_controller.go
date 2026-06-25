@@ -214,8 +214,8 @@ func (r *PaasReconciler) reconcileNamespaceRolebinding(
 func (r *PaasReconciler) reconcileNamespaceRolebindings(
 	ctx context.Context,
 	paas *v1alpha2.Paas,
-	paasns *v1alpha2.PaasNS,
 	nsName string,
+	groupKeys []string,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerRoleBindingComponent)
 	// Use a map of sets to avoid duplicates
@@ -233,10 +233,7 @@ func (r *PaasReconciler) reconcileNamespaceRolebindings(
 	}
 
 	logger.Info().Any("Rolebindings map", roleGroups).Msg("all roles")
-	paasGroups := paas.Spec.Groups
-	if paasns != nil {
-		paasGroups = paasGroups.Filtered(paasns.Spec.Groups)
-	}
+	paasGroups := paas.Spec.Groups.Filtered(groupKeys)
 	for groupKey, groupRoles := range paasGroups.Roles() {
 		logger.Info().Msgf("defining Rolebindings for Group %s", groupKey)
 		// Convert the groupKey to a groupName to map the rolebinding subjects to a group
@@ -269,7 +266,7 @@ func (r *PaasReconciler) reconcilePaasRolebindings(
 	nsDefs namespaceDefs,
 ) error {
 	for _, nsDef := range nsDefs {
-		err := r.reconcileNamespaceRolebindings(ctx, paas, nsDef.paasns, nsDef.nsName)
+		err := r.reconcileNamespaceRolebindings(ctx, paas, nsDef.nsName, nsDef.groups)
 		if err != nil {
 			return err
 		}
