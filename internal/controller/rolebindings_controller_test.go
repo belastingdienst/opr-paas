@@ -114,7 +114,7 @@ var _ = Describe("Rolebinding", Ordered, func() {
 		expectedTecRoles := []string{tecRole1, tecRole2}
 
 		It("reconciles successfully", func() {
-			err := reconciler.reconcileNamespaceRolebindings(ctx, paas, nil, ns1)
+			err := reconciler.reconcileNamespaceRolebindings(ctx, paas, ns1, paas.Spec.Groups.Keys())
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -138,6 +138,68 @@ var _ = Describe("Rolebinding", Ordered, func() {
 				Expect(rb.ObjectMeta.Labels).To(HaveKeyWithValue(key, value))
 			}
 			Expect(rb.ObjectMeta.Labels).NotTo(HaveKey(kubeInstLabel))
+		})
+	})
+
+	When("namespaces select different groups", func() {
+		It("only binds each namespace's selected groups", func() {
+			const (
+				adminGroupKey = "admin-group"
+				viewGroupKey  = "view-group"
+				adminFuncRole = "admin-role"
+				viewFuncRole  = "view-role"
+			)
+			adminNamespace := join(paasName, "admin-ns")
+			viewNamespace := join(paasName, "view-ns")
+			assureNamespace(ctx, adminNamespace)
+			assureNamespace(ctx, viewNamespace)
+
+			paas.Spec.Groups = v1alpha2.PaasGroups{
+				adminGroupKey: {Roles: []string{adminFuncRole}},
+				viewGroupKey:  {Roles: []string{viewFuncRole}},
+			}
+			myConfig.Spec.RoleMappings = v1alpha2.ConfigRoleMappings{
+				adminFuncRole: {tecRole1},
+				viewFuncRole:  {tecRole2},
+			}
+			ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConfig)
+
+			nsDefs := namespaceDefs{
+				adminNamespace: newNamespaceDef(adminNamespace, paasName, []string{adminGroupKey}, nil),
+				viewNamespace:  newNamespaceDef(viewNamespace, paasName, []string{viewGroupKey}, nil),
+			}
+			Expect(reconciler.reconcilePaasRolebindings(ctx, paas, nsDefs)).To(Succeed())
+
+			var adminBinding rbac.RoleBinding
+			Expect(reconciler.Get(ctx, types.NamespacedName{
+				Name:      join("paas", tecRole1),
+				Namespace: adminNamespace,
+			}, &adminBinding)).To(Succeed())
+			Expect(adminBinding.Subjects).To(ConsistOf(rbac.Subject{
+				Kind:     "Group",
+				APIGroup: "rbac.authorization.k8s.io",
+				Name:     paas.GroupKey2GroupName(adminGroupKey),
+			}))
+
+			var viewBinding rbac.RoleBinding
+			Expect(reconciler.Get(ctx, types.NamespacedName{
+				Name:      join("paas", tecRole2),
+				Namespace: viewNamespace,
+			}, &viewBinding)).To(Succeed())
+			Expect(viewBinding.Subjects).To(ConsistOf(rbac.Subject{
+				Kind:     "Group",
+				APIGroup: "rbac.authorization.k8s.io",
+				Name:     paas.GroupKey2GroupName(viewGroupKey),
+			}))
+
+			Expect(reconciler.Get(ctx, types.NamespacedName{
+				Name:      join("paas", tecRole2),
+				Namespace: adminNamespace,
+			}, &rbac.RoleBinding{})).To(MatchError(ContainSubstring("not found")))
+			Expect(reconciler.Get(ctx, types.NamespacedName{
+				Name:      join("paas", tecRole1),
+				Namespace: viewNamespace,
+			}, &rbac.RoleBinding{})).To(MatchError(ContainSubstring("not found")))
 		})
 	})
 })
