@@ -38,7 +38,6 @@ spec:
     requests.cpu: '10'
     requests.memory: 32Gi
     requests.storage: 1024Gi
-    thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
   capabilities:
     argocd:
       quota:

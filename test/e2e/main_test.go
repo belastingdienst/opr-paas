@@ -58,10 +58,6 @@ var (
 							corev1.ResourceRequestsCPU:     resourcev1.MustParse("1"),
 							corev1.ResourceRequestsMemory:  resourcev1.MustParse("1Gi"),
 							corev1.ResourceRequestsStorage: resourcev1.MustParse("0"),
-							// revive:disable-next-line
-							corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse(
-								"0",
-							),
 						},
 					},
 					CustomFields: map[string]v1alpha2.ConfigCustomField{
@@ -89,10 +85,6 @@ var (
 							corev1.ResourceRequestsCPU:     resourcev1.MustParse("5"),
 							corev1.ResourceRequestsMemory:  resourcev1.MustParse("6Gi"),
 							corev1.ResourceRequestsStorage: resourcev1.MustParse("0"),
-							// revive:disable-next-line
-							corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse(
-								"0",
-							),
 						},
 					},
 				},
@@ -112,10 +104,6 @@ var (
 							corev1.ResourceRequestsCPU:     resourcev1.MustParse("1"),
 							corev1.ResourceRequestsMemory:  resourcev1.MustParse("2Gi"),
 							corev1.ResourceRequestsStorage: resourcev1.MustParse("100Gi"),
-							// revive:disable-next-line
-							corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse(
-								"0",
-							),
 						},
 						MinQuotas: map[corev1.ResourceName]resourcev1.Quantity{
 							corev1.ResourceLimitsCPU:    resourcev1.MustParse("5"),
@@ -138,10 +126,6 @@ var (
 							corev1.ResourceRequestsCPU:     resourcev1.MustParse("100m"),
 							corev1.ResourceRequestsMemory:  resourcev1.MustParse("128Mi"),
 							corev1.ResourceRequestsStorage: resourcev1.MustParse("0"),
-							// revive:disable-next-line
-							corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse(
-								"0",
-							),
 						},
 					},
 				},
@@ -154,10 +138,6 @@ var (
 							corev1.ResourceRequestsCPU:     resourcev1.MustParse("500m"),
 							corev1.ResourceRequestsMemory:  resourcev1.MustParse("512Mi"),
 							corev1.ResourceRequestsStorage: resourcev1.MustParse("2Gi"),
-							// revive:disable-next-line
-							corev1.ResourceName("thin.storageclass.storage.k8s.io/persistentvolumeclaims"): resourcev1.MustParse(
-								"0",
-							),
 						},
 					},
 				},

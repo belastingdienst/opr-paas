@@ -779,14 +779,12 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					"requests.cpu",
 					"requests.memory",
 					"requests.storage",
-					"thin.storageclass.storage.k8s.io/persistentvolumeclaims",
 				}
 				validQuotas = quota.Quota{
 					"limits.memory":    resource.MustParse("100M"),
 					"requests.cpu":     resource.MustParse("1.1"),
 					"requests.memory":  resource.MustParse("100M"),
 					"requests.storage": resource.MustParse("10G"),
-					"thin.storageclass.storage.k8s.io/persistentvolumeclaims": resource.MustParse("10G"),
 				}
 				validation       = fmt.Sprintf("(%s)", strings.Join(validResourceKeys, "|"))
 				validationConfig = v1alpha2.PaasConfigValidations{

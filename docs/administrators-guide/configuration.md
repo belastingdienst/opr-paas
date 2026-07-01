@@ -110,7 +110,6 @@ Example PaasConfig
               requests.cpu: "4"
               requests.memory: 5Gi
               requests.storage: "5Gi"
-              thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
             min: {}
             max: {}
             ratio: 0
@@ -126,7 +125,6 @@ Example PaasConfig
               requests.cpu: "1"
               requests.memory: 1Gi
               requests.storage: "2Gi"
-              thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
             min: {}
             max: {}
             ratio: 0
@@ -145,7 +143,6 @@ Example PaasConfig
               requests.cpu: "1"
               requests.memory: 2Gi
               requests.storage: "100Gi"
-              thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
             min: {}
             max: {}
             ratio: 0.1
@@ -161,7 +158,6 @@ Example PaasConfig
               requests.cpu: "2"
               requests.memory: 2Gi
               requests.storage: "5Gi"
-              thin.storageclass.storage.k8s.io/persistentvolumeclaims: "0"
             min: {}
             max: {}
             ratio: 0
