@@ -174,11 +174,18 @@ kind-create-cluster: kind
 kind-delete-cluster: kind
 	$(KIND) delete cluster || echo "no existing kind cluster"
 
-.PHONY: setup-local-e2e
-setup-local-e2e: kind kustomize generate-e2e-cryptkeys
+.PHONY: load-image
+load-image:
 	$(CONTAINER_TOOL) build -t ${IMG} .
 	${KIND} load image-archive <(${CONTAINER_TOOL} save controller:latest)
 
+.PHONY: refresh-image
+refresh-image: load-image
+	${KUBECTL} delete -n paas-system pod -l control-plane=paas-controller-manager --timeout=120s
+	${KUBECTL} wait --for=condition=Available deployment/paas-controller-manager -n paas-system --timeout=120s
+
+.PHONY: setup-local-e2e
+setup-local-e2e: refresh-kind kustomize generate-e2e-cryptkeys manifests certmanager load-image
 	# Using server-side apply to support re-running and to avoid annotation size limits on CRDs
 	${KUSTOMIZE} build test/e2e/manifests/gitops-operator | ${KUBECTL} apply --server-side -f -
 	${KUSTOMIZE} build test/e2e/manifests/openshift | ${KUBECTL} apply -f -
@@ -187,15 +194,18 @@ setup-local-e2e: kind kustomize generate-e2e-cryptkeys
 	sleep 10
 	$(KUSTOMIZE) build test/e2e/manifests/paas-context | ${KUBECTL} apply -f -
 
-.PHONY: local-e2e
-local-e2e: refresh-kind setup-local-e2e manifests kustomize certmanager ## Run local e2e test (use CONTAINER_TOOL=podman when using podman over docker)
 ifeq ($(CONTAINER_TOOL),podman)
 	$(KUSTOMIZE) build test/e2e/manifests/local-e2e-podman | ${KUBECTL} apply -f -
 else
 	$(KUSTOMIZE) build manifests/default | ${KUBECTL} apply -f -
 	$(KUSTOMIZE) build test/e2e/manifests/cryptkeys | ${KUBECTL} apply -f -
 endif
-	${KUBECTL} wait --for=condition=Available deployment/paas-controller-manager -n paas-system --timeout=120s
+
+.PHONY: rerun-e2e
+rerun-e2e: manifests refresh-image local-e2e ## Rerun local e2e test (use CONTAINER_TOOL=podman when using podman over docker)
+
+.PHONY: local-e2e
+local-e2e: ## Run local e2e test (use CONTAINER_TOOL=podman when using podman over docker)
 	go test -v ./test/e2e
 
 ##@ Build
