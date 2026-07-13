@@ -100,12 +100,11 @@ func assertArgoCapCreated(ctx context.Context, t *testing.T, cfg *envconf.Config
 		"Quota selects ArgoCD namespace via selector set to `quota_label` configuration",
 	)
 	assert.Equal(t, corev1.ResourceList{
-		corev1.ResourceLimitsCPU:                                  resource.MustParse("5"),
-		corev1.ResourceRequestsCPU:                                resource.MustParse("1"),
-		corev1.ResourceLimitsMemory:                               resource.MustParse("4Gi"),
-		corev1.ResourceRequestsMemory:                             resource.MustParse("1Gi"),
-		corev1.ResourceRequestsStorage:                            resource.MustParse("0"),
-		"thin.storageclass.storage.k8s.io/persistentvolumeclaims": resource.MustParse("0"),
+		corev1.ResourceLimitsCPU:       resource.MustParse("5"),
+		corev1.ResourceRequestsCPU:     resource.MustParse("1"),
+		corev1.ResourceLimitsMemory:    resource.MustParse("4Gi"),
+		corev1.ResourceRequestsMemory:  resource.MustParse("1Gi"),
+		corev1.ResourceRequestsStorage: resource.MustParse("0"),
 	}, crq.Spec.Quota.Hard, "Quota conforms to defaults from Paas config")
 
 	return ctx

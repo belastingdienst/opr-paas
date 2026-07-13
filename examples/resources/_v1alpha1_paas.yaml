@@ -37,7 +37,6 @@ spec:
     requests.cpu: '10'
     requests.memory: 32Gi
     requests.storage: 1024Gi
-    thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
   capabilities:
     argocd:
       enabled: true
@@ -47,7 +46,6 @@ spec:
         requests.cpu: '1'
         requests.memory: 4Gi
         requests.storage: 20Gi
-        thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
       gitUrl: https://
     tekton:
       quota:
@@ -56,4 +54,3 @@ spec:
         requests.cpu: '1'
         requests.memory: 4Gi
         requests.storage: 20Gi
-        thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
