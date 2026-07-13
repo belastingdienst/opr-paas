@@ -290,14 +290,12 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					"requests.cpu",
 					"requests.memory",
 					"requests.storage",
-					"thin.storageclass.storage.k8s.io/persistentvolumeclaims",
 				}
 				validQuotas = map[corev1.ResourceName]resourcev1.Quantity{
 					"limits.memory":    resourcev1.MustParse("100M"),
 					"requests.cpu":     resourcev1.MustParse("1.1"),
 					"requests.memory":  resourcev1.MustParse("100M"),
 					"requests.storage": resourcev1.MustParse("10G"),
-					"thin.storageclass.storage.k8s.io/persistentvolumeclaims": resourcev1.MustParse("10G"),
 				}
 				validation    = fmt.Sprintf("(%s)", strings.Join(validResourceKeys, "|"))
 				invalidQuotas = map[corev1.ResourceName]resourcev1.Quantity{

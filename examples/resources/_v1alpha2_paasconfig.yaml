@@ -29,7 +29,6 @@ spec:
           requests.cpu: '1'
           requests.memory: 1Gi
           requests.storage: '0'
-          thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
         ratio: 0
     grafana:
       applicationset: grafanaas
@@ -41,7 +40,6 @@ spec:
           requests.cpu: 500m
           requests.memory: 512Mi
           requests.storage: 2Gi
-          thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
         ratio: 0
     sso:
       applicationset: ssoas
@@ -53,7 +51,6 @@ spec:
           requests.cpu: 100m
           requests.memory: 128Mi
           requests.storage: '0'
-          thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
         ratio: 0
     tekton:
       applicationset: tektonas
@@ -72,7 +69,6 @@ spec:
           requests.cpu: '1'
           requests.memory: 2Gi
           requests.storage: 100Gi
-          thin.storageclass.storage.k8s.io/persistentvolumeclaims: '0'
         max:
           requests.cpu: '10'
           requests.memory: 10Gi
