@@ -174,6 +174,7 @@ func validatePaasConfigSpec(
 		)...)
 	}
 
+	allErrs = append(allErrs, validateQuotaLabelField(spec, childPath)...)
 	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, k8sClient, spec.DecryptKeysSecret, childPath)...)
 	allErrs = append(allErrs, validateValidationFields(spec.Validations, childPath)...)
 	allErrs = append(allErrs, validateConfigCapabilityNames(spec, childPath)...)
@@ -188,6 +189,39 @@ func validatePaasConfigSpec(
 	}
 
 	return warn, allErrs
+}
+
+// Valid label keys
+// https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+// Labels are key/value pairs.
+// Valid label keys have two segments: an optional prefix and name, separated by a slash (/).
+// The name segment is required and must be 63 characters or less, beginning and ending with an alphanumeric character
+// ([a-z0-9A-Z]) with dashes (-), underscores (_), dots (.), and alphanumerics between.
+// The prefix is optional. If specified, the prefix must be a DNS subdomain: a series of DNS labels separated by dots
+// (.), not longer than 253 characters in total, followed by a slash (/).
+//
+// If the prefix is omitted, the label Key is presumed to be private to the user.
+// Automated system components (e.g. kube-scheduler, kube-controller-manager, kube-apiserver, kubectl,
+// or other third-party automation) which add labels to end-user objects must specify a prefix.
+//
+//revive:disable-next-line
+var labelKeyValidationRegex = regexp.MustCompile(`^(([a-z0-9]([-a-z0-9]*[a-z0-9])?\.)*[a-z0-9]([-a-z0-9]*[a-z0-9])?\/)?[a-zA-Z0-9]([-_./a-zA-Z0-9]{0,61}[a-zA-Z0-9])?$`)
+
+func validateQuotaLabelField(
+	spec v1alpha2.PaasConfigSpec,
+	rootPath *field.Path,
+) field.ErrorList {
+	var allErrs field.ErrorList
+	if spec.QuotaLabel != "" && !labelKeyValidationRegex.MatchString(spec.QuotaLabel) {
+		allErrs = append(allErrs, field.Invalid(
+			rootPath.Child("quota_label"),
+			spec.QuotaLabel,
+			fmt.Sprintf("quota label is invalid (`%s` does not comply to re: `%s`)", spec.QuotaLabel,
+				labelKeyValidationRegex.String()),
+		))
+	}
+
+	return allErrs
 }
 
 func validateConfigCapabilities(
