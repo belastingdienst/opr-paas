@@ -176,7 +176,8 @@ func validateCaps(
 	}
 
 	for name, capability := range paas.Spec.Capabilities {
-		templater := templating.NewTemplater(*paas, conf)
+		templater := templating.NewTemplater(*paas, conf,
+			map[string]any{"decryptPaasSecret": func(string) string { return "" }})
 		if capConfig, ok := conf.Spec.Capabilities[name]; !ok {
 			errs = append(errs, field.Invalid(
 				field.NewPath(pathSpec).Child("capabilities"),

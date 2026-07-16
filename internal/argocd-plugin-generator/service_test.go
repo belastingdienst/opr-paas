@@ -9,6 +9,7 @@ package argocd_plugin_generator
 import (
 	"context"
 
+	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/pkg/fields"
 	"github.com/belastingdienst/opr-paas/v5/pkg/quota"
@@ -28,14 +29,26 @@ const (
 	paasArgoGitPath     = "foo/"
 	paasArgoGitRevision = "main"
 	paasRequestor       = "paas-requestor"
+	paasSystemNs        = "paas-system"
 )
 
-var _ = Describe("Service", func() {
+var _ = Describe("Service", Ordered, func() {
 	var (
-		svc  *Service
-		conf v1alpha2.PaasConfig
-		ctx  context.Context
+		ctx     context.Context
+		svc     *Service
+		conf    v1alpha2.PaasConfig
+		mycrypt *crypt.Crypt
 	)
+
+	BeforeAll(func() {
+		ctx = context.Background()
+		c, pkey, cryptCreateErr := newGeneratedCrypt(paasWithArgo)
+		Expect(cryptCreateErr).NotTo(HaveOccurred())
+		mycrypt = c
+
+		createNamespace(ctx, k8sClient, paasSystemNs)
+		createPaasPrivateKeySecret(ctx, k8sClient, paasSystemNs, "keys", pkey)
+	})
 
 	BeforeEach(func() {
 		ctx = context.Background()
@@ -60,6 +73,9 @@ var _ = Describe("Service", func() {
 								// in yaml you need escaped slashes: '^[a-zA-Z0-9.\/]*$'
 								Validation: "^[a-zA-Z0-9./]*$",
 							},
+							"templated": {
+								Template: "{{ decryptPaasSecret .Paas.Spec.Secrets.secret }}",
+							},
 						},
 						QuotaSettings: v1alpha2.ConfigQuotaSettings{
 							DefQuota: map[corev1.ResourceName]resourcev1.Quantity{
@@ -69,8 +85,8 @@ var _ = Describe("Service", func() {
 					},
 				},
 				DecryptKeysSecret: v1alpha2.NamespacedName{
-					Name:      "name",
-					Namespace: "namespace",
+					Name:      "keys",
+					Namespace: paasSystemNs,
 				},
 				Templating: v1alpha2.ConfigTemplatingItems{
 					GenericCapabilityFields: v1alpha2.ConfigTemplatingItem{
@@ -81,20 +97,20 @@ var _ = Describe("Service", func() {
 				},
 			},
 		}
-		err := k8sClient.Create(ctx, &conf)
-		Expect(err).To(Not(HaveOccurred()))
+		confCreateErr := k8sClient.Create(ctx, &conf)
+		Expect(confCreateErr).To(Not(HaveOccurred()))
 
 		latest := &v1alpha2.PaasConfig{}
-		err = k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latest)
-		Expect(err).NotTo(HaveOccurred())
+		confCreateErr = k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latest)
+		Expect(confCreateErr).NotTo(HaveOccurred())
 
 		meta.SetStatusCondition(&latest.Status.Conditions, metav1.Condition{
 			Type:   v1alpha2.TypeActivePaasConfig,
 			Status: metav1.ConditionTrue, Reason: "Reconciling", ObservedGeneration: latest.Generation,
 			Message: "This config is the active config!",
 		})
-		err = k8sClient.Status().Update(ctx, latest)
-		Expect(err).NotTo(HaveOccurred())
+		confCreateErr = k8sClient.Status().Update(ctx, latest)
+		Expect(confCreateErr).NotTo(HaveOccurred())
 
 		svc = NewService(k8sClient)
 	})
@@ -111,7 +127,9 @@ var _ = Describe("Service", func() {
 	Context("Generate", func() {
 		It("returns templated capability elements from Paas CRs", func() {
 			By("Creating a Paas with a capability")
-
+			unencrypted := "some encrypted string"
+			encrypted, err := mycrypt.Encrypt([]byte(unencrypted))
+			Expect(err).NotTo(HaveOccurred())
 			paas := &v1alpha2.Paas{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: paasWithArgo,
@@ -127,6 +145,9 @@ var _ = Describe("Service", func() {
 								"git_revision": paasArgoGitRevision,
 							},
 						},
+					},
+					Secrets: map[string]string{
+						"secret": encrypted,
 					},
 				},
 			}
@@ -146,6 +167,7 @@ var _ = Describe("Service", func() {
 				"git_path":     paasArgoGitPath,
 				"git_revision": paasArgoGitRevision,
 				"git_url":      paasArgoGitURL,
+				"templated":    unencrypted,
 				"paas":         paasWithArgo,
 				"requestor":    paasRequestor,
 				"Service":      "paas",

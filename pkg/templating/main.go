@@ -2,6 +2,7 @@ package templating
 
 import (
 	"bytes"
+	"maps"
 	"text/template"
 
 	"github.com/go-sprout/sprout"
@@ -23,13 +24,24 @@ type PaasUnion interface {
 type Templater[P PaasUnion, C api.PaasConfig[S], S any] struct {
 	Paas   P
 	Config C
+	// This should not be an exported value
+	extraFuncs template.FuncMap
 }
 
 // NewTemplater returns an initialized Templater from a Paas and PaasConfig
-func NewTemplater[P PaasUnion, C api.PaasConfig[S], S any](paas P, config C) Templater[P, C, S] {
+func NewTemplater[P PaasUnion, C api.PaasConfig[S], S any](
+	paas P,
+	config C,
+	extraFuncsMap ...template.FuncMap,
+) Templater[P, C, S] {
+	extraFuncs := template.FuncMap{}
+	for _, fm := range extraFuncsMap {
+		maps.Copy(extraFuncs, fm)
+	}
 	return Templater[P, C, S]{
-		Paas:   paas,
-		Config: config,
+		Paas:       paas,
+		Config:     config,
+		extraFuncs: extraFuncs,
 	}
 }
 
@@ -55,7 +67,7 @@ func (t Templater[P, C, S]) Verify(name string, templatedText string) error {
 	if err != nil {
 		return err
 	}
-	_, err = template.New(name).Funcs(funcs).Parse(templatedText)
+	_, err = template.New(name).Funcs(funcs).Funcs(t.extraFuncs).Parse(templatedText)
 	return err
 }
 
@@ -66,7 +78,7 @@ func (t Templater[P, C, S]) TemplateToString(name string, templatedText string) 
 	if err != nil {
 		return "", err
 	}
-	tmpl, err := template.New(name).Funcs(funcs).Parse(templatedText)
+	tmpl, err := template.New(name).Funcs(funcs).Funcs(t.extraFuncs).Parse(templatedText)
 	if err != nil {
 		return "", err
 	}

@@ -467,7 +467,8 @@ func validateConfigCustomField(
 	}
 
 	if customfield.Template != "" {
-		err := templating.NewTemplater(v1alpha2.Paas{}, v1alpha2.PaasConfig{}).Verify(name, customfield.Template)
+		err := templating.NewTemplater(v1alpha2.Paas{}, v1alpha2.PaasConfig{},
+			map[string]any{"decryptPaasSecret": func(string) string { return "" }}).Verify(name, customfield.Template)
 		if err != nil {
 			allErrs = append(allErrs, field.Invalid(
 				childPath.Child("template"),
