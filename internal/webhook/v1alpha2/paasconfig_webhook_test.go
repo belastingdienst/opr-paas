@@ -79,6 +79,14 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 				Expect(warn, err).Error().NotTo(HaveOccurred())
 			})
 		})
+		Context("with invalid label definition", func() {
+			It("should raise an error", func() {
+				obj.Spec.QuotaLabel = "$"
+				_, err := validator.ValidateCreate(ctx, obj)
+				Expect(err).Error().To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring(`quota label is invalid`))
+			})
+		})
 		Context("with invalid Validation regular expressions", func() {
 			It("should raise an error", func() {
 				obj.Spec.Validations["paas"]["groupName"] = ".*)"
