@@ -83,6 +83,8 @@ spec:
 
                         When set in combination with `users`, the Group Sync Operator will overwrite the manually assigned users.
                         Therefore, this field is mutually exclusive with `group.users`.
+                      pattern: ^([a-zA-Z]+=[a-zA-Z0-9 _.-]+)(,\s*[a-zA-Z]+=[a-zA-Z0-9
+                        _.-]+)*$
                       type: string
                     roles:
                       description: List of roles, as defined in the `PaasConfig` which
