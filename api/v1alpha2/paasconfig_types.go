@@ -115,6 +115,9 @@ type PaasConfigSpec struct {
 	// With templating Administrators can define labels and generic custom fields to be applied on sub resources
 	// +kubebuilder:validation:Optional
 	Templating ConfigTemplatingItems `json:"templating,omitempty"`
+
+	// NamespaceSecrets should have a go-template that returns a map of key/value pairs for the data in the secret.
+	NamespaceSecrets string `json:"namespace_secrets"`
 }
 
 type ConfigRoleMappings map[string][]string
@@ -162,6 +165,10 @@ type ConfigCapability struct {
 
 	// Settings to allow specific configuration specific to a capability
 	CustomFields map[string]ConfigCustomField `json:"custom_fields,omitempty"`
+
+	// Secrets to be created for this capability. It should be a go-template that returns a map of key/value pairs for
+	// the data in the secret.
+	Secrets string `json:"secrets"`
 }
 
 // For each resource type go templating can be used to derive the labels to be set on the resource when created

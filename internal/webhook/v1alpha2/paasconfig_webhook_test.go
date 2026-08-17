@@ -33,6 +33,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 		scheme    *runtime.Scheme
 		cl        client.Client
 	)
+	const simpleTemplate = `{{ $s := dict }}{{ $_ := set $s "mysecret" .Paas.Spec.Capabilities.mycap.Secrets }}{{ $s }}`
 
 	BeforeEach(func() {
 		obj = &v1alpha2.PaasConfig{
@@ -286,6 +287,72 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 								keyName,
 							))
 						}
+					}
+				}
+			})
+		})
+		Context("having secret templates defined", func() {
+			It("should verify cap secret template to be valid", func() {
+				const (
+					capName    = "mycap"
+					secretName = "mysecret"
+					keyName    = "test"
+				)
+				tests := []struct {
+					template string
+					valid    bool
+				}{
+					{template: simpleTemplate, valid: true},
+					{template: "{{ .DoesNotExist }}", valid: true},
+					{template: "{{ .MissingBrace }", valid: false},
+					{template: "{{ range group in .Paas.Groups}}{{ .MissingEnd }}", valid: false},
+				}
+				for _, test := range tests {
+					fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
+					obj.Spec.Capabilities = v1alpha2.ConfigCapabilities{
+						capName: v1alpha2.ConfigCapability{
+							Secrets: test.template,
+						},
+					}
+					_, err := validator.ValidateCreate(ctx, obj)
+					if test.valid {
+						Expect(err).Error().NotTo(HaveOccurred())
+					} else {
+						Expect(err).Error().To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring(
+							`spec.capabilities[%s].secrets: Invalid value: "%s"`,
+							capName,
+							test.template,
+						))
+					}
+				}
+			})
+			It("should verify ns secret template to be valid", func() {
+				const (
+					secretName = "mysecret"
+					keyName    = "test"
+				)
+				tests := []struct {
+					template string
+					valid    bool
+				}{
+					{template: simpleTemplate, valid: true},
+					{template: "{{ .DoesNotExist }}", valid: true},
+					{template: "{{ .MissingBrace }", valid: false},
+					{template: "{{ range group in .Paas.Groups}}{{ .MissingEnd }}", valid: false},
+				}
+				for _, test := range tests {
+					fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
+					obj.Spec.NamespaceSecrets = test.template
+					_, err := validator.ValidateCreate(ctx, obj)
+					if test.valid {
+						Expect(err).Error().NotTo(HaveOccurred())
+					} else {
+						Expect(err).Error().To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring(
+							`spec.namespace_secrets: Invalid value: "%s"`,
+							test.template,
+						))
 					}
 				}
 			})

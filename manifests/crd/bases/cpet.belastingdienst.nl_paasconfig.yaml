@@ -129,8 +129,14 @@ spec:
                           minimum: 0
                           type: number
                       type: object
+                    secrets:
+                      description: |-
+                        Secrets to be created for this capability. It should be a go-template that returns a map of key/value pairs for
+                        the data in the secret.
+                      type: string
                   required:
                   - quotas
+                  - secrets
                   type: object
                 description: A map with zero or more ConfigCapability
                 type: object
@@ -203,6 +209,10 @@ spec:
                       The main reason for having this as a separate type is to add methods
                     type: object
                 type: object
+              namespace_secrets:
+                description: NamespaceSecrets should have a go-template that returns
+                  a map of key/value pairs for the data in the secret.
+                type: string
               quota_label:
                 default: clusterquotagroup
                 description: Label which is added to clusterquotas
@@ -264,6 +274,7 @@ spec:
                 type: object
             required:
             - decryptKeySecret
+            - namespace_secrets
             type: object
           status:
             properties:

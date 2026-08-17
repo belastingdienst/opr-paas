@@ -180,6 +180,7 @@ func validatePaasConfigSpec(
 	allErrs = append(allErrs, validateConfigCapabilityNames(spec, childPath)...)
 	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, quotaRE, childPath)...)
 	allErrs = append(allErrs, validateTemplatingFields(spec.Templating, childPath)...)
+	allErrs = append(allErrs, validateSecretTemplates(spec, childPath)...)
 
 	if len(allErrs) > 0 {
 		logger.Error().Strs(
@@ -497,6 +498,27 @@ func validateTemplatingFields(
 		allErrs = append(allErrs, validateTemplatingField(resourceType, childPath.Child(name))...)
 	}
 
+	return allErrs
+}
+
+func validateSecretTemplates(
+	spec v1alpha2.PaasConfigSpec,
+	rootPath *field.Path,
+) field.ErrorList {
+	var allErrs field.ErrorList
+	toCheck := map[*field.Path]string{rootPath.Child("namespace_secrets"): spec.NamespaceSecrets}
+	for capName, cap := range spec.Capabilities {
+		if cap.Secrets != "" {
+			toCheck[rootPath.Child("capabilities").Key(capName).Child("secrets")] = cap.Secrets
+		}
+	}
+	templater := templating.NewTemplater(v1alpha2.Paas{}, v1alpha2.PaasConfig{})
+	for childPath, template := range toCheck {
+		err := templater.Verify(childPath.String(), template)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(childPath, template, err.Error()))
+		}
+	}
 	return allErrs
 }
 

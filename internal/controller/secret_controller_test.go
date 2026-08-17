@@ -8,6 +8,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
@@ -47,13 +48,23 @@ var _ = Describe("testing hashdata", func() {
 
 var _ = Describe("secret controller", Ordered, func() {
 	const (
-		paasRequestor      = "paas-controller-test"
+		paasRequestor      = "secret-controller-requestor"
 		paasName           = "secret-controller-paas"
+		nsName             = "ns1"
+		pnsName            = "pns1"
 		capAppSetNamespace = "asns"
 		capAppSetName      = "argoas"
 		capName            = "argocd"
 		paasSystem         = "paasnssystem"
 		paasPkSecret       = "secret-pk-secret"
+		capSecretURL       = "paas-capability-git-repo"
+		pnsSecretURL       = "paasns-git-repo"
+		nsSecretURL        = "paas-namespace-git-repo"
+		decryptedValue     = "some encrypted string"
+		template           = ""
+		simpleTemplate     = `{{ $s := dict }}{{ $_ := set $s "scrt" .Paas.Spec.Capabilities.mycap.Secrets }}{{ $s }}`
+		argoTemplate       = `{{ $s := dict }}{{ $_ := set $s "scrt" .Paas.Spec.Capabilities.mycap.Secrets }}{{ $s }}`
+		tektonTemplate     = `{{ $s := dict }}{{ $_ := set $s "scrt" .Paas.Spec.Capabilities.mycap.Secrets }}{{ $s }}`
 	)
 	var (
 		paas            *v1alpha2.Paas
@@ -63,28 +74,29 @@ var _ = Describe("secret controller", Ordered, func() {
 		mycrypt         *crypt.Crypt
 		pns             *v1alpha2.PaasNS
 		encryptedString string
+		nsNamespace     = join(paasName, nsName)
+		pnsNamespace    = join(paasName, pnsName)
+		capNamespace    = join(paasName, capName)
 	)
 	ctx := context.Background()
 
 	BeforeAll(func() {
 		var err error
 
-		assureNamespace(ctx, paasName)
 		assureNamespace(ctx, paasSystem)
-		mycrypt, privateKey, err = newGeneratedCrypt(paasRequestor)
+		mycrypt, privateKey, err = newGeneratedCrypt(paasName)
 		Expect(err).NotTo(HaveOccurred())
 
 		createPaasPrivateKeySecret(ctx, paasSystem, paasPkSecret, privateKey)
 
-		encryptedString, err = mycrypt.Encrypt([]byte("some encrypted string"))
+		encryptedString, err = mycrypt.Encrypt([]byte(decryptedValue))
 		Expect(err).NotTo(HaveOccurred())
 
 		pns = &v1alpha2.PaasNS{
-			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: paasName},
+			ObjectMeta: metav1.ObjectMeta{Name: pnsName, Namespace: nsNamespace},
 			Spec: v1alpha2.PaasNSSpec{
-				Paas: paasName,
 				Secrets: map[string]string{
-					"paasns-git-repo": encryptedString,
+					pnsSecretURL: encryptedString,
 				},
 			},
 		}
@@ -98,14 +110,14 @@ var _ = Describe("secret controller", Ordered, func() {
 
 		paas = &v1alpha2.Paas{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: paasRequestor,
+				Name: paasName,
 			},
 			Spec: v1alpha2.PaasSpec{
 				Requestor: paasRequestor,
 				Capabilities: v1alpha2.PaasCapabilities{
 					capName: v1alpha2.PaasCapability{
 						Secrets: map[string]string{
-							"paas-capability-git-repo": encryptedString,
+							capSecretURL: encryptedString,
 						},
 					},
 				},
@@ -113,10 +125,10 @@ var _ = Describe("secret controller", Ordered, func() {
 					"cpu": resourcev1.MustParse("1"),
 				},
 				Namespaces: v1alpha2.PaasNamespaces{
-					paasName: v1alpha2.PaasNamespace{},
+					nsName: v1alpha2.PaasNamespace{},
 				},
 				Secrets: map[string]string{
-					"paas-namespace-git-repo": encryptedString,
+					nsSecretURL: encryptedString,
 				},
 			},
 		}
@@ -124,7 +136,7 @@ var _ = Describe("secret controller", Ordered, func() {
 		// Delete if exists to avoid "already exists" error
 		_ = k8sClient.Delete(ctx, &v1alpha2.Paas{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: paasRequestor,
+				Name: paasName,
 			},
 		})
 
@@ -146,6 +158,7 @@ var _ = Describe("secret controller", Ordered, func() {
 								corev1.ResourceLimitsCPU: resourcev1.MustParse("5"),
 							},
 						},
+						Secrets: simpleTemplate,
 					},
 				},
 				Debug: false,
@@ -164,60 +177,43 @@ var _ = Describe("secret controller", Ordered, func() {
 		ctx = context.WithValue(context.Background(), config.ContextKeyPaasConfig, myConfig)
 	})
 
-	When("reconciling a PaasNS with a SshSecrets value", func() {
+	When("reconciling a PaasNS with a Secrets value", func() {
 		It("should not return an error", func() {
-			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, pns.GetObjectMeta().GetNamespace(),
-				pns.Spec.Secrets)
+			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, pnsNamespace, pns.Spec.Secrets)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should create a secret with the decrypted data", func() {
-			secrets := &corev1.SecretList{}
-			err := k8sClient.List(ctx, secrets, client.InNamespace(paasName))
-			Expect(err).NotTo(HaveOccurred())
-
-			found := findSecretByURL(secrets.Items, "paasns-git-repo")
-			Expect(found).NotTo(BeNil())
-			Expect(found.Data["sshPrivateKey"]).To(Equal([]byte("some encrypted string")))
+			Expect(verifySecret(ctx, pnsNamespace, "scrt", map[string]string{capSecretURL: decryptedValue})).
+				NotTo(HaveOccurred())
 		})
 	})
 
-	When("reconciling a paas namespace with a SshSecrets value", func() {
+	When("reconciling a paas namespace with a Secrets value", func() {
 		It("should not return an error", func() {
-			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, paasName,
-				paas.Spec.Secrets)
+			err := reconciler.reconcileNamespaceSecrets(ctx, paas, nil, nsNamespace, paas.Spec.Secrets)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should create a secret with the decrypted data", func() {
-			secrets := &corev1.SecretList{}
-			err := k8sClient.List(ctx, secrets, client.InNamespace(paasName))
-			Expect(err).NotTo(HaveOccurred())
-
-			found := findSecretByURL(secrets.Items, "paas-namespace-git-repo")
-			Expect(found).NotTo(BeNil())
-			Expect(found.Data["sshPrivateKey"]).To(Equal([]byte("some encrypted string")))
+			Expect(verifySecret(ctx, nsNamespace, "scrt", map[string]string{capSecretURL: decryptedValue})).
+				NotTo(HaveOccurred())
 		})
 	})
 
-	When("reconciling a paas capability with a SSHSecret", func() {
+	When("reconciling a paas capability with a Secret", func() {
 		It("should not return an error", func() {
-			err := reconciler.reconcileNamespaceSecrets(ctx, paas, pns, paasName,
+			err := reconciler.reconcileNamespaceSecrets(ctx, paas, nil, capName,
 				paas.Spec.Capabilities[capName].Secrets)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should create a secret with the decrypted data", func() {
-			secrets := &corev1.SecretList{}
-			err := k8sClient.List(ctx, secrets, client.InNamespace(paasName))
-			Expect(err).NotTo(HaveOccurred())
-
-			found := findSecretByURL(secrets.Items, "paas-capability-git-repo")
-			Expect(found).NotTo(BeNil())
-			Expect(found.Data["sshPrivateKey"]).To(Equal([]byte("some encrypted string")))
+			Expect(verifySecret(ctx, capNamespace, "scrt", map[string]string{capSecretURL: decryptedValue})).
+				NotTo(HaveOccurred())
 		})
 	})
 
@@ -241,20 +237,52 @@ var _ = Describe("secret controller", Ordered, func() {
 		})
 
 		It("should have removed this secret", func() {
-			secrets := &corev1.SecretList{}
-			err := k8sClient.List(ctx, secrets, client.InNamespace(paasName))
-			Expect(err).NotTo(HaveOccurred())
-
-			found := findSecretByURL(secrets.Items, "paas-capability-git-repo")
-			Expect(found).To(BeNil())
+			Expect(
+				verifySecret(ctx, pns.GetNamespace(), "scrt", map[string]string{capSecretURL: decryptedValue}).
+					Error()).
+				To(HavePrefix("could not find secret"))
+		})
+	})
+	When("reconciling for different caps", func() {
+		var tests = []struct {
+			template string
+			secrets  map[string]map[string]string
+		}{
+			{template: simpleTemplate, secrets: map[string]map[string]string{"": {"type": "Z2l0"}}},
+			{template: argoTemplate, secrets: map[string]map[string]string{"": {"type": "Z2l0"}}},
+			{template: tektonTemplate, secrets: map[string]map[string]string{"": {"type": "Z2l0"}}},
+		}
+		It("should be able to create different types of cap secrets", func() {
+			for _, test := range tests {
+				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
+				for secretName, secretData := range test.secrets {
+					Expect(verifySecret(ctx, pns.GetNamespace(), secretName, secretData)).NotTo(HaveOccurred())
+				}
+			}
+		})
+		It("should be able to create different types of ns secrets", func() {
+			for _, test := range tests {
+				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
+				for secretName, secretData := range test.secrets {
+					Expect(verifySecret(ctx, pns.GetNamespace(), secretName, secretData)).NotTo(HaveOccurred())
+				}
+			}
 		})
 	})
 })
 
-func findSecretByURL(secrets []corev1.Secret, url string) *corev1.Secret {
-	for _, s := range secrets {
-		if string(s.Data["url"]) == url {
-			return &s
+func verifySecret(ctx context.Context, ns string, name string, data map[string]string) error {
+	secret := &corev1.Secret{}
+	if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: ns, Name: name}, secret); err != nil {
+		return err
+	}
+	for key, checkValue := range data {
+		returnedValue, exists := secret.Data[key]
+		if !exists {
+			return fmt.Errorf("Cannot find %s in secret data %v", key, secret)
+		}
+		if checkValue != string(returnedValue) {
+			return fmt.Errorf("%s is not %s for key %s in secret %s", checkValue, string(returnedValue), key, secret)
 		}
 	}
 	return nil
