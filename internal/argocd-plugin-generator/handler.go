@@ -46,6 +46,10 @@ type Handler struct {
 // The service parameter provides the generator's business logic,
 // and bearerToken is used to authenticate incoming HTTP requests.
 func NewHandler(service GeneratorService, bearerToken string) *Handler {
+	if bearerToken == "" {
+		_, logger := logging.GetLogComponent(context.Background(), logging.ApiComponent)
+		logger.Fatal().Msg("Cannot use plugin generator without token")
+	}
 	return &Handler{
 		service:     service,
 		bearerToken: bearerToken,

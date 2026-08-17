@@ -143,6 +143,7 @@ type PaasGroup struct {
 	// When set in combination with `users`, the Group Sync Operator will overwrite the manually assigned users.
 	// Therefore, this field is mutually exclusive with `group.users`.
 	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:Pattern=`^([a-zA-Z]+=[a-zA-Z0-9 _.-]+)(,\s*[a-zA-Z]+=[a-zA-Z0-9 _.-]+)*$`
 	Query string `json:"query,omitempty"`
 	// A list of LDAP users which are added to the defined group.
 	//
