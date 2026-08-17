@@ -191,6 +191,7 @@ func validateCaps(
 				templater,
 			)...)
 			errs = append(errs, validateSecrets(
+				ctx,
 				capability.Secrets,
 				rsa,
 				field.NewPath(pathSpec).Child("capabilities").Key(name).Child("secrets"),
@@ -427,7 +428,7 @@ func validatePaasSecrets(
 		return nil, err
 	}
 
-	return validateSecrets(paas.Spec.Secrets, rsa, field.NewPath(pathSpec).Child("secrets")), nil
+	return validateSecrets(ctx, paas.Spec.Secrets, rsa, field.NewPath(pathSpec).Child("secrets")), nil
 }
 
 // validateCustomFields ensures that for a given capability in the Paas:
@@ -576,17 +577,24 @@ func getCryptInstance(
 
 // validateSecrets validates a map of Secrets based on a provided rsa
 func validateSecrets(
+	ctx context.Context,
 	secrets map[string]string,
 	rsa *crypt.Crypt,
 	basePath *field.Path,
 ) []*field.Error {
 	var errs []*field.Error
+	_, logger := logging.GetLogComponent(ctx, logging.WebhookPaasComponentV2)
 	for name, secret := range secrets {
 		if _, err := rsa.Decrypt(secret); err != nil {
+			logger.Debug().
+				AnErr("error", err).
+				Str("secret", secret).
+				Str("path", basePath.Key(name).String()).
+				Msg("cannot be decrypted")
 			errs = append(errs, field.Invalid(
 				basePath.Key(name),
 				secret,
-				fmt.Sprintf("cannot be decrypted: %s", err),
+				"cannot be decrypted",
 			))
 		}
 	}

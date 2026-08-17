@@ -327,28 +327,24 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			causes := serr.Status().Details.Causes
 			Expect(causes).To(ContainElements(
 				metav1.StatusCause{
-					Type: metav1.CauseTypeFieldValueInvalid,
-					Message: "Invalid value: \"foo bar baz\": cannot be decrypted: " +
-						"illegal base64 data at input byte 8",
-					Field: "spec.capabilities[foo].secrets[invalid base64]",
+					Type:    metav1.CauseTypeFieldValueInvalid,
+					Message: `Invalid value: "foo bar baz": cannot be decrypted`,
+					Field:   "spec.capabilities[foo].secrets[invalid base64]",
 				},
 				metav1.StatusCause{
-					Type: metav1.CauseTypeFieldValueInvalid,
-					Message: "Invalid value: \"Zm9vIGJhciBiYXo=\": cannot be decrypted: " +
-						"unable to decrypt data with any of the private keys",
-					Field: "spec.capabilities[foo].secrets[invalid secret]",
+					Type:    metav1.CauseTypeFieldValueInvalid,
+					Message: `Invalid value: "Zm9vIGJhciBiYXo=": cannot be decrypted`,
+					Field:   "spec.capabilities[foo].secrets[invalid secret]",
 				},
 				metav1.StatusCause{
-					Type: metav1.CauseTypeFieldValueInvalid,
-					Message: "Invalid value: \"foo bar baz\": cannot be decrypted: " +
-						"illegal base64 data at input byte 8",
-					Field: "spec.secrets[invalid base64]",
+					Type:    metav1.CauseTypeFieldValueInvalid,
+					Message: `Invalid value: "foo bar baz": cannot be decrypted`,
+					Field:   "spec.secrets[invalid base64]",
 				},
 				metav1.StatusCause{
-					Type: metav1.CauseTypeFieldValueInvalid,
-					Message: "Invalid value: \"Zm9vIGJhciBiYXo=\": cannot be decrypted: " +
-						"unable to decrypt data with any of the private keys",
-					Field: "spec.secrets[invalid secret]",
+					Type:    metav1.CauseTypeFieldValueInvalid,
+					Message: `Invalid value: "Zm9vIGJhciBiYXo=": cannot be decrypted`,
+					Field:   "spec.secrets[invalid secret]",
 				},
 			))
 			Expect(causes).To(HaveLen(4))
