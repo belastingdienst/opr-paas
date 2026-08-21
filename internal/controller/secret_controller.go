@@ -11,6 +11,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
@@ -24,6 +25,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
+
+// Helper to merge secrets which returns a new map[string]string
+func mergeSecrets(base, override map[string]string) map[string]string {
+	merged := make(map[string]string, len(base)+len(override))
+	maps.Copy(merged, base)
+	maps.Copy(merged, override)
+	return merged
+}
 
 // ensureSecret ensures Secret presence in given secret.
 func (r *PaasReconciler) ensureSecret(

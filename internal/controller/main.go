@@ -28,11 +28,3 @@ func intersect(l1 []string, l2 []string) (li []string) {
 	}
 	return li
 }
-
-// Helper to merge secrets which returns a new map[string]string
-func mergeSecrets(base, override map[string]string) map[string]string {
-	merged := make(map[string]string, len(base)+len(override))
-	maps.Copy(merged, base)
-	maps.Copy(merged, override)
-	return merged
-}

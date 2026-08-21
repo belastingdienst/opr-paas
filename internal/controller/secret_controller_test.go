@@ -9,6 +9,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
@@ -26,6 +27,81 @@ import (
 var _ = Describe("testing hashdata", func() {
 	When("hashing a string", func() {
 		It("should not return an error", func() {
+			for _, test := range []struct {
+				input    string
+				expected string
+			}{
+				{
+					input: "My Wonderful Test String",
+					// revive:disable-next-line
+					expected: "703fe1668c39ec0fdf3c9916d526ba4461fe10fd36bac1e2a1b708eb8a593e418eb3f92dbbd2a6e3776516b0e03743a45cfd69de6a3280afaa90f43fa1918f74",
+				},
+				{
+					input: "Another Wonderful Test String",
+					// revive:disable-next-line
+					expected: "d3bfd910013886fe68ffd5c5d854e7cb2a8ce2a15a48ade41505b52ce7898f63d8e6b9c84eacdec33c45f7a2812d93732b524be91286de328bbd6b72d5aee9de",
+				},
+			} {
+				Expect(hashData(test.input)).To(Equal(test.expected))
+			}
+		})
+	})
+})
+
+var _ = Describe("testing mergeSecrets", func() {
+	When("merging secrets", func() {
+		It("should not return an error", func() {
+			for _, tt := range []struct {
+				name     string
+				base     map[string]string
+				override map[string]string
+				want     map[string]string
+			}{
+				{
+					name:     "empty base and override",
+					base:     map[string]string{},
+					override: map[string]string{},
+					want:     map[string]string{},
+				},
+				{
+					name:     "base only",
+					base:     map[string]string{"a1": "1"},
+					override: map[string]string{},
+					want:     map[string]string{"a1": "1"},
+				},
+				{
+					name:     "override only",
+					base:     map[string]string{},
+					override: map[string]string{"b": "b2"},
+					want:     map[string]string{"b": "b2"},
+				},
+				{
+					name:     "override replaces base",
+					base:     map[string]string{"c": "c1"},
+					override: map[string]string{"c": "c2"},
+					want:     map[string]string{"c": "c2"},
+				},
+				{
+					name:     "override adds to base",
+					base:     map[string]string{"a": "1"},
+					override: map[string]string{"b": "2"},
+					want:     map[string]string{"a": "1", "b": "2"},
+				},
+				{
+					name:     "multiple overrides",
+					base:     map[string]string{"f": "1", "c": "3"},
+					override: map[string]string{"f": "10", "g": "20"},
+					want:     map[string]string{"f": "10", "g": "20", "c": "3"},
+				},
+			} {
+				// copy maps to avoid mutating original test cases
+				baseCopy := maps.Clone(tt.base)
+				overrideCopy := maps.Clone(tt.override)
+
+				got := mergeSecrets(baseCopy, overrideCopy)
+				Expect(got).To(Equal(tt.want))
+			}
+
 			for _, test := range []struct {
 				input    string
 				expected string
