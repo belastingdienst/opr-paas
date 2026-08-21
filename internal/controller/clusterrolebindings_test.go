@@ -6,6 +6,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	rbac "k8s.io/api/rbac/v1"
@@ -125,7 +126,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			})
 			It("should create clusterRoleBindings for default permissions", func() {
 				for _, crbRole := range defaultCapPerms {
-					crbName := join("paas", crbRole)
+					crbName := utils.Join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
 					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
 					Expect(err).NotTo(HaveOccurred())
@@ -139,7 +140,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 
 			It("should create clusterRoleBindings for extra permissions", func() {
 				for _, crbRole := range extraCapPerms {
-					crbName := join("paas", crbRole)
+					crbName := utils.Join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
 					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
 					Expect(err).NotTo(HaveOccurred())
@@ -161,7 +162,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			})
 			It("should not create clusterRoleBindings for extra permissions", func() {
 				for _, crbRole := range extraCapPerms {
-					crbName := join("paas", crbRole)
+					crbName := utils.Join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
 					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
 					Expect(err).To(HaveOccurred())
@@ -178,7 +179,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			})
 			It("CRB's for capability should be removed", func() {
 				for _, crbRole := range append(defaultCapPerms, extraCapPerms...) {
-					crbName := join("paas", crbRole)
+					crbName := utils.Join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
 					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
 					Expect(err).To(HaveOccurred())
@@ -197,7 +198,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			})
 			It("CRB's for capability should not be removed", func() {
 				for _, crbRole := range append(defaultCapPerms, extraCapPerms...) {
-					crbName := join("paas", crbRole)
+					crbName := utils.Join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
 					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
 					Expect(err).NotTo(HaveOccurred())
@@ -222,7 +223,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			})
 			It("CRB's for capability should not be removed", func() {
 				for _, crbRole := range append(defaultCapPerms, extraCapPerms...) {
-					crbName := join("paas", crbRole)
+					crbName := utils.Join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
 					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
 					Expect(err).NotTo(HaveOccurred())
@@ -243,7 +244,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			})
 			It("CRB's for capability should be removed", func() {
 				for _, crbRole := range append(defaultCapPerms, extraCapPerms...) {
-					crbName := join("paas", crbRole)
+					crbName := utils.Join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
 					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
 					Expect(err).To(HaveOccurred())
@@ -270,7 +271,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			It("should remove related CRBs", func() {
 				// verify default permissions were created
 				for _, crbRole := range defaultCapPerms {
-					crbName := join("paas", crbRole)
+					crbName := utils.Join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
 					err := reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
 					Expect(err).NotTo(HaveOccurred())
@@ -294,7 +295,7 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 
 				// check whether default permissions of this capability were deleted
 				for _, crbRole := range defaultCapPerms {
-					crbName := join("paas", crbRole)
+					crbName := utils.Join("paas", crbRole)
 					var crb rbac.ClusterRoleBinding
 					err = reconciler.Get(ctx, types.NamespacedName{Name: crbName}, &crb)
 					Expect(err).To(HaveOccurred())

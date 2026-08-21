@@ -13,6 +13,7 @@ import (
 	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	paasquota "github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -74,9 +75,9 @@ var _ = Describe("secret controller", Ordered, func() {
 		mycrypt         *crypt.Crypt
 		pns             *v1alpha2.PaasNS
 		encryptedString string
-		nsNamespace     = join(paasName, nsName)
-		pnsNamespace    = join(paasName, pnsName)
-		capNamespace    = join(paasName, capName)
+		nsNamespace     = utils.Join(paasName, nsName)
+		pnsNamespace    = utils.Join(paasName, pnsName)
+		capNamespace    = utils.Join(paasName, capName)
 	)
 	ctx := context.Background()
 

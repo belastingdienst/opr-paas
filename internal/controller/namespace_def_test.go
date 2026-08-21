@@ -5,6 +5,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	"github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -115,14 +116,14 @@ var _ = Describe("NamespaceDef", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should return nsdefs for enabled capabilities", func() {
-				Expect(nsDefs).To(HaveKey(join(paasName, enabledCapName)))
+				Expect(nsDefs).To(HaveKey(utils.Join(paasName, enabledCapName)))
 			})
 			It("should not return nsdefs for external capabilities", func() {
-				Expect(nsDefs).NotTo(HaveKey(join(paasName, externalCapName)))
+				Expect(nsDefs).NotTo(HaveKey(utils.Join(paasName, externalCapName)))
 			})
 			It("should not return nsdefs for disabled capabilities", func() {
-				Expect(nsDefs).NotTo(HaveKey(join(paasName, disabledCapName1)))
-				Expect(nsDefs).NotTo(HaveKey(join(paasName, disabledCapName2)))
+				Expect(nsDefs).NotTo(HaveKey(utils.Join(paasName, disabledCapName1)))
+				Expect(nsDefs).NotTo(HaveKey(utils.Join(paasName, disabledCapName2)))
 			})
 		})
 		Context("with namespaces in the namespace block", func() {
@@ -145,17 +146,17 @@ var _ = Describe("NamespaceDef", func() {
 					namespace string
 					groups    []string
 				}{
-					ns1:              {namespace: join(paasName, ns1)},
-					enabledCapName:   {namespace: join(paasName, enabledCapName)},
-					disabledCapName1: {namespace: join(paasName, disabledCapName1)},
-					disabledCapName2: {namespace: join(paasName, disabledCapName1)},
-					"recursive":      {namespace: join(paasName, "mypns", ns1)},
+					ns1:              {namespace: utils.Join(paasName, ns1)},
+					enabledCapName:   {namespace: utils.Join(paasName, enabledCapName)},
+					disabledCapName1: {namespace: utils.Join(paasName, disabledCapName1)},
+					disabledCapName2: {namespace: utils.Join(paasName, disabledCapName1)},
+					"recursive":      {namespace: utils.Join(paasName, "mypns", ns1)},
 				}
 				for pnsName, pnsDef := range myPnss {
 					assureNamespaceWithPaasReference(ctx, pnsDef.namespace, paasName)
 					pns := v1alpha2.PaasNS{
 						ObjectMeta: metav1.ObjectMeta{
-							Name:      join("mypns", pnsName),
+							Name:      utils.Join("mypns", pnsName),
 							Namespace: pnsDef.namespace,
 						},
 						Spec: v1alpha2.PaasNSSpec{
@@ -165,7 +166,7 @@ var _ = Describe("NamespaceDef", func() {
 					}
 					err := reconciler.Create(ctx, &pns)
 					Expect(err).NotTo(HaveOccurred())
-					validatePaasNSExists(ctx, pnsDef.namespace, join("mypns", pnsName))
+					validatePaasNSExists(ctx, pnsDef.namespace, utils.Join("mypns", pnsName))
 				}
 			})
 			It("should succeed", func() {
@@ -174,17 +175,17 @@ var _ = Describe("NamespaceDef", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should return a nsdef for every paasns in a namespace block ns", func() {
-				Expect(nsDefs).To(HaveKey(join(paasName, "mypns", ns1)))
+				Expect(nsDefs).To(HaveKey(utils.Join(paasName, "mypns", ns1)))
 			})
 			It("should return a nsdef for every paasns in an enabled cap ns", func() {
-				Expect(nsDefs).To(HaveKey(join(paasName, "mypns", enabledCapName)))
+				Expect(nsDefs).To(HaveKey(utils.Join(paasName, "mypns", enabledCapName)))
 			})
 			It("should not return a nsdef for anyy paasns in a disabled cap ns", func() {
-				Expect(nsDefs).NotTo(HaveKey(join(paasName, "mypns", disabledCapName1)))
-				Expect(nsDefs).NotTo(HaveKey(join(paasName, "mypns", disabledCapName2)))
+				Expect(nsDefs).NotTo(HaveKey(utils.Join(paasName, "mypns", disabledCapName1)))
+				Expect(nsDefs).NotTo(HaveKey(utils.Join(paasName, "mypns", disabledCapName2)))
 			})
 			It("should return a nsdef for every nested paasns object", func() {
-				Expect(nsDefs).To(HaveKey(join(paasName, "mypns", "recursive")))
+				Expect(nsDefs).To(HaveKey(utils.Join(paasName, "mypns", "recursive")))
 			})
 		})
 		Context("with a paas with groups", func() {
@@ -195,8 +196,8 @@ var _ = Describe("NamespaceDef", func() {
 					namespace string
 					groups    []string
 				}{
-					"nongroups": {namespace: join(paasName, ns1)},
-					"groups":    {namespace: join(paasName, ns1), groups: paasNsGroups},
+					"nongroups": {namespace: utils.Join(paasName, ns1)},
+					"groups":    {namespace: utils.Join(paasName, ns1), groups: paasNsGroups},
 				}
 				for pnsName, pnsDef := range myPnss {
 					assureNamespaceWithPaasReference(ctx, pnsDef.namespace, paasName)
@@ -212,7 +213,7 @@ var _ = Describe("NamespaceDef", func() {
 					}
 					err := reconciler.Create(ctx, &pns)
 					Expect(err).NotTo(HaveOccurred())
-					validatePaasNSExists(ctx, join(paasName, ns1), pnsName)
+					validatePaasNSExists(ctx, utils.Join(paasName, ns1), pnsName)
 				}
 			})
 			It("should succeed", func() {
@@ -221,14 +222,14 @@ var _ = Describe("NamespaceDef", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should return a nsdef with proper group permissions for ldap queries", func() {
-				nsName := join(paasName, "nongroups")
+				nsName := utils.Join(paasName, "nongroups")
 				Expect(nsDefs).To(HaveKey(nsName))
 				withoutGroups := nsDefs[nsName].groups
 				Expect(withoutGroups).To(ContainElement(group1))
-				Expect(withoutGroups).NotTo(ContainElement(join(paasName, group1)))
+				Expect(withoutGroups).NotTo(ContainElement(utils.Join(paasName, group1)))
 			})
 			It("should return a nsdef with proper group permissions for non-ldap queries", func() {
-				nsName := join(paasName, "nongroups")
+				nsName := utils.Join(paasName, "nongroups")
 				Expect(nsDefs).To(HaveKey(nsName))
 				withoutGroups := nsDefs[nsName].groups
 				Expect(withoutGroups).To(ContainElement(group2))
@@ -236,13 +237,13 @@ var _ = Describe("NamespaceDef", func() {
 				Expect(withoutGroups).To(ContainElement(group3))
 			})
 			It("should have proper group config if paasns has group config set", func() {
-				nsName := join(paasName, "groups")
+				nsName := utils.Join(paasName, "groups")
 				Expect(nsDefs).To(HaveKey(nsName))
 				withGroups := nsDefs[nsName].groups
 				Expect(withGroups).To(ContainElement(group1))
-				Expect(withGroups).NotTo(ContainElement(join(paasName, group1)))
+				Expect(withGroups).NotTo(ContainElement(utils.Join(paasName, group1)))
 				Expect(withGroups).To(ContainElement(group2))
-				Expect(withGroups).NotTo(ContainElement(join(paasName, group2)))
+				Expect(withGroups).NotTo(ContainElement(utils.Join(paasName, group2)))
 			})
 		})
 		Context("with secrets defined in paas and paasns", func() {
@@ -252,7 +253,7 @@ var _ = Describe("NamespaceDef", func() {
 
 			BeforeEach(func() {
 				// Create a PaasNS with its own secrets
-				nsName := join(paasName, ns1)
+				nsName := utils.Join(paasName, ns1)
 				assureNamespaceWithPaasReference(ctx, nsName, paasName)
 				pns = v1alpha2.PaasNS{
 					ObjectMeta: metav1.ObjectMeta{
@@ -280,11 +281,11 @@ var _ = Describe("NamespaceDef", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should include default secrets in paas namespace", func() {
-				ns := nsDefs[join(paasName, ns1)]
+				ns := nsDefs[utils.Join(paasName, ns1)]
 				Expect(ns.secrets).To(HaveKeyWithValue("default-secret", "default-value"))
 			})
 			It("should include paasns secrets in paasns namespace def", func() {
-				ns := nsDefs[join(paasName, paasNsName)]
+				ns := nsDefs[utils.Join(paasName, paasNsName)]
 				Expect(ns.secrets).To(HaveKeyWithValue("pns-secret", "pns-value"))
 				Expect(ns.secrets).To(HaveKeyWithValue("default-secret", "overridden-value"))
 			})

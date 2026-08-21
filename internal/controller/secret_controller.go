@@ -15,6 +15,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -123,7 +124,7 @@ func (r *PaasReconciler) backendSecrets(
 	for url, encryptedSecretData := range encryptedSecrets {
 		namespacedName := types.NamespacedName{
 			Namespace: namespace,
-			Name:      join("paas-ssh", strings.ToLower(hashData(url)[:8])),
+			Name:      utils.Join("paas-ssh", strings.ToLower(hashData(url)[:8])),
 		}
 		var secret *corev1.Secret
 		secret, err = r.backendSecret(ctx, paas, paasns, namespacedName, url)

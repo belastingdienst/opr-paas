@@ -6,18 +6,9 @@ See LICENSE.md for details.
 
 package controller
 
-import (
-	"maps"
-	"strings"
-)
-
 const (
 	paasKey = "paas"
 )
-
-func join(argv ...string) string {
-	return strings.Join(argv, "-")
-}
 
 // intersect finds the intersection of 2 lists of strings
 func intersect(l1 []string, l2 []string) (li []string) {

@@ -16,6 +16,7 @@ import (
 	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	paasquota "github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -535,7 +536,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		ns2SecretEncryptedValue  string
 		ns2SecretName            = "my-ns2-secret"
 		ns2SecretHashedName      = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(ns2SecretName)[:8]))
-		userGroupName            = join(paasName, paasGroupName)
+		userGroupName            = utils.Join(paasName, paasGroupName)
 		clusterRolebindings      = map[string][]string{
 			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR},
 		}
@@ -651,10 +652,10 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 	// create Paas
 	When("creating a Paas and PaasNS", func() {
 		namespaces := []string{
-			join(paasName, ns1Name),
-			join(paasName, ns2Name),
-			join(paasName, capName),
-			join(paasName, paasNSName),
+			utils.Join(paasName, ns1Name),
+			utils.Join(paasName, ns2Name),
+			utils.Join(paasName, capName),
+			utils.Join(paasName, paasNSName),
 		}
 		It("should reconcile successfully", func() {
 			assurePaas(ctx, *paas)
@@ -662,7 +663,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			assurePaasNS(ctx,
 				v1alpha2.PaasNS{
-					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, ns1Name)},
+					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: utils.Join(paasName, ns1Name)},
 					Spec: v1alpha2.PaasNSSpec{
 						Paas: paasName,
 					},
@@ -701,7 +702,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			for crbSAName, crbRoleNames := range clusterRolebindings {
 				for _, crbRoleName := range crbRoleNames {
 					var crb rbac.ClusterRoleBinding
-					err := reconciler.Get(ctx, types.NamespacedName{Name: join("paas", crbRoleName)}, &crb)
+					err := reconciler.Get(ctx, types.NamespacedName{Name: utils.Join("paas", crbRoleName)}, &crb)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(crb.Subjects).To(ContainElement(
 						rbac.Subject{
@@ -716,17 +717,17 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		})
 		It("should have created paas rolebindings", func() {
 			expectedRolebindings := map[string][]string{
-				join(paasName, ns1Name):    {techRoleName1},
-				join(paasName, ns2Name):    {techRoleName1, techRoleName2},
-				join(paasName, capName):    {techRoleName1, techRoleName2},
-				join(paasName, paasNSName): {techRoleName1, techRoleName2},
+				utils.Join(paasName, ns1Name):    {techRoleName1},
+				utils.Join(paasName, ns2Name):    {techRoleName1, techRoleName2},
+				utils.Join(paasName, capName):    {techRoleName1, techRoleName2},
+				utils.Join(paasName, paasNSName): {techRoleName1, techRoleName2},
 			}
 			for nsName, rolebindings := range expectedRolebindings {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
 				for _, rbName := range rolebindings {
 					var rb rbac.RoleBinding
 					err := reconciler.Get(ctx,
-						types.NamespacedName{Namespace: nsName, Name: join("paas", rbName)}, &rb)
+						types.NamespacedName{Namespace: nsName, Name: utils.Join("paas", rbName)}, &rb)
 					Expect(err).ToNot(HaveOccurred())
 				}
 			}
@@ -741,7 +742,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			err = reconciler.Get(
 				ctx,
 				types.NamespacedName{
-					Namespace: join(paasName, ns1Name),
+					Namespace: utils.Join(paasName, ns1Name),
 					Name:      ns1SecretHashedName,
 				},
 				&secret,
@@ -752,7 +753,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			err = reconciler.Get(
 				ctx,
 				types.NamespacedName{
-					Namespace: join(paasName, ns2Name),
+					Namespace: utils.Join(paasName, ns2Name),
 					Name:      ns2SecretHashedName,
 				},
 				&secret,
@@ -773,7 +774,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			assurePaasNS(ctx,
 				v1alpha2.PaasNS{
-					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, ns1Name)},
+					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: utils.Join(paasName, ns1Name)},
 					Spec: v1alpha2.PaasNSSpec{
 						Paas: paasName,
 					},
@@ -813,7 +814,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + paasGroupName + "\" not found"))
 		})
 		It("should successfully finalize removed namespace1", func() {
-			deletedNamespaces := []string{join(paasName, ns1Name), join(paasName, capName), join(paasName, paasNSName)}
+			deletedNamespaces := []string{utils.Join(paasName, ns1Name), utils.Join(paasName, capName), utils.Join(paasName, paasNSName)}
 			for _, nsName := range deletedNamespaces {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
 				var ns corev1.Namespace
@@ -827,7 +828,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			err := reconciler.Get(
 				ctx,
 				types.NamespacedName{
-					Namespace: join(paasName, ns2Name),
+					Namespace: utils.Join(paasName, ns2Name),
 					Name:      ns2SecretHashedName,
 				},
 				&secret,
@@ -838,7 +839,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			for _, crbRoleNames := range clusterRolebindings {
 				for _, crbRoleName := range crbRoleNames {
 					var crb rbac.ClusterRoleBinding
-					err := reconciler.Get(ctx, types.NamespacedName{Name: join("paas", crbRoleName)}, &crb)
+					err := reconciler.Get(ctx, types.NamespacedName{Name: utils.Join("paas", crbRoleName)}, &crb)
 					Expect(err).To(HaveOccurred())
 				}
 			}
@@ -867,7 +868,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			for _, crbRoleNames := range clusterRolebindings {
 				for _, crbRoleName := range crbRoleNames {
 					var crb rbac.ClusterRoleBinding
-					err := reconciler.Get(ctx, types.NamespacedName{Name: join("paas", crbRoleName)}, &crb)
+					err := reconciler.Get(ctx, types.NamespacedName{Name: utils.Join("paas", crbRoleName)}, &crb)
 					Expect(err).To(HaveOccurred())
 				}
 			}

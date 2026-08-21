@@ -7,6 +7,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -108,7 +109,7 @@ func (r *PaasReconciler) nsDefsFromPaasNamespaces(
 ) namespaceDefs {
 	result := namespaceDefs{}
 	for namespace, nsConfig := range paas.Spec.Namespaces {
-		fullNsName := join(paas.Name, namespace)
+		fullNsName := utils.Join(paas.Name, namespace)
 		secrets := map[string]string{}
 		maps.Copy(secrets, paas.Spec.Secrets)
 		maps.Copy(secrets, nsConfig.Secrets)
@@ -162,7 +163,7 @@ func (r *PaasReconciler) paasCapabilityNss(
 			continue
 		}
 
-		capNS := join(paas.Name, capName)
+		capNS := utils.Join(paas.Name, capName)
 		quota := capNS
 		if capConfig.QuotaSettings.Clusterwide {
 			quota = clusterWideQuotaName(capName)
