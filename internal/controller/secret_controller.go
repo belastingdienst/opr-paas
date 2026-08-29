@@ -8,15 +8,12 @@ package controller
 
 import (
 	"context"
-	"crypto/sha512"
-	"encoding/hex"
 	"fmt"
-	"maps"
-	"strings"
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v5/internal/config"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
-	"github.com/belastingdienst/opr-paas/v5/internal/utils"
+	"github.com/belastingdienst/opr-paas/v5/pkg/templating"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -26,13 +23,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-// Helper to merge secrets which returns a new map[string]string
-func mergeSecrets(base, override map[string]string) map[string]string {
-	merged := make(map[string]string, len(base)+len(override))
-	maps.Copy(merged, base)
-	maps.Copy(merged, override)
-	return merged
-}
+const (
+	backwardsCompatibleTemplate = `
+      {{- $secrets := dict -}}
+      {{- range $key, $value := getPaasSecrets -}}
+        {{- $hash := $key | sha512Sum | trunc 8 -}}
+        {{- $secretName := print "paas-ssh-" $hash -}}
+        {{- $secretData := dict "type" "git" "url" $key "sshPrivateKey" $value -}}
+        {{- $_ := $secrets | set $secretName $secretData -}}
+      {{- end -}}
+      {{- $secrets | toYAML -}}`
+)
 
 // ensureSecret ensures Secret presence in given secret.
 func (r *PaasReconciler) ensureSecret(
@@ -51,11 +52,6 @@ func (r *PaasReconciler) ensureSecret(
 	}
 
 	return r.Update(ctx, secret)
-}
-
-func hashData(original string) string {
-	sum := sha512.Sum512([]byte(original))
-	return hex.EncodeToString(sum[:])
 }
 
 /*
@@ -79,21 +75,21 @@ func (r *PaasReconciler) backendSecret(
 	paas *v1alpha2.Paas,
 	paasns *v1alpha2.PaasNS,
 	namespacedName types.NamespacedName,
-	url string,
+	data map[string]string,
 ) (*corev1.Secret, error) {
 	_, logger := logging.GetLogComponent(ctx, logging.ControllerSecretComponent)
 	logger.Info().Msg("defining Secret")
-
+	bData := map[string][]byte{}
+	for k, v := range data {
+		bData[k] = []byte(v)
+	}
 	s := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      namespacedName.Name,
 			Namespace: namespacedName.Namespace,
 			Labels:    map[string]string{},
 		},
-		Data: map[string][]byte{
-			"type": []byte("git"),
-			"url":  []byte(url),
-		},
+		Data: bData,
 	}
 	if paasns != nil {
 		s.Labels = paasns.ClonedLabels()
@@ -117,35 +113,21 @@ func (r *PaasReconciler) backendSecrets(
 	paas *v1alpha2.Paas,
 	paasns *v1alpha2.PaasNS,
 	namespace string,
-	encryptedSecrets map[string]string,
+	secretsData map[string]map[string]string,
 ) (*corev1.SecretList, error) {
-	// Only do something when secrets are required
-	if len(encryptedSecrets) == 0 {
-		return &corev1.SecretList{}, nil
-	}
-
-	rsa, err := r.getRsa(ctx, paas.Name)
-	if err != nil {
-		return nil, err
-	}
+	var err error
 
 	secrets := &corev1.SecretList{}
-	for url, encryptedSecretData := range encryptedSecrets {
+	for secretName, secretData := range secretsData {
 		namespacedName := types.NamespacedName{
 			Namespace: namespace,
-			Name:      utils.Join("paas-ssh", strings.ToLower(hashData(url)[:8])),
+			Name:      secretName,
 		}
 		var secret *corev1.Secret
-		secret, err = r.backendSecret(ctx, paas, paasns, namespacedName, url)
+		secret, err = r.backendSecret(ctx, paas, paasns, namespacedName, secretData)
 		if err != nil {
 			return nil, err
 		}
-		var decryptedSecretData []byte
-		decryptedSecretData, err = rsa.Decrypt(encryptedSecretData)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decrypt secret %s: %s", secret.Name, err.Error())
-		}
-		secret.Data["sshPrivateKey"] = decryptedSecretData
 		secrets.Items = append(secrets.Items, *secret)
 	}
 	return secrets, nil
@@ -212,11 +194,11 @@ func (r *PaasReconciler) reconcileNamespaceSecrets(
 	paas *v1alpha2.Paas,
 	paasns *v1alpha2.PaasNS,
 	namespace string,
-	paasSecrets map[string]string,
+	encryptedSecrets map[string]map[string]string,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerSecretComponent)
 	logger.Debug().Msg("reconciling Secrets")
-	desiredSecrets, err := r.backendSecrets(ctx, paas, paasns, namespace, paasSecrets)
+	desiredSecrets, err := r.backendSecrets(ctx, paas, paasns, namespace, encryptedSecrets)
 	if err != nil {
 		return err
 	}
@@ -253,10 +235,66 @@ func (r *PaasReconciler) reconcilePaasSecrets(
 ) error {
 	// The nsDefs contains the desired namespaces. When obsolete namespaces are deleted, that cascade deletes
 	// the secrets in that namespace.
+	decryptFunc, err := r.getDecryptFunc(ctx, paas.Name)
+	if err != nil {
+		return err
+	}
+	paasConfig, err := config.GetConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
 	for _, nsDef := range nsDefs {
-		err := r.reconcileNamespaceSecrets(ctx, paas, nsDef.paasns, nsDef.nsName, nsDef.secrets)
-		if err != nil {
-			return err
+		getPaasSecret := func(key string) (string, error) {
+			secret, ok := nsDef.encryptedSecrets[key]
+			if !ok {
+				return "", fmt.Errorf("secret '%s' does not exist", key)
+			}
+			decrypted, err := decryptFunc(secret)
+			if err != nil {
+				return "", err
+			}
+			return decrypted, nil
+		}
+		getPaasSecrets := func() (map[string]string, error) {
+			secrets := map[string]string{}
+			for name, secret := range nsDef.encryptedSecrets {
+				decrypted, err := decryptFunc(secret)
+				if err != nil {
+					return nil, err
+				}
+				secrets[name] = decrypted
+			}
+			return secrets, nil
+		}
+		secretFuncs := map[string]any{
+			"decryptPaasSecret": decryptFunc,
+			"getPaasSecret":     getPaasSecret,
+			"getPaasSecrets":    getPaasSecrets,
+		}
+		templater := templating.NewTemplater(*paas, paasConfig, secretFuncs)
+		var template string
+		if nsDef.capName == "" {
+			template = paasConfig.Spec.NamespaceSecrets
+		} else {
+			capConfig, ok := paasConfig.Spec.Capabilities[nsDef.capName]
+			if !ok {
+				return fmt.Errorf("capability %s is not configured", nsDef.capName)
+			}
+			template = capConfig.Secrets
+		}
+		// TODO - Devotional Phoenix - For now we default to old behavior, but on next major we should enforce setting a
+		// template rather than defaulting to original behavior which is wrong in most cases
+		if template == "" {
+			template = backwardsCompatibleTemplate
+		}
+		secrets, tplErr := templater.TemplateToStringMapStringMap(nsDef.nsName, template)
+		if tplErr != nil {
+			return tplErr
+		}
+		reconcileErr := r.reconcileNamespaceSecrets(ctx, paas, nsDef.paasns, nsDef.nsName, secrets)
+		if reconcileErr != nil {
+			return reconcileErr
 		}
 	}
 	return nil

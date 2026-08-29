@@ -219,7 +219,7 @@ func (r *PaasReconciler) reconcileQuotas(
 		return err
 	}
 	for _, q := range quotas {
-		logger.Info().Msg("creating quota " + q.Name + " for PAAS object ")
+		logger.Info().Msg("creating quota " + q.Name + " for PAAS object if needed")
 		if err = r.ensureQuota(ctx, q); err != nil {
 			logger.Err(err).Msgf("failure while creating quota %s", q.Name)
 			return err

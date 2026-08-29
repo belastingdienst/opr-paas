@@ -8,6 +8,8 @@ package controller
 
 import (
 	"context"
+	"crypto/sha512"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -456,7 +458,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			request.NamespacedName = types.NamespacedName{Name: paasName}
 			result, err = reconciler.Reconcile(ctx, request)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(ContainSubstring("failed to decrypt secret")))
+			Expect(err).To(MatchError(ContainSubstring("unable to decrypt data with any of the private keys")))
 			Expect(result).To(Equal(controllerruntime.Result{}))
 		})
 
@@ -516,6 +518,13 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		defaultPermCR      = "def-parm-cluster-role"
 		extraPermSA        = "extra-perm-service-account"
 		extraPermCR        = "extra-parm-cluster-role"
+		paasSecretName     = "my-paas-secret"
+		ns1SecretName      = "my-ns1-secret"
+		ns2SecretName      = "my-ns2-secret"
+		paasSecretValue    = "paas secret value"
+		ns1SecretValue     = "ns1 secret value"
+		// emptystring should work too
+		ns2SecretValue = ""
 	)
 	var (
 		paas                     *v1alpha2.Paas
@@ -524,18 +533,12 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		myConfig                 *v1alpha2.PaasConfig
 		privateKey               []byte
 		mycrypt                  *crypt.Crypt
-		paasSecretValue          string
 		paasSecretEncryptedValue string
-		paasSecretName           = "my-paas-secret"
-		paasSecretHashedName     = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(paasSecretName)[:8]))
-		ns1SecretValue           string
+		paasSecretHashedName     = hashedSecretName(paasSecretName)
 		ns1SecretEncryptedValue  string
-		ns1SecretName            = "my-ns1-secret"
-		ns1SecretHashedName      = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(ns1SecretName)[:8]))
-		ns2SecretValue           string
+		ns1SecretHashedName      = hashedSecretName(ns1SecretName)
 		ns2SecretEncryptedValue  string
-		ns2SecretName            = "my-ns2-secret"
-		ns2SecretHashedName      = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(ns2SecretName)[:8]))
+		ns2SecretHashedName      = hashedSecretName(ns2SecretName)
 		userGroupName            = utils.Join(paasName, paasGroupName)
 		clusterRolebindings      = map[string][]string{
 			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR},
@@ -893,4 +896,9 @@ func waitForDeletePaasConfig(ctx context.Context, paasConfig *v1alpha2.PaasConfi
 		err = k8sClient.Get(ctx, types.NamespacedName{Name: paasConfig.Name}, found)
 		return apierrors.IsNotFound(err)
 	}, 5*time.Second, 250*time.Millisecond).Should(BeTrue())
+}
+
+func hashedSecretName(original string) string {
+	sum := sha512.Sum512([]byte(original))
+	return fmt.Sprintf("paas-ssh-%s", strings.ToLower(hex.EncodeToString(sum[:]))[:8])
 }

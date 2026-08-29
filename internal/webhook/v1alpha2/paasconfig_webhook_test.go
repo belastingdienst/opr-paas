@@ -214,7 +214,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					valid    bool
 				}{
 					{template: "{{ .Paas.Name }}", valid: true},
-					{template: "{{ .DoesNotExist }}", valid: true},
+					{template: "{{ .DoesNotExist }}", valid: false},
 					{template: "{{ .MissingBrace }", valid: false},
 					{template: "{{ range group in .Paas.Groups}}{{ .MissingEnd }}", valid: false},
 				}
@@ -254,7 +254,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					valid    bool
 				}{
 					{template: "{{ .Paas.Name }}", valid: true},
-					{template: "{{ .DoesNotExist }}", valid: true},
+					{template: "{{ .DoesNotExist }}", valid: false},
 					{template: "{{ .MissingBrace }", valid: false},
 					{template: "{{ range group in .Paas.Groups}}{{ .MissingEnd }}", valid: false},
 				}
@@ -303,7 +303,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					valid    bool
 				}{
 					{template: simpleTemplate, valid: true},
-					{template: "{{ .DoesNotExist }}", valid: true},
+					{template: "{{ .DoesNotExist }}", valid: false},
 					{template: "{{ .MissingBrace }", valid: false},
 					{template: "{{ range group in .Paas.Groups}}{{ .MissingEnd }}", valid: false},
 				}
@@ -337,7 +337,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					valid    bool
 				}{
 					{template: simpleTemplate, valid: true},
-					{template: "{{ .DoesNotExist }}", valid: true},
+					{template: "{{ .DoesNotExist }}", valid: false},
 					{template: "{{ .MissingBrace }", valid: false},
 					{template: "{{ range group in .Paas.Groups}}{{ .MissingEnd }}", valid: false},
 				}

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"maps"
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
@@ -282,13 +283,70 @@ var _ = Describe("NamespaceDef", func() {
 			})
 			It("should include default secrets in paas namespace", func() {
 				ns := nsDefs[utils.Join(paasName, ns1)]
-				Expect(ns.secrets).To(HaveKeyWithValue("default-secret", "default-value"))
+				Expect(ns.encryptedSecrets).To(HaveKeyWithValue("default-secret", "default-value"))
 			})
 			It("should include paasns secrets in paasns namespace def", func() {
 				ns := nsDefs[utils.Join(paasName, paasNsName)]
-				Expect(ns.secrets).To(HaveKeyWithValue("pns-secret", "pns-value"))
-				Expect(ns.secrets).To(HaveKeyWithValue("default-secret", "overridden-value"))
+				Expect(ns.encryptedSecrets).To(HaveKeyWithValue("pns-secret", "pns-value"))
+				Expect(ns.encryptedSecrets).To(HaveKeyWithValue("default-secret", "overridden-value"))
 			})
+		})
+	})
+})
+
+var _ = Describe("testing mergeSecrets", func() {
+	When("merging secrets", func() {
+		It("should not return an error", func() {
+			for _, tt := range []struct {
+				name     string
+				base     map[string]string
+				override map[string]string
+				want     map[string]string
+			}{
+				{
+					name:     "empty base and override",
+					base:     map[string]string{},
+					override: map[string]string{},
+					want:     map[string]string{},
+				},
+				{
+					name:     "base only",
+					base:     map[string]string{"a1": "1"},
+					override: map[string]string{},
+					want:     map[string]string{"a1": "1"},
+				},
+				{
+					name:     "override only",
+					base:     map[string]string{},
+					override: map[string]string{"b": "b2"},
+					want:     map[string]string{"b": "b2"},
+				},
+				{
+					name:     "override replaces base",
+					base:     map[string]string{"c": "c1"},
+					override: map[string]string{"c": "c2"},
+					want:     map[string]string{"c": "c2"},
+				},
+				{
+					name:     "override adds to base",
+					base:     map[string]string{"a": "1"},
+					override: map[string]string{"b": "2"},
+					want:     map[string]string{"a": "1", "b": "2"},
+				},
+				{
+					name:     "multiple overrides",
+					base:     map[string]string{"f": "1", "c": "3"},
+					override: map[string]string{"f": "10", "g": "20"},
+					want:     map[string]string{"f": "10", "g": "20", "c": "3"},
+				},
+			} {
+				// copy maps to avoid mutating original test cases
+				baseCopy := maps.Clone(tt.base)
+				overrideCopy := maps.Clone(tt.override)
+
+				got := mergeSecrets(baseCopy, overrideCopy)
+				Expect(got).To(Equal(tt.want))
+			}
 		})
 	})
 })

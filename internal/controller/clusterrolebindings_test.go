@@ -101,17 +101,16 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 			capNSName: namespaceDef{
 				nsName:    capNSName,
 				capName:   capName,
-				capConfig: capConfig,
 				quotaName: capNSName},
 			crbNotDeletedCapNSName: namespaceDef{
 				nsName:    crbNotDeletedCapNSName,
 				capName:   crbNotDeletedCapName,
-				capConfig: capConfig,
 				quotaName: crbNotDeletedCapNSName},
 		}
 		secondNsDefs = namespaceDefs{
 			secondCapNSName: namespaceDef{
-				nsName: secondCapNSName, capName: capName, capConfig: capConfig,
+				nsName:    secondCapNSName,
+				capName:   capName,
 				quotaName: secondCapNSName,
 			},
 		}

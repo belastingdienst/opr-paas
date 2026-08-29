@@ -19,3 +19,10 @@ func yamlToList(data []byte) (result fields.ElementList, err error) {
 	}
 	return result, nil
 }
+
+func yamlToStringMap(data []byte) (result map[string]map[string]string, err error) {
+	if err = yaml.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}

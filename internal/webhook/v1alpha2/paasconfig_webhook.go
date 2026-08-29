@@ -508,9 +508,7 @@ func validateSecretTemplates(
 	var allErrs field.ErrorList
 	toCheck := map[*field.Path]string{rootPath.Child("namespace_secrets"): spec.NamespaceSecrets}
 	for capName, cap := range spec.Capabilities {
-		if cap.Secrets != "" {
-			toCheck[rootPath.Child("capabilities").Key(capName).Child("secrets")] = cap.Secrets
-		}
+		toCheck[rootPath.Child("capabilities").Key(capName).Child("secrets")] = cap.Secrets
 	}
 	templater := templating.NewTemplater(v1alpha2.Paas{}, v1alpha2.PaasConfig{})
 	for childPath, template := range toCheck {
