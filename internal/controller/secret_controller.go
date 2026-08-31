@@ -250,18 +250,18 @@ func (r *PaasReconciler) reconcilePaasSecrets(
 			if !ok {
 				return "", fmt.Errorf("secret '%s' does not exist", key)
 			}
-			decrypted, err := decryptFunc(secret)
-			if err != nil {
-				return "", err
+			decrypted, decryptErr := decryptFunc(secret)
+			if decryptErr != nil {
+				return "", decryptErr
 			}
 			return decrypted, nil
 		}
 		getPaasSecrets := func() (map[string]string, error) {
 			secrets := map[string]string{}
 			for name, secret := range nsDef.encryptedSecrets {
-				decrypted, err := decryptFunc(secret)
-				if err != nil {
-					return nil, err
+				decrypted, decryptErr := decryptFunc(secret)
+				if decryptErr != nil {
+					return nil, decryptErr
 				}
 				secrets[name] = decrypted
 			}

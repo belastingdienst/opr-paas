@@ -75,7 +75,8 @@ var _ = Describe("Templating", func() {
 	When("verifying", func() {
 		It("should work as expected", func() {
 			templater := templating.NewTemplater(paas, paasConfig)
-			Expect(templater.Verify("for1", "{{ range $group := .Paas.Spec.Groups}}{{$group}}{{end}}")).NotTo(HaveOccurred())
+			Expect(templater.Verify("for1", "{{ range $group := .Paas.Spec.Groups}}{{$group}}{{end}}")).
+				NotTo(HaveOccurred())
 			Expect(templater.Verify("for2", "{{ for $group := .Paas.Spec.Groups}}{{$group}}{{end}}")).To(
 				MatchError(ContainSubstring("function \"for\" not defined")))
 
@@ -177,7 +178,7 @@ var _ = Describe("Templating", func() {
 		It("should work as expected", func() {
 			var (
 				expected = map[string]map[string]string{
-					"s1": map[string]string{"k1": "v1", "k2": "v2"},
+					"s1": {"k1": "v1", "k2": "v2"},
 				}
 				extraFunc  = func() map[string]map[string]string { return expected }
 				extraFuncs = map[string]any{"smsms": extraFunc}
@@ -189,5 +190,3 @@ var _ = Describe("Templating", func() {
 		})
 	})
 })
-
-//map[scrt:map[paasns-secret:some encrypted string]]

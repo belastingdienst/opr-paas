@@ -118,7 +118,6 @@ func (t Templater[P, C, S]) TemplateToStringMapStringMap(
 	name string,
 	templatedText string,
 ) (map[string]map[string]string, error) {
-
 	buf := new(bytes.Buffer)
 	funcs, err := t.getSproutFuncs()
 	if err != nil {
@@ -134,8 +133,8 @@ func (t Templater[P, C, S]) TemplateToStringMapStringMap(
 	}
 	myMap := map[string]map[string]string{}
 
-	if err := yaml.Unmarshal(buf.Bytes(), &myMap); err != nil {
-		return nil, err
+	if marshalErr := yaml.Unmarshal(buf.Bytes(), &myMap); marshalErr != nil {
+		return nil, marshalErr
 	}
 	return myMap, nil
 }

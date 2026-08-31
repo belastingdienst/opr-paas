@@ -77,7 +77,8 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 		Context("with valid definition under valid circumstances", func() {
 			It("should succeed", func() {
 				warn, err := validator.ValidateCreate(ctx, obj)
-				Expect(warn, err).Error().NotTo(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().NotTo(HaveOccurred())
 			})
 		})
 		Context("with invalid label definition", func() {
@@ -114,7 +115,8 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 				}
 
 				warn, err := validator.ValidateCreate(ctx, obj)
-				Expect(warn, err).Error().To(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().To(HaveOccurred())
 				Expect(err.Error()).To(
 					//revive:disable-next-line
 					Equal(`PaasConfig.cpet.belastingdienst.nl "newPaasConfig" is invalid: spec: Forbidden: another PaasConfig resource already exists`))
@@ -389,7 +391,8 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					},
 				}
 				warn, err := validator.ValidateCreate(ctx, obj)
-				Expect(warn, err).Error().NotTo(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().NotTo(HaveOccurred())
 			})
 			It("should deny names that do not meet re", func() {
 				obj.Spec.Validations["paas"]["allowedQuotas"] = validation
@@ -404,7 +407,8 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 						},
 					}
 					warn, err := validator.ValidateCreate(ctx, obj)
-					Expect(warn, err).Error().To(HaveOccurred())
+					Expect(warn).To(BeNil())
+					Expect(err).Error().To(HaveOccurred())
 				}
 			})
 		})
@@ -552,7 +556,8 @@ var _ = Describe("Updating a PaasConfig", Ordered, func() {
 		Context("with valid definition changes under valid circumstances", func() {
 			It("should succeed", func() {
 				warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
-				Expect(warn, err).Error().NotTo(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().NotTo(HaveOccurred())
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -560,7 +565,8 @@ var _ = Describe("Updating a PaasConfig", Ordered, func() {
 			It("should raise an error", func() {
 				obj.Spec.Validations["paas"]["groupName"] = ".*)"
 				warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
-				Expect(warn, err).Error().To(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().To(HaveOccurred())
 				Expect(err.Error()).To(
 					ContainSubstring(`failed to compile validation regexp for paas.groupName`))
 			})

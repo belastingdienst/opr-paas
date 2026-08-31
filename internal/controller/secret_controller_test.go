@@ -278,7 +278,9 @@ var _ = Describe("secret controller", Ordered, func() {
 			template string
 			secrets  map[string]map[string]string
 		}{
-			{template: simpleTemplate, secrets: map[string]map[string]string{"paas-secrets": {capSecretName: decryptedValue}}},
+			{template: simpleTemplate, secrets: map[string]map[string]string{
+				"paas-secrets": {capSecretName: decryptedValue},
+			}},
 			{template: backwardsCompatibleTemplate, secrets: map[string]map[string]string{
 				hashedSecretName(capSecretName): {
 					"type":          "git",

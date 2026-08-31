@@ -817,7 +817,8 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + paasGroupName + "\" not found"))
 		})
 		It("should successfully finalize removed namespace1", func() {
-			deletedNamespaces := []string{utils.Join(paasName, ns1Name), utils.Join(paasName, capName), utils.Join(paasName, paasNSName)}
+			deletedNamespaces := []string{utils.Join(paasName, ns1Name), utils.Join(paasName, capName),
+				utils.Join(paasName, paasNSName)}
 			for _, nsName := range deletedNamespaces {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
 				var ns corev1.Namespace
