@@ -8,6 +8,8 @@ package controller
 
 import (
 	"context"
+	"crypto/sha512"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -16,6 +18,7 @@ import (
 	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	paasquota "github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -455,7 +458,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			request.NamespacedName = types.NamespacedName{Name: paasName}
 			result, err = reconciler.Reconcile(ctx, request)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(ContainSubstring("failed to decrypt secret")))
+			Expect(err).To(MatchError(ContainSubstring("unable to decrypt data with any of the private keys")))
 			Expect(result).To(Equal(controllerruntime.Result{}))
 		})
 
@@ -515,6 +518,13 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		defaultPermCR      = "def-parm-cluster-role"
 		extraPermSA        = "extra-perm-service-account"
 		extraPermCR        = "extra-parm-cluster-role"
+		paasSecretName     = "my-paas-secret"
+		ns1SecretName      = "my-ns1-secret"
+		ns2SecretName      = "my-ns2-secret"
+		paasSecretValue    = "paas secret value"
+		ns1SecretValue     = "ns1 secret value"
+		// emptystring should work too
+		ns2SecretValue = ""
 	)
 	var (
 		paas                     *v1alpha2.Paas
@@ -523,19 +533,13 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		myConfig                 *v1alpha2.PaasConfig
 		privateKey               []byte
 		mycrypt                  *crypt.Crypt
-		paasSecretValue          string
 		paasSecretEncryptedValue string
-		paasSecretName           = "my-paas-secret"
-		paasSecretHashedName     = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(paasSecretName)[:8]))
-		ns1SecretValue           string
+		paasSecretHashedName     = hashedSecretName(paasSecretName)
 		ns1SecretEncryptedValue  string
-		ns1SecretName            = "my-ns1-secret"
-		ns1SecretHashedName      = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(ns1SecretName)[:8]))
-		ns2SecretValue           string
+		ns1SecretHashedName      = hashedSecretName(ns1SecretName)
 		ns2SecretEncryptedValue  string
-		ns2SecretName            = "my-ns2-secret"
-		ns2SecretHashedName      = fmt.Sprintf("paas-ssh-%s", strings.ToLower(hashData(ns2SecretName)[:8]))
-		userGroupName            = join(paasName, paasGroupName)
+		ns2SecretHashedName      = hashedSecretName(ns2SecretName)
+		userGroupName            = utils.Join(paasName, paasGroupName)
 		clusterRolebindings      = map[string][]string{
 			defaultPermSA: {defaultPermCR}, extraPermSA: {extraPermCR},
 		}
@@ -651,10 +655,10 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 	// create Paas
 	When("creating a Paas and PaasNS", func() {
 		namespaces := []string{
-			join(paasName, ns1Name),
-			join(paasName, ns2Name),
-			join(paasName, capName),
-			join(paasName, paasNSName),
+			utils.Join(paasName, ns1Name),
+			utils.Join(paasName, ns2Name),
+			utils.Join(paasName, capName),
+			utils.Join(paasName, paasNSName),
 		}
 		It("should reconcile successfully", func() {
 			assurePaas(ctx, *paas)
@@ -662,7 +666,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			assurePaasNS(ctx,
 				v1alpha2.PaasNS{
-					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, ns1Name)},
+					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: utils.Join(paasName, ns1Name)},
 					Spec: v1alpha2.PaasNSSpec{
 						Paas: paasName,
 					},
@@ -701,7 +705,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			for crbSAName, crbRoleNames := range clusterRolebindings {
 				for _, crbRoleName := range crbRoleNames {
 					var crb rbac.ClusterRoleBinding
-					err := reconciler.Get(ctx, types.NamespacedName{Name: join("paas", crbRoleName)}, &crb)
+					err := reconciler.Get(ctx, types.NamespacedName{Name: utils.Join("paas", crbRoleName)}, &crb)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(crb.Subjects).To(ContainElement(
 						rbac.Subject{
@@ -716,17 +720,17 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 		})
 		It("should have created paas rolebindings", func() {
 			expectedRolebindings := map[string][]string{
-				join(paasName, ns1Name):    {techRoleName1},
-				join(paasName, ns2Name):    {techRoleName1, techRoleName2},
-				join(paasName, capName):    {techRoleName1, techRoleName2},
-				join(paasName, paasNSName): {techRoleName1, techRoleName2},
+				utils.Join(paasName, ns1Name):    {techRoleName1},
+				utils.Join(paasName, ns2Name):    {techRoleName1, techRoleName2},
+				utils.Join(paasName, capName):    {techRoleName1, techRoleName2},
+				utils.Join(paasName, paasNSName): {techRoleName1, techRoleName2},
 			}
 			for nsName, rolebindings := range expectedRolebindings {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
 				for _, rbName := range rolebindings {
 					var rb rbac.RoleBinding
 					err := reconciler.Get(ctx,
-						types.NamespacedName{Namespace: nsName, Name: join("paas", rbName)}, &rb)
+						types.NamespacedName{Namespace: nsName, Name: utils.Join("paas", rbName)}, &rb)
 					Expect(err).ToNot(HaveOccurred())
 				}
 			}
@@ -741,7 +745,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			err = reconciler.Get(
 				ctx,
 				types.NamespacedName{
-					Namespace: join(paasName, ns1Name),
+					Namespace: utils.Join(paasName, ns1Name),
 					Name:      ns1SecretHashedName,
 				},
 				&secret,
@@ -752,7 +756,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			err = reconciler.Get(
 				ctx,
 				types.NamespacedName{
-					Namespace: join(paasName, ns2Name),
+					Namespace: utils.Join(paasName, ns2Name),
 					Name:      ns2SecretHashedName,
 				},
 				&secret,
@@ -773,7 +777,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			assurePaasNS(ctx,
 				v1alpha2.PaasNS{
-					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: join(paasName, ns1Name)},
+					ObjectMeta: metav1.ObjectMeta{Name: paasNSName, Namespace: utils.Join(paasName, ns1Name)},
 					Spec: v1alpha2.PaasNSSpec{
 						Paas: paasName,
 					},
@@ -813,7 +817,8 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			Expect(err.Error()).To(Equal("groups.user.openshift.io \"" + paasGroupName + "\" not found"))
 		})
 		It("should successfully finalize removed namespace1", func() {
-			deletedNamespaces := []string{join(paasName, ns1Name), join(paasName, capName), join(paasName, paasNSName)}
+			deletedNamespaces := []string{utils.Join(paasName, ns1Name), utils.Join(paasName, capName),
+				utils.Join(paasName, paasNSName)}
 			for _, nsName := range deletedNamespaces {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)
 				var ns corev1.Namespace
@@ -827,7 +832,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			err := reconciler.Get(
 				ctx,
 				types.NamespacedName{
-					Namespace: join(paasName, ns2Name),
+					Namespace: utils.Join(paasName, ns2Name),
 					Name:      ns2SecretHashedName,
 				},
 				&secret,
@@ -838,7 +843,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			for _, crbRoleNames := range clusterRolebindings {
 				for _, crbRoleName := range crbRoleNames {
 					var crb rbac.ClusterRoleBinding
-					err := reconciler.Get(ctx, types.NamespacedName{Name: join("paas", crbRoleName)}, &crb)
+					err := reconciler.Get(ctx, types.NamespacedName{Name: utils.Join("paas", crbRoleName)}, &crb)
 					Expect(err).To(HaveOccurred())
 				}
 			}
@@ -867,7 +872,7 @@ var _ = Describe("Paas Reconcile", Ordered, func() {
 			for _, crbRoleNames := range clusterRolebindings {
 				for _, crbRoleName := range crbRoleNames {
 					var crb rbac.ClusterRoleBinding
-					err := reconciler.Get(ctx, types.NamespacedName{Name: join("paas", crbRoleName)}, &crb)
+					err := reconciler.Get(ctx, types.NamespacedName{Name: utils.Join("paas", crbRoleName)}, &crb)
 					Expect(err).To(HaveOccurred())
 				}
 			}
@@ -892,4 +897,9 @@ func waitForDeletePaasConfig(ctx context.Context, paasConfig *v1alpha2.PaasConfi
 		err = k8sClient.Get(ctx, types.NamespacedName{Name: paasConfig.Name}, found)
 		return apierrors.IsNotFound(err)
 	}, 5*time.Second, 250*time.Millisecond).Should(BeTrue())
+}
+
+func hashedSecretName(original string) string {
+	sum := sha512.Sum512([]byte(original))
+	return fmt.Sprintf("paas-ssh-%s", strings.ToLower(hex.EncodeToString(sum[:]))[:8])
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/go-sprout/sprout"
 	"github.com/go-sprout/sprout/group/all"
 	"github.com/go-sprout/sprout/registry/backward"
+	"github.com/goccy/go-yaml"
 
 	"github.com/belastingdienst/opr-paas/v5/api"
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
@@ -63,12 +64,16 @@ func (t Templater[P, C, S]) getSproutFuncs() (template.FuncMap, error) {
 
 // Verify can verify a template (just parsing it, not running it against a Paas / PaasConfig)
 func (t Templater[P, C, S]) Verify(name string, templatedText string) error {
+	buf := new(bytes.Buffer)
 	funcs, err := t.getSproutFuncs()
 	if err != nil {
 		return err
 	}
-	_, err = template.New(name).Funcs(funcs).Funcs(t.extraFuncs).Parse(templatedText)
-	return err
+	tmpl, err := template.New(name).Funcs(funcs).Funcs(t.extraFuncs).Parse(templatedText)
+	if err != nil {
+		return err
+	}
+	return tmpl.Execute(buf, t)
 }
 
 // TemplateToString can be used to parse a go-template and return a string value
@@ -105,4 +110,31 @@ func (t Templater[P, C, S]) TemplateToMap(name string, templatedText string) (fi
 		return myList.AsElementMap().Prefix(name), nil
 	}
 	return fields.ElementMap{name: yamlData}, nil
+}
+
+// TemplateToStringMapStringMap can be used to parse a go-template and parse it as a string map of string maps.
+// The most obvious use is the secret functions in the secret controller.
+func (t Templater[P, C, S]) TemplateToStringMapStringMap(
+	name string,
+	templatedText string,
+) (map[string]map[string]string, error) {
+	buf := new(bytes.Buffer)
+	funcs, err := t.getSproutFuncs()
+	if err != nil {
+		return nil, err
+	}
+	tmpl, err := template.New(name).Funcs(funcs).Funcs(t.extraFuncs).Parse(templatedText)
+	if err != nil {
+		return nil, err
+	}
+	err = tmpl.Execute(buf, t)
+	if err != nil {
+		return nil, err
+	}
+	myMap := map[string]map[string]string{}
+
+	if marshalErr := yaml.Unmarshal(buf.Bytes(), &myMap); marshalErr != nil {
+		return nil, marshalErr
+	}
+	return myMap, nil
 }
