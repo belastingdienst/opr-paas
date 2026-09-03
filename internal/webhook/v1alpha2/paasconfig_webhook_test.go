@@ -33,6 +33,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 		scheme    *runtime.Scheme
 		cl        client.Client
 	)
+	const simpleTemplate = `{{ $s := dict }}{{ $_ := set $s "mysecret" .Paas.Spec.Capabilities.mycap.Secrets }}{{ $s }}`
 
 	BeforeEach(func() {
 		obj = &v1alpha2.PaasConfig{
@@ -76,7 +77,8 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 		Context("with valid definition under valid circumstances", func() {
 			It("should succeed", func() {
 				warn, err := validator.ValidateCreate(ctx, obj)
-				Expect(warn, err).Error().NotTo(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().NotTo(HaveOccurred())
 			})
 		})
 		Context("with invalid label definition", func() {
@@ -113,7 +115,8 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 				}
 
 				warn, err := validator.ValidateCreate(ctx, obj)
-				Expect(warn, err).Error().To(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().To(HaveOccurred())
 				Expect(err.Error()).To(
 					//revive:disable-next-line
 					Equal(`PaasConfig.cpet.belastingdienst.nl "newPaasConfig" is invalid: spec: Forbidden: another PaasConfig resource already exists`))
@@ -213,7 +216,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					valid    bool
 				}{
 					{template: "{{ .Paas.Name }}", valid: true},
-					{template: "{{ .DoesNotExist }}", valid: true},
+					{template: "{{ .DoesNotExist }}", valid: false},
 					{template: "{{ .MissingBrace }", valid: false},
 					{template: "{{ range group in .Paas.Groups}}{{ .MissingEnd }}", valid: false},
 				}
@@ -253,7 +256,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					valid    bool
 				}{
 					{template: "{{ .Paas.Name }}", valid: true},
-					{template: "{{ .DoesNotExist }}", valid: true},
+					{template: "{{ .DoesNotExist }}", valid: false},
 					{template: "{{ .MissingBrace }", valid: false},
 					{template: "{{ range group in .Paas.Groups}}{{ .MissingEnd }}", valid: false},
 				}
@@ -290,6 +293,72 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 				}
 			})
 		})
+		Context("having secret templates defined", func() {
+			It("should verify cap secret template to be valid", func() {
+				const (
+					capName    = "mycap"
+					secretName = "mysecret"
+					keyName    = "test"
+				)
+				tests := []struct {
+					template string
+					valid    bool
+				}{
+					{template: simpleTemplate, valid: true},
+					{template: "{{ .DoesNotExist }}", valid: false},
+					{template: "{{ .MissingBrace }", valid: false},
+					{template: "{{ range group in .Paas.Groups}}{{ .MissingEnd }}", valid: false},
+				}
+				for _, test := range tests {
+					fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
+					obj.Spec.Capabilities = v1alpha2.ConfigCapabilities{
+						capName: v1alpha2.ConfigCapability{
+							Secrets: test.template,
+						},
+					}
+					_, err := validator.ValidateCreate(ctx, obj)
+					if test.valid {
+						Expect(err).Error().NotTo(HaveOccurred())
+					} else {
+						Expect(err).Error().To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring(
+							`spec.capabilities[%s].secrets: Invalid value: "%s"`,
+							capName,
+							test.template,
+						))
+					}
+				}
+			})
+			It("should verify ns secret template to be valid", func() {
+				const (
+					secretName = "mysecret"
+					keyName    = "test"
+				)
+				tests := []struct {
+					template string
+					valid    bool
+				}{
+					{template: simpleTemplate, valid: true},
+					{template: "{{ .DoesNotExist }}", valid: false},
+					{template: "{{ .MissingBrace }", valid: false},
+					{template: "{{ range group in .Paas.Groups}}{{ .MissingEnd }}", valid: false},
+				}
+				for _, test := range tests {
+					fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %v", test)
+					obj.Spec.NamespaceSecrets = test.template
+					_, err := validator.ValidateCreate(ctx, obj)
+					if test.valid {
+						Expect(err).Error().NotTo(HaveOccurred())
+					} else {
+						Expect(err).Error().To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring(
+							`spec.namespace_secrets: Invalid value: "%s"`,
+							test.template,
+						))
+					}
+				}
+			})
+		})
 		Context("quota name validation", func() {
 			var (
 				validResourceKeys = []string{
@@ -322,7 +391,8 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					},
 				}
 				warn, err := validator.ValidateCreate(ctx, obj)
-				Expect(warn, err).Error().NotTo(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().NotTo(HaveOccurred())
 			})
 			It("should deny names that do not meet re", func() {
 				obj.Spec.Validations["paas"]["allowedQuotas"] = validation
@@ -337,7 +407,8 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 						},
 					}
 					warn, err := validator.ValidateCreate(ctx, obj)
-					Expect(warn, err).Error().To(HaveOccurred())
+					Expect(warn).To(BeNil())
+					Expect(err).Error().To(HaveOccurred())
 				}
 			})
 		})
@@ -485,7 +556,8 @@ var _ = Describe("Updating a PaasConfig", Ordered, func() {
 		Context("with valid definition changes under valid circumstances", func() {
 			It("should succeed", func() {
 				warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
-				Expect(warn, err).Error().NotTo(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().NotTo(HaveOccurred())
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -493,7 +565,8 @@ var _ = Describe("Updating a PaasConfig", Ordered, func() {
 			It("should raise an error", func() {
 				obj.Spec.Validations["paas"]["groupName"] = ".*)"
 				warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
-				Expect(warn, err).Error().To(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().To(HaveOccurred())
 				Expect(err.Error()).To(
 					ContainSubstring(`failed to compile validation regexp for paas.groupName`))
 			})

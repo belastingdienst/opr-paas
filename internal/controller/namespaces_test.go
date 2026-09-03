@@ -6,6 +6,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	paasquota "github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -123,7 +124,7 @@ var _ = Describe("Namespace", Ordered, func() {
 		It("creates all namespaces as expected", func() {
 			for _, nsName := range expectedNamespaces {
 				var ns corev1.Namespace
-				err := reconciler.Get(ctx, types.NamespacedName{Name: join(paasName, nsName)}, &ns)
+				err := reconciler.Get(ctx, types.NamespacedName{Name: utils.Join(paasName, nsName)}, &ns)
 				Expect(err).NotTo(HaveOccurred())
 			}
 		})
@@ -132,7 +133,7 @@ var _ = Describe("Namespace", Ordered, func() {
 				lbl1Key:           lbl1Value,
 				lbl2Key:           lbl2Value,
 				ManagedByLabelKey: paasName,
-				manByLbl:          join(manByPaas, manBySuffix),
+				manByLbl:          utils.Join(manByPaas, manBySuffix),
 			}
 			for nsName, nsDef := range nsDefs {
 				fmt.Fprintf(GinkgoWriter, "DEBUG - Namespace: %v", nsName)

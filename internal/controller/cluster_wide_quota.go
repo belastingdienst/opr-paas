@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
@@ -128,7 +129,7 @@ func backendClusterWideQuota(
 }
 
 func clusterWideQuotaName(capabilityName string) string {
-	return join(cwqPrefix, capabilityName)
+	return utils.Join(cwqPrefix, capabilityName)
 }
 
 func clusterWideCapabilityName(quotaName string) (capabilityName string, err error) {
