@@ -110,7 +110,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 
 			warn, err := validator.ValidateCreate(ctx, obj)
-			Expect(warn, err).Error().NotTo(HaveOccurred())
+			Expect(warn).To(BeNil())
 			Expect(err).Error().NotTo(HaveOccurred())
 		})
 		It("should allow creating a paas with namespaces", func() {
@@ -123,7 +123,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 
 			warn, err := validator.ValidateCreate(ctx, obj)
-			Expect(warn, err).Error().NotTo(HaveOccurred())
+			Expect(warn).To(BeNil())
 			Expect(err).Error().NotTo(HaveOccurred())
 		})
 		It("Should deny Paas with requested quotas larger than MaxAllowedSubmittedQuota", func() {
@@ -198,9 +198,9 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn).To(BeNil())
 				if test.valid {
-					Expect(warn, err).Error().NotTo(HaveOccurred())
+					Expect(warn).To(BeNil())
 				} else {
-					Expect(warn, err).Error().To(HaveOccurred())
+					Expect(err).Error().To(HaveOccurred())
 				}
 			}
 		})
@@ -249,9 +249,10 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn).To(BeNil())
 				if test.valid {
-					Expect(warn, err).Error().NotTo(HaveOccurred())
+					Expect(warn).To(BeNil())
+					Expect(err).Error().NotTo(HaveOccurred())
 				} else {
-					Expect(warn, err).Error().To(HaveOccurred())
+					Expect(err).Error().To(HaveOccurred())
 				}
 			}
 		})
@@ -585,13 +586,13 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 						},
 					},
 				}
-				warnings, errors := validator.ValidateCreate(ctx, validGroupNamePaas)
+				warnings, errs := validator.ValidateCreate(ctx, validGroupNamePaas)
 				if test.valid {
 					Expect(warnings).To(BeNil())
-					Expect(errors).ToNot(HaveOccurred())
+					Expect(errs).ToNot(HaveOccurred())
 				} else {
-					Expect(warnings, errors).Error().To(HaveOccurred())
-					Expect(errors).To(MatchError(SatisfyAll(
+					Expect(errs).Error().To(HaveOccurred())
+					Expect(errs).To(MatchError(SatisfyAll(
 						ContainSubstring("group name does not match configured validation regex"))))
 				}
 			}
@@ -627,7 +628,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 
 			warnings, _ := validator.ValidateCreate(ctx, obj)
-			Expect(warnings).To(BeEmpty())
+			Expect(warnings).To(BeNil())
 		})
 
 		It("Should raise an error if non-existent roles are defined in a paas", func() {
@@ -756,7 +757,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				}
 				warnings, err := validator.ValidateCreate(ctx, obj)
 				if expects.warn == "" {
-					Expect(warnings).To(BeEmpty())
+					Expect(warnings).To(BeNil())
 				} else {
 					Expect(warnings).To(ContainElement(expects.warn))
 				}
@@ -808,7 +809,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					},
 				}
 				warn, err := validator.ValidateCreate(ctx, obj)
-				Expect(warn, err).Error().NotTo(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().NotTo(HaveOccurred())
 				Expect(err).Error().NotTo(HaveOccurred())
 			})
 			It("should deny cap quota names that do not meet re", func() {
@@ -829,7 +831,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					},
 				}
 				warn, err := validator.ValidateCreate(ctx, obj)
-				Expect(warn, err).Error().To(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().To(HaveOccurred())
 			})
 			It("should allow paas quota names that meet re", func() {
 				// Update PaasConfig
@@ -841,7 +844,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				Expect(err).To(Not(HaveOccurred()))
 				obj = &v1alpha2.Paas{Spec: v1alpha2.PaasSpec{Quota: validQuotas}}
 				warn, err := validator.ValidateCreate(ctx, obj)
-				Expect(warn, err).Error().NotTo(HaveOccurred())
+				Expect(warn).To(BeNil())
 				Expect(err).Error().NotTo(HaveOccurred())
 			})
 			It("should deny cap quota names that do not meet re", func() {
@@ -854,7 +857,8 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				Expect(err).To(Not(HaveOccurred()))
 				obj = &v1alpha2.Paas{Spec: v1alpha2.PaasSpec{Quota: invalidQuotas}}
 				warn, err := validator.ValidateCreate(ctx, obj)
-				Expect(warn, err).Error().To(HaveOccurred())
+				Expect(warn).To(BeNil())
+				Expect(err).Error().To(HaveOccurred())
 			})
 		})
 	})
@@ -900,7 +904,7 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			}
 
 			warnings, _ := validator.ValidateUpdate(ctx, nil, obj)
-			Expect(warnings).To(BeEmpty())
+			Expect(warnings).To(BeNil())
 		})
 		It("Should deny creation when a namespace is defined but no quota", func() {
 			obj = &v1alpha2.Paas{

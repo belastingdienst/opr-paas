@@ -6,6 +6,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	paasquota "github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -146,7 +147,7 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 
 	// getPaasFromRequest
 	When("reconciling quotas for a paas", func() {
-		expectedQuotas := []string{paasName, join(paasName, capName)}
+		expectedQuotas := []string{paasName, utils.Join(paasName, capName)}
 
 		It("reconciles successfully", func() {
 			err := reconciler.reconcileQuotas(ctx, paas)

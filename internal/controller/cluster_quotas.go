@@ -14,6 +14,7 @@ import (
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	"github.com/belastingdienst/opr-paas/v5/pkg/fields"
 	paasquota "github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	"github.com/belastingdienst/opr-paas/v5/pkg/templating"
@@ -67,7 +68,7 @@ func (r *PaasReconciler) backendQuota(
 	if suffix == "" {
 		quotaName = paas.Name
 	} else {
-		quotaName = join(paas.Name, suffix)
+		quotaName = utils.Join(paas.Name, suffix)
 	}
 
 	_, logger := logging.GetLogComponent(ctx, logging.ControllerClusterQuotaComponent)
@@ -180,9 +181,9 @@ func (r *PaasReconciler) backendUnneededQuotas(ctx context.Context,
 	}
 	for name, capConfig := range myConfig.Spec.Capabilities {
 		if _, exists := paas.Spec.Capabilities[name]; !exists {
-			quotas = append(quotas, join(paas.Name, name))
+			quotas = append(quotas, utils.Join(paas.Name, name))
 		} else if capConfig.QuotaSettings.Clusterwide {
-			quotas = append(quotas, join(paas.Name, name))
+			quotas = append(quotas, utils.Join(paas.Name, name))
 		}
 	}
 	return quotas, nil
@@ -218,7 +219,7 @@ func (r *PaasReconciler) reconcileQuotas(
 		return err
 	}
 	for _, q := range quotas {
-		logger.Info().Msg("creating quota " + q.Name + " for PAAS object ")
+		logger.Info().Msg("creating quota " + q.Name + " for PAAS object if needed")
 		if err = r.ensureQuota(ctx, q); err != nil {
 			logger.Err(err).Msgf("failure while creating quota %s", q.Name)
 			return err

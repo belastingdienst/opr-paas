@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
@@ -61,18 +62,24 @@ func (r *PaasReconciler) getRsaPrivateKeys(
 	return decryptPrivateKeys, nil
 }
 
-// getRsa returns a crypt.Crypt for a specified paasName
-func (r *PaasReconciler) getRsa(ctx context.Context, paasName string) (*crypt.Crypt, error) {
-	var c *crypt.Crypt
-	if keys, err := r.getRsaPrivateKeys(ctx); err != nil {
-		return nil, err
-	} else if rsa, exists := crypts[paasName]; exists {
-		return rsa, nil
-	} else if c, err = crypt.NewCryptFromKeys(*keys, "", paasName); err != nil {
-		return nil, err
+// getCryptFunc builds a crypt and creates a func that accepts a string and returns a decrypted value (or error)
+func (r *PaasReconciler) getDecryptFunc(
+	ctx context.Context,
+	paasName string,
+) (func(string) (string, error), error) {
+	keys, err := r.getRsaPrivateKeys(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create crypt instance: %w", err)
 	}
-	_, logger := logging.GetLogComponent(ctx, logging.ControllerSecretComponent)
-	logger.Debug().Msgf("creating new crypt for %s", paasName)
-	crypts[paasName] = c
-	return c, nil
+	rsa, err := crypt.NewCryptFromKeys(*keys, "", paasName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create crypt instance: %w", err)
+	}
+	return func(secret string) (string, error) {
+		d, decryptErr := rsa.Decrypt(secret)
+		if decryptErr != nil {
+			return "", decryptErr
+		}
+		return string(d), nil
+	}, nil
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	paasquota "github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -38,7 +39,7 @@ var _ = Describe("Rolebinding", Ordered, func() {
 		reconciler *PaasReconciler
 		myConfig   v1alpha2.PaasConfig
 		paasName   = paasRequestor
-		ns1        = join(paasRequestor, "ns1")
+		ns1        = utils.Join(paasRequestor, "ns1")
 	)
 	ctx := context.Background()
 
@@ -120,7 +121,7 @@ var _ = Describe("Rolebinding", Ordered, func() {
 
 		It("creates all rolebindings as expected", func() {
 			for _, tecRole := range expectedTecRoles {
-				rbName := join("paas", tecRole)
+				rbName := utils.Join("paas", tecRole)
 				var rb rbac.RoleBinding
 				err := reconciler.Get(ctx, types.NamespacedName{Name: rbName, Namespace: ns1}, &rb)
 				Expect(err).NotTo(HaveOccurred())
@@ -132,7 +133,7 @@ var _ = Describe("Rolebinding", Ordered, func() {
 				lbl2Key: lbl2Value,
 			}
 			var rb rbac.RoleBinding
-			err := reconciler.Get(ctx, types.NamespacedName{Namespace: ns1, Name: join("paas", tecRole1)}, &rb)
+			err := reconciler.Get(ctx, types.NamespacedName{Namespace: ns1, Name: utils.Join("paas", tecRole1)}, &rb)
 			Expect(err).NotTo(HaveOccurred())
 			for key, value := range expectedLabels {
 				Expect(rb.ObjectMeta.Labels).To(HaveKeyWithValue(key, value))
@@ -149,8 +150,8 @@ var _ = Describe("Rolebinding", Ordered, func() {
 				adminFuncRole = "admin-role"
 				viewFuncRole  = "view-role"
 			)
-			adminNamespace := join(paasName, "admin-ns")
-			viewNamespace := join(paasName, "view-ns")
+			adminNamespace := utils.Join(paasName, "admin-ns")
+			viewNamespace := utils.Join(paasName, "view-ns")
 			assureNamespace(ctx, adminNamespace)
 			assureNamespace(ctx, viewNamespace)
 
@@ -172,7 +173,7 @@ var _ = Describe("Rolebinding", Ordered, func() {
 
 			var adminBinding rbac.RoleBinding
 			Expect(reconciler.Get(ctx, types.NamespacedName{
-				Name:      join("paas", tecRole1),
+				Name:      utils.Join("paas", tecRole1),
 				Namespace: adminNamespace,
 			}, &adminBinding)).To(Succeed())
 			Expect(adminBinding.Subjects).To(ConsistOf(rbac.Subject{
@@ -183,7 +184,7 @@ var _ = Describe("Rolebinding", Ordered, func() {
 
 			var viewBinding rbac.RoleBinding
 			Expect(reconciler.Get(ctx, types.NamespacedName{
-				Name:      join("paas", tecRole2),
+				Name:      utils.Join("paas", tecRole2),
 				Namespace: viewNamespace,
 			}, &viewBinding)).To(Succeed())
 			Expect(viewBinding.Subjects).To(ConsistOf(rbac.Subject{
@@ -193,11 +194,11 @@ var _ = Describe("Rolebinding", Ordered, func() {
 			}))
 
 			Expect(reconciler.Get(ctx, types.NamespacedName{
-				Name:      join("paas", tecRole2),
+				Name:      utils.Join("paas", tecRole2),
 				Namespace: adminNamespace,
 			}, &rbac.RoleBinding{})).To(MatchError(ContainSubstring("not found")))
 			Expect(reconciler.Get(ctx, types.NamespacedName{
-				Name:      join("paas", tecRole1),
+				Name:      utils.Join("paas", tecRole1),
 				Namespace: viewNamespace,
 			}, &rbac.RoleBinding{})).To(MatchError(ContainSubstring("not found")))
 		})
