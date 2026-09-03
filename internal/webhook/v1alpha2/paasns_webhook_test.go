@@ -206,14 +206,16 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 		It("Should allow creation", func() {
 			By("simulating with reference to Paas where it is deployed")
 			warn, err := validator.ValidateCreate(ctx, obj)
-			Expect(warn, err).Error().ToNot(HaveOccurred())
+			Expect(warn).To(BeNil())
+			Expect(err).Error().ToNot(HaveOccurred())
 		})
 		It("Should allow updating", func() {
 			By("simulating with reference to Paas where it is deployed")
 			obj.Spec.Secrets[validSecret1Key] = validSecret2
 			obj.Spec.Groups = []string{groupName1, groupName2}
 			warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
-			Expect(warn, err).Error().ToNot(HaveOccurred())
+			Expect(warn).To(BeNil())
+			Expect(err).Error().ToNot(HaveOccurred())
 		})
 	})
 
@@ -230,7 +232,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			By("created in ns without Owner Ref")
 			obj.Namespace = nsWithoutOwnerRef
 			warn, err := validator.ValidateCreate(ctx, obj)
-			Expect(warn, err).Error().To(HaveOccurred())
+			Expect(warn).To(BeNil())
+			Expect(err).Error().To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(
 				"failed to get owner reference with kind paas and controller=true from namespace resource"))
 		})
@@ -238,7 +241,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			obj.Name = "invalid.name.foo"
 			warn, err := validator.ValidateCreate(ctx, obj)
 			Expect(warn).To(BeNil())
-			Expect(warn, err).Error().To(HaveOccurred())
+			Expect(err).Error().To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("paasns name should not contain dots"))
 		})
 		It("Should validate paasns name", func() {
@@ -268,7 +271,7 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				if test.valid {
 					warn, err := validator.ValidateCreate(ctx, obj)
 					Expect(warn).To(BeNil())
-					Expect(warn, err).Error().NotTo(HaveOccurred())
+					Expect(err).Error().NotTo(HaveOccurred())
 				}
 			}
 		})
@@ -279,14 +282,16 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			By("creating a PaasNs with improper Group reference")
 			obj.Spec.Groups = []string{otherGroup}
 			warn, err := validator.ValidateCreate(ctx, obj)
-			Expect(warn, err).Error().To(HaveOccurred())
+			Expect(warn).To(BeNil())
+			Expect(err).Error().To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("group %s does not exist in paas", otherGroup))
 		})
 		It("Should deny updating", func() {
 			By("checking references in Paas and raising error if group is not in it")
 			obj.Spec.Groups = []string{otherGroup}
 			warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
-			Expect(warn, err).Error().To(HaveOccurred())
+			Expect(warn).To(BeNil())
+			Expect(err).Error().To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("group %s does not exist in paas", otherGroup))
 		})
 	})
@@ -321,7 +326,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			}
 			obj.Spec.Secrets["invalidSecret1"] = invalidSecret1
 			warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
-			Expect(warn, err).Error().To(HaveOccurred())
+			Expect(warn).To(BeNil())
+			Expect(err).Error().To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("unable to decrypt data with any of the private keys"))
 		})
 	})
@@ -345,7 +351,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			now := metav1.NewTime(time.Now())
 			obj.DeletionTimestamp = &now
 			warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
-			Expect(warn, err).Error().ToNot(HaveOccurred())
+			Expect(warn).To(BeNil())
+			Expect(err).Error().ToNot(HaveOccurred())
 		})
 	})
 

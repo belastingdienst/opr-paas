@@ -6,6 +6,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	"github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,7 +29,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 		reconciler *PaasReconciler
 		paasConfig v1alpha2.PaasConfig
 		paas       *v1alpha2.Paas
-		quotaName  = types.NamespacedName{Name: join("paas", capName)}
+		quotaName  = types.NamespacedName{Name: utils.Join("paas", capName)}
 	)
 
 	addPaasWithCap := func(name string, pc v1alpha2.PaasCapability) *v1alpha2.Paas {
@@ -159,7 +160,7 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 
 		It("should increase quota of the ClusterResourceQuota for additional Paas' with the capability", func() {
 			addPaasWithDefCap(paasPrefix)
-			addPaasWithDefCap(join(paasPrefix, "2"))
+			addPaasWithDefCap(utils.Join(paasPrefix, "2"))
 
 			q := &quotav1.ClusterResourceQuota{}
 			Expect(k8sClient.Get(ctx, quotaName, q)).
@@ -171,9 +172,9 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 		})
 
 		It("should decrease quota of the ClusterResourceQuota when a Paas removes the capability", func() {
-			paas1 := addPaasWithDefCap(join(paasPrefix, "1"))
+			paas1 := addPaasWithDefCap(utils.Join(paasPrefix, "1"))
 			addPaasWithCap(
-				join(paasPrefix, "2"),
+				utils.Join(paasPrefix, "2"),
 				v1alpha2.PaasCapability{
 					Quota: quota.Quota{
 						corev1.ResourceLimitsCPU:   resourcev1.MustParse("1500m"),
@@ -213,8 +214,8 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 
 		It("should create a ClusterResourceQuota with the minimum quota when reconciling Paas' "+
 			"whose sum of capability quotas is less than the minimum", func() {
-			addPaasWithDefCap(join(paasPrefix, "1"))
-			addPaasWithDefCap(join(paasPrefix, "2"))
+			addPaasWithDefCap(utils.Join(paasPrefix, "1"))
+			addPaasWithDefCap(utils.Join(paasPrefix, "2"))
 
 			q := &quotav1.ClusterResourceQuota{}
 			Expect(k8sClient.Get(ctx, quotaName, q)).
@@ -228,10 +229,10 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 		It("should create a ClusterResourceQuota with the sum of Paas quotas "+
 			"when the sum is between the minimum and maximum", func() {
 			for i := 1; i < 5; i++ {
-				addPaasWithDefCap(join(paasPrefix, strconv.Itoa(i)))
+				addPaasWithDefCap(utils.Join(paasPrefix, strconv.Itoa(i)))
 			}
 			addPaasWithCap(
-				join(paasPrefix, "5"),
+				utils.Join(paasPrefix, "5"),
 				v1alpha2.PaasCapability{
 					Quota: quota.Quota{
 						corev1.ResourceLimitsCPU: resourcev1.MustParse("5"),
@@ -247,9 +248,9 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 		})
 
 		It("should create a ClusterResourceQuota with the maximum when the sum of Paas' quotas exceeds it", func() {
-			addPaasWithDefCap(join(paasPrefix, "1"))
+			addPaasWithDefCap(utils.Join(paasPrefix, "1"))
 			addPaasWithCap(
-				join(paasPrefix, "2"),
+				utils.Join(paasPrefix, "2"),
 				v1alpha2.PaasCapability{
 					Quota: quota.Quota{
 						corev1.ResourceLimitsCPU: resourcev1.MustParse("17"),
@@ -272,9 +273,9 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 
 			ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, paasConfig)
 
-			addPaasWithDefCap(join(paasPrefix, "1"))
+			addPaasWithDefCap(utils.Join(paasPrefix, "1"))
 			addPaasWithCap(
-				join(paasPrefix, "2"),
+				utils.Join(paasPrefix, "2"),
 				v1alpha2.PaasCapability{
 					Quota: quota.Quota{
 						corev1.ResourceLimitsCPU: resourcev1.MustParse("8"),

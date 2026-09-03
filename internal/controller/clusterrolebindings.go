@@ -16,6 +16,7 @@ import (
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	rbac "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +37,7 @@ func (r *PaasReconciler) getClusterRoleBinding(
 	ctx context.Context,
 	role string,
 ) (crb *rbac.ClusterRoleBinding, err error) {
-	crbName := join(crbNamePrefix, role)
+	crbName := utils.Join(crbNamePrefix, role)
 	found := &rbac.ClusterRoleBinding{}
 	err = r.Get(ctx, types.NamespacedName{Name: crbName}, found)
 	if err != nil && errors.IsNotFound(err) {
@@ -81,7 +82,7 @@ func (r *PaasReconciler) updateClusterRoleBinding(
 func backendClusterRoleBinding(
 	role string,
 ) *rbac.ClusterRoleBinding {
-	crbName := join(crbNamePrefix, role)
+	crbName := utils.Join(crbNamePrefix, role)
 	rb := &rbac.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   crbName,

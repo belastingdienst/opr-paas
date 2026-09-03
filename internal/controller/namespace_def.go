@@ -7,6 +7,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
+	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -18,13 +19,12 @@ import (
 // namespaceDef is an internal struct so that we can collect all namespace info regarding this paas once,
 // and reuse for every reconciliation for a subresources (.e.a. namespaces, secrets, rolebindings, etc.).
 type namespaceDef struct {
-	nsName    string
-	paasns    *v1alpha2.PaasNS
-	capName   string
-	capConfig v1alpha2.ConfigCapability
-	quotaName string
-	groups    []string
-	secrets   map[string]string
+	nsName           string
+	paasns           *v1alpha2.PaasNS
+	capName          string
+	quotaName        string
+	groups           []string
+	encryptedSecrets map[string]string
 }
 
 type namespaceDefs map[string]namespaceDef
@@ -32,10 +32,10 @@ type namespaceDefs map[string]namespaceDef
 // Helper to create a base namespaceDef
 func newNamespaceDef(nsName, quota string, groups []string, secrets map[string]string) namespaceDef {
 	return namespaceDef{
-		nsName:    nsName,
-		quotaName: quota,
-		groups:    groups,
-		secrets:   secrets,
+		nsName:           nsName,
+		quotaName:        quota,
+		groups:           groups,
+		encryptedSecrets: secrets,
 	}
 }
 
@@ -51,11 +51,11 @@ func newNamespaceDefFromPaasNS(nsName string, paasns *v1alpha2.PaasNS,
 		secrets = mergeSecrets(secrets, paasns.Spec.Secrets)
 	}
 	return namespaceDef{
-		nsName:    nsName,
-		paasns:    paasns,
-		quotaName: quota,
-		groups:    groups,
-		secrets:   secrets,
+		nsName:           nsName,
+		paasns:           paasns,
+		quotaName:        quota,
+		groups:           groups,
+		encryptedSecrets: secrets,
 	}
 }
 
@@ -108,7 +108,7 @@ func (r *PaasReconciler) nsDefsFromPaasNamespaces(
 ) namespaceDefs {
 	result := namespaceDefs{}
 	for namespace, nsConfig := range paas.Spec.Namespaces {
-		fullNsName := join(paas.Name, namespace)
+		fullNsName := utils.Join(paas.Name, namespace)
 		secrets := map[string]string{}
 		maps.Copy(secrets, paas.Spec.Secrets)
 		maps.Copy(secrets, nsConfig.Secrets)
@@ -162,19 +162,18 @@ func (r *PaasReconciler) paasCapabilityNss(
 			continue
 		}
 
-		capNS := join(paas.Name, capName)
+		capNS := utils.Join(paas.Name, capName)
 		quota := capNS
 		if capConfig.QuotaSettings.Clusterwide {
 			quota = clusterWideQuotaName(capName)
 		}
 		secrets := mergeSecrets(paas.Spec.Secrets, capDef.Secrets)
 		base := namespaceDef{
-			nsName:    capNS,
-			capName:   capName,
-			capConfig: capConfig,
-			quotaName: quota,
-			groups:    paasGroups,
-			secrets:   secrets,
+			nsName:           capNS,
+			capName:          capName,
+			quotaName:        quota,
+			groups:           paasGroups,
+			encryptedSecrets: secrets,
 		}
 		result[base.nsName] = base
 		for nsName, paasns := range r.paasNSsFromNs(ctx, capNS) {
@@ -208,4 +207,12 @@ func (r *PaasReconciler) nsDefsFromPaas(ctx context.Context, paas *v1alpha2.Paas
 	}
 
 	return nsDefs, nil
+}
+
+// Helper to merge secrets which returns a new map[string]string
+func mergeSecrets(base, override map[string]string) map[string]string {
+	merged := make(map[string]string, len(base)+len(override))
+	maps.Copy(merged, base)
+	maps.Copy(merged, override)
+	return merged
 }
