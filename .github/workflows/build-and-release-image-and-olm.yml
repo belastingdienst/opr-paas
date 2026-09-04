@@ -92,9 +92,6 @@ jobs:
           github-pat: ${{ secrets.GITHUB_TOKEN }}
           severity: 'MEDIUM,HIGH,CRITICAL'
           scanners: 'vuln'
-        env:
-          TRIVY_SKIP_DB_UPDATE: true
-          TRIVY_SKIP_JAVA_DB_UPDATE: true
 
       - name: Add SBOM to release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
