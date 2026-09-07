@@ -117,6 +117,7 @@ type PaasConfigSpec struct {
 	Templating ConfigTemplatingItems `json:"templating,omitempty"`
 
 	// NamespaceSecrets should have a go-template that returns a map of key/value pairs for the data in the secret.
+	// +kubebuilder:validation:Optional
 	NamespaceSecrets string `json:"namespace_secrets"`
 }
 
