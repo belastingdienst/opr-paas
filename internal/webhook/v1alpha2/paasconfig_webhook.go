@@ -8,6 +8,7 @@ package v1alpha2
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -23,6 +24,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
+
+type contextVar string
+
+const templateContextVar contextVar = "templater"
 
 // SetupPaasConfigWebhookWithManager registers the webhook for PaasConfig in the manager.
 func SetupPaasConfigWebhookWithManager(mgr ctrl.Manager) error {
@@ -59,8 +64,9 @@ func (v *PaasConfigCustomValidator) ValidateCreate(
 ) (warn admission.Warnings, err error) {
 	var allErrs field.ErrorList
 
-	_, logger := logging.SetWebhookLogger(ctx, paasconfig)
+	ctx, logger := logging.SetWebhookLogger(ctx, paasconfig)
 	logger.Info().Msgf("validation for creation of PaasConfig %s", paasconfig.GetName())
+	ctx = setTemplater(ctx, *paasconfig)
 
 	// Deny creation from secondary or more PaasConfig resources
 	if warnings, flderr := validateNoPaasConfigExists(ctx, v.client); flderr != nil {
@@ -99,6 +105,7 @@ func (v *PaasConfigCustomValidator) ValidateUpdate(
 
 	_, logger := logging.SetWebhookLogger(ctx, nPaasconfig)
 	logger.Info().Msgf("validation for updating of PaasConfig %s", nPaasconfig.GetName())
+	ctx = setTemplater(ctx, *nPaasconfig)
 
 	// Ensure all required fields and values are there
 	if warnings, flderr := validatePaasConfigSpec(ctx, v.client, nPaasconfig.Spec); flderr != nil || len(warnings) > 0 {
@@ -156,6 +163,60 @@ func validateNoPaasConfigExists(
 	return nil, allErrs
 }
 
+// setTemplater creates a default templater and adds it to the context, so that later code can verify templates
+func setTemplater(
+	ctx context.Context,
+	paasConfig v1alpha2.PaasConfig,
+) context.Context {
+	const (
+		definedSecret          = "defined"
+		definedDecryptedVale   = "decrypted"
+		undefinedSecret        = "undefined"
+		undefinedDecryptedVale = "unknown"
+	)
+
+	decryptFunc := func(secret string) (string, error) {
+		if secret == definedSecret {
+			return definedDecryptedVale, nil
+		}
+		return undefinedDecryptedVale, nil
+	}
+
+	getPaasSecret := func(key string) (string, error) {
+		return decryptFunc(key)
+	}
+	getPaasSecrets := func() (map[string]string, error) {
+		secrets := map[string]string{
+			definedSecret:   definedDecryptedVale,
+			undefinedSecret: undefinedDecryptedVale,
+		}
+		return secrets, nil
+	}
+	t := templating.NewTemplater(v1alpha2.Paas{}, v1alpha2.PaasConfig{},
+		map[string]any{
+			"decryptPaasSecret": decryptFunc,
+			"getPaasSecret":     getPaasSecret,
+			"getPaasSecrets":    getPaasSecrets,
+		},
+	)
+	return context.WithValue(ctx, templateContextVar, t)
+}
+
+func getTemplater(
+	ctx context.Context,
+) (
+	t templating.Templater[v1alpha2.Paas, v1alpha2.PaasConfig, v1alpha2.PaasConfigSpec],
+	err error,
+) {
+	var ok bool
+	tAny := ctx.Value(templateContextVar)
+	t, ok = tAny.(templating.Templater[v1alpha2.Paas, v1alpha2.PaasConfig, v1alpha2.PaasConfigSpec])
+	if !ok {
+		return t, errors.New("getTemplate without setTemplate should not be possible")
+	}
+	return t, nil
+}
+
 func validatePaasConfigSpec(
 	ctx context.Context,
 	k8sClient client.Client,
@@ -168,19 +229,20 @@ func validatePaasConfigSpec(
 	quotaRE := spec.Validations.GetValidationRE("paas", "allowedQuotas")
 	if quotaRE != nil {
 		allErrs = append(allErrs, validateMapKeysAgainstRegex(
+			ctx,
 			spec.MaxAllowedSubmittedQuota.MaxQuota,
 			quotaRE,
 			childPath.Child("maxAllowedSubmittedQuota").Child("maxQuota"),
 		)...)
 	}
 
-	allErrs = append(allErrs, validateQuotaLabelField(spec, childPath)...)
+	allErrs = append(allErrs, validateQuotaLabelField(ctx, spec, childPath)...)
 	allErrs = append(allErrs, validateDecryptKeysSecretExists(ctx, k8sClient, spec.DecryptKeysSecret, childPath)...)
-	allErrs = append(allErrs, validateValidationFields(spec.Validations, childPath)...)
-	allErrs = append(allErrs, validateConfigCapabilityNames(spec, childPath)...)
-	allErrs = append(allErrs, validateConfigCapabilities(spec.Capabilities, quotaRE, childPath)...)
-	allErrs = append(allErrs, validateTemplatingFields(spec.Templating, childPath)...)
-	allErrs = append(allErrs, validateSecretTemplates(spec, childPath)...)
+	allErrs = append(allErrs, validateValidationFields(ctx, spec.Validations, childPath)...)
+	allErrs = append(allErrs, validateConfigCapabilityNames(ctx, spec, childPath)...)
+	allErrs = append(allErrs, validateConfigCapabilities(ctx, spec.Capabilities, quotaRE, childPath)...)
+	allErrs = append(allErrs, validateTemplatingFields(ctx, spec.Templating, childPath)...)
+	allErrs = append(allErrs, validateSecretTemplates(ctx, spec, childPath)...)
 
 	if len(allErrs) > 0 {
 		logger.Error().Strs(
@@ -209,6 +271,7 @@ func validatePaasConfigSpec(
 var labelKeyValidationRegex = regexp.MustCompile(`^(([a-z0-9]([-a-z0-9]*[a-z0-9])?\.)*[a-z0-9]([-a-z0-9]*[a-z0-9])?\/)?[a-zA-Z0-9]([-_./a-zA-Z0-9]{0,61}[a-zA-Z0-9])?$`)
 
 func validateQuotaLabelField(
+	_ context.Context,
 	spec v1alpha2.PaasConfigSpec,
 	rootPath *field.Path,
 ) field.ErrorList {
@@ -226,6 +289,7 @@ func validateQuotaLabelField(
 }
 
 func validateConfigCapabilities(
+	ctx context.Context,
 	capabilities v1alpha2.ConfigCapabilities,
 	quotaRE *regexp.Regexp,
 	rootPath *field.Path,
@@ -235,13 +299,17 @@ func validateConfigCapabilities(
 	var allErrs field.ErrorList
 
 	for name, capability := range capabilities {
-		allErrs = append(allErrs, validateConfigCapability(name, capability, quotaRE, childPath)...)
+		allErrs = append(allErrs, validateConfigCapability(ctx, name, capability, quotaRE, childPath)...)
 	}
 
 	return allErrs
 }
 
-func validateConfigCapabilityNames(spec v1alpha2.PaasConfigSpec, rootPath *field.Path) field.ErrorList {
+func validateConfigCapabilityNames(
+	ctx context.Context,
+	spec v1alpha2.PaasConfigSpec,
+	rootPath *field.Path,
+) field.ErrorList {
 	var validationRE *regexp.Regexp
 	childPath := rootPath.Child("capabilities")
 	if spec.Validations == nil {
@@ -265,29 +333,33 @@ func validateConfigCapabilityNames(spec v1alpha2.PaasConfigSpec, rootPath *field
 	return allErrs
 }
 
-func validateConfigCapability(name string, capability v1alpha2.ConfigCapability,
+func validateConfigCapability(
+	ctx context.Context,
+	name string,
+	capability v1alpha2.ConfigCapability,
 	quotaRE *regexp.Regexp,
 	rootPath *field.Path,
 ) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Key(name)
 
-	allErrs = append(allErrs, validateAllowedQuotas(capability.QuotaSettings, quotaRE, childPath)...)
-	allErrs = append(allErrs, validateConfigQuotaSettings(capability.QuotaSettings, childPath)...)
-	allErrs = append(allErrs, validateConfigCustomFields(capability.CustomFields, childPath)...)
+	allErrs = append(allErrs, validateAllowedQuotas(ctx, capability.QuotaSettings, quotaRE, childPath)...)
+	allErrs = append(allErrs, validateConfigQuotaSettings(ctx, capability.QuotaSettings, childPath)...)
+	allErrs = append(allErrs, validateConfigCustomFields(ctx, capability.CustomFields, childPath)...)
 
 	return allErrs
 }
 
 func validateConfigQuotaSettings(
+	ctx context.Context,
 	qs v1alpha2.ConfigQuotaSettings,
 	rootPath *field.Path,
 ) field.ErrorList {
 	var allErrs field.ErrorList
 	childPath := rootPath.Child("quotasettings")
 
-	allErrs = append(allErrs, validateConfigDefQuota(qs, childPath)...)
-	allErrs = append(allErrs, validateConfigQuotaMinMax(qs, childPath)...)
+	allErrs = append(allErrs, validateConfigDefQuota(ctx, qs, childPath)...)
+	allErrs = append(allErrs, validateConfigQuotaMinMax(ctx, qs, childPath)...)
 
 	if qs.External() {
 		return allErrs
@@ -317,6 +389,7 @@ func validateConfigQuotaSettings(
 }
 
 func validateAllowedQuotas(
+	ctx context.Context,
 	qs v1alpha2.ConfigQuotaSettings,
 	quotaRE *regexp.Regexp,
 	childPath *field.Path,
@@ -327,14 +400,18 @@ func validateAllowedQuotas(
 	var allErrs field.ErrorList
 	childPath = childPath.Child("quotas")
 
-	allErrs = append(allErrs, validateMapKeysAgainstRegex(qs.DefQuota, quotaRE, childPath.Child("defaults"))...)
-	allErrs = append(allErrs, validateMapKeysAgainstRegex(qs.MinQuotas, quotaRE, childPath.Child("min"))...)
-	allErrs = append(allErrs, validateMapKeysAgainstRegex(qs.MaxQuotas, quotaRE, childPath.Child("max"))...)
+	allErrs = append(allErrs, validateMapKeysAgainstRegex(ctx, qs.DefQuota, quotaRE, childPath.Child("defaults"))...)
+	allErrs = append(allErrs, validateMapKeysAgainstRegex(ctx, qs.MinQuotas, quotaRE, childPath.Child("min"))...)
+	allErrs = append(allErrs, validateMapKeysAgainstRegex(ctx, qs.MaxQuotas, quotaRE, childPath.Child("max"))...)
 
 	return allErrs
 }
 
-func validateConfigDefQuota(qs v1alpha2.ConfigQuotaSettings, childPath *field.Path) field.ErrorList {
+func validateConfigDefQuota(
+	ctx context.Context,
+	qs v1alpha2.ConfigQuotaSettings,
+	childPath *field.Path,
+) field.ErrorList {
 	var allErrs field.ErrorList
 
 	for resourceName, defQuantity := range qs.DefQuota {
@@ -362,7 +439,11 @@ func validateConfigDefQuota(qs v1alpha2.ConfigQuotaSettings, childPath *field.Pa
 	return allErrs
 }
 
-func validateConfigQuotaMinMax(qs v1alpha2.ConfigQuotaSettings, childPath *field.Path) field.ErrorList {
+func validateConfigQuotaMinMax(
+	ctx context.Context,
+	qs v1alpha2.ConfigQuotaSettings,
+	childPath *field.Path,
+) field.ErrorList {
 	var allErrs field.ErrorList
 
 	for resourceName, minQuantity := range qs.MinQuotas {
@@ -409,6 +490,7 @@ func validateConfigQuotaMinMax(qs v1alpha2.ConfigQuotaSettings, childPath *field
 }
 
 func validateConfigCustomFields(
+	ctx context.Context,
 	customfields map[string]v1alpha2.ConfigCustomField,
 	rootPath *field.Path,
 ) field.ErrorList {
@@ -416,13 +498,14 @@ func validateConfigCustomFields(
 	childPath := rootPath.Child("customfields")
 
 	for name, cf := range customfields {
-		allErrs = append(allErrs, validateConfigCustomField(name, cf, childPath)...)
+		allErrs = append(allErrs, validateConfigCustomField(ctx, name, cf, childPath)...)
 	}
 
 	return allErrs
 }
 
 func validateConfigCustomField(
+	ctx context.Context,
 	name string,
 	customfield v1alpha2.ConfigCustomField,
 	rootPath *field.Path,
@@ -466,16 +549,19 @@ func validateConfigCustomField(
 			}
 		}
 	}
-
 	if customfield.Template != "" {
-		err := templating.NewTemplater(v1alpha2.Paas{}, v1alpha2.PaasConfig{},
-			map[string]any{"decryptPaasSecret": func(string) string { return "" }}).Verify(name, customfield.Template)
-		if err != nil {
-			allErrs = append(allErrs, field.Invalid(
-				childPath.Child("template"),
-				customfield.Template,
-				err.Error(),
-			))
+		t, getTemplaterErr := getTemplater(ctx)
+		if getTemplaterErr != nil {
+			allErrs = append(allErrs, field.InternalError(childPath.Child("template"), getTemplaterErr))
+		} else {
+			verifyErr := t.Verify(name, customfield.Template)
+			if verifyErr != nil {
+				allErrs = append(allErrs, field.Invalid(
+					childPath.Child("template"),
+					customfield.Template,
+					verifyErr.Error(),
+				))
+			}
 		}
 	}
 
@@ -483,6 +569,7 @@ func validateConfigCustomField(
 }
 
 func validateTemplatingFields(
+	ctx context.Context,
 	templatingConfig v1alpha2.ConfigTemplatingItems,
 	rootPath *field.Path,
 ) field.ErrorList {
@@ -495,45 +582,57 @@ func validateTemplatingFields(
 		"namespaceLabels":         templatingConfig.NamespaceLabels,
 		"roleBindingLabels":       templatingConfig.RoleBindingLabels,
 	} {
-		allErrs = append(allErrs, validateTemplatingField(resourceType, childPath.Child(name))...)
+		allErrs = append(allErrs, validateTemplatingField(ctx, resourceType, childPath.Child(name))...)
 	}
 
 	return allErrs
 }
 
 func validateSecretTemplates(
+	ctx context.Context,
 	spec v1alpha2.PaasConfigSpec,
 	rootPath *field.Path,
 ) field.ErrorList {
 	var allErrs field.ErrorList
+
 	toCheck := map[*field.Path]string{rootPath.Child("namespace_secrets"): spec.NamespaceSecrets}
 	for capName, cap := range spec.Capabilities {
 		toCheck[rootPath.Child("capabilities").Key(capName).Child("secrets")] = cap.Secrets
 	}
-	templater := templating.NewTemplater(v1alpha2.Paas{}, v1alpha2.PaasConfig{})
-	for childPath, template := range toCheck {
-		err := templater.Verify(childPath.String(), template)
-		if err != nil {
-			allErrs = append(allErrs, field.Invalid(childPath, template, err.Error()))
+	templater, getTemplaterErr := getTemplater(ctx)
+	if getTemplaterErr != nil {
+		allErrs = append(allErrs, field.InternalError(rootPath, getTemplaterErr))
+	} else {
+		for childPath, template := range toCheck {
+			err := templater.Verify(childPath.String(), template)
+			if err != nil {
+				allErrs = append(allErrs, field.Invalid(childPath, template, err.Error()))
+			}
 		}
 	}
 	return allErrs
 }
 
 func validateTemplatingField(
+	ctx context.Context,
 	templatingField v1alpha2.ConfigTemplatingItem,
 	rootPath *field.Path,
 ) field.ErrorList {
 	var allErrs field.ErrorList
-	for name, template := range templatingField {
-		childPath := rootPath.Key(name)
-		err := templating.NewTemplater(v1alpha2.Paas{}, v1alpha2.PaasConfig{}).Verify(name, template)
-		if err != nil {
-			allErrs = append(allErrs, field.Invalid(
-				childPath.Child("template"),
-				template,
-				err.Error(),
-			))
+	templater, getTemplaterErr := getTemplater(ctx)
+	if getTemplaterErr != nil {
+		allErrs = append(allErrs, field.InternalError(rootPath, getTemplaterErr))
+	} else {
+		for name, template := range templatingField {
+			childPath := rootPath.Key(name)
+			err := templater.Verify(name, template)
+			if err != nil {
+				allErrs = append(allErrs, field.Invalid(
+					childPath.Child("template"),
+					template,
+					err.Error(),
+				))
+			}
 		}
 	}
 	return allErrs
@@ -570,6 +669,7 @@ func validateDecryptKeysSecretExists(
 
 // validateValidationFields ensures all validation regexes in the spec are compilable.
 func validateValidationFields(
+	_ context.Context,
 	validations v1alpha2.PaasConfigValidations,
 	rootPath *field.Path,
 ) field.ErrorList {
@@ -604,6 +704,7 @@ func formatFieldErrors(allErrs field.ErrorList) []string {
 
 // helper function
 func validateMapKeysAgainstRegex(
+	_ context.Context,
 	kv map[k8sv1.ResourceName]resourcev1.Quantity,
 	re *regexp.Regexp,
 	path *field.Path,
