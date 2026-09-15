@@ -33,7 +33,22 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 		scheme    *runtime.Scheme
 		cl        client.Client
 	)
-	const simpleTemplate = `{{ $s := dict }}{{ $_ := set $s "mysecret" .Paas.Spec.Capabilities.mycap.Secrets }}{{ $s }}`
+	const (
+		simpleTemplate = `
+          {{ $secret := getPaasSecret "secret" }}
+          {{ $secrets := dict }}
+		  {{ $_ := $secrets | set "mysecret" $secret }}
+		  {{ $secrets }}`
+		backwardsCompatibleTemplate = `
+          {{- $secrets := dict -}}
+          {{- range $key, $value := getPaasSecrets -}}
+            {{- $hash := $key | sha512Sum | trunc 8 -}}
+            {{- $secretName := print "paas-ssh-" $hash -}}
+            {{- $secretData := dict "type" "git" "url" $key "sshPrivateKey" $value -}}
+            {{- $_ := $secrets | set $secretName $secretData -}}
+          {{- end -}}
+          {{- $secrets | toYAML -}}`
+	)
 
 	BeforeEach(func() {
 		obj = &v1alpha2.PaasConfig{
@@ -305,6 +320,7 @@ var _ = Describe("Creating a PaasConfig", Ordered, func() {
 					valid    bool
 				}{
 					{template: simpleTemplate, valid: true},
+					{template: backwardsCompatibleTemplate, valid: true},
 					{template: "{{ .DoesNotExist }}", valid: false},
 					{template: "{{ .MissingBrace }", valid: false},
 					{template: "{{ range group in .Paas.Groups}}{{ .MissingEnd }}", valid: false},

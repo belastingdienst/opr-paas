@@ -274,7 +274,6 @@ spec:
                 type: object
             required:
             - decryptKeySecret
-            - namespace_secrets
             type: object
           status:
             properties:
