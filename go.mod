@@ -16,7 +16,7 @@ require (
 require (
 	github.com/belastingdienst/opr-paas-cli/v2 v2.0.6
 	github.com/go-logr/zerologr v1.2.3
-	github.com/go-sprout/sprout v1.0.3
+	github.com/go-sprout/sprout v1.1.1
 	github.com/onsi/ginkgo/v2 v2.32.1
 	github.com/onsi/gomega v1.43.0
 	github.com/rs/zerolog v1.35.1
