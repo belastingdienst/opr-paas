@@ -1,18 +1,20 @@
 ---
-title: Basic usage
-summary: A basic usage description of how to use CWQs.
+title: Basic usage of CWQs
+summary: A basic usage description of how to use Cluster-Wide Quotas.
 authors:
   - devotional-phoenix-97
   - hikarukin
 date: 2024-07-01
 ---
 
-Basic usage of CWQs
+Basic usage of Cluster-Wide Quotas
 ===================
 
 With Cluster Wide Quotas, cluster admins can bring all resources for all Paas'es 
 belonging to a capability together in one cluster wide resource pool. This brings
 down over commit at the expense of the risks associated with resource sharing.
+
+See [benefits](./benefits.md) for more details on the exact use-case and it's benefits.
 
 Use a quota per Paas
 --------------------

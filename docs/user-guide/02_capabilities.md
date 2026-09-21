@@ -14,7 +14,7 @@ Capabilities need to be created and added to the cluster wide configuration of t
 Paas operator by administrators. After that Paas users can easily add the capabilities
 to their Paas.
 
-Read more about Paas capabilities in our [core concepts](../overview/core_concepts/capabilities.md) documentation.
+Read more about Paas capabilities in our [core concepts](../overview/core_concepts/capabilities/) documentation.
 
 !!! example
 

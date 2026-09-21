@@ -1,20 +1,20 @@
 ---
 title: Benefits of using CWQs
-summary: An example of the benefits of using Cluster Wide Quotas.
+summary: An example of the benefits of using Cluster-Wide Quotas.
 authors:
   - devotional-phoenix-97
   - hikarukin
 date: 2024-07-01
 ---
 
-Benefits of using CWQs
-======================
+# Benefits of using Cluster-Wide Quotas
 
 The following is a good example of the benefits when implementing cluster wide
 quotas. The example makes use of Tekton.
 
-Without Cluster Wide Quotas
----------------------------
+See [basic usage](index/) for more info on how to configure Cluster Wide Quotas.
+
+## Without Cluster Wide Quotas
 
 Without Cluster Wide Quotas, every Tekton namespace would be linked to a specific
 cluster quota. All of these quota would add up to a considerable total quota
@@ -24,8 +24,7 @@ However, since Tekton pipelines only rarely actually use these quotas on average
 about 99% of quota would always be unused. The cluster would either be considerably
 over committed or underutilized.
 
-With Cluster Wide Quotas
-------------------------
+## With Cluster Wide Quotas
 
 By enabling Cluster Wide Quotas, all Tekton namespaces will be linked to one
 cluster wide quota.
@@ -41,8 +40,7 @@ The algorithm comes down to using the largest value out of 3 different calculati
 
 Furthermore, a maximum value (Paas config) can be set to cap the quota.
 
-Example with numbers
---------------------
+## Example with numbers
 
 Consider the following values being set in the Paas config (e.a. for `cpu.limits`):
 
