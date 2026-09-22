@@ -169,6 +169,7 @@ type ConfigCapability struct {
 
 	// Secrets to be created for this capability. It should be a go-template that returns a map of key/value pairs for
 	// the data in the secret.
+	// +kubebuilder:validation:Optional
 	Secrets string `json:"secrets"`
 }
 
