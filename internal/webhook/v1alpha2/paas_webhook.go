@@ -33,6 +33,7 @@ import (
 )
 
 const pathSpec string = "spec"
+const pathQuota = "quota"
 
 // SetupPaasWebhookWithManager registers the webhook for Paas in the manager.
 func SetupPaasWebhookWithManager(mgr ctrl.Manager) error {
@@ -141,10 +142,14 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		}
 	}
 
+	quotaWarnings, quotaErrors := validateQuotaFeatureFlag(conf, paas)
+	warnings = append(warnings, quotaWarnings...)
+	allErrs = append(allErrs, quotaErrors...)
+
 	groupWarnings, groupErrors := v.validateGroups(conf, paas.Spec.Groups, conf.Spec.FeatureFlags.GroupUserManagement)
 	warnings = append(warnings, groupWarnings...)
 	allErrs = append(allErrs, groupErrors...)
-	warnings = append(warnings, v.validateQuota(paas)...)
+	warnings = append(warnings, v.validateQuota(conf, paas)...)
 	warnings = append(warnings, v.validateExtraPerm(conf, paas)...)
 
 	if len(allErrs) == 0 && len(warnings) == 0 {
@@ -159,6 +164,56 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		paas.Name,
 		allErrs,
 	)
+}
+
+// validateQuotaFeatureFlag checks for quota definitions when cluster quota management is disabled
+func validateQuotaFeatureFlag(conf v1alpha2.PaasConfig, paas *v1alpha2.Paas) ([]string, []*field.Error) {
+	var errs []*field.Error
+	var warnings []string
+
+	if conf.QuotaManagementEnabled() {
+		return nil, nil
+	}
+
+	featureFlag := conf.Spec.FeatureFlags.ClusterResourceQuotaManagement
+
+	quotas := []struct {
+		path  *field.Path
+		quota quota.Quota
+	}{
+		{path: field.NewPath(pathSpec, pathQuota), quota: paas.Spec.Quota},
+	}
+
+	capNames := slices.Sorted(maps.Keys(paas.Spec.Capabilities))
+	cf := field.NewPath(pathSpec, "capabilities")
+	for _, name := range capNames {
+		quotas = append(quotas, struct {
+			path  *field.Path
+			quota quota.Quota
+		}{
+			path:  cf.Key(name).Child(pathQuota),
+			quota: paas.Spec.Capabilities[name].Quota,
+		})
+	}
+
+	for _, q := range quotas {
+		switch featureFlag {
+		case "warn":
+			if len(q.quota) == 0 {
+				continue
+			}
+			warnings = append(warnings, fmt.Sprintf(
+				"paas defines quota: %s, operator is not configured for quota management, "+
+					"specified resources are ignored",
+				q.path.String()))
+		case "block":
+			if len(q.quota) == 0 {
+				continue
+			}
+			errs = append(errs, field.Invalid(q.path, q.quota, "quota management is a disabled feature"))
+		}
+	}
+	return warnings, errs
 }
 
 // validateCaps returns an error if any of the passed capabilities is not configured.
@@ -256,16 +311,17 @@ func validatePaasallowedQuotas(
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 	nameValidationRE := conf.Spec.Validations.GetValidationRE("paas", "allowedQuotas")
-	if nameValidationRE == nil {
+
+	if nameValidationRE == nil || !conf.QuotaManagementEnabled() {
 		return nil, nil
 	}
 
 	quotas := map[*field.Path]quota.Quota{
-		field.NewPath(pathSpec, "quota"): paas.Spec.Quota,
+		field.NewPath(pathSpec, pathQuota): paas.Spec.Quota,
 	}
 	cf := field.NewPath(pathSpec, "capabilities")
 	for name, c := range paas.Spec.Capabilities {
-		quotas[cf.Key(name).Child("quota")] = c.Quota
+		quotas[cf.Key(name).Child(pathQuota)] = c.Quota
 	}
 
 	for f, q := range quotas {
@@ -503,13 +559,17 @@ func (*PaasCustomValidator) validateGroups(
 }
 
 // validateQuota returns a warning when higher limits are configured than requests for the Paas / capability quotas.
-func (v *PaasCustomValidator) validateQuota(paas *v1alpha2.Paas) (warnings []string) {
+func (v *PaasCustomValidator) validateQuota(conf v1alpha2.PaasConfig, paas *v1alpha2.Paas) (warnings []string) {
+	if !conf.QuotaManagementEnabled() {
+		return nil
+	}
+
 	quotas := map[*field.Path]quota.Quota{
-		field.NewPath(pathSpec, "quota"): paas.Spec.Quota,
+		field.NewPath(pathSpec, pathQuota): paas.Spec.Quota,
 	}
 	cf := field.NewPath(pathSpec, "capabilities")
 	for name, c := range paas.Spec.Capabilities {
-		quotas[cf.Key(name).Child("quota")] = c.Quota
+		quotas[cf.Key(name).Child(pathQuota)] = c.Quota
 	}
 
 	for f, q := range quotas {
@@ -605,7 +665,7 @@ func validateSecrets(
 func validateAppNamespaceQuota(
 	ctx context.Context,
 	k8sClient client.Client,
-	_ v1alpha2.PaasConfig,
+	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
@@ -614,7 +674,7 @@ func validateAppNamespaceQuota(
 		return nil, nil
 	}
 
-	if len(paas.Spec.Namespaces) > 0 {
+	if len(paas.Spec.Namespaces) > 0 && conf.QuotaManagementEnabled() {
 		errs = append(errs, field.Invalid(
 			field.NewPath(pathSpec, "namespaces"),
 			fmt.Sprintf("%d", len(paas.Spec.Namespaces)),
@@ -651,7 +711,7 @@ func validateSubmittedQuotaAgainstMaxAllowed(
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
-	if len(paas.Spec.Quota) == 0 {
+	if len(paas.Spec.Quota) == 0 || !conf.QuotaManagementEnabled() {
 		return nil, nil
 	}
 
@@ -669,7 +729,7 @@ func validateSubmittedQuotaAgainstMaxAllowed(
 
 		if paasQty.Cmp(paasConfigMaxQty) > 0 {
 			errs = append(errs, field.Invalid(
-				field.NewPath(pathSpec, "quota"),
+				field.NewPath(pathSpec, pathQuota),
 				paasQty.String(),
 				fmt.Sprintf("quota (%s) cannot be larger than MaxAllowedSubmittedQuota (%s)",
 					resource,
