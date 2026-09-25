@@ -23,7 +23,7 @@ for all Paas'es belonging to a capability, together in one cluster wide resource
 
 This brings down over commit at the expense of the risk of resource sharing.
 
-For more details, see the [relevant details in the administrators section](administrators-guide/cluster-wide-quotas/basic-usage.md)
+For more details, see the [relevant details in the administrators section](administrators-guide/capabilities/cluster-wide-quotas/)
 
 ## Kubectl-paas
 
