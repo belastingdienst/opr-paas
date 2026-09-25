@@ -39,6 +39,9 @@ the Paas Operator in production environments.
 - [Validations](validations/)  
   Built‑in checks to ensure correct configurations and prevent misconfigurations.
 
+- [Feature-flags](feature-flags.md)
+  Flags for disabling certain features of the operator.
+
 _For development workflows, release procedures, and contributor guidelines, see the [Developer’s Guide](../development-guide/index.md)._
 
 ---
