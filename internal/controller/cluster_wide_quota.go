@@ -158,6 +158,17 @@ func (r *PaasReconciler) reconcileClusterWideQuota(ctx context.Context, paas *v1
 	}
 
 	for capabilityName := range myconfig.Spec.Capabilities {
+		if !myconfig.QuotaManagementEnabled() {
+			err = r.removeFromClusterWideQuota(ctx, paas, capabilityName)
+			if err != nil && k8serrors.IsNotFound(err) {
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
 		if _, exists := paas.Spec.Capabilities[capabilityName]; exists {
 			err = r.addToClusterWideQuota(ctx, paas, capabilityName)
 			if err != nil && k8serrors.IsNotFound(err) {

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
@@ -78,6 +79,9 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 						},
 					},
 				},
+				FeatureFlags: v1alpha2.ConfigFeatureFlags{
+					ClusterResourceQuotaManagement: "allow",
+				},
 			},
 		}
 		// Updates context to include paasConfig
@@ -147,6 +151,54 @@ var _ = Describe("ClusterResourceQuota controller", func() {
 			err := k8sClient.Get(ctx, quotaName, q)
 			Expect(k8serrors.IsNotFound(err)).To(BeTrue())
 		})
+
+		for _, setting := range []string{"warn", "block"} {
+			It(fmt.Sprintf("should not add cluster-wide quota membership when quota "+
+				"management is not enabled (setting: %s)", setting), func() {
+				paasConfig.Spec.FeatureFlags.ClusterResourceQuotaManagement = setting
+				ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, paasConfig)
+
+				paas = &v1alpha2.Paas{
+					ObjectMeta: metav1.ObjectMeta{Name: paasPrefix},
+					Spec: v1alpha2.PaasSpec{
+						Requestor: "foo",
+						Quota:     quota.Quota{},
+						Capabilities: v1alpha2.PaasCapabilities{
+							capName: v1alpha2.PaasCapability{},
+						},
+					},
+				}
+				Expect(k8sClient.Create(ctx, paas)).NotTo(HaveOccurred())
+				paas.TypeMeta = metav1.TypeMeta{
+					APIVersion: v1alpha2.GroupVersion.String(),
+					Kind:       "Paas",
+				}
+
+				Expect(reconciler.reconcileClusterWideQuota(ctx, paas)).NotTo(HaveOccurred())
+
+				q := &quotav1.ClusterResourceQuota{}
+				err := k8sClient.Get(ctx, quotaName, q)
+				Expect(k8serrors.IsNotFound(err)).To(BeTrue())
+			})
+
+			It(fmt.Sprintf("should remove cluster-wide quota when quota "+
+				"management is not enabled (setting: %s)", setting), func() {
+				paas = addPaasWithDefCap(paasPrefix)
+
+				// check whether quota was created
+				quota := &quotav1.ClusterResourceQuota{}
+				Expect(k8sClient.Get(ctx, quotaName, quota)).
+					NotTo(HaveOccurred())
+
+				// Disable quota management
+				paasConfig.Spec.FeatureFlags.ClusterResourceQuotaManagement = setting
+				ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, paasConfig)
+				Expect(reconciler.reconcileClusterWideQuota(ctx, paas)).NotTo(HaveOccurred())
+
+				err := k8sClient.Get(ctx, quotaName, quota)
+				Expect(k8serrors.IsNotFound(err)).To(BeTrue())
+			})
+		}
 
 		It("should remove the ClusterResourceQuota on finalization", func() {
 			paas = addPaasWithDefCap(paasPrefix)

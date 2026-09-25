@@ -152,6 +152,44 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(validator.ValidateCreate(ctx, obj)).Error().
 				To(MatchError(ContainSubstring("cannot be larger than MaxAllowedSubmittedQuota")))
 		})
+		It("Should not enforce MaxAllowedSubmittedQuota when quota management is not enabled", func() {
+			for _, setting := range []string{"warn", "block"} {
+				obj = &v1alpha2.Paas{
+					Spec: v1alpha2.PaasSpec{
+						Quota: quota.Quota{
+							corev1.ResourceLimitsCPU: resource.MustParse("10"),
+						},
+					},
+				}
+
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+
+				// Set a very small max, which would normally be exceeded
+				latestConf.Spec.MaxAllowedSubmittedQuota = v1alpha2.ConfigMaxAllowedSubmittedQuota{
+					MaxQuota: quota.Quota{
+						corev1.ResourceLimitsCPU: resource.MustParse("1m"),
+					},
+				}
+				latestConf.Spec.FeatureFlags.ClusterResourceQuotaManagement = setting
+				Expect(k8sClient.Update(ctx, latestConf)).To(Succeed())
+
+				_, err = validator.ValidateCreate(ctx, obj)
+				if setting == "warn" {
+					// quota management is only discouraged, not blocked: no error at all,
+					// and the MaxAllowedSubmittedQuota check should not fire either.
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					// quota management is blocked entirely: an error is expected, but it
+					// must come from the feature flag check, not the MaxAllowedSubmittedQuota check.
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).NotTo(ContainSubstring("cannot be larger than MaxAllowedSubmittedQuota"))
+					Expect(err.Error()).To(ContainSubstring("quota management is a disabled feature"))
+				}
+			}
+		})
 		It("Should validate paas name", func() {
 			const paasNameValidation = "^([a-z0-9]{3})-([a-z0-9]{3})$"
 
@@ -690,6 +728,32 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			))
 		})
 
+		It("Should not warn about request/limit mismatch when quota management is not enabled", func() {
+			for _, setting := range []string{"warn", "block"} {
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				latestConf.Spec.FeatureFlags.ClusterResourceQuotaManagement = setting
+				err = k8sClient.Update(ctx, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+
+				obj = &v1alpha2.Paas{
+					Spec: v1alpha2.PaasSpec{
+						Quota: quota.Quota{
+							corev1.ResourceLimitsCPU:   resource.MustParse("10"),
+							corev1.ResourceRequestsCPU: resource.MustParse("11"),
+						},
+					},
+				}
+
+				warnings, _ := validator.ValidateCreate(ctx, obj)
+				Expect(warnings).NotTo(ContainElement(
+					"spec.quota CPU resource request (11) higher than limit (10)"),
+					"setting %q should not warn about request/limit mismatch", setting)
+			}
+		})
+
 		It("Should warn when extra permissions are requested for a capability that are not configured", func() {
 			// Update PaasConfig
 			latestConf := &v1alpha2.PaasConfig{}
@@ -753,6 +817,88 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 								Users: []string{"bar"},
 							},
 						},
+					},
+				}
+				warnings, err := validator.ValidateCreate(ctx, obj)
+				if expects.warn == "" {
+					Expect(warnings).To(BeNil())
+				} else {
+					Expect(warnings).To(ContainElement(expects.warn))
+				}
+				if expects.err == "" {
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(err).To(MatchError(SatisfyAll(ContainSubstring(expects.err))))
+				}
+			}
+		})
+		It("Should handle cluster resource quota feature flag properly when quota defined in top-level", func() {
+			for setting, expects := range map[string]struct {
+				warn string
+				err  string
+			}{
+				"allow": {},
+				"warn": {warn: "paas defines quota: spec.quota, operator is not configured for quota management, " +
+					"specified resources are ignored"},
+				"block": {err: "quota management is a disabled feature"},
+			} {
+				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %s: %s", setting, expects)
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				latestConf.Spec.FeatureFlags.ClusterResourceQuotaManagement = setting
+				err = k8sClient.Update(ctx, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				obj = &v1alpha2.Paas{
+					Spec: v1alpha2.PaasSpec{
+						Quota: quota.Quota{
+							"limits.memory":    resource.MustParse("100M"),
+							"requests.cpu":     resource.MustParse("1.1"),
+							"requests.memory":  resource.MustParse("100M"),
+							"requests.storage": resource.MustParse("10G"),
+						},
+					},
+				}
+				warnings, err := validator.ValidateCreate(ctx, obj)
+				if expects.warn == "" {
+					Expect(warnings).To(BeNil())
+				} else {
+					Expect(warnings).To(ContainElement(expects.warn))
+				}
+				if expects.err == "" {
+					Expect(err).NotTo(HaveOccurred())
+				} else {
+					Expect(err).To(MatchError(SatisfyAll(ContainSubstring(expects.err))))
+				}
+			}
+		})
+		It("Should handle cluster resource quota feature flag properly when quota defined in capability", func() {
+			for setting, expects := range map[string]struct {
+				warn string
+				err  string
+			}{
+				"allow": {},
+				"warn": {warn: "paas defines quota: spec.capabilities[cap5].quota, operator is not configured for" +
+					" quota management, specified resources are ignored"},
+				"block": {err: "quota management is a disabled feature"},
+			} {
+				fmt.Fprintf(GinkgoWriter, "DEBUG - Test: %s: %s", setting, expects)
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				latestConf.Spec.FeatureFlags.ClusterResourceQuotaManagement = setting
+				err = k8sClient.Update(ctx, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				obj = &v1alpha2.Paas{
+					Spec: v1alpha2.PaasSpec{
+						Capabilities: v1alpha2.PaasCapabilities{
+							"cap5": v1alpha2.PaasCapability{
+								Quota: quota.Quota{
+									"limits.memory": resource.MustParse("1"),
+								},
+							}},
 					},
 				}
 				warnings, err := validator.ValidateCreate(ctx, obj)
@@ -833,6 +979,39 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				warn, err := validator.ValidateCreate(ctx, obj)
 				Expect(warn).To(BeNil())
 				Expect(err).Error().To(HaveOccurred())
+			})
+			It("should not enforce allowed quota names when quota management is not enabled", func() {
+				for _, setting := range []string{"warn", "block"} {
+					// Update PaasConfig
+					latestConf := &v1alpha2.PaasConfig{}
+					err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+					Expect(err).To(Not(HaveOccurred()))
+					latestConf.Spec.Validations = validationConfig
+					latestConf.Spec.FeatureFlags.ClusterResourceQuotaManagement = setting
+					err = k8sClient.Update(ctx, latestConf)
+					Expect(err).To(Not(HaveOccurred()))
+					obj = &v1alpha2.Paas{
+						Spec: v1alpha2.PaasSpec{
+							Capabilities: v1alpha2.PaasCapabilities{
+								"cap5": v1alpha2.PaasCapability{
+									Quota: invalidQuotas,
+								},
+							},
+						},
+					}
+					_, err = validator.ValidateCreate(ctx, obj)
+					if setting == "warn" {
+						// quota management is only discouraged, not blocked: no error at all,
+						// and the allowed-quota-names check should not fire either.
+						Expect(err).NotTo(HaveOccurred())
+					} else {
+						// quota management is blocked entirely: an error is expected, but it
+						// must come from the feature flag check, not the allowed-quota-names check.
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).NotTo(ContainSubstring("quota is not allowed"))
+						Expect(err.Error()).To(ContainSubstring("quota management is a disabled feature"))
+					}
+				}
 			})
 			It("should allow paas quota names that meet re", func() {
 				// Update PaasConfig
@@ -930,6 +1109,28 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 					Field: "spec.namespaces",
 				},
 			))
+		})
+		It("Should allow creation of a namespace without quota when quota management is not enabled", func() {
+			for _, setting := range []string{"warn", "block"} {
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				latestConf.Spec.FeatureFlags.ClusterResourceQuotaManagement = setting
+				err = k8sClient.Update(ctx, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+
+				obj = &v1alpha2.Paas{
+					Spec: v1alpha2.PaasSpec{
+						Namespaces: v1alpha2.PaasNamespaces{
+							"bobber": {},
+						},
+					},
+				}
+				_, err = validator.ValidateCreate(ctx, obj)
+				Expect(err).NotTo(HaveOccurred(),
+					"setting %q should not require quota when namespaces are defined", setting)
+			}
 		})
 		It("Should deny modification when a capability with paasNS has been modified to have no quota", func() {
 			obj = &v1alpha2.Paas{
