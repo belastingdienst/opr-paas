@@ -26,7 +26,7 @@ Additionally, the following optional settings can also be defined:
 
 - `capabilities`, which can be used to enable Paas extensions such as an ArgoCD to
   manage all Paas namespaces, Grafana to monitor Paas namespaces, etc. More information
-  can be found in our [capabilities](capabilities.md) documentation.
+  can be found in our [capabilities](capabilities/) documentation.
 - `spec.secrets`, which can be used to seed secrets that ArgoCD requires for
   accessing repositories. See [secrets](secrets.md) for more information.
 - `spec.groups`, which can be used to configure authorization. See [authorization](authorization.md)
