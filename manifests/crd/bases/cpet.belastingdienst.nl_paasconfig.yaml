@@ -136,7 +136,6 @@ spec:
                       type: string
                   required:
                   - quotas
-                  - secrets
                   type: object
                 description: A map with zero or more ConfigCapability
                 type: object
@@ -171,6 +170,14 @@ spec:
               feature_flags:
                 description: Enable, disable, and tune operator features
                 properties:
+                  cluster_resource_quota_management:
+                    default: allow
+                    description: Should the operator manage cluster resource quota
+                    enum:
+                    - allow
+                    - warn
+                    - block
+                    type: string
                   group_user_management:
                     default: allow
                     description: Should the operator manage group users

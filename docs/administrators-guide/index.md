@@ -24,8 +24,8 @@ the Paas Operator in production environments.
     - [Max Allowed Submitted Quota](configuration/max-allowed-submitted-quota.md)  
       How to configure `PaasConfig` to set a maximum allowed quota globally.
 
-- [Cluster‑Wide Quotas](cluster-wide-quotas/)  
-  Instructions for enforcing resource usage limits across namespaces.
+- [Go templating capabilities](go-templating/)
+  Instructions on go-templating and how you can use it to manage labels and secrets.
 
 - [Capabilities](capabilities/)  
   Modular, plugin‑style features like ArgoCD, Tekton, Grafana, and Keycloak.
@@ -38,6 +38,9 @@ the Paas Operator in production environments.
 
 - [Validations](validations/)  
   Built‑in checks to ensure correct configurations and prevent misconfigurations.
+
+- [Feature-flags](feature-flags.md)
+  Flags for disabling certain features of the operator.
 
 _For development workflows, release procedures, and contributor guidelines, see the [Developer’s Guide](../development-guide/index.md)._
 
