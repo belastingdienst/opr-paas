@@ -213,28 +213,44 @@ func (r *PaasReconciler) reconcileQuotas(
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterQuotaComponent)
 	logger.Info().Msg("creating quotas for Paas")
 
-	// Create quotas if needed
+	paasConfig, err := config.GetConfigFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
 	quotas, err := r.backendEnabledQuotas(ctx, paas)
 	if err != nil {
 		return err
 	}
-	for _, q := range quotas {
-		logger.Info().Msg("creating quota " + q.Name + " for PAAS object if needed")
-		if err = r.ensureQuota(ctx, q); err != nil {
-			logger.Err(err).Msgf("failure while creating quota %s", q.Name)
+
+	if paasConfig.QuotaManagementEnabled() {
+		for _, q := range quotas {
+			logger.Info().Msg("creating quota " + q.Name + " for PAAS object if needed")
+			if err = r.ensureQuota(ctx, q); err != nil {
+				logger.Err(err).Msgf("failure while creating quota %s", q.Name)
+				return err
+			}
+		}
+
+		var unneededQuotas []string
+		unneededQuotas, err = r.backendUnneededQuotas(ctx, paas)
+		if err != nil {
 			return err
 		}
-	}
-
-	unneededQuotas, err := r.backendUnneededQuotas(ctx, paas)
-	if err != nil {
-		return err
-	}
-	for _, name := range unneededQuotas {
-		logger.Info().Msg("cleaning quota " + name + " for PAAS object ")
-		if err = r.finalizeClusterQuota(ctx, name); err != nil {
-			logger.Err(err).Msgf("failure while finalizing quota %s", name)
-			return err
+		for _, name := range unneededQuotas {
+			logger.Info().Msg("cleaning quota " + name + " for PAAS object ")
+			if err = r.finalizeClusterQuota(ctx, name); err != nil {
+				logger.Err(err).Msgf("failure while finalizing quota %s", name)
+				return err
+			}
+		}
+	} else {
+		for _, q := range quotas {
+			logger.Info().Msgf("quota %s exists while quota management is disabled", q.Name)
+			if err = r.finalizeClusterQuota(ctx, q.Name); err != nil {
+				logger.Err(err).Msgf("failure while finalizing quota %s", q.Name)
+				return err
+			}
 		}
 	}
 

@@ -167,5 +167,5 @@ DevOps engineers could additionally create a PaasNS with the following definitio
 ## Caveats
 
 - All groups will have the permissions as specified in the Paas.
-- Next to permissions on groups and users, there is also capabilities to implement
-  permissions for service accounts. See [extra_permissions](../../administrators-guide/capabilities.md#configuring-permissions) for more info.
+- Next to permissions on groups and users, there is also capabilities to implement permissions for service accounts.
+  See [extra_permissions](../../administrators-guide/capabilities/permissions/) for more info.

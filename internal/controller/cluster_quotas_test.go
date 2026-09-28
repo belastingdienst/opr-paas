@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	quotav1 "github.com/openshift/api/quota/v1"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -126,6 +127,9 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 				ManagedBySuffix: manBySuffix,
 				RequestorLabel:  reqLbl,
 				QuotaLabel:      qtaLbl,
+				FeatureFlags: v1alpha2.ConfigFeatureFlags{
+					ClusterResourceQuotaManagement: "allow",
+				},
 				Templating: v1alpha2.ConfigTemplatingItems{
 					ClusterQuotaLabels: v1alpha2.ConfigTemplatingItem{
 						//revive:disable-next-line
@@ -178,6 +182,74 @@ var _ = Describe("Cluster Quotas", Ordered, func() {
 				Expect(quota.ObjectMeta.Labels).NotTo(HaveKey(kubeInstLabel))
 			}
 		})
+	})
+
+	When("quota management is not enabled", func() {
+		for _, setting := range []string{"warn", "block"} {
+			disabledPaasName := "paas-disabled-" + setting
+			expectedQuotas := []string{disabledPaasName, utils.Join(disabledPaasName, capName)}
+
+			buildDisabledPaas := func() *v1alpha2.Paas {
+				return &v1alpha2.Paas{
+					ObjectMeta: metav1.ObjectMeta{
+						UID:  types.UID("MY-UID-" + setting),
+						Name: disabledPaasName,
+					},
+					Spec: v1alpha2.PaasSpec{
+						Requestor: paasRequestor,
+						Namespaces: v1alpha2.PaasNamespaces{
+							nsName: v1alpha2.PaasNamespace{},
+						},
+						Capabilities: v1alpha2.PaasCapabilities{
+							capName: v1alpha2.PaasCapability{},
+						},
+						Quota: paasquota.Quota{
+							"cpu": resourcev1.MustParse("1"),
+						},
+					},
+				}
+			}
+
+			It(fmt.Sprintf("does not create any cluster resource quotas (setting: %s)", setting), func() {
+				myConfig.Spec.FeatureFlags.ClusterResourceQuotaManagement = setting
+				ctx = context.WithValue(context.Background(), config.ContextKeyPaasConfig, myConfig)
+
+				err := reconciler.reconcileQuotas(ctx, buildDisabledPaas())
+				Expect(err).NotTo(HaveOccurred())
+
+				for _, quotaName := range expectedQuotas {
+					var quota quotav1.ClusterResourceQuota
+					err = reconciler.Get(ctx, types.NamespacedName{Name: quotaName}, &quota)
+					Expect(err).To(HaveOccurred())
+				}
+			})
+
+			It(fmt.Sprintf("deletes existing cluster resource quotas (setting: %s)", setting), func() {
+				disabledPaas := buildDisabledPaas()
+
+				// First reconcile while enabled, so the quotas get created.
+				Expect(reconciler.reconcileQuotas(ctx, disabledPaas)).NotTo(HaveOccurred())
+
+				// Check that expected quotas exist
+				for _, quotaName := range expectedQuotas {
+					var quota quotav1.ClusterResourceQuota
+					err := reconciler.Get(ctx, types.NamespacedName{Name: quotaName}, &quota)
+					Expect(err).NotTo(HaveOccurred())
+				}
+
+				// Disable quota management and reconcile again.
+				myConfig.Spec.FeatureFlags.ClusterResourceQuotaManagement = setting
+				ctx = context.WithValue(context.Background(), config.ContextKeyPaasConfig, myConfig)
+				Expect(reconciler.reconcileQuotas(ctx, disabledPaas)).NotTo(HaveOccurred())
+
+				// Check that existing quotas were deleted
+				for _, quotaName := range expectedQuotas {
+					var quota quotav1.ClusterResourceQuota
+					err := reconciler.Get(ctx, types.NamespacedName{Name: quotaName}, &quota)
+					Expect(k8serrors.IsNotFound(err)).To(BeTrue())
+				}
+			})
+		}
 	})
 
 	When("reconciling quota's for a paas with an empty quota block", func() {
