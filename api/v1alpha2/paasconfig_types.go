@@ -142,6 +142,12 @@ type ConfigFeatureFlags struct {
 	// +kubebuilder:validation:Enum=allow;warn;block
 	// +kubebuilder:validation:Optional
 	GroupUserManagement string `json:"group_user_management,omitempty"`
+
+	// Should the operator manage cluster resource quota
+	// +kubebuilder:default:=allow
+	// +kubebuilder:validation:Enum=allow;warn;block
+	// +kubebuilder:validation:Optional
+	ClusterResourceQuotaManagement string `json:"cluster_resource_quota_management,omitempty"`
 }
 
 type ConfigCapabilities map[string]ConfigCapability
@@ -391,4 +397,9 @@ func (pc PaasConfig) IsActive() bool {
 		TypeActivePaasConfig,
 		metav1.ConditionTrue,
 	)
+}
+
+// QuotaManagementEnabled returns true if quota management is enabled
+func (pc PaasConfig) QuotaManagementEnabled() bool {
+	return pc.Spec.FeatureFlags.ClusterResourceQuotaManagement == "allow"
 }
