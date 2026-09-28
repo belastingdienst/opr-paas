@@ -55,3 +55,4 @@ For more details on regex validation, see the [Validations guide](validations.md
 
 - **Empty Quotas**: If a `Paas` does not define any quotas in `.spec.quota`, this validation is skipped.
 - **Guardrail Only**: This feature is a validation guardrail for the `Paas` custom resource. It does not replace or modify standard Kubernetes `ResourceQuota` or `LimitRange` objects in the underlying namespaces.
+- **Quota management enabled**: The webhook will ignore this configuration when feature flag `cluster_resource_quota_management` is set to `block` or `warn` (see [Feature-flags](feature-flags.md)).

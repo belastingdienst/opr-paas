@@ -6,14 +6,12 @@ authors:
 date: 2024-11-27
 ---
 
-Configuring the operator
-========================
+# Configuring the operator
 
 The Paas Operator is configured using a Custom Resource Definition (CRD) called
 PaasConfig.
 
-PaasConfig
-----------
+## PaasConfig
 
 Administrators can create a resource of kind PaasConfig in order to configure the
 Paas Operator. The operator will only use a single instance and when adding
@@ -29,8 +27,7 @@ Alternatively, if you prefer, you could use [doc.crds.dev](https://doc.crds.dev/
 
 For an example, see below.
 
-MaxAllowedSubmittedQuota (v1alpha2)
-----------------------------------
+## MaxAllowedSubmittedQuota (v1alpha2)
 
 !!! note
     `MaxAllowedSubmittedQuota` is only available in `PaasConfig` **v1alpha2**.
@@ -47,8 +44,7 @@ Notes:
 - The keys in `maxQuota` must match the allowed quota keys validation. Invalid keys are rejected when creating/updating the `PaasConfig`.
 - This is a guardrail for submitted `Paas` quota requests. It does not replace cluster-level enforcement such as `ResourceQuota` / `LimitRange`.
 
-Example PaasConfig
-------------------
+## Example PaasConfig
 
 !!! example
 
@@ -175,3 +171,11 @@ Example denial:
 - Result: admission denied with an error similar to:
 
     `quota (limits.cpu) cannot be larger than MaxAllowedSubmittedQuota (8)`
+
+## More options
+- Defining [labels for resources](go-templating/labels/)
+- Defining [the format for secrets](go-templating/secrets/)
+- Defining [capabilities](capabilities/)
+- Defining [feature flags](feature-flags/)
+- Defining [validations](validations/)
+- Defining [Max Allowd Submitted Quotas](max-allowed-submitted-quota/)

@@ -16,6 +16,11 @@ be added to the k8s secret configured in the `PaasConfig.spec.decryptKeySecret`,
 the public key must be provided to Users for encrypting the ssh Secrets (either directly,
 or through the web service).
 
+!!! note
+
+    With version v5.11, Paas Administrators can define the layout for Paas managed secrets using go-templating.
+    For more information see our [docs on Go Templating secrets](./go-templating/secrets/)
+
 ## Generating new secrets
 
 New keys can be easily generated using kubectl-paas. You can download kubectl-paas
