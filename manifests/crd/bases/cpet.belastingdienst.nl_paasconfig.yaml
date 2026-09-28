@@ -136,7 +136,6 @@ spec:
                       type: string
                   required:
                   - quotas
-                  - secrets
                   type: object
                 description: A map with zero or more ConfigCapability
                 type: object
