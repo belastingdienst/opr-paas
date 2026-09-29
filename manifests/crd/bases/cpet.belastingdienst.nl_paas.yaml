@@ -156,8 +156,6 @@ spec:
                 description: Secrets must be encrypted with a public key, for which
                   the private key should be added to the DecryptKeySecret
                 type: object
-            required:
-            - quota
             type: object
           status:
             description: PaasStatus defines the observed state of Paas
