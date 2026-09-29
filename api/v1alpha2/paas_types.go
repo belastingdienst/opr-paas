@@ -38,7 +38,7 @@ type PaasSpec struct {
 	Requestor string `json:"requestor,omitempty"`
 
 	// Quota defines the quotas which should be set on the cluster resource quota as used by this Paas project
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	Quota paasquota.Quota `json:"quota"`
 
 	// Capabilities is a subset of capabilities that will be available in this Paas Project
