@@ -670,11 +670,11 @@ func validateAppNamespaceQuota(
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
-	if len(paas.Spec.Quota) > 0 {
+	if len(paas.Spec.Quota) > 0 || !conf.QuotaManagementEnabled() {
 		return nil, nil
 	}
 
-	if len(paas.Spec.Namespaces) > 0 && conf.QuotaManagementEnabled() {
+	if len(paas.Spec.Namespaces) > 0 {
 		errs = append(errs, field.Invalid(
 			field.NewPath(pathSpec, "namespaces"),
 			fmt.Sprintf("%d", len(paas.Spec.Namespaces)),
