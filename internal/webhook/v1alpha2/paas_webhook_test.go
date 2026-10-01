@@ -1166,6 +1166,42 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 				},
 			))
 		})
+		It("Should allow modification of a capability with paasNS to have no quota when quota "+
+			"management is not enabled", func() {
+			for _, setting := range []string{"warn", "block"} {
+				// Update PaasConfig
+				latestConf := &v1alpha2.PaasConfig{}
+				err := k8sClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+				latestConf.Spec.FeatureFlags.ClusterResourceQuotaManagement = setting
+				err = k8sClient.Update(ctx, latestConf)
+				Expect(err).To(Not(HaveOccurred()))
+
+				capNS := "my-paas-cap5-" + setting
+
+				obj = &v1alpha2.Paas{
+					ObjectMeta: metav1.ObjectMeta{Name: "my-paas-" + setting},
+					Spec: v1alpha2.PaasSpec{
+						Capabilities: v1alpha2.PaasCapabilities{"cap5": v1alpha2.PaasCapability{}},
+						Quota:        quota.Quota{"limits.cpu": resource.MustParse("10")},
+					},
+				}
+
+				nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: capNS}}
+				Expect(k8sClient.Create(ctx, nsObj)).Error().NotTo(HaveOccurred())
+
+				paasNsObj := &v1alpha2.PaasNS{
+					ObjectMeta: metav1.ObjectMeta{Name: "my-paasns", Namespace: capNS},
+				}
+				Expect(k8sClient.Create(ctx, paasNsObj)).Error().NotTo(HaveOccurred())
+
+				newObj := obj.DeepCopy()
+				newObj.Spec.Quota = nil
+				_, err = validator.ValidateUpdate(ctx, obj, newObj)
+				Expect(err).NotTo(HaveOccurred(),
+					"setting %q should not require quota when capability namespace has paasNs", setting)
+			}
+		})
 	})
 })
 

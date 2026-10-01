@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	cl "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -177,6 +178,9 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 				DecryptKeysSecret: v1alpha2.NamespacedName{
 					Name:      paasPkSecret,
 					Namespace: paasSystem,
+				},
+				FeatureFlags: v1alpha2.ConfigFeatureFlags{
+					ClusterResourceQuotaManagement: "allow",
 				},
 			},
 			Status: v1alpha2.PaasConfigStatus{
@@ -369,6 +373,23 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("PaasNs cannot be created when there is no quota defined"))
+		})
+		It("should allow creation of a PaasNS when quota management is not enabled", func() {
+			for _, setting := range []string{"warn", "block"} {
+				latestConf := &v1alpha2.PaasConfig{}
+				Expect(fakeClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)).To(Succeed())
+				latestConf.Spec.FeatureFlags.ClusterResourceQuotaManagement = setting
+				Expect(fakeClient.Update(ctx, latestConf)).To(Succeed())
+
+				newObj := obj.DeepCopy()
+				newObj.Namespace = "no-quota"
+				newObj.Spec.Paas = "no-quota"
+				newObj.Spec.Secrets = nil
+
+				_, err := validator.ValidateCreate(ctx, newObj)
+				Expect(err).NotTo(HaveOccurred(),
+					"setting %q should not require quota when creating a PaasNS", setting)
+			}
 		})
 	})
 })

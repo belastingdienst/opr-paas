@@ -270,7 +270,7 @@ func validateQuota(
 	paasns v1alpha2.PaasNS,
 ) ([]*field.Error, error) {
 	var errs []*field.Error
-	if len(paas.Spec.Quota) == 0 || paas.Spec.Quota == nil {
+	if conf.QuotaManagementEnabled() && len(paas.Spec.Quota) == 0 {
 		errs = append(errs, field.Invalid(
 			field.NewPath("Paas").Child("spec").Child("quota"),
 			"{}",
