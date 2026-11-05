@@ -648,7 +648,6 @@ func validateSecrets(
 		if _, err := rsa.Decrypt(secret); err != nil {
 			logger.Debug().
 				AnErr("error", err).
-				Str("secret", secret).
 				Str("path", basePath.Key(name).String()).
 				Msg("cannot be decrypted")
 			errs = append(errs, field.Invalid(
