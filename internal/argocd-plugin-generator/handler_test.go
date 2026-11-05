@@ -75,6 +75,20 @@ var _ = Describe("Handler", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 
+		It("never logs a rejected Authorization header", func() {
+			const canaryToken = "canary-rejected-bearer-9d7e41"
+			logs := captureDebugLogs()
+
+			req, _ := http.NewRequest(http.MethodPost, server.URL+"/api/v1/getparams.execute", nil)
+			req.Header.Set("Authorization", "Bearer "+canaryToken)
+			resp, err := httpClient.Do(req)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
+
+			Expect(logs.String()).To(ContainSubstring("authentication failed"))
+			Expect(logs.String()).NotTo(ContainSubstring(canaryToken))
+		})
+
 		It("returns 400 if body cannot be read", func() {
 			mockService.generateFunc = func(params fields.ElementMap) (
 				[]fields.ElementMap, error,

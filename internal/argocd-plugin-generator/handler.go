@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/belastingdienst/opr-paas/v5/api/plugin"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
@@ -72,7 +73,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	authHeader := r.Header.Get("Authorization")
 	if authHeader != "Bearer "+h.bearerToken {
-		logger.Error().Str("header", authHeader).Msg("invalid header")
+		// Never log the (rejected) header value: it may still be a valid credential elsewhere.
+		logger.Error().
+			Bool("header_present", authHeader != "").
+			Bool("bearer_scheme", strings.HasPrefix(authHeader, "Bearer ")).
+			Msg("authentication failed")
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
