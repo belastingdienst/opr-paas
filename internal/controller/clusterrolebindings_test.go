@@ -315,3 +315,19 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 		})
 	})
 })
+
+var _ = Describe("Clusterrolebinding namespace regexes", func() {
+	It("escapes names, so a dot does not match any character", func() {
+		Expect(exactNamespaceRegex("a.b").MatchString("a.b")).To(BeTrue())
+		Expect(exactNamespaceRegex("a.b").MatchString("axb")).To(BeFalse())
+		Expect(capNamespaceRegex("a.b", "argocd").MatchString("a.b-argocd")).To(BeTrue())
+		Expect(capNamespaceRegex("a.b", "argocd").MatchString("axb-argocd")).To(BeFalse())
+	})
+
+	It("only matches complete namespace names", func() {
+		Expect(exactNamespaceRegex("team-argocd").MatchString("team-argocd")).To(BeTrue())
+		Expect(exactNamespaceRegex("team-argocd").MatchString("team-argocd-x")).To(BeFalse())
+		Expect(exactNamespaceRegex("team-argocd").MatchString("x-team-argocd")).To(BeFalse())
+		Expect(capNamespaceRegex("team", "argocd").MatchString("team-x-argocd")).To(BeFalse())
+	})
+})

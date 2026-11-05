@@ -137,6 +137,17 @@ func updateClusterRoleBindingForRemovedSA(
 	return changed
 }
 
+// exactNamespaceRegex returns a regex that only matches the namespace with exactly this name.
+// Names are always escaped: e.g. a `.` in a name must not match any character.
+func exactNamespaceRegex(nsName string) *regexp.Regexp {
+	return regexp.MustCompile("^" + regexp.QuoteMeta(nsName) + "$")
+}
+
+// capNamespaceRegex returns a regex that only matches the namespace of capability capName in Paas paasName.
+func capNamespaceRegex(paasName string, capName string) *regexp.Regexp {
+	return exactNamespaceRegex(utils.Join(paasName, capName))
+}
+
 func addOrUpdateCrb(
 	ctx context.Context,
 	crb *rbac.ClusterRoleBinding,
@@ -153,7 +164,7 @@ func addOrUpdateCrb(
 			}
 			logger.Info().Msgf("sa %s in ns %s already added to crb %v", sa, nsName, crbName)
 		} else {
-			nsRe := *regexp.MustCompile(fmt.Sprintf("^%s$", nsName))
+			nsRe := *exactNamespaceRegex(nsName)
 			if isRemoved := updateClusterRoleBindingForRemovedSA(crb, nsRe, sa); isRemoved {
 				logger.Info().Msgf("deleting sa %s for ns %s from crb %s", sa, nsName, crbName)
 				changed = true
@@ -348,7 +359,7 @@ func (r *PaasReconciler) finalizeCapClusterRoleBindings(ctx context.Context, paa
 		return err
 	}
 	for capName, capConfig := range myConfig.Spec.Capabilities {
-		nsRE := regexp.MustCompile(fmt.Sprintf("^%s-%s$", paas.Name, capName))
+		nsRE := capNamespaceRegex(paas.Name, capName)
 		if _, isDefined := paas.Spec.Capabilities[capName]; isDefined {
 			continue
 		}
@@ -383,7 +394,7 @@ func (r *PaasReconciler) finalizePaasClusterRoleBindings(
 		capRoles = append(capRoles, capConfig.DefaultPermissions.Roles()...)
 	}
 	for _, role := range capRoles {
-		re := regexp.MustCompile(fmt.Sprintf("^%s-", paas.Name))
+		re := regexp.MustCompile("^" + regexp.QuoteMeta(paas.Name) + "-")
 		err = r.finalizeClusterRoleBinding(ctx, role, *re)
 		if err != nil {
 			return err
