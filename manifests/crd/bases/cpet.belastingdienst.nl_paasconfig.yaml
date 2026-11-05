@@ -64,8 +64,9 @@ spec:
                               Paas and PaasConfig variables and compile a value
                             type: string
                           validation:
-                            description: Regular expression for validating input,
-                              defaults to '', which means no validation.
+                            description: |-
+                              Regular expression for validating input, defaults to '', which means no validation.
+                              The expression must match the complete value: it is always anchored (as if wrapped in `^(?:...)$`).
                             type: string
                         type: object
                       description: Settings to allow specific configuration specific

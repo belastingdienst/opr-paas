@@ -9,7 +9,6 @@ package v1alpha2
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"unicode"
 
@@ -119,7 +118,7 @@ func (pc *PaasCapability) CapExtraFields(
 		if value, err = elements.TryGetElementAsString(key); err == nil {
 			if validate {
 				var matched bool
-				if matched, err = regexp.Match(fieldConf.Validation, []byte(value)); err != nil {
+				if matched, err = fieldConf.MatchesValidation(value); err != nil {
 					issues = append(issues, fmt.Errorf("could not validate value %s: %w", value, err))
 				} else if !matched {
 					issues = append(issues,
