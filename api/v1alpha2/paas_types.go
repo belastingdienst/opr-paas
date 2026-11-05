@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/belastingdienst/opr-paas/v5/pkg/fields"
 	"github.com/belastingdienst/opr-paas/v5/pkg/groups"
@@ -101,6 +102,11 @@ func (pc *PaasCapability) CapExtraFields(
 		if validate {
 			if _, exists := fieldConfig[key]; !exists {
 				issues = append(issues, fmt.Errorf("custom field %s is not configured in capability config", key))
+			} else if containsControlChars(value) {
+				// Always enforced, regardless of the configured validation regex: custom field values end up
+				// in ArgoCD parameters and (Helm) templates, where e.g. a newline can inject extra YAML.
+				issues = append(issues, fmt.Errorf(
+					"custom field %s contains control characters (such as a newline), which are not allowed", key))
 			} else {
 				elements[key] = value
 			}
@@ -131,6 +137,11 @@ func (pc *PaasCapability) CapExtraFields(
 		return nil, errors.Join(issues...)
 	}
 	return elements, nil
+}
+
+// containsControlChars returns true when s contains a control character (e.g. newline, carriage return, tab, NUL).
+func containsControlChars(s string) bool {
+	return strings.IndexFunc(s, unicode.IsControl) >= 0
 }
 
 // PaasCapabilities holds all capabilities enabled in a Paas

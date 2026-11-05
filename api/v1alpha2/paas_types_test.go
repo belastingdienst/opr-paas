@@ -25,4 +25,31 @@ var _ = Describe("PaasTypes", func() {
 			})
 		})
 	})
+
+	Describe("CapExtraFields", func() {
+		// An empty validation regex matches anything, so only the built-in control character check applies.
+		fieldConfig := map[string]v1alpha2.ConfigCustomField{
+			"git_revision": {},
+		}
+
+		DescribeTable("rejects control characters when validating",
+			func(value string) {
+				capability := v1alpha2.PaasCapability{CustomFields: map[string]string{"git_revision": value}}
+				elements, err := capability.CapExtraFields(fieldConfig, true)
+				Expect(err).To(MatchError(ContainSubstring("custom field git_revision contains control characters")))
+				Expect(elements).To(BeNil())
+			},
+			Entry("YAML document injection", "main\n---\napiVersion: v1\nkind: ConfigMap"),
+			Entry("carriage return", "main\rfoo"),
+			Entry("tab", "main\tfoo"),
+			Entry("NUL", "main\x00"),
+		)
+
+		It("accepts a regular single-line value", func() {
+			capability := v1alpha2.PaasCapability{CustomFields: map[string]string{"git_revision": "feature/my-branch"}}
+			elements, err := capability.CapExtraFields(fieldConfig, true)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(elements).To(HaveKeyWithValue("git_revision", "feature/my-branch"))
+		})
+	})
 })
