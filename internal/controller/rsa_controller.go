@@ -12,19 +12,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-var (
-	// crypts contains a maps of crypt against a Paas name
-	crypts             map[string]*crypt.Crypt
-	decryptPrivateKeys *crypt.PrivateKeys
-)
-
-// resetCrypts removes all crypts and resets decryptSecretPrivateKeys
-func resetCrypts() {
-	crypts = map[string]*crypt.Crypt{}
-	decryptPrivateKeys = nil
-}
-
-// getRsaPrivateKeys fetches secret, compares to cached private keys, resets crypts if needed, and returns keys
+// getRsaPrivateKeys fetches the decryption keys secret and returns the private keys from it.
+// Keys are deliberately not cached in package level state: the secret has to be read on every call anyway
+// (to detect key rotation), and shared mutable state would not be safe with concurrent reconciles.
 func (r *PaasReconciler) getRsaPrivateKeys(
 	ctx context.Context,
 ) (*crypt.PrivateKeys, error) {
@@ -49,18 +39,8 @@ func (r *PaasReconciler) getRsaPrivateKeys(
 		return nil, err
 	}
 
-	if decryptPrivateKeys != nil {
-		if keys.Compare(*decryptPrivateKeys) {
-			// It already was the same secret
-			logger.Debug().Msg("reusing decrypt keys")
-			return decryptPrivateKeys, nil
-		}
-	}
-
-	logger.Debug().Msgf("setting (%d) new keys", len(keys))
-	resetCrypts()
-	decryptPrivateKeys = &keys
-	return decryptPrivateKeys, nil
+	logger.Debug().Msgf("using (%d) decrypt keys", len(keys))
+	return &keys, nil
 }
 
 // getCryptFunc builds a crypt and creates a func that accepts a string and returns a decrypted value (or error)
