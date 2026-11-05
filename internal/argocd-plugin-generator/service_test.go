@@ -40,6 +40,32 @@ var _ = Describe("Service", Ordered, func() {
 		mycrypt *crypt.Crypt
 	)
 
+	// ensureArgoPaas creates or updates the Paas used by these tests with an argocd capability,
+	// and applies mutate to it before saving.
+	ensureArgoPaas := func(mutate func(paas *v1alpha2.Paas)) {
+		paas := &v1alpha2.Paas{}
+		err := k8sClient.Get(ctx, types.NamespacedName{Name: paasWithArgo}, paas)
+		notFound := apierrors.IsNotFound(err)
+		if !notFound {
+			Expect(err).NotTo(HaveOccurred())
+		}
+		paas.Name = paasWithArgo
+		paas.Spec.Requestor = paasRequestor
+		paas.Spec.Capabilities = map[string]v1alpha2.PaasCapability{
+			"argocd": {CustomFields: map[string]string{
+				"git_url":      paasArgoGitURL,
+				"git_path":     paasArgoGitPath,
+				"git_revision": paasArgoGitRevision,
+			}},
+		}
+		mutate(paas)
+		if notFound {
+			Expect(k8sClient.Create(ctx, paas)).To(Succeed())
+		} else {
+			Expect(k8sClient.Update(ctx, paas)).To(Succeed())
+		}
+	}
+
 	BeforeAll(func() {
 		ctx = context.Background()
 		c, pkey, cryptCreateErr := newGeneratedCrypt(paasWithArgo)
@@ -196,25 +222,9 @@ var _ = Describe("Service", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Ensuring a Paas exists that uses decryptPaasSecret on the canary secret")
-			paas := &v1alpha2.Paas{}
-			err = k8sClient.Get(ctx, types.NamespacedName{Name: paasWithArgo}, paas)
-			if apierrors.IsNotFound(err) {
-				paas = &v1alpha2.Paas{
-					ObjectMeta: metav1.ObjectMeta{Name: paasWithArgo},
-					Spec: v1alpha2.PaasSpec{
-						Requestor: paasRequestor,
-						Capabilities: map[string]v1alpha2.PaasCapability{
-							"argocd": {CustomFields: map[string]string{"git_url": paasArgoGitURL}},
-						},
-						Secrets: map[string]string{"secret": encrypted},
-					},
-				}
-				Expect(k8sClient.Create(ctx, paas)).To(Succeed())
-			} else {
-				Expect(err).NotTo(HaveOccurred())
+			ensureArgoPaas(func(paas *v1alpha2.Paas) {
 				paas.Spec.Secrets = map[string]string{"secret": encrypted}
-				Expect(k8sClient.Update(ctx, paas)).To(Succeed())
-			}
+			})
 
 			logs := captureDebugLogs()
 			results, err := svc.Generate(ctx, fields.ElementMap{"capability": "argocd"})
@@ -226,6 +236,22 @@ var _ = Describe("Service", Ordered, func() {
 			By("Checking the plaintext secret is not in the logs")
 			Expect(logs.String()).To(ContainSubstring("after templating"))
 			Expect(logs.String()).NotTo(ContainSubstring(canarySecret))
+		})
+
+		It("fails the whole request when a Paas has an invalid custom field value", func() {
+			// The webhook rejects such values at admission; this is defense in depth for Paases admitted
+			// before that check existed. Failing (instead of skipping the Paas) makes ArgoCD keep the existing
+			// Applications rather than delete the Application of this Paas.
+			encrypted, err := mycrypt.Encrypt([]byte("some secret"))
+			Expect(err).NotTo(HaveOccurred())
+			ensureArgoPaas(func(paas *v1alpha2.Paas) {
+				paas.Spec.Secrets = map[string]string{"secret": encrypted}
+				paas.Spec.Capabilities["argocd"].CustomFields["git_revision"] = "main\n---\napiVersion: v1\nkind: ConfigMap"
+			})
+
+			results, err := svc.Generate(ctx, fields.ElementMap{"capability": "argocd"})
+			Expect(err).To(MatchError(ContainSubstring("custom field git_revision contains control characters")))
+			Expect(results).To(BeNil())
 		})
 
 		It("returns err when no PaasConfig is set", func() {
