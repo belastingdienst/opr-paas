@@ -17,7 +17,6 @@ import (
 	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
 	"k8s.io/apimachinery/pkg/types"
@@ -237,16 +236,10 @@ func validatePaasNsSecrets(
 	paas v1alpha2.Paas,
 	paasns v1alpha2.PaasNS,
 ) ([]*field.Error, error) {
-	decryptRes := &corev1.Secret{}
-	if err := k8sClient.Get(ctx, types.NamespacedName{
-		Name:      conf.Spec.DecryptKeysSecret.Name,
-		Namespace: conf.Spec.DecryptKeysSecret.Namespace,
-	}, decryptRes); err != nil {
-		return nil, fmt.Errorf("could not retrieve decryption secret: %w", err)
+	rsa, err := getCryptInstance(ctx, k8sClient, conf, paas.Name)
+	if err != nil {
+		return nil, err
 	}
-
-	keys, _ := crypt.NewPrivateKeysFromSecretData(decryptRes.Data)
-	rsa, _ := crypt.NewCryptFromKeys(keys, "", paas.Name)
 
 	// Shares validateSecrets with the Paas webhook, so that decryption details are never returned to the caller.
 	return validateSecrets(ctx, paasns.Spec.Secrets, rsa, field.NewPath("spec").Child("secrets")), nil
