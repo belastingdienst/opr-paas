@@ -68,7 +68,9 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, paas *v1alpha2
 	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConfig)
 	logger.Info().Msg("starting validation webhook for creation")
 
-	return v.validate(ctx, paas)
+	// Name collisions are only checked on creation: Paas names are immutable, and checking on update would
+	// block all changes to Paases that already collide.
+	return v.validate(ctx, paas, validatePaasNameCollisions)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
@@ -109,7 +111,11 @@ type paasSpecValidator func(
 	*v1alpha2.Paas,
 ) ([]*field.Error, error)
 
-func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas) (admission.Warnings, error) {
+func (v *PaasCustomValidator) validate(
+	ctx context.Context,
+	paas *v1alpha2.Paas,
+	extraValidators ...paasSpecValidator,
+) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	var warnings []string
 	ctx, logger := logging.GetLogComponent(ctx, logging.WebhookPaasComponentV2)
@@ -122,7 +128,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		return nil, apierrors.NewInternalError(errors.New("uninitialized PaasConfig"))
 	}
 
-	for _, val := range []paasSpecValidator{
+	for _, val := range append([]paasSpecValidator{
 		validatePaasName,
 		validatePaasRequestor,
 		validateCaps,
@@ -134,7 +140,7 @@ func (v *PaasCustomValidator) validate(ctx context.Context, paas *v1alpha2.Paas)
 		validatePaasNamespaceGroups,
 		validateAppNamespaceQuota,
 		validateSubmittedQuotaAgainstMaxAllowed,
-	} {
+	}, extraValidators...) {
 		if errs, validationErr := val(ctx, v.client, conf, paas); validationErr != nil {
 			return nil, apierrors.NewInternalError(validationErr)
 		} else if errs != nil {
@@ -299,6 +305,37 @@ func validatePaasName(
 		))
 	}
 
+	return errs, nil
+}
+
+// validatePaasNameCollisions returns an error when the name of the new Paas, followed by a dash, is a prefix of the
+// name of an existing Paas, or the other way around. All namespaces of a Paas are named `<paas name>-<suffix>`, so
+// e.g. Paas `team` with namespace `x-prod` and Paas `team-x` with namespace `prod` would both claim `team-x-prod`.
+// Two different Paas names can only produce the same namespace name in this situation.
+func validatePaasNameCollisions(
+	ctx context.Context,
+	k8sClient client.Client,
+	_ v1alpha2.PaasConfig,
+	paas *v1alpha2.Paas,
+) ([]*field.Error, error) {
+	var paasList v1alpha2.PaasList
+	if err := k8sClient.List(ctx, &paasList); err != nil {
+		return nil, fmt.Errorf("could not list existing Paases: %w", err)
+	}
+	var errs []*field.Error
+	for _, existing := range paasList.Items {
+		if existing.Name == paas.Name {
+			continue
+		}
+		if strings.HasPrefix(existing.Name, paas.Name+"-") || strings.HasPrefix(paas.Name, existing.Name+"-") {
+			errs = append(errs, field.Invalid(
+				field.NewPath("metadata").Key("name"),
+				paas.Name,
+				fmt.Sprintf("name collides with existing Paas %s: one name followed by a dash is a prefix of the "+
+					"other, so their namespace names could collide", existing.Name),
+			))
+		}
+	}
 	return errs, nil
 }
 
