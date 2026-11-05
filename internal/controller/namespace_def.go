@@ -63,7 +63,21 @@ func newNamespaceDefFromPaasNS(nsName string, paasns *v1alpha2.PaasNS,
 // Key of the map is based on the namespaced name of the PaasNS, so that we have uniqueness
 // paasNSsFromNs runs recursively, to collect all PaasNS's in the namespaces of founds PaasNS namespaces too.
 func (r *PaasReconciler) paasNSsFromNs(ctx context.Context, ns string) map[string]v1alpha2.PaasNS {
+	return r.collectPaasNSs(ctx, ns, map[string]bool{})
+}
+
+// collectPaasNSs implements paasNSsFromNs. Visited namespaces are tracked, so that PaasNS resources that
+// (indirectly) refer to each other's namespaces do not cause infinite recursion.
+func (r *PaasReconciler) collectPaasNSs(
+	ctx context.Context,
+	ns string,
+	visited map[string]bool,
+) map[string]v1alpha2.PaasNS {
 	nss := map[string]v1alpha2.PaasNS{}
+	if visited[ns] {
+		return nss
+	}
+	visited[ns] = true
 	pnsList := &v1alpha2.PaasNSList{}
 	if err := r.List(ctx, pnsList, &client.ListOptions{Namespace: ns}); err != nil {
 		// In this case panic is ok, since this situation can only occur when either k8s is down,
@@ -77,7 +91,7 @@ func (r *PaasReconciler) paasNSsFromNs(ctx context.Context, ns string) map[strin
 		}
 		nsName := nameFromPaasNs + "-" + pns.Name
 		nss[nsName] = pns
-		for key, value := range r.paasNSsFromNs(ctx, nsName) {
+		for key, value := range r.collectPaasNSs(ctx, nsName, visited) {
 			nss[key] = value
 		}
 	}
