@@ -367,22 +367,22 @@ var _ = Describe("Paas Webhook", Ordered, func() {
 			Expect(causes).To(ContainElements(
 				metav1.StatusCause{
 					Type:    metav1.CauseTypeFieldValueInvalid,
-					Message: `Invalid value: "foo bar baz": cannot be decrypted`,
+					Message: `Invalid value: cannot be decrypted`,
 					Field:   "spec.capabilities[foo].secrets[invalid base64]",
 				},
 				metav1.StatusCause{
 					Type:    metav1.CauseTypeFieldValueInvalid,
-					Message: `Invalid value: "Zm9vIGJhciBiYXo=": cannot be decrypted`,
+					Message: `Invalid value: cannot be decrypted`,
 					Field:   "spec.capabilities[foo].secrets[invalid secret]",
 				},
 				metav1.StatusCause{
 					Type:    metav1.CauseTypeFieldValueInvalid,
-					Message: `Invalid value: "foo bar baz": cannot be decrypted`,
+					Message: `Invalid value: cannot be decrypted`,
 					Field:   "spec.secrets[invalid base64]",
 				},
 				metav1.StatusCause{
 					Type:    metav1.CauseTypeFieldValueInvalid,
-					Message: `Invalid value: "Zm9vIGJhciBiYXo=": cannot be decrypted`,
+					Message: `Invalid value: cannot be decrypted`,
 					Field:   "spec.secrets[invalid secret]",
 				},
 			))

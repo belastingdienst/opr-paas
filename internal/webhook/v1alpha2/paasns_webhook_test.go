@@ -317,6 +317,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			Expect(err.Error()).To(ContainSubstring("cannot be decrypted"))
 			// Decryption details must not be returned to the caller
 			Expect(err.Error()).NotTo(ContainSubstring("unable to decrypt data with any of the private keys"))
+			// The submitted (encrypted) value must not be echoed back either
+			Expect(err.Error()).NotTo(ContainSubstring(invalidSecret1))
 		})
 		It("Should deny updating", func() {
 			By("creating PaasNs with sshSecret encrypted with public key that has no corresponding private key")
@@ -339,6 +341,8 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			Expect(err.Error()).To(ContainSubstring("cannot be decrypted"))
 			// Decryption details must not be returned to the caller
 			Expect(err.Error()).NotTo(ContainSubstring("unable to decrypt data with any of the private keys"))
+			// The submitted (encrypted) value must not be echoed back either
+			Expect(err.Error()).NotTo(ContainSubstring(invalidSecret1))
 		})
 	})
 	Context("When the decryption keys secret contains invalid key data", func() {
