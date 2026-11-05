@@ -13,6 +13,7 @@ package argocd_plugin_generator
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -57,6 +58,13 @@ func NewHandler(service GeneratorService, bearerToken string) *Handler {
 	}
 }
 
+// validAuthHeader checks the Authorization header against the configured bearer token
+// in constant time, so the comparison does not leak information about the token through timing.
+func (h *Handler) validAuthHeader(authHeader string) bool {
+	expected := []byte("Bearer " + h.bearerToken)
+	return subtle.ConstantTimeCompare([]byte(authHeader), expected) == 1
+}
+
 // ServeHTTP implements the http.Handler interface.
 //
 // It reads and validates the incoming request, delegates to the Service
@@ -72,7 +80,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	authHeader := r.Header.Get("Authorization")
-	if authHeader != "Bearer "+h.bearerToken {
+	if !h.validAuthHeader(authHeader) {
 		// Never log the (rejected) header value: it may still be a valid credential elsewhere.
 		logger.Error().
 			Bool("header_present", authHeader != "").

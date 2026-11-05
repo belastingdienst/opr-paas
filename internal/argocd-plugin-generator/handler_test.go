@@ -75,6 +75,20 @@ var _ = Describe("Handler", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
 
+		DescribeTable("validAuthHeader",
+			func(header string, expected bool) {
+				Expect(handler.validAuthHeader(header)).To(Equal(expected))
+			},
+			Entry("exact match", "Bearer supersecrettoken", true),
+			Entry("empty header", "", false),
+			Entry("scheme only", "Bearer ", false),
+			Entry("token without scheme", "supersecrettoken", false),
+			Entry("wrong scheme", "Basic supersecrettoken", false),
+			Entry("token prefix", "Bearer supersecret", false),
+			Entry("token with suffix", "Bearer supersecrettokenX", false),
+			Entry("lowercase scheme", "bearer supersecrettoken", false),
+		)
+
 		It("never logs a rejected Authorization header", func() {
 			const canaryToken = "canary-rejected-bearer-9d7e41"
 			logs := captureDebugLogs()
