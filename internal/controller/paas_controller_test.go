@@ -458,7 +458,7 @@ var _ = Describe("Paas Controller", Ordered, func() {
 			request.NamespacedName = types.NamespacedName{Name: paasName}
 			result, err = reconciler.Reconcile(ctx, request)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(ContainSubstring("unable to decrypt data with any of the private keys")))
+			Expect(err).To(MatchError(ContainSubstring("paas secret cannot be decrypted")))
 			Expect(result).To(Equal(controllerruntime.Result{}))
 		})
 

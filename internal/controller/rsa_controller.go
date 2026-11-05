@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
@@ -75,11 +76,18 @@ func (r *PaasReconciler) getDecryptFunc(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create crypt instance: %w", err)
 	}
+	_, logger := logging.GetLogComponent(ctx, logging.ControllerSecretComponent)
 	return func(secret string) (string, error) {
 		d, decryptErr := rsa.Decrypt(secret)
 		if decryptErr != nil {
-			return "", decryptErr
+			// Errors from this func can end up in the Paas status (via template errors), which is readable
+			// by Paas viewers. Only log the details, and return a generic error.
+			logger.Debug().AnErr("error", decryptErr).Str("paas", paasName).Msg("failed to decrypt paas secret")
+			return "", errSecretDecryption
 		}
 		return string(d), nil
 	}, nil
 }
+
+// errSecretDecryption is returned when a Paas secret cannot be decrypted. It deliberately has no details.
+var errSecretDecryption = errors.New("paas secret cannot be decrypted")
