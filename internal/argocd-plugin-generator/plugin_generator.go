@@ -60,7 +60,10 @@ func New(kclient client.Client, c cache.Cache, bindAddr string) (*PluginGenerato
 	token := os.Getenv(tokenEnvVar)
 	// Never log the token itself, only whether it is configured.
 	logger.Debug().Bool("token_configured", token != "").Msg("plugin generator token")
-	handler := NewHandler(generatorService, token)
+	handler, err := NewHandler(generatorService, token)
+	if err != nil {
+		return nil, fmt.Errorf("environment variable %s: %w", tokenEnvVar, err)
+	}
 
 	server := NewServer(ServerOptions{
 		Addr:        bindAddr,

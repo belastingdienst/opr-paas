@@ -44,13 +44,23 @@ var _ = Describe("Handler", func() {
 	BeforeEach(func() {
 		bearerToken = "supersecrettoken"
 		mockService = &mockGeneratorService{}
-		handler = NewHandler(mockService, bearerToken)
+		var err error
+		handler, err = NewHandler(mockService, bearerToken)
+		Expect(err).NotTo(HaveOccurred())
 		server = httptest.NewServer(handler)
 		httpClient = server.Client()
 	})
 
 	AfterEach(func() {
 		server.Close()
+	})
+
+	Context("NewHandler", func() {
+		It("returns an error for an empty token", func() {
+			h, err := NewHandler(mockService, "")
+			Expect(err).To(MatchError(ContainSubstring("without token")))
+			Expect(h).To(BeNil())
+		})
 	})
 
 	Context("ServeHTTP", func() {

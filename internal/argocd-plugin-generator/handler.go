@@ -48,15 +48,15 @@ type Handler struct {
 //
 // The service parameter provides the generator's business logic,
 // and bearerToken is used to authenticate incoming HTTP requests.
-func NewHandler(service GeneratorService, bearerToken string) *Handler {
+// An error is returned when bearerToken is empty: the handler must never accept unauthenticated requests.
+func NewHandler(service GeneratorService, bearerToken string) (*Handler, error) {
 	if bearerToken == "" {
-		_, logger := logging.GetLogComponent(context.Background(), logging.ApiComponent)
-		logger.Fatal().Msg("Cannot use plugin generator without token")
+		return nil, errors.New("cannot use plugin generator without token")
 	}
 	return &Handler{
 		service:     service,
 		bearerToken: bearerToken,
-	}
+	}, nil
 }
 
 // maxRequestBodyBytes limits the size of a plugin request body. ArgoCD only sends a small
