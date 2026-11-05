@@ -14,6 +14,7 @@ import (
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var _ = Describe("Namespace", Ordered, func() {
@@ -164,6 +165,29 @@ var _ = Describe("Namespace", Ordered, func() {
 			var found corev1.Namespace
 			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: foreignNs}, &found)).To(Succeed())
 			Expect(found.DeletionTimestamp).To(BeNil())
+		})
+	})
+
+	When("ensuring a namespace that exists without any labels", func() {
+		It("does not panic and sets the labels", func() {
+			// A real API server always sets the kubernetes.io/metadata.name label, a fake client does not.
+			const nsName = "ns-controller-nolabels"
+			fakeClient := fake.NewClientBuilder().WithScheme(k8sClient.Scheme()).
+				WithObjects(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}).
+				Build()
+			fakeReconciler := &PaasReconciler{Client: fakeClient, Scheme: fakeClient.Scheme()}
+
+			desired := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
+				Name:   nsName,
+				Labels: map[string]string{ManagedByLabelKey: paasName},
+			}}
+			Expect(func() {
+				Expect(fakeReconciler.ensureNamespace(ctx, paas, desired)).To(Succeed())
+			}).NotTo(Panic())
+
+			var found corev1.Namespace
+			Expect(fakeClient.Get(ctx, types.NamespacedName{Name: nsName}, &found)).To(Succeed())
+			Expect(found.Labels).To(HaveKeyWithValue(ManagedByLabelKey, paasName))
 		})
 	})
 })

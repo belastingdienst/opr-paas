@@ -44,6 +44,9 @@ func (r *PaasReconciler) ensureNamespace(
 		}
 	}
 	var changed bool
+	if found.Labels == nil {
+		found.Labels = map[string]string{}
+	}
 	for key, value := range ns.Labels {
 		if orgValue, exists := found.Labels[key]; !exists || orgValue != value {
 			changed = true
