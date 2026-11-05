@@ -313,7 +313,10 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			obj.Spec.Secrets["invalidSecret1"] = invalidSecret1
 			_, err = validator.ValidateCreate(ctx, obj)
 			Expect(err).Error().To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("unable to decrypt data with any of the private keys"))
+			Expect(err.Error()).To(ContainSubstring("spec.secrets[invalidSecret1]"))
+			Expect(err.Error()).To(ContainSubstring("cannot be decrypted"))
+			// Decryption details must not be returned to the caller
+			Expect(err.Error()).NotTo(ContainSubstring("unable to decrypt data with any of the private keys"))
 		})
 		It("Should deny updating", func() {
 			By("creating PaasNs with sshSecret encrypted with public key that has no corresponding private key")
@@ -332,7 +335,10 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
 			Expect(warn).To(BeNil())
 			Expect(err).Error().To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("unable to decrypt data with any of the private keys"))
+			Expect(err.Error()).To(ContainSubstring("spec.secrets[invalidSecret1]"))
+			Expect(err.Error()).To(ContainSubstring("cannot be decrypted"))
+			// Decryption details must not be returned to the caller
+			Expect(err.Error()).NotTo(ContainSubstring("unable to decrypt data with any of the private keys"))
 		})
 	})
 	Context("When deleting a PaasNs, ", func() {

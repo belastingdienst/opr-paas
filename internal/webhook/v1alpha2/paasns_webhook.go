@@ -248,18 +248,8 @@ func validatePaasNsSecrets(
 	keys, _ := crypt.NewPrivateKeysFromSecretData(decryptRes.Data)
 	rsa, _ := crypt.NewCryptFromKeys(keys, "", paas.Name)
 
-	var errs []*field.Error
-	for name, secret := range paasns.Spec.Secrets {
-		if _, err := rsa.Decrypt(secret); err != nil {
-			errs = append(errs, field.Invalid(
-				field.NewPath("spec").Child("secrets"),
-				name,
-				fmt.Sprintf("cannot be decrypted: %s", err),
-			))
-		}
-	}
-
-	return errs, nil
+	// Shares validateSecrets with the Paas webhook, so that decryption details are never returned to the caller.
+	return validateSecrets(ctx, paasns.Spec.Secrets, rsa, field.NewPath("spec").Child("secrets")), nil
 }
 
 func validateQuota(
