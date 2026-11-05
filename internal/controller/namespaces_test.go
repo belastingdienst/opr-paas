@@ -148,4 +148,22 @@ var _ = Describe("Namespace", Ordered, func() {
 			}
 		})
 	})
+
+	When("finalizing obsolete namespaces", func() {
+		It("does not delete a namespace that only has the managed-by label, without owner reference", func() {
+			const foreignNs = "ns-controller-foreign"
+			ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
+				Name:   foreignNs,
+				Labels: map[string]string{ManagedByLabelKey: paasName},
+			}}
+			Expect(k8sClient.Create(ctx, ns)).To(Succeed())
+
+			// No namespaces are desired, so every namespace with the managed-by label is obsolete
+			Expect(reconciler.finalizeObsoleteNamespaces(ctx, paas, namespaceDefs{})).To(Succeed())
+
+			var found corev1.Namespace
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: foreignNs}, &found)).To(Succeed())
+			Expect(found.DeletionTimestamp).To(BeNil())
+		})
+	})
 })
