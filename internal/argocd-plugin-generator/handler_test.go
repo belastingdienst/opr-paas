@@ -131,6 +131,35 @@ var _ = Describe("Handler", func() {
 			Expect(string(body)).To(ContainSubstring("invalid json"))
 		})
 
+		It("does not log the body when it contains invalid JSON", func() {
+			const canaryBody = "{canary-invalid-body-77a0c3"
+			logs := captureDebugLogs()
+
+			req, _ := http.NewRequest(http.MethodPost, server.URL+"/api/v1/getparams.execute",
+				bytes.NewBufferString(canaryBody))
+			req.Header.Set("Authorization", "Bearer "+bearerToken)
+			resp, err := httpClient.Do(req)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+
+			Expect(logs.String()).To(ContainSubstring("invalid json"))
+			Expect(logs.String()).NotTo(ContainSubstring("canary-invalid-body"))
+		})
+
+		It("returns 413 if the body exceeds the size limit", func() {
+			mockService.generateFunc = func(params fields.ElementMap) ([]fields.ElementMap, error) {
+				Fail("Generate must not be called for an oversized body")
+				return nil, nil
+			}
+			oversized := bytes.Repeat([]byte(" "), maxRequestBodyBytes+1)
+			req, _ := http.NewRequest(http.MethodPost, server.URL+"/api/v1/getparams.execute",
+				bytes.NewReader(oversized))
+			req.Header.Set("Authorization", "Bearer "+bearerToken)
+			resp, err := httpClient.Do(req)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusRequestEntityTooLarge))
+		})
+
 		It("returns 500 if Service.Generate returns an error", func() {
 			mockService.generateFunc = func(params fields.ElementMap) (
 				[]fields.ElementMap, error,

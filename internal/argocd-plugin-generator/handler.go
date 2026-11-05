@@ -15,6 +15,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -58,6 +59,10 @@ func NewHandler(service GeneratorService, bearerToken string) *Handler {
 	}
 }
 
+// maxRequestBodyBytes limits the size of a plugin request body. ArgoCD only sends a small
+// JSON document with the ApplicationSet input parameters.
+const maxRequestBodyBytes = 1 << 20 // 1 MiB
+
 // validAuthHeader checks the Authorization header against the configured bearer token
 // in constant time, so the comparison does not leak information about the token through timing.
 func (h *Handler) validAuthHeader(authHeader string) bool {
@@ -90,8 +95,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxRequestBodyBytes))
 	if err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			logger.Error().Int64("limit", maxBytesErr.Limit).Msg("request body too large")
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		logger.Error().AnErr("error", err).Msg("invalid body")
 		http.Error(w, fmt.Sprintf("read body error: %v", err), http.StatusBadRequest)
 		return
@@ -99,7 +110,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var request plugin.Request
 	if err = json.Unmarshal(body, &request); err != nil {
-		logger.Error().Bytes("body", body).Msg("invalid json")
+		// Do not log the body itself: it is unbounded, caller-controlled input.
+		logger.Error().Int("body_length", len(body)).AnErr("error", err).Msg("invalid json")
 		http.Error(w, fmt.Sprintf("invalid json: %v", err), http.StatusBadRequest)
 		return
 	}
