@@ -98,7 +98,8 @@ spec:
       - view
   validations:
     paas:
-      name: '^[a-z0-9-]*$'
+      # Exactly one dash: prevents Paas names that are prefixes of each other (see docs: validations)
+      name: '^([a-z][a-z0-9]{2,7}-[a-z0-9]+)$'
       groupName: '^[a-z0-9-]*$'
       namespaceName: '^[a-z0-9-]*$'
       requestor: '^[a-z0-9-]*$'
