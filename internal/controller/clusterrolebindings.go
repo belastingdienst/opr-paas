@@ -9,6 +9,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -146,6 +147,15 @@ func exactNamespaceRegex(nsName string) *regexp.Regexp {
 // capNamespaceRegex returns a regex that only matches the namespace of capability capName in Paas paasName.
 func capNamespaceRegex(paasName string, capName string) *regexp.Regexp {
 	return exactNamespaceRegex(utils.Join(paasName, capName))
+}
+
+// paasCapNamespacesRegex returns a regex that matches the namespaces of the given capabilities of Paas paasName.
+func paasCapNamespacesRegex(paasName string, capNames []string) *regexp.Regexp {
+	quoted := make([]string, len(capNames))
+	for i, capName := range capNames {
+		quoted[i] = regexp.QuoteMeta(capName)
+	}
+	return regexp.MustCompile("^" + regexp.QuoteMeta(paasName) + "-(" + strings.Join(quoted, "|") + ")$")
 }
 
 func addOrUpdateCrb(
@@ -389,12 +399,20 @@ func (r *PaasReconciler) finalizePaasClusterRoleBindings(
 		return err
 	}
 	var capRoles []string
-	for _, capConfig := range myConfig.Spec.Capabilities {
+	capNames := map[string]bool{}
+	for capName, capConfig := range myConfig.Spec.Capabilities {
+		capNames[capName] = true
 		capRoles = append(capRoles, capConfig.ExtraPermissions.Roles()...)
 		capRoles = append(capRoles, capConfig.DefaultPermissions.Roles()...)
 	}
+	for capName := range paas.Spec.Capabilities {
+		capNames[capName] = true
+	}
+	// Only capability namespaces of this Paas have ServiceAccounts in ClusterRoleBindings. Match exactly those,
+	// and not every namespace starting with "<paas>-": that would also match namespaces of another Paas whose
+	// name starts with the name of this Paas (e.g. `team` vs `team-x`).
+	re := paasCapNamespacesRegex(paas.Name, slices.Sorted(maps.Keys(capNames)))
 	for _, role := range capRoles {
-		re := regexp.MustCompile("^" + regexp.QuoteMeta(paas.Name) + "-")
 		err = r.finalizeClusterRoleBinding(ctx, role, *re)
 		if err != nil {
 			return err
