@@ -18,7 +18,20 @@ This provides flexibility for organizations using the Paas operator to define bu
 Template options support standard Go Template syntax, allowing all values from the Paas and PaasConfig to be referenced. See more examples below.
 In addition to the default Go Template functions, we've added support for
 [all Sprout](https://docs.atom.codes/sprout/registries/list-of-all-registries) Go Template functions,
-and [backward](https://docs.atom.codes/sprout/registries/backward) (we want to use the `fail` function.
+and [backward](https://docs.atom.codes/sprout/registries/backward) (we want to use the `fail` function).
+
+The following functions are **not** available, because they have side effects or expose information about the
+operator itself:
+
+- `env` and `expandEnv` (the [env](https://docs.atom.codes/sprout/registries/env) registry), which would expose the
+  environment variables of the operator, such as `ARGOCD_GENERATOR_TOKEN`;
+- `getHostByName` (backward registry), which performs a DNS lookup from the operator.
+
+!!! warning
+
+    Templates are executed by the operator with the complete Paas and PaasConfig as context, and their results end up
+    in labels, custom fields and secrets that tenants can read. Only use values in templates that you intend to share
+    with the tenants of the Paas.
 
 ## Behavior of multivalued and single valued results
 

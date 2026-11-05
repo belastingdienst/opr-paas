@@ -6,8 +6,23 @@ import (
 	"text/template"
 
 	"github.com/go-sprout/sprout"
-	"github.com/go-sprout/sprout/group/all"
 	"github.com/go-sprout/sprout/registry/backward"
+	"github.com/go-sprout/sprout/registry/checksum"
+	"github.com/go-sprout/sprout/registry/conversion"
+	"github.com/go-sprout/sprout/registry/encoding"
+	"github.com/go-sprout/sprout/registry/filesystem"
+	sproutmaps "github.com/go-sprout/sprout/registry/maps"
+	"github.com/go-sprout/sprout/registry/network"
+	"github.com/go-sprout/sprout/registry/numeric"
+	"github.com/go-sprout/sprout/registry/random"
+	"github.com/go-sprout/sprout/registry/reflect"
+	"github.com/go-sprout/sprout/registry/regexp"
+	"github.com/go-sprout/sprout/registry/semver"
+	"github.com/go-sprout/sprout/registry/slices"
+	"github.com/go-sprout/sprout/registry/std"
+	"github.com/go-sprout/sprout/registry/strings"
+	"github.com/go-sprout/sprout/registry/time"
+	"github.com/go-sprout/sprout/registry/uniqueid"
 	"github.com/goccy/go-yaml"
 
 	"github.com/belastingdienst/opr-paas/v5/api"
@@ -55,11 +70,39 @@ func (t Templater[P, C, S]) getSproutFuncs() (template.FuncMap, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = handler.AddGroups(all.RegistryGroup())
+	// Explicit list instead of all.RegistryGroup(): the env registry (env, expandEnv) is left out on purpose,
+	// as it would expose the environment of the operator (e.g. ARGOCD_GENERATOR_TOKEN) to template output.
+	err = handler.AddRegistries(
+		checksum.NewRegistry(),
+		conversion.NewRegistry(),
+		encoding.NewRegistry(),
+		filesystem.NewRegistry(), // path string manipulation only, no file access
+		sproutmaps.NewRegistry(),
+		network.NewRegistry(), // IP / CIDR parsing only, no network access
+		numeric.NewRegistry(),
+		random.NewRegistry(),
+		reflect.NewRegistry(),
+		regexp.NewRegistry(), //nolint:staticcheck // regex registry replaces this from sprout v1.2
+		semver.NewRegistry(),
+		slices.NewRegistry(),
+		std.NewRegistry(),
+		strings.NewRegistry(),
+		time.NewRegistry(),
+		uniqueid.NewRegistry(),
+	)
 	if err != nil {
 		return nil, err
 	}
-	return handler.Build(), nil
+	funcs := handler.Build()
+	for _, name := range disallowedFuncs {
+		delete(funcs, name)
+	}
+	return funcs, nil
+}
+
+// disallowedFuncs are functions from otherwise allowed registries that are removed, because they have side effects.
+var disallowedFuncs = []string{
+	"getHostByName", // backward registry: performs a DNS lookup from the operator
 }
 
 // Verify can verify a template (just parsing it, not running it against a Paas / PaasConfig)

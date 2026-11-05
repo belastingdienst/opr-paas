@@ -77,7 +77,8 @@ The templating feature allows administrators to dynamically generate values for 
 requiring users to explicitly specify these values in their Paas. This provides flexibility by enabling values to be derived from 
 the Paas, the PaasConfig, or a combination of both. The template support Go templating syntax, in which all values from the Paas 
 and PaasConfig can be referenced, more examples below. In addition to the default Go template functions, we've added support for
-[all Sprout](https://docs.atom.codes/sprout/groups/all) Go template functions.
+[all Sprout](https://docs.atom.codes/sprout/groups/all) Go template functions, except for a few functions with side
+effects (see [Go templating](../go-templating/introduction.md)).
 
 For more info on templating, see [custom fields templating](go-templating/custom-fields/)
 

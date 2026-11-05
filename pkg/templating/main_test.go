@@ -112,6 +112,32 @@ var _ = Describe("Templating", func() {
 			Expect(templated).To(BeEmpty())
 		})
 	})
+	When("using sprout functions", func() {
+		DescribeTable("functions with side effects are not available",
+			func(template string, function string) {
+				tpl := templating.NewTemplater(paas, paasConfig)
+				_, err := tpl.TemplateToString("disallowed", template)
+				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("function %q not defined", function))))
+				Expect(tpl.Verify("disallowed", template)).To(
+					MatchError(ContainSubstring(fmt.Sprintf("function %q not defined", function))))
+			},
+			Entry("env exposes operator environment variables", `{{ env "HOME" }}`, "env"),
+			Entry("expandEnv exposes operator environment variables", `{{ expandEnv "$HOME" }}`, "expandEnv"),
+			Entry("getHostByName performs DNS lookups", `{{ getHostByName "localhost" }}`, "getHostByName"),
+		)
+		DescribeTable("functions without side effects remain available",
+			func(template string, expected string) {
+				templated, err := templating.NewTemplater(paas, paasConfig).TemplateToString("allowed", template)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(templated).To(Equal(expected))
+			},
+			Entry("strings", `{{ "abc" | toUpper }}`, "ABC"),
+			Entry("fail (backward registry)", `{{ if false }}{{ fail "x" }}{{ end }}ok`, "ok"),
+			Entry("filesystem (path strings only)", `{{ pathBase "/a/b.txt" }}`, "b.txt"),
+			Entry("network (parsing only)", `{{ cidrContains "10.0.0.0/8" "10.1.2.3" }}`, "true"),
+			Entry("regexp", `{{ regexReplaceAll "a+" "baaac" "x" }}`, "bxc"),
+		)
+	})
 	When("templating to map", func() {
 		It("should work as expected for valid templates", func() {
 			for _, test := range []struct {
