@@ -139,7 +139,7 @@ var _ = BeforeSuite(func() {
 		}
 
 		return conn.Close()
-	}).Should(Succeed())
+	}).WithTimeout(30 * time.Second).Should(Succeed()) // default 1s is too short when suites run in parallel
 })
 
 var _ = AfterSuite(func() {
