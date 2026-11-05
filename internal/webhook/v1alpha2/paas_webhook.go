@@ -70,13 +70,13 @@ func (v *PaasCustomValidator) ValidateCreate(ctx context.Context, paas *v1alpha2
 
 	// Name collisions are only checked on creation: Paas names are immutable, and checking on update would
 	// block all changes to Paases that already collide.
-	return v.validate(ctx, paas, validatePaasNameCollisions)
+	return v.validate(ctx, paas, validatePaasNameCollisions, validateGroupNameCollisions(nil))
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Paas.
 func (v *PaasCustomValidator) ValidateUpdate(
 	ctx context.Context,
-	_, nPaas *v1alpha2.Paas,
+	oPaas, nPaas *v1alpha2.Paas,
 ) (admission.Warnings, error) {
 	ctx, logger := logging.SetWebhookLogger(ctx, nPaas)
 	if nPaas.GetDeletionTimestamp() != nil {
@@ -91,7 +91,7 @@ func (v *PaasCustomValidator) ValidateUpdate(
 	}
 	// Updates context to include paasConfig
 	ctx = context.WithValue(ctx, config.ContextKeyPaasConfig, myConfig)
-	return v.validate(ctx, nPaas)
+	return v.validate(ctx, nPaas, validateGroupNameCollisions(oPaas))
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Paas.
@@ -337,6 +337,69 @@ func validatePaasNameCollisions(
 		}
 	}
 	return errs, nil
+}
+
+// validateGroupNameCollisions returns a validator that rejects groups whose OpenShift Group name is already used by
+// another Paas for a different group. Groups with an LDAP query are named after the CN of the query, so e.g.
+// `CN=admins,OU=team-a` and `CN=admins,OU=team-b` would both use Group `admins`, merging the members of two
+// different LDAP groups. Using the same query in multiple Paases is fine: that is the same LDAP group.
+//
+// When oldPaas is set (update), only groups that are new or changed are checked, so existing collisions do not
+// block unrelated changes to a Paas.
+func validateGroupNameCollisions(oldPaas *v1alpha2.Paas) paasSpecValidator {
+	return func(
+		ctx context.Context,
+		k8sClient client.Client,
+		_ v1alpha2.PaasConfig,
+		paas *v1alpha2.Paas,
+	) ([]*field.Error, error) {
+		changedKeys := map[string]bool{}
+		for key, group := range paas.Spec.Groups {
+			if oldPaas != nil {
+				if oldGroup, exists := oldPaas.Spec.Groups[key]; exists && oldGroup.Query == group.Query {
+					continue
+				}
+			}
+			changedKeys[key] = true
+		}
+		if len(changedKeys) == 0 {
+			return nil, nil
+		}
+
+		var paasList v1alpha2.PaasList
+		if err := k8sClient.List(ctx, &paasList); err != nil {
+			return nil, fmt.Errorf("could not list existing Paases: %w", err)
+		}
+		type usage struct{ paas, query string }
+		used := map[string][]usage{}
+		for _, other := range paasList.Items {
+			if other.Name == paas.Name {
+				continue
+			}
+			for key, group := range other.Spec.Groups {
+				name := other.GroupKey2GroupName(key)
+				used[name] = append(used[name], usage{paas: other.Name, query: group.Query})
+			}
+		}
+
+		var errs []*field.Error
+		for key := range changedKeys {
+			groupName := paas.GroupKey2GroupName(key)
+			query := paas.Spec.Groups[key].Query
+			for _, other := range used[groupName] {
+				if query != "" && other.query == query {
+					continue
+				}
+				errs = append(errs, field.Invalid(
+					field.NewPath(pathSpec).Child("groups").Key(key),
+					groupName,
+					fmt.Sprintf("group name %s is already used by Paas %s for a different group", groupName, other.paas),
+				))
+				break
+			}
+		}
+		return errs, nil
+	}
 }
 
 // validatePaasallowedQuotas returns errors if there are quota's with keys that do not meet validations
