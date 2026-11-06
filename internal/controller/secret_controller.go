@@ -12,6 +12,7 @@ import (
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/decrypt"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
 	"github.com/belastingdienst/opr-paas/v5/pkg/templating"
 
@@ -235,14 +236,15 @@ func (r *PaasReconciler) reconcilePaasSecrets(
 ) error {
 	// The nsDefs contains the desired namespaces. When obsolete namespaces are deleted, that cascade deletes
 	// the secrets in that namespace.
-	decryptFunc, err := r.getDecryptFunc(ctx, paas.Name)
-	if err != nil {
-		return err
-	}
 	paasConfig, err := config.GetConfigFromContext(ctx)
 	if err != nil {
 		return err
 	}
+	decrypter, err := decrypt.NewDecrypter(ctx, r.Client, paasConfig, paas.Name)
+	if err != nil {
+		return fmt.Errorf("failed to create crypt instance: %w", err)
+	}
+	decryptFunc := decrypter.Decrypt
 
 	for _, nsDef := range nsDefs {
 		getPaasSecret := func(key string) (string, error) {

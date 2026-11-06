@@ -335,6 +335,19 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			Expect(err.Error()).To(ContainSubstring("unable to decrypt data with any of the private keys"))
 		})
 	})
+	Context("When the keys secret cannot be parsed", func() {
+		It("Should return an error instead of reporting every secret as not decryptable", func() {
+			brokenSecret := "paasns-broken-pk-secret"
+			createPaasPrivateKeySecret(fakeClient, paasSystem, brokenSecret, []byte("not a private key"))
+			brokenConf := conf.DeepCopy()
+			brokenConf.Spec.DecryptKeysSecret.Name = brokenSecret
+
+			fieldErrs, err := validatePaasNsSecrets(ctx, fakeClient, *brokenConf, *paas, *obj)
+			Expect(err).To(MatchError(ContainSubstring("failed to parse private keys")))
+			Expect(fieldErrs).To(BeEmpty())
+		})
+	})
+
 	Context("When deleting a PaasNs, ", func() {
 		It("Update webhook should not fail", func() {
 			By("checking deletion timestamp")

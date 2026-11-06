@@ -17,8 +17,8 @@ import (
 	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
+	"github.com/belastingdienst/opr-paas/v5/internal/decrypt"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -237,24 +237,18 @@ func validatePaasNsSecrets(
 	paas v1alpha2.Paas,
 	paasns v1alpha2.PaasNS,
 ) ([]*field.Error, error) {
-	decryptRes := &corev1.Secret{}
-	if err := k8sClient.Get(ctx, types.NamespacedName{
-		Name:      conf.Spec.DecryptKeysSecret.Name,
-		Namespace: conf.Spec.DecryptKeysSecret.Namespace,
-	}, decryptRes); err != nil {
-		return nil, fmt.Errorf("could not retrieve decryption secret: %w", err)
+	decrypter, err := decrypt.NewDecrypter(ctx, k8sClient, conf, paas.Name)
+	if err != nil {
+		return nil, err
 	}
-
-	keys, _ := crypt.NewPrivateKeysFromSecretData(decryptRes.Data)
-	rsa, _ := crypt.NewCryptFromKeys(keys, "", paas.Name)
 
 	var errs []*field.Error
 	for name, secret := range paasns.Spec.Secrets {
-		if _, err := rsa.Decrypt(secret); err != nil {
+		if _, decryptErr := decrypter.Decrypt(secret); decryptErr != nil {
 			errs = append(errs, field.Invalid(
 				field.NewPath("spec").Child("secrets"),
 				name,
-				fmt.Sprintf("cannot be decrypted: %s", err),
+				fmt.Sprintf("cannot be decrypted: %s", decryptErr),
 			))
 		}
 	}

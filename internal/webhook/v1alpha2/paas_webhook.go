@@ -15,9 +15,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/decrypt"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
 	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	"github.com/belastingdienst/opr-paas/v5/pkg/quota"
@@ -25,7 +25,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -225,7 +224,7 @@ func validateCaps(
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
-	rsa, err := getCryptInstance(ctx, k8sClient, conf, paas.Name)
+	decrypter, err := decrypt.NewDecrypter(ctx, k8sClient, conf, paas.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +247,7 @@ func validateCaps(
 			errs = append(errs, validateSecrets(
 				ctx,
 				capability.Secrets,
-				rsa,
+				decrypter,
 				field.NewPath(pathSpec).Child("capabilities").Key(name).Child("secrets"),
 			)...)
 		}
@@ -479,12 +478,12 @@ func validatePaasSecrets(
 	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
-	rsa, err := getCryptInstance(ctx, k8sClient, conf, paas.Name)
+	decrypter, err := decrypt.NewDecrypter(ctx, k8sClient, conf, paas.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	return validateSecrets(ctx, paas.Spec.Secrets, rsa, field.NewPath(pathSpec).Child("secrets")), nil
+	return validateSecrets(ctx, paas.Spec.Secrets, decrypter, field.NewPath(pathSpec).Child("secrets")), nil
 }
 
 // validateCustomFields ensures that for a given capability in the Paas:
@@ -607,45 +606,17 @@ func (v *PaasCustomValidator) validateExtraPerm(conf v1alpha2.PaasConfig, paas *
 	return warnings
 }
 
-// getCryptInstance returns a crypt based on the provided config and paasName
-func getCryptInstance(
-	ctx context.Context,
-	k8sClient client.Client,
-	conf v1alpha2.PaasConfig,
-	paasName string,
-) (*crypt.Crypt, error) {
-	decryptRes := &corev1.Secret{}
-	if err := k8sClient.Get(ctx, types.NamespacedName{
-		Name:      conf.Spec.DecryptKeysSecret.Name,
-		Namespace: conf.Spec.DecryptKeysSecret.Namespace,
-	}, decryptRes); err != nil {
-		return nil, fmt.Errorf("could not retrieve decryption secret: %w", err)
-	}
-
-	keys, err := crypt.NewPrivateKeysFromSecretData(decryptRes.Data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse private keys: %w", err)
-	}
-
-	rsa, err := crypt.NewCryptFromKeys(keys, "", paasName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create crypt instance: %w", err)
-	}
-
-	return rsa, nil
-}
-
-// validateSecrets validates a map of Secrets based on a provided rsa
+// validateSecrets validates a map of Secrets based on a provided decrypter
 func validateSecrets(
 	ctx context.Context,
 	secrets map[string]string,
-	rsa *crypt.Crypt,
+	decrypter *decrypt.Decrypter,
 	basePath *field.Path,
 ) []*field.Error {
 	var errs []*field.Error
 	_, logger := logging.GetLogComponent(ctx, logging.WebhookPaasComponentV2)
 	for name, secret := range secrets {
-		if _, err := rsa.Decrypt(secret); err != nil {
+		if _, err := decrypter.Decrypt(secret); err != nil {
 			logger.Debug().
 				AnErr("error", err).
 				Str("secret", secret).
