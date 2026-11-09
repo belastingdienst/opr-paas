@@ -90,6 +90,9 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
+          # Pin the linter, so a new release cannot break main without a code change.
+          # v2.15.0 reports new revive add-constant issues; bump after fixing them.
+          version: v2.14.0
           args: --verbose
 
   code-gen:
