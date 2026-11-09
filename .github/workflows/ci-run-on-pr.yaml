@@ -2,6 +2,7 @@ name: CI run on PR
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  merge_group:
 
 env:
   # Golang version to use across CI steps
@@ -19,15 +20,17 @@ jobs:
         run: exit 1
 
   codechanges:
-    if: ${{ github.event.pull_request.draft == false }}
+    if: ${{ github.event.pull_request.draft != true }}
     runs-on: ubuntu-latest
     outputs:
-      backend: ${{ steps.filter.outputs.backend_any_changed || steps.filter.outputs.ci_any_changed }}
+      # Always run everything in the merge queue; there is no PR diff to filter on there.
+      backend: ${{ github.event_name == 'merge_group' || steps.filter.outputs.backend_any_changed || steps.filter.outputs.ci_any_changed }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+      - if: ${{ github.event_name == 'pull_request' }}
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         id: filter
         with:
           # Any file which is not under docs/, examples/, or is not a markdown file is counted as a backend file
@@ -46,7 +49,7 @@ jobs:
   check-go:
     name: Ensure Go modules synchronicity
     runs-on: ubuntu-latest
-    if: ${{ (needs.codechanges.outputs.backend == 'true' || needs.codechanges.outputs.ci == 'true') && github.event.pull_request.draft == false}}
+    if: ${{ (needs.codechanges.outputs.backend == 'true' || needs.codechanges.outputs.ci == 'true') && github.event.pull_request.draft != true }}
     needs:
       - codechanges
     steps:
@@ -69,7 +72,7 @@ jobs:
   lint-go:
     name: Lint Go code
     runs-on: ubuntu-latest
-    if: ${{ (needs.codechanges.outputs.backend == 'true' || needs.codechanges.outputs.ci == 'true') && github.event.pull_request.draft == false}}
+    if: ${{ (needs.codechanges.outputs.backend == 'true' || needs.codechanges.outputs.ci == 'true') && github.event.pull_request.draft != true }}
     needs:
       - codechanges
     permissions:
@@ -92,7 +95,7 @@ jobs:
   code-gen:
     name: Check generated code
     runs-on: ubuntu-latest
-    if: ${{ (needs.codechanges.outputs.backend == 'true' || needs.codechanges.outputs.ci == 'true') && github.event.pull_request.draft == false}}
+    if: ${{ (needs.codechanges.outputs.backend == 'true' || needs.codechanges.outputs.ci == 'true') && github.event.pull_request.draft != true }}
     needs:
       - codechanges
     steps:
@@ -109,7 +112,7 @@ jobs:
   unit-test:
     name: Run unit tests
     runs-on: ubuntu-latest
-    if: ${{ (needs.codechanges.outputs.backend == 'true' || needs.codechanges.outputs.ci == 'true') && github.event.pull_request.draft == false}}
+    if: ${{ (needs.codechanges.outputs.backend == 'true' || needs.codechanges.outputs.ci == 'true') && github.event.pull_request.draft != true }}
     needs:
       - codechanges
     permissions:
@@ -138,6 +141,7 @@ jobs:
           name: unittests-coverage
           path: cover.out
       - name: find pull request ID
+        if: ${{ github.event_name == 'pull_request' }}
         run: |
           PR_ID=${GITHUB_REF_NAME%%/merge}
           echo "PR_ID: $PR_ID"
@@ -174,7 +178,7 @@ jobs:
   e2e-test:
     name: Run e2e tests against deployed image
     runs-on: ubuntu-latest
-    if: ${{ (needs.codechanges.outputs.backend == 'true' || needs.codechanges.outputs.ci == 'true') && github.event.pull_request.draft == false}}
+    if: ${{ (needs.codechanges.outputs.backend == 'true' || needs.codechanges.outputs.ci == 'true') && github.event.pull_request.draft != true }}
     needs:
       - codechanges
     steps:
@@ -235,7 +239,7 @@ jobs:
 
   test-coverage:
     name: Report test coverage
-    if: ${{ (needs.codechanges.outputs.backend == 'true' || needs.codechanges.outputs.ci == 'true') && github.event.pull_request.draft == false}}
+    if: ${{ (needs.codechanges.outputs.backend == 'true' || needs.codechanges.outputs.ci == 'true') && github.event.pull_request.draft != true }}
     runs-on: ubuntu-latest
     needs:
       - unit-test
