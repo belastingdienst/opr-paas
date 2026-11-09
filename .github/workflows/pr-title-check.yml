@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Check PR Title
         if: ${{ github.event_name == 'pull_request' }}
-        uses: thehanimo/pr-title-checker@7fbfe05602bdd86f926d3fb3bccb6f3aed43bc70 # v1.4.3
+        uses: thehanimo/pr-title-checker@b69bc3a841cf4e3cfef2d822625d8c90a588e9da # v2.0.0
         with:
           # Use the built-in github.token context
           GITHUB_TOKEN: ${{ github.token }}
