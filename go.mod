@@ -7,9 +7,9 @@ require (
 	github.com/openshift/api v3.9.1-0.20190916204813-cdbe64fb0c91+incompatible
 	github.com/stretchr/testify v1.12.1
 	k8s.io/api v0.37.2
-	k8s.io/apiextensions-apiserver v0.37.1
+	k8s.io/apiextensions-apiserver v0.37.2
 	k8s.io/apimachinery v0.37.2
-	k8s.io/client-go v0.37.1
+	k8s.io/client-go v0.37.2
 	sigs.k8s.io/controller-runtime v0.25.2
 )
 
@@ -67,8 +67,8 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/grpc v1.83.2 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
-	k8s.io/apiserver v0.37.1 // indirect
-	k8s.io/component-base v0.37.1 // indirect
+	k8s.io/apiserver v0.37.2 // indirect
+	k8s.io/component-base v0.37.2 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.36.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
