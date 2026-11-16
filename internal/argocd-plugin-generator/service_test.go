@@ -239,6 +239,10 @@ var _ = Describe("Service", Ordered, func() {
 		})
 
 		It("fails the whole request when a Paas has an invalid custom field value", func() {
+			const (
+				validValue   = "---\napiVersion: v1\nkind: ConfigMap"
+				invalidValue = "main\n" + validValue
+			)
 			// The webhook rejects such values at admission; this is defense in depth for Paases admitted
 			// before that check existed. Failing (instead of skipping the Paas) makes ArgoCD keep the existing
 			// Applications rather than delete the Application of this Paas.
@@ -246,7 +250,7 @@ var _ = Describe("Service", Ordered, func() {
 			Expect(err).NotTo(HaveOccurred())
 			ensureArgoPaas(func(paas *v1alpha2.Paas) {
 				paas.Spec.Secrets = map[string]string{"secret": encrypted}
-				paas.Spec.Capabilities["argocd"].CustomFields["git_revision"] = "main\n---\napiVersion: v1\nkind: ConfigMap"
+				paas.Spec.Capabilities["argocd"].CustomFields["git_revision"] = invalidValue
 			})
 
 			results, err := svc.Generate(ctx, fields.ElementMap{"capability": "argocd"})
