@@ -650,9 +650,10 @@ func validateSecrets(
 				AnErr("error", err).
 				Str("path", basePath.Key(name).String()).
 				Msg("cannot be decrypted")
+			// Do not return the submitted (encrypted) value: the field path identifies the secret.
 			errs = append(errs, field.Invalid(
 				basePath.Key(name),
-				secret,
+				field.OmitValueType{},
 				"cannot be decrypted",
 			))
 		}

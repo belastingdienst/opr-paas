@@ -313,7 +313,12 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			obj.Spec.Secrets["invalidSecret1"] = invalidSecret1
 			_, err = validator.ValidateCreate(ctx, obj)
 			Expect(err).Error().To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("unable to decrypt data with any of the private keys"))
+			Expect(err.Error()).To(ContainSubstring("spec.secrets[invalidSecret1]"))
+			Expect(err.Error()).To(ContainSubstring("cannot be decrypted"))
+			// Decryption details must not be returned to the caller
+			Expect(err.Error()).NotTo(ContainSubstring("unable to decrypt data with any of the private keys"))
+			// The submitted (encrypted) value must not be echoed back either
+			Expect(err.Error()).NotTo(ContainSubstring(invalidSecret1))
 		})
 		It("Should deny updating", func() {
 			By("creating PaasNs with sshSecret encrypted with public key that has no corresponding private key")
@@ -332,9 +337,36 @@ var _ = Describe("PaasNS Webhook", Ordered, func() {
 			warn, err := validator.ValidateUpdate(ctx, oldObj, obj)
 			Expect(warn).To(BeNil())
 			Expect(err).Error().To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("unable to decrypt data with any of the private keys"))
+			Expect(err.Error()).To(ContainSubstring("spec.secrets[invalidSecret1]"))
+			Expect(err.Error()).To(ContainSubstring("cannot be decrypted"))
+			// Decryption details must not be returned to the caller
+			Expect(err.Error()).NotTo(ContainSubstring("unable to decrypt data with any of the private keys"))
+			// The submitted (encrypted) value must not be echoed back either
+			Expect(err.Error()).NotTo(ContainSubstring(invalidSecret1))
 		})
 	})
+	Context("When the decryption keys secret contains invalid key data", func() {
+		It("Should return an error instead of failing on an unusable crypt", func() {
+			const invalidKeysSecret = "invalid-private-keys"
+			createPaasPrivateKeySecret(fakeClient, paasSystem, invalidKeysSecret, []byte("not a private key"))
+			DeferCleanup(func() {
+				Expect(fakeClient.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+					Name: invalidKeysSecret, Namespace: paasSystem,
+				}})).To(Succeed())
+			})
+
+			latestConf := &v1alpha2.PaasConfig{}
+			Expect(fakeClient.Get(ctx, types.NamespacedName{Name: conf.Name}, latestConf)).To(Succeed())
+			latestConf.Spec.DecryptKeysSecret.Name = invalidKeysSecret
+			Expect(fakeClient.Update(ctx, latestConf)).To(Succeed())
+
+			Expect(func() {
+				_, err := validator.ValidateCreate(ctx, obj)
+				Expect(err).To(MatchError(ContainSubstring("failed to parse private keys")))
+			}).NotTo(Panic())
+		})
+	})
+
 	Context("When deleting a PaasNs, ", func() {
 		It("Update webhook should not fail", func() {
 			By("checking deletion timestamp")

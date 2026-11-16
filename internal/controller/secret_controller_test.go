@@ -197,6 +197,25 @@ var _ = Describe("secret controller", Ordered, func() {
 		})
 	})
 
+	When("reconciling a secret that cannot be decrypted", func() {
+		It("should return a generic error without decryption details", func() {
+			// "Zm9vIGJhciBiYXo=" is valid base64, but not encrypted with any of the private keys
+			nsDefs := namespaceDefs{
+				pns.Name: namespaceDef{
+					nsName:           pnsNamespace,
+					paasns:           pns,
+					quotaName:        pnsNamespace,
+					encryptedSecrets: map[string]string{pnsSecretName: "Zm9vIGJhciBiYXo="},
+				},
+			}
+			err := reconciler.reconcilePaasSecrets(ctx, paas, nsDefs)
+
+			// This error ends up in the Paas status, which is readable by Paas viewers
+			Expect(err).To(MatchError(ContainSubstring("paas secret cannot be decrypted")))
+			Expect(err.Error()).NotTo(ContainSubstring("private keys"))
+		})
+	})
+
 	When("reconciling a paas namespace with a Secrets value", func() {
 		It("should not return an error", func() {
 			nsDefs := namespaceDefs{
