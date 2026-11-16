@@ -190,6 +190,44 @@ var _ = Describe("Service", Ordered, func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("missing or invalid capability param"))
 		})
+		It("never logs decrypted secrets, not even with debug logging enabled", func() {
+			const canarySecret = "canary-plaintext-secret-3b8f07"
+			encrypted, err := mycrypt.Encrypt([]byte(canarySecret))
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Ensuring a Paas exists that uses decryptPaasSecret on the canary secret")
+			paas := &v1alpha2.Paas{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: paasWithArgo}, paas)
+			if apierrors.IsNotFound(err) {
+				paas = &v1alpha2.Paas{
+					ObjectMeta: metav1.ObjectMeta{Name: paasWithArgo},
+					Spec: v1alpha2.PaasSpec{
+						Requestor: paasRequestor,
+						Capabilities: map[string]v1alpha2.PaasCapability{
+							"argocd": {CustomFields: map[string]string{"git_url": paasArgoGitURL}},
+						},
+						Secrets: map[string]string{"secret": encrypted},
+					},
+				}
+				Expect(k8sClient.Create(ctx, paas)).To(Succeed())
+			} else {
+				Expect(err).NotTo(HaveOccurred())
+				paas.Spec.Secrets = map[string]string{"secret": encrypted}
+				Expect(k8sClient.Update(ctx, paas)).To(Succeed())
+			}
+
+			logs := captureDebugLogs()
+			results, err := svc.Generate(ctx, fields.ElementMap{"capability": "argocd"})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Checking the secret was decrypted (so it could have been logged)")
+			Expect(results).To(ContainElement(HaveKeyWithValue("templated", canarySecret)))
+
+			By("Checking the plaintext secret is not in the logs")
+			Expect(logs.String()).To(ContainSubstring("after templating"))
+			Expect(logs.String()).NotTo(ContainSubstring(canarySecret))
+		})
+
 		It("returns err when no PaasConfig is set", func() {
 			By("Calling Generate")
 			err := k8sClient.Delete(ctx, &conf)

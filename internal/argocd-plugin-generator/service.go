@@ -11,6 +11,8 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"maps"
+	"slices"
 
 	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
@@ -160,7 +162,7 @@ func capElementsFromPaas(
 		logger.Error().AnErr("error", err).Msg("templating custom fields failed")
 		return nil, err
 	}
-	logger.Debug().Str("paas", paas.Name).Any("templated", templatedElements).Msg("after templating")
+	logger.Debug().Strs("templated_keys", elementKeys(templatedElements)).Msg("after templating")
 
 	capability, exists := paas.Spec.Capabilities[capName]
 	if !exists {
@@ -173,9 +175,9 @@ func capElementsFromPaas(
 		logger.Error().AnErr("error", err).Msg("getting capability custom fields failed")
 		return nil, err
 	}
-	logger.Debug().Str("paas", paas.Name).Any("cap.elements", capElements).Msg("after getting cap. elements")
+	logger.Debug().Strs("cap_element_keys", elementKeys(capElements)).Msg("after getting cap. elements")
 	elements = templatedElements.Merge(capElements)
-	logger.Debug().Str("paas", paas.Name).Any("merged", templatedElements).Msg("after merge with cap elements")
+	logger.Debug().Strs("merged_keys", elementKeys(elements)).Msg("after merge with cap elements")
 
 	for name, tpl := range paasConfig.Spec.Templating.GenericCapabilityFields {
 		result, templateErr := templater.TemplateToMap(name, tpl)
@@ -184,14 +186,20 @@ func capElementsFromPaas(
 			return nil, fmt.Errorf("failed to run template %s", tpl)
 		}
 		values := result.AsElementMap()
-		logger.Debug().Str("paas", paas.Name).Str("field", name).Any("generic", values).Msg("generic cap field")
+		logger.Debug().Str("field", name).Strs("generic_keys", elementKeys(values)).Msg("generic cap field")
 		elements = elements.Merge(values)
 	}
-	logger.Debug().Str("paas", paas.Name).Any("merged", templatedElements).Msg("after merge with generic templates")
+	logger.Debug().Strs("merged_keys", elementKeys(elements)).Msg("after merge with generic templates")
 
 	elements["paas"] = paas.Name
-	logger.Debug().Str("paas", paas.Name).Int("num_elements", len(elements)).Msg("returning elements")
+	logger.Debug().Int("num_elements", len(elements)).Msg("returning elements")
 	return elements, nil
+}
+
+// elementKeys returns the sorted keys of an ElementMap. Use it for logging instead of the map itself:
+// element values can hold sensitive data, e.g. plaintext from decryptPaasSecret.
+func elementKeys(elements fields.ElementMap) []string {
+	return slices.Sorted(maps.Keys(elements))
 }
 
 func applyCustomFieldTemplates(

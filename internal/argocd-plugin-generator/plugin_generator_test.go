@@ -78,6 +78,22 @@ var _ = Describe("PluginGenerator", func() {
 			Expect(pg.service).ToNot(BeNil())
 			Expect(pg.server).ToNot(BeNil())
 		})
+
+		It("should never log the token, not even with debug logging enabled", func() {
+			const canaryToken = "canary-generator-token-5f1c2a"
+			logs := captureDebugLogs()
+
+			_ = os.Setenv("ARGOCD_GENERATOR_TOKEN", canaryToken)
+			defer os.Unsetenv("ARGOCD_GENERATOR_TOKEN")
+
+			cache, err := cache.New(cfg, cache.Options{Scheme: testEnv.Scheme})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = New(fake.NewClientBuilder().Build(), cache, ":4355")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(logs.String()).To(ContainSubstring("token_configured"))
+			Expect(logs.String()).NotTo(ContainSubstring(canaryToken))
+		})
 	})
 
 	Context("Start", func() {
