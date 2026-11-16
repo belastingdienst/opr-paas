@@ -44,6 +44,9 @@ func (r *PaasReconciler) ensureNamespace(
 		}
 	}
 	var changed bool
+	if found.Labels == nil {
+		found.Labels = map[string]string{}
+	}
 	for key, value := range ns.Labels {
 		if orgValue, exists := found.Labels[key]; !exists || orgValue != value {
 			changed = true
@@ -140,6 +143,13 @@ func (r *PaasReconciler) finalizeObsoleteNamespaces(
 	}
 	for _, ns := range nss.Items {
 		if _, exists := nsDefs[ns.Name]; !exists {
+			// The managed-by label alone is not proof of ownership: labels are mutable and can be set on any
+			// namespace. Only delete namespaces this Paas is an owner of.
+			if !paas.AmIOwner(ns.OwnerReferences) {
+				logger.Warn().Str("namespace", ns.Name).
+					Msg("namespace has the managed-by label of this Paas, but is not owned by it; not deleting")
+				continue
+			}
 			err = r.Delete(ctx, &ns)
 			if err != nil {
 				return err

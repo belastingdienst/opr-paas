@@ -315,3 +315,34 @@ var _ = Describe("Clusterrolebindings", Ordered, func() {
 		})
 	})
 })
+
+var _ = Describe("Clusterrolebinding namespace regexes", func() {
+	It("escapes names, so a dot does not match any character", func() {
+		Expect(exactNamespaceRegex("a.b").MatchString("a.b")).To(BeTrue())
+		Expect(exactNamespaceRegex("a.b").MatchString("axb")).To(BeFalse())
+		Expect(capNamespaceRegex("a.b", "argocd").MatchString("a.b-argocd")).To(BeTrue())
+		Expect(capNamespaceRegex("a.b", "argocd").MatchString("axb-argocd")).To(BeFalse())
+	})
+
+	It("only removes subjects of the finalized Paas, not of a Paas whose name it prefixes", func() {
+		sa := func(ns string) rbac.Subject {
+			return rbac.Subject{Kind: "ServiceAccount", Name: "argocd-controller", Namespace: ns}
+		}
+		crb := &rbac.ClusterRoleBinding{Subjects: []rbac.Subject{
+			sa("team-argocd"),   // capability namespace of Paas `team`
+			sa("team-x-argocd"), // capability namespace of Paas `team-x`
+			sa("team-tekton"),   // capability namespace of Paas `team`
+		}}
+
+		re := paasCapNamespacesRegex("team", []string{"argocd", "tekton"})
+		Expect(updateClusterRoleBindingForRemovedSA(crb, *re, "")).To(BeTrue())
+		Expect(crb.Subjects).To(ConsistOf(sa("team-x-argocd")))
+	})
+
+	It("only matches complete namespace names", func() {
+		Expect(exactNamespaceRegex("team-argocd").MatchString("team-argocd")).To(BeTrue())
+		Expect(exactNamespaceRegex("team-argocd").MatchString("team-argocd-x")).To(BeFalse())
+		Expect(exactNamespaceRegex("team-argocd").MatchString("x-team-argocd")).To(BeFalse())
+		Expect(capNamespaceRegex("team", "argocd").MatchString("team-x-argocd")).To(BeFalse())
+	})
+})
