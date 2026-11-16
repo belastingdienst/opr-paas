@@ -366,7 +366,8 @@ var _ = Describe("Clusterrolebinding conflicts", func() {
 		updates := 0
 		fakeClient := fake.NewClientBuilder().WithScheme(k8sClient.Scheme()).WithObjects(existing).
 			WithInterceptorFuncs(interceptor.Funcs{
-				Update: func(ctx context.Context, c client.WithWatch, obj client.Object, opts ...client.UpdateOption) error {
+				Update: func(ctx context.Context, c client.WithWatch, obj client.Object,
+					opts ...client.UpdateOption) error {
 					updates++
 					if updates == 1 {
 						return apierrors.NewConflict(rbac.Resource("clusterrolebindings"), obj.GetName(),
