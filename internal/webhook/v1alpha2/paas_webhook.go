@@ -393,7 +393,8 @@ func validateGroupNameCollisions(oldPaas *v1alpha2.Paas) paasSpecValidator {
 				errs = append(errs, field.Invalid(
 					field.NewPath(pathSpec).Child("groups").Key(key),
 					groupName,
-					fmt.Sprintf("group name %s is already used by Paas %s for a different group", groupName, other.paas),
+					fmt.Sprintf("group name %s is already used by Paas %s for a different group",
+						groupName, other.paas),
 				))
 				break
 			}
