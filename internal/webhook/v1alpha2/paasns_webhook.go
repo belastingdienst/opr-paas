@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/decrypt"
 	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 
@@ -236,7 +237,7 @@ func validatePaasNsSecrets(
 	paas v1alpha2.Paas,
 	paasns v1alpha2.PaasNS,
 ) ([]*field.Error, error) {
-	rsa, err := getCryptInstance(ctx, k8sClient, conf, paas.Name)
+	rsa, err := decrypt.ForPaas(ctx, k8sClient, conf, paas.Name)
 	if err != nil {
 		return nil, err
 	}

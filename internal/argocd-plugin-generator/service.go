@@ -15,10 +15,9 @@ import (
 	"slices"
 
 	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
+	"github.com/belastingdienst/opr-paas/v5/internal/decrypt"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
 	"github.com/belastingdienst/opr-paas/v5/pkg/fields"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
@@ -79,7 +78,7 @@ func (s *Service) Generate(_ctx context.Context, params fields.ElementMap) ([]fi
 		return nil, err
 	}
 	var keys crypt.PrivateKeys
-	keys, err = getCryptKeys(ctx, s.kclient, myConfig)
+	keys, err = decrypt.PrivateKeys(ctx, s.kclient, myConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -107,31 +106,14 @@ func (s *Service) Generate(_ctx context.Context, params fields.ElementMap) ([]fi
 	return results, nil
 }
 
-// getCrypt builds and returns a crypt (or error)
-func getCryptKeys(
-	ctx context.Context,
-	k8sClient client.Client,
-	conf v1alpha2.PaasConfig,
-) (crypt.PrivateKeys, error) {
-	decryptRes := &corev1.Secret{}
-	if err := k8sClient.Get(ctx, types.NamespacedName{
-		Name:      conf.Spec.DecryptKeysSecret.Name,
-		Namespace: conf.Spec.DecryptKeysSecret.Namespace,
-	}, decryptRes); err != nil {
-		return nil, fmt.Errorf("could not retrieve decryption secret: %w", err)
-	}
-
-	return crypt.NewPrivateKeysFromSecretData(decryptRes.Data)
-}
-
 // getCryptFunc builds a crypt and creates a func that accepts a string and returns a decrypted value (or error)
 func getCryptFunc(
 	keys crypt.PrivateKeys,
 	paasName string,
 ) (func(string) (string, error), error) {
-	rsa, err := crypt.NewCryptFromKeys(keys, "", paasName)
+	rsa, err := decrypt.NewCrypt(keys, paasName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create crypt instance: %w", err)
+		return nil, err
 	}
 	return func(secret string) (string, error) {
 		d, decryptErr := rsa.Decrypt(secret)
