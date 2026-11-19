@@ -11,6 +11,7 @@ package v1alpha2
 
 import (
 	"reflect"
+	"regexp"
 
 	paasquota "github.com/belastingdienst/opr-paas/v5/pkg/quota"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -207,6 +208,7 @@ type ConfigTemplatingItem map[string]string
 
 type ConfigCustomField struct {
 	// Regular expression for validating input, defaults to '', which means no validation.
+	// The expression must match the complete value: it is always anchored (as if wrapped in `^(?:...)$`).
 	// +kubebuilder:validation:Optional
 	Validation string `json:"validation"`
 	// Set a default when no value is specified, defaults to ''.
@@ -402,4 +404,18 @@ func (pc PaasConfig) IsActive() bool {
 // QuotaManagementEnabled returns true if quota management is enabled
 func (pc PaasConfig) QuotaManagementEnabled() bool {
 	return pc.Spec.FeatureFlags.ClusterResourceQuotaManagement == "allow"
+}
+
+// MatchesValidation returns whether value matches the Validation regex of this custom field.
+// The regex is anchored, so it must match the complete value and not just a part of it
+// (e.g. `[a-z]+` does not match `abc;def`). An empty Validation matches any value.
+func (ccf ConfigCustomField) MatchesValidation(value string) (bool, error) {
+	if ccf.Validation == "" {
+		return true, nil
+	}
+	re, err := regexp.Compile(`^(?:` + ccf.Validation + `)$`)
+	if err != nil {
+		return false, err
+	}
+	return re.MatchString(value), nil
 }

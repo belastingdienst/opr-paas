@@ -60,7 +60,10 @@ func New(kclient client.Client, c cache.Cache, bindAddr string) (*PluginGenerato
 	token := os.Getenv(tokenEnvVar)
 	// Never log the token itself, only whether it is configured.
 	logger.Debug().Bool("token_configured", token != "").Msg("plugin generator token")
-	handler := NewHandler(generatorService, token)
+	handler, err := NewHandler(generatorService, token)
+	if err != nil {
+		return nil, fmt.Errorf("environment variable %s: %w", tokenEnvVar, err)
+	}
 
 	server := NewServer(ServerOptions{
 		Addr:        bindAddr,
@@ -68,12 +71,14 @@ func New(kclient client.Client, c cache.Cache, bindAddr string) (*PluginGenerato
 	}, handler)
 
 	// Ensure informer for Paas exists, to trigger sync of the cache
-	if _, err := c.GetInformer(context.Background(), &v1alpha2.Paas{}); err != nil {
+	_, err = c.GetInformer(context.Background(), &v1alpha2.Paas{})
+	if err != nil {
 		return nil, fmt.Errorf("failed to get informer for Paas: %w", err)
 	}
 
 	// Ensure informer for PaasConfig exists, to trigger sync of the cache
-	if _, err := c.GetInformer(context.Background(), &v1alpha2.PaasConfig{}); err != nil {
+	_, err = c.GetInformer(context.Background(), &v1alpha2.PaasConfig{})
+	if err != nil {
 		return nil, fmt.Errorf("failed to get informer for Paas: %w", err)
 	}
 

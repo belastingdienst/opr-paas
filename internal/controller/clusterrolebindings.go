@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -206,13 +207,17 @@ func (r *PaasReconciler) reconcileClusterRoleBinding(
 	permissions := capConfig.ExtraPermissions.AsConfigRolesSas(capability.ExtraPermissions)
 	permissions.Merge(capConfig.DefaultPermissions.AsConfigRolesSas(true))
 	for role, sas := range permissions {
-		if crb, err = r.getClusterRoleBinding(ctx, role); err != nil {
-			return err
-		}
-		if addOrUpdateCrb(ctx, crb, nsName, sas) {
-			if err = r.updateClusterRoleBinding(ctx, crb); err != nil {
+		err = retryOnCrbConflict(func() error {
+			if crb, err = r.getClusterRoleBinding(ctx, role); err != nil {
 				return err
 			}
+			if addOrUpdateCrb(ctx, crb, nsName, sas) {
+				return r.updateClusterRoleBinding(ctx, crb)
+			}
+			return nil
+		})
+		if err != nil {
+			return err
 		}
 	}
 
@@ -347,20 +352,31 @@ func (r *PaasReconciler) finalizeClusterRoleBinding(
 	nsRegularExpression regexp.Regexp,
 ) error {
 	ctx, logger := logging.GetLogComponent(ctx, logging.ControllerClusterRoleBindingsComponent)
-	crb, err := r.getClusterRoleBinding(ctx, role)
-	if err != nil {
-		return err
-	}
-	logger.Info().Msgf("subjects before update: %s", strings.Join(subjectsFromCrb(*crb), ", "))
-	changed := updateClusterRoleBindingForRemovedSA(crb,
-		nsRegularExpression, "")
-	logger.Info().Msgf("subjects after update: %s", strings.Join(subjectsFromCrb(*crb), ", "))
-	if !changed {
-		logger.Info().Msg("no changes")
-		return nil
-	}
-	logger.Info().Msgf("updating rolebinding %s after cleaning SA's for '%s'", role, nsRegularExpression.String())
-	return r.updateClusterRoleBinding(ctx, crb)
+	return retryOnCrbConflict(func() error {
+		crb, err := r.getClusterRoleBinding(ctx, role)
+		if err != nil {
+			return err
+		}
+		logger.Info().Msgf("subjects before update: %s", strings.Join(subjectsFromCrb(*crb), ", "))
+		changed := updateClusterRoleBindingForRemovedSA(crb,
+			nsRegularExpression, "")
+		logger.Info().Msgf("subjects after update: %s", strings.Join(subjectsFromCrb(*crb), ", "))
+		if !changed {
+			logger.Info().Msg("no changes")
+			return nil
+		}
+		logger.Info().Msgf("updating rolebinding %s after cleaning SA's for '%s'", role, nsRegularExpression.String())
+		return r.updateClusterRoleBinding(ctx, crb)
+	})
+}
+
+// retryOnCrbConflict runs fn, which should get, modify and write a ClusterRoleBinding, and runs it again when the
+// write fails because the ClusterRoleBinding was changed or created in the meantime. ClusterRoleBindings are shared
+// by all Paases with the same capability, so concurrent changes are expected.
+func retryOnCrbConflict(fn func() error) error {
+	return retry.OnError(retry.DefaultRetry, func(err error) bool {
+		return errors.IsConflict(err) || errors.IsAlreadyExists(err)
+	}, fn)
 }
 
 func (r *PaasReconciler) finalizeCapClusterRoleBindings(ctx context.Context, paas *v1alpha2.Paas) error {
