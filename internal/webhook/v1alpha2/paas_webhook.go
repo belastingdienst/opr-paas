@@ -18,6 +18,7 @@ import (
 	"github.com/belastingdienst/opr-paas-cli/v2/pkg/crypt"
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
+	"github.com/belastingdienst/opr-paas/v5/internal/decrypt"
 	"github.com/belastingdienst/opr-paas/v5/internal/logging"
 	"github.com/belastingdienst/opr-paas/v5/internal/utils"
 	"github.com/belastingdienst/opr-paas/v5/pkg/quota"
@@ -25,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -231,7 +231,7 @@ func validateCaps(
 ) ([]*field.Error, error) {
 	var errs []*field.Error
 
-	rsa, err := getCryptInstance(ctx, k8sClient, conf, paas.Name)
+	rsa, err := decrypt.ForPaas(ctx, k8sClient, conf, paas.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -580,7 +580,7 @@ func validatePaasSecrets(
 	conf v1alpha2.PaasConfig,
 	paas *v1alpha2.Paas,
 ) ([]*field.Error, error) {
-	rsa, err := getCryptInstance(ctx, k8sClient, conf, paas.Name)
+	rsa, err := decrypt.ForPaas(ctx, k8sClient, conf, paas.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -706,34 +706,6 @@ func (v *PaasCustomValidator) validateExtraPerm(conf v1alpha2.PaasConfig, paas *
 	}
 
 	return warnings
-}
-
-// getCryptInstance returns a crypt based on the provided config and paasName
-func getCryptInstance(
-	ctx context.Context,
-	k8sClient client.Client,
-	conf v1alpha2.PaasConfig,
-	paasName string,
-) (*crypt.Crypt, error) {
-	decryptRes := &corev1.Secret{}
-	if err := k8sClient.Get(ctx, types.NamespacedName{
-		Name:      conf.Spec.DecryptKeysSecret.Name,
-		Namespace: conf.Spec.DecryptKeysSecret.Namespace,
-	}, decryptRes); err != nil {
-		return nil, fmt.Errorf("could not retrieve decryption secret: %w", err)
-	}
-
-	keys, err := crypt.NewPrivateKeysFromSecretData(decryptRes.Data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse private keys: %w", err)
-	}
-
-	rsa, err := crypt.NewCryptFromKeys(keys, "", paasName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create crypt instance: %w", err)
-	}
-
-	return rsa, nil
 }
 
 // validateSecrets validates a map of Secrets based on a provided rsa
