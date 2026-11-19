@@ -535,7 +535,7 @@ func validateConfigCustomField(
 
 		// Default field must conform to regex validation
 		if customfield.Default != "" {
-			if matched, err := regexp.Match(customfield.Validation, []byte(customfield.Default)); err != nil {
+			if matched, err := customfield.MatchesValidation(customfield.Default); err != nil {
 				allErrs = append(allErrs, field.InternalError(
 					childPath.Child("default"),
 					fmt.Errorf("error trying to validate using regex: %s", err.Error()),

@@ -350,3 +350,30 @@ func TestActivePaasConfigUpdated_NonUpdateEvents(t *testing.T) {
 		assert.False(t, pred.Generic(event.GenericEvent{}))
 	})
 }
+
+func TestConfigCustomField_MatchesValidation(t *testing.T) {
+	tests := []struct {
+		name       string
+		validation string
+		value      string
+		want       bool
+	}{
+		{"empty validation matches anything", "", "any value; even this", true},
+		{"full match", "[a-z]+", "abc", true},
+		{"partial match is rejected (anchored)", "[a-z]+", "abc;def", false},
+		{"multi-line value is rejected (anchored)", "[a-z]+", "main\n---\nkind: ConfigMap", false},
+		{"already anchored expression still works", "^[a-z]+$", "abc", true},
+		{"alternation is anchored as a whole", "main|develop", "mainx", false},
+		{"alternation full match", "main|develop", "develop", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ConfigCustomField{Validation: tt.validation}.MatchesValidation(tt.value)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+
+	_, err := ConfigCustomField{Validation: "[unclosed"}.MatchesValidation("x")
+	assert.Error(t, err)
+}
