@@ -44,13 +44,23 @@ var _ = Describe("Handler", func() {
 	BeforeEach(func() {
 		bearerToken = "supersecrettoken"
 		mockService = &mockGeneratorService{}
-		handler = NewHandler(mockService, bearerToken)
+		var err error
+		handler, err = NewHandler(mockService, bearerToken)
+		Expect(err).NotTo(HaveOccurred())
 		server = httptest.NewServer(handler)
 		httpClient = server.Client()
 	})
 
 	AfterEach(func() {
 		server.Close()
+	})
+
+	Context("NewHandler", func() {
+		It("returns an error for an empty token", func() {
+			h, err := NewHandler(mockService, "")
+			Expect(err).To(MatchError(ContainSubstring("without token")))
+			Expect(h).To(BeNil())
+		})
 	})
 
 	Context("ServeHTTP", func() {
@@ -74,6 +84,20 @@ var _ = Describe("Handler", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusForbidden))
 		})
+
+		DescribeTable("validAuthHeader",
+			func(header string, expected bool) {
+				Expect(handler.validAuthHeader(header)).To(Equal(expected))
+			},
+			Entry("exact match", "Bearer supersecrettoken", true),
+			Entry("empty header", "", false),
+			Entry("scheme only", "Bearer ", false),
+			Entry("token without scheme", "supersecrettoken", false),
+			Entry("wrong scheme", "Basic supersecrettoken", false),
+			Entry("token prefix", "Bearer supersecret", false),
+			Entry("token with suffix", "Bearer supersecrettokenX", false),
+			Entry("lowercase scheme", "bearer supersecrettoken", false),
+		)
 
 		It("never logs a rejected Authorization header", func() {
 			const canaryToken = "canary-rejected-bearer-9d7e41"
@@ -115,6 +139,35 @@ var _ = Describe("Handler", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 			body, _ := io.ReadAll(resp.Body)
 			Expect(string(body)).To(ContainSubstring("invalid json"))
+		})
+
+		It("does not log the body when it contains invalid JSON", func() {
+			const canaryBody = "{canary-invalid-body-77a0c3"
+			logs := captureDebugLogs()
+
+			req, _ := http.NewRequest(http.MethodPost, server.URL+"/api/v1/getparams.execute",
+				bytes.NewBufferString(canaryBody))
+			req.Header.Set("Authorization", "Bearer "+bearerToken)
+			resp, err := httpClient.Do(req)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+
+			Expect(logs.String()).To(ContainSubstring("invalid json"))
+			Expect(logs.String()).NotTo(ContainSubstring("canary-invalid-body"))
+		})
+
+		It("returns 413 if the body exceeds the size limit", func() {
+			mockService.generateFunc = func(params fields.ElementMap) ([]fields.ElementMap, error) {
+				Fail("Generate must not be called for an oversized body")
+				return nil, nil
+			}
+			oversized := bytes.Repeat([]byte(" "), maxRequestBodyBytes+1)
+			req, _ := http.NewRequest(http.MethodPost, server.URL+"/api/v1/getparams.execute",
+				bytes.NewReader(oversized))
+			req.Header.Set("Authorization", "Bearer "+bearerToken)
+			resp, err := httpClient.Do(req)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(http.StatusRequestEntityTooLarge))
 		})
 
 		It("returns 500 if Service.Generate returns an error", func() {
