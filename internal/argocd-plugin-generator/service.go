@@ -152,6 +152,10 @@ func capElementsFromPaas(
 		return nil, nil
 	}
 
+	// Non-strict: values are validated (control characters, validation regex), but fields that are no longer
+	// configured are dropped instead of failing. An invalid value fails the whole request on purpose: on a
+	// generator error ArgoCD keeps the existing Applications, whereas skipping this Paas would make the
+	// ApplicationSet controller delete its Application (and, by default, its resources).
 	capElements, err := capability.CapExtraFields(paasConfig.Spec.Capabilities[capName].CustomFields, false)
 	if err != nil {
 		logger.Error().AnErr("error", err).Msg("getting capability custom fields failed")

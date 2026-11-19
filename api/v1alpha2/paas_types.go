@@ -9,8 +9,8 @@ package v1alpha2
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/belastingdienst/opr-paas/v5/pkg/fields"
 	"github.com/belastingdienst/opr-paas/v5/pkg/groups"
@@ -87,41 +87,49 @@ func (pc PaasCapability) Quotas() (pq paasquota.Quota) {
 }
 
 // CapExtraFields returns all extra fields that are configured for a capability.
-// When validate is true, fields are checked against the fieldConfig: unknown fields,
-// regex validation failures, and missing required fields all produce errors.
-// When validate is false, all custom fields are returned as-is without validation,
-// and defaults are still applied for missing non-template fields.
+//
+// Field values are always validated: values containing control characters (such as a newline) and values
+// that do not match the configured validation regex produce errors. Custom fields that are not configured
+// in fieldConfig are never returned.
+//
+// When strict is true (admission), custom fields that are not configured and missing required fields also
+// produce errors. When strict is false (generating ArgoCD parameters), fields that are not configured
+// (e.g. removed from the PaasConfig after the Paas was admitted) are silently dropped, and missing required
+// fields are not reported. In both modes defaults are applied for missing non-template fields.
 func (pc *PaasCapability) CapExtraFields(
 	fieldConfig map[string]ConfigCustomField,
-	validate bool,
+	strict bool,
 ) (elements fields.ElementMap, err error) {
 	elements = fields.ElementMap{}
 	var issues []error
 	for key, value := range pc.CustomFields {
-		if validate {
-			if _, exists := fieldConfig[key]; !exists {
+		if _, exists := fieldConfig[key]; !exists {
+			if strict {
 				issues = append(issues, fmt.Errorf("custom field %s is not configured in capability config", key))
-			} else {
-				elements[key] = value
 			}
-		} else {
-			elements[key] = value
+			continue
 		}
+		if containsControlChars(value) {
+			// Always enforced, regardless of the configured validation regex: custom field values end up
+			// in ArgoCD parameters and (Helm) templates, where e.g. a newline can inject extra YAML.
+			issues = append(issues, fmt.Errorf(
+				"custom field %s contains control characters (such as a newline), which are not allowed", key))
+			continue
+		}
+		elements[key] = value
 	}
 	for key, fieldConf := range fieldConfig {
 		var value string
 		if value, err = elements.TryGetElementAsString(key); err == nil {
-			if validate {
-				var matched bool
-				if matched, err = regexp.Match(fieldConf.Validation, []byte(value)); err != nil {
-					issues = append(issues, fmt.Errorf("could not validate value %s: %w", value, err))
-				} else if !matched {
-					issues = append(issues,
-						fmt.Errorf("invalid value %s (does not match %s)", value, fieldConf.Validation),
-					)
-				}
+			var matched bool
+			if matched, err = fieldConf.MatchesValidation(value); err != nil {
+				issues = append(issues, fmt.Errorf("could not validate value %s: %w", value, err))
+			} else if !matched {
+				issues = append(issues,
+					fmt.Errorf("invalid value %s (does not match %s)", value, fieldConf.Validation),
+				)
 			}
-		} else if validate && fieldConf.Required {
+		} else if strict && fieldConf.Required {
 			issues = append(issues, fmt.Errorf("value %s is required", key))
 		} else if fieldConf.Template == "" || fieldConf.Default != "" {
 			elements[key] = fieldConf.Default
@@ -131,6 +139,11 @@ func (pc *PaasCapability) CapExtraFields(
 		return nil, errors.Join(issues...)
 	}
 	return elements, nil
+}
+
+// containsControlChars returns true when s contains a control character (e.g. newline, carriage return, tab, NUL).
+func containsControlChars(s string) bool {
+	return strings.IndexFunc(s, unicode.IsControl) >= 0
 }
 
 // PaasCapabilities holds all capabilities enabled in a Paas

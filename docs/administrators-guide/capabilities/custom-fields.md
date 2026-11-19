@@ -23,7 +23,9 @@ A custom field can be defined in PaasConfig in `PaasConfig.spec.capabilities[cap
 
 The following configuration can be set:
 
-- validation: A regular expression used to validate input in a Paas
+- validation: A regular expression used to validate input in a Paas.
+  The expression must match the complete value: it is always anchored, as if wrapped in `^(?:...)$`.
+  For example, `[a-z]+` accepts `abc`, but rejects `abc;def`.
 - required: When set to true, an error is returned when the custom field is not defined in a Paas
 - default: When set, a Paas without the custom field set will use this default instead.
 - template: When set to a valid go template, the template is processed against the current Paas
@@ -33,6 +35,13 @@ The following configuration can be set:
 !!! note
 
     `required` and `default` are mutually exclusive.
+
+!!! warning
+
+    Custom field values are passed to ArgoCD, and often end up in (Helm) templates.
+    Values containing control characters (such as a newline) are always rejected, regardless of `validation`.
+    Still, always configure a restrictive `validation` for fields that are rendered into manifests,
+    such as git URLs, paths and revisions, and quote these values in your templates.
 
 When set, a Paas can set these custom_fields, which brings them to the generators field in the Application created by the ApplicationSet for this specific Paas.
 

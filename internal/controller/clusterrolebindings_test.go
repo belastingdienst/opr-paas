@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
@@ -10,8 +11,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	rbac "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 )
 
 var _ = Describe("Clusterrolebindings", Ordered, func() {
@@ -344,5 +349,41 @@ var _ = Describe("Clusterrolebinding namespace regexes", func() {
 		Expect(exactNamespaceRegex("team-argocd").MatchString("team-argocd-x")).To(BeFalse())
 		Expect(exactNamespaceRegex("team-argocd").MatchString("x-team-argocd")).To(BeFalse())
 		Expect(capNamespaceRegex("team", "argocd").MatchString("team-x-argocd")).To(BeFalse())
+	})
+})
+
+var _ = Describe("Clusterrolebinding conflicts", func() {
+	It("retries a ClusterRoleBinding update that conflicts with a concurrent change", func() {
+		const role = "conflict-role"
+		existing := &rbac.ClusterRoleBinding{
+			ObjectMeta: metav1.ObjectMeta{Name: utils.Join(crbNamePrefix, role)},
+			RoleRef:    rbac.RoleRef{APIGroup: "rbac.authorization.k8s.io", Kind: "ClusterRole", Name: role},
+			Subjects: []rbac.Subject{
+				{Kind: "ServiceAccount", Name: "sa", Namespace: "conflict-argocd"},
+				{Kind: "ServiceAccount", Name: "sa", Namespace: "other-argocd"},
+			},
+		}
+		updates := 0
+		fakeClient := fake.NewClientBuilder().WithScheme(k8sClient.Scheme()).WithObjects(existing).
+			WithInterceptorFuncs(interceptor.Funcs{
+				Update: func(ctx context.Context, c client.WithWatch, obj client.Object,
+					opts ...client.UpdateOption) error {
+					updates++
+					if updates == 1 {
+						return apierrors.NewConflict(rbac.Resource("clusterrolebindings"), obj.GetName(),
+							errors.New("the object has been modified"))
+					}
+					return c.Update(ctx, obj, opts...)
+				},
+			}).Build()
+		r := &PaasReconciler{Client: fakeClient, Scheme: fakeClient.Scheme()}
+
+		Expect(r.finalizeClusterRoleBinding(context.Background(), role, *exactNamespaceRegex("conflict-argocd"))).
+			To(Succeed())
+		Expect(updates).To(Equal(2))
+
+		var crb rbac.ClusterRoleBinding
+		Expect(fakeClient.Get(context.Background(), types.NamespacedName{Name: existing.Name}, &crb)).To(Succeed())
+		Expect(crb.Subjects).To(ConsistOf(rbac.Subject{Kind: "ServiceAccount", Name: "sa", Namespace: "other-argocd"}))
 	})
 })
