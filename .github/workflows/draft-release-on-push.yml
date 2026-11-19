@@ -7,7 +7,7 @@ on:
       - main
     paths-ignore:
       - 'catalog/**'
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, synchronize]
 
 # Prevent overlapping runs from corrupting the draft release
@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   autolabeler:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     permissions:
       # autolabeler needs issues: write to add labels
