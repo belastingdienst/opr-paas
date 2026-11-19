@@ -189,6 +189,30 @@ var _ = Describe("NamespaceDef", func() {
 				Expect(nsDefs).To(HaveKey(utils.Join(paasName, "mypns", "recursive")))
 			})
 		})
+		Context("with paasns objects that refer to each other's namespaces", func() {
+			It("should return all paasns's without recursing endlessly", func() {
+				// PaasNS cyc-b in namespace <paas>-cyc-a defines namespace <paas>-cyc-b, and
+				// PaasNS cyc-a in namespace <paas>-cyc-b defines namespace <paas>-cyc-a: a cycle.
+				nsA, nsB := utils.Join(paasName, "cyc-a"), utils.Join(paasName, "cyc-b")
+				for _, pnsDef := range []struct{ name, namespace string }{
+					{name: "cyc-b", namespace: nsA},
+					{name: "cyc-a", namespace: nsB},
+				} {
+					assureNamespaceWithPaasReference(ctx, pnsDef.namespace, paasName)
+					pns := &v1alpha2.PaasNS{
+						ObjectMeta: metav1.ObjectMeta{Name: pnsDef.name, Namespace: pnsDef.namespace},
+						Spec:       v1alpha2.PaasNSSpec{Paas: paasName},
+					}
+					Expect(reconciler.Create(ctx, pns)).To(Succeed())
+					DeferCleanup(func() { Expect(reconciler.Delete(ctx, pns)).To(Succeed()) })
+				}
+
+				pnss := reconciler.paasNSsFromNs(ctx, nsA)
+				Expect(pnss).To(HaveLen(2))
+				Expect(pnss).To(HaveKey(nsA))
+				Expect(pnss).To(HaveKey(nsB))
+			})
+		})
 		Context("with a paas with groups", func() {
 			var nsDefs namespaceDefs
 			It("should successfully create paasns's", func() {
