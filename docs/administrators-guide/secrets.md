@@ -57,8 +57,7 @@ Once generated, the private key should be added to the secret configured in the
     do not need to be performed instantly. The Paas operator tries to decrypt with all secrets
     and detects a successful decryption from one of the supplied keys.
 
-For the next Paas reconciliation, the change is detected, and the new private key
-will (also) be tried for decryption.
+When this secret changes, the operator reconciles every Paas, and the new private key will (also) be tried for decryption. A Paas with a secret that none of the keys can decrypt gets the `HasErrors` condition.
 
 ## Supplying a new public key
 
