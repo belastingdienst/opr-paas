@@ -10,7 +10,7 @@ pymdown-extensions~=13.1
 babel~=2.18
 colorama~=0.4
 paginate~=0.5
-regex>=2026.11.9
+regex>=2026.11.19
 requests~=2.34
 
 mkdocs-kroki-plugin
