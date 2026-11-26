@@ -312,14 +312,12 @@ func paasFromNs(ns corev1.Namespace) (string, error) {
 }
 
 // allPaases is a simple wrapper to collect all Paas'es and created requests for them on PaasConfig changes
-// allPaases is not unittests ATM. We might add an e2e test for this instead.
-func allPaases(mgr ctrl.Manager) []reconcile.Request {
+func allPaases(ctx context.Context, c client.Client) []reconcile.Request {
 	// Enqueue all Paas objects
 	var reqs []reconcile.Request
 	var paasList v1alpha2.PaasList
-	ctx := context.Background()
 	_, logger := logging.GetLogComponent(ctx, logging.ControllerPaasComponent)
-	if err := mgr.GetClient().List(ctx, &paasList); err != nil {
+	if err := c.List(ctx, &paasList); err != nil {
 		logger.Error().AnErr("error", err).Msg("unable to list paases")
 		return nil
 	}
@@ -334,6 +332,21 @@ func allPaases(mgr ctrl.Manager) []reconcile.Request {
 	}
 
 	return reqs
+}
+
+// paasesForDecryptKeysSecret returns a request for every Paas when obj is the decryption keys secret of the
+// active PaasConfig, so that a key change takes effect, or its decryption errors show up in the Paas status,
+// without waiting for a change to each Paas.
+func paasesForDecryptKeysSecret(ctx context.Context, c client.Client, obj client.Object) []reconcile.Request {
+	cfg, err := config.GetConfig(ctx, c)
+	if err != nil {
+		return nil
+	}
+	ref := cfg.Spec.DecryptKeysSecret
+	if obj.GetName() != ref.Name || obj.GetNamespace() != ref.Namespace {
+		return nil
+	}
+	return allPaases(ctx, c)
 }
 
 // specOrLabelsChangedPredicate returns a reusable predicate for spec or label changes
@@ -377,10 +390,16 @@ func (r *PaasReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			), builder.WithPredicates(specOrLabelsChangedPredicate())).
 		Watches(
 			&v1alpha2.PaasConfig{},
-			handler.EnqueueRequestsFromMapFunc(func(_ context.Context, _ client.Object) []reconcile.Request {
-				return allPaases(mgr)
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, _ client.Object) []reconcile.Request {
+				return allPaases(ctx, mgr.GetClient())
 			}),
 			builder.WithPredicates(v1alpha2.ActivePaasConfigUpdated()),
+		).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+				return paasesForDecryptKeysSecret(ctx, mgr.GetClient(), obj)
+			}),
 		).
 		Complete(r)
 }
