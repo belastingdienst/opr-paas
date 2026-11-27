@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"testing"
 
 	"github.com/belastingdienst/opr-paas/v5/api/v1alpha2"
 	"github.com/belastingdienst/opr-paas/v5/internal/config"
@@ -11,12 +12,75 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	quotav1 "github.com/openshift/api/quota/v1"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	resourcev1 "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
+
+func TestReconcileQuotasWithOmittedFeatureFlag(t *testing.T) {
+	scheme := runtime.NewScheme()
+	require.NoError(t, v1alpha2.AddToScheme(scheme))
+	require.NoError(t, quotav1.AddToScheme(scheme))
+
+	paas := &v1alpha2.Paas{
+		ObjectMeta: metav1.ObjectMeta{Name: "test", UID: "test-uid"},
+		Spec: v1alpha2.PaasSpec{
+			Quota: paasquota.Quota{corev1.ResourceLimitsCPU: resourcev1.MustParse("1")},
+			Capabilities: v1alpha2.PaasCapabilities{
+				"local":  {},
+				"shared": {},
+			},
+		},
+	}
+	pc := v1alpha2.PaasConfig{Spec: v1alpha2.PaasConfigSpec{
+		QuotaLabel: "quota",
+		Capabilities: v1alpha2.ConfigCapabilities{
+			"local": {QuotaSettings: v1alpha2.ConfigQuotaSettings{
+				DefQuota: paasquota.Quota{corev1.ResourceLimitsCPU: resourcev1.MustParse("1")},
+			}},
+			"shared": {QuotaSettings: v1alpha2.ConfigQuotaSettings{
+				Clusterwide: true,
+				DefQuota:    paasquota.Quota{corev1.ResourceLimitsCPU: resourcev1.MustParse("1")},
+			}},
+		},
+		FeatureFlags: v1alpha2.ConfigFeatureFlags{ClusterResourceQuotaManagement: "allow"},
+	}}
+	reconciler := &PaasReconciler{
+		Client: fake.NewClientBuilder().WithScheme(scheme).WithObjects(paas).Build(),
+		Scheme: scheme,
+	}
+	ctx := context.WithValue(context.Background(), config.ContextKeyPaasConfig, pc)
+	require.NoError(t, reconciler.reconcileQuotas(ctx, paas))
+	require.NoError(t, reconciler.reconcileClusterWideQuota(ctx, paas))
+
+	pc.Spec.FeatureFlags = v1alpha2.ConfigFeatureFlags{}
+	ctx = context.WithValue(context.Background(), config.ContextKeyPaasConfig, pc)
+	paas.Spec.Quota[corev1.ResourceLimitsCPU] = resourcev1.MustParse("2")
+	require.NoError(t, reconciler.reconcileQuotas(ctx, paas))
+	require.NoError(t, reconciler.reconcileClusterWideQuota(ctx, paas))
+
+	for _, name := range []string{"test", "test-local", "paas-shared"} {
+		var quota quotav1.ClusterResourceQuota
+		require.NoError(t, reconciler.Get(ctx, types.NamespacedName{Name: name}, &quota))
+		if name == "test" {
+			cpu := quota.Spec.Quota.Hard[corev1.ResourceLimitsCPU]
+			require.Equal(t, "2", cpu.String())
+		}
+		require.NoError(t, reconciler.Delete(ctx, &quota))
+	}
+
+	require.NoError(t, reconciler.reconcileQuotas(ctx, paas))
+	require.NoError(t, reconciler.reconcileClusterWideQuota(ctx, paas))
+	for _, name := range []string{"test", "test-local", "paas-shared"} {
+		var quota quotav1.ClusterResourceQuota
+		require.NoError(t, reconciler.Get(ctx, types.NamespacedName{Name: name}, &quota))
+	}
+}
 
 var _ = Describe("Cluster Quotas", Ordered, func() {
 	const (

@@ -1,6 +1,7 @@
 package v1alpha2
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -8,6 +9,30 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
+
+func TestPaasConfigQuotaManagementEnabled(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  string
+		enabled bool
+	}{
+		{"omitted feature flags", `{"spec":{}}`, true},
+		{"omitted quota flag", `{"spec":{"feature_flags":{"group_user_management":"warn"}}}`, true},
+		{"allow", `{"spec":{"feature_flags":{"cluster_resource_quota_management":"allow"}}}`, true},
+		{"warn", `{"spec":{"feature_flags":{"cluster_resource_quota_management":"warn"}}}`, false},
+		{"block", `{"spec":{"feature_flags":{"cluster_resource_quota_management":"block"}}}`, false},
+		{"invalid value", `{"spec":{"feature_flags":{"cluster_resource_quota_management":"invalid"}}}`, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var pc PaasConfig
+			if err := json.Unmarshal([]byte(tt.config), &pc); err != nil {
+				t.Fatal(err)
+			}
+			assert.Equal(t, tt.enabled, pc.QuotaManagementEnabled())
+		})
+	}
+}
 
 func TestPaasConfig_IsActive(t *testing.T) {
 	type fields struct {
