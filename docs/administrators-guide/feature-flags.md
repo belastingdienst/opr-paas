@@ -89,8 +89,8 @@ When specifying `allow` (or leave empty), the operator creates and manages Clust
 
 ### Warn
 
-The option `warn` can be used to have the WebHook warn about quotas being set, without declining the request,
-and have the controller ignore the specified quotas.
+The option `warn` has the WebHook warn about quotas being set without declining the request.
+The controller ignores the specified quotas and removes previously managed ClusterResourceQuotas.
 
 !!! example
 

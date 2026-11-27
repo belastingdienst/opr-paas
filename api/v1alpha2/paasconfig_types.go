@@ -401,5 +401,6 @@ func (pc PaasConfig) IsActive() bool {
 
 // QuotaManagementEnabled returns true if quota management is enabled
 func (pc PaasConfig) QuotaManagementEnabled() bool {
-	return pc.Spec.FeatureFlags.ClusterResourceQuotaManagement == "allow"
+	flag := pc.Spec.FeatureFlags.ClusterResourceQuotaManagement
+	return flag == "" || flag == "allow"
 }
